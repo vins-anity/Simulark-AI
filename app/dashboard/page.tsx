@@ -1,102 +1,95 @@
-import { Box, Filter, Plus, Search } from "lucide-react";
+import { Box, Filter, Plus, Search, ArrowRight, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { getUserProjects } from "@/actions/projects";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import type { Project } from "@/lib/schema/graph";
+import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
   const { data: projects, error } = await getUserProjects();
   const typedProjects = projects as (Project & { updated_at?: string })[];
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-4xl md:text-5xl font-poppins font-bold tracking-tight text-foreground">
-            Workspace
-          </h1>
-          <p className="text-lg font-lora italic text-brand-gray-mid leading-relaxed max-w-xl">
-            Design, simulate, and evolve your architecture masterpiece.
-          </p>
-        </div>
-
-        <button className="flex items-center gap-2 px-6 py-3.5 bg-brand-orange text-white rounded-2xl font-poppins font-bold shadow-lg shadow-brand-orange/20 hover:shadow-xl hover:shadow-brand-orange/30 hover:scale-[1.02] transition-all duration-300 group">
-          <Plus
-            size={20}
-            className="transition-transform group-hover:rotate-90"
-          />
-          Create Project
-        </button>
-      </div>
-
-      {/* Filters/Search Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center border-b border-brand-gray-light pb-6">
-        <div className="relative flex-1 group">
-          <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray-mid transition-colors group-focus-within:text-brand-orange"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search your designs..."
-            className="w-full pl-12 pr-4 py-3 bg-white/50 border border-brand-gray-light rounded-xl font-poppins text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange/10 focus:border-brand-orange transition-all"
-          />
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-3 bg-white border border-brand-gray-light rounded-xl font-poppins text-sm font-medium text-brand-gray-mid hover:text-foreground hover:border-foreground transition-all">
-            <Filter size={16} />
-            Filter
-          </button>
-          <select className="px-4 py-3 bg-white border border-brand-gray-light rounded-xl font-poppins text-sm font-medium text-brand-gray-mid focus:outline-none focus:border-foreground transition-all">
-            <SortOption label="Recent" value="recent" />
-            <SortOption label="A-Z" value="az" />
-            <SortOption label="Provider" value="provider" />
-          </select>
-        </div>
-      </div>
-
-      {/* Projects Grid */}
-      {error ? (
-        <div className="p-12 text-center glass-card rounded-3xl border-red-100 bg-red-50/20">
-          <p className="text-red-500 font-poppins font-medium">
-            Failed to load projects: {error}
-          </p>
-        </div>
-      ) : !typedProjects || typedProjects.length === 0 ? (
-        <div className="p-20 text-center glass-card rounded-3xl border-dashed border-2 border-brand-gray-light flex flex-col items-center gap-6">
-          <div className="w-16 h-16 bg-brand-gray-light/30 rounded-2xl flex items-center justify-center text-brand-gray-mid">
-            <Box size={32} />
+    <div className="flex flex-col min-h-[85vh]">
+      {/* Hero / Focus Section */}
+      <div className="flex-1 flex flex-col items-center justify-center -mt-20 mb-20 space-y-8">
+        <div className="text-center space-y-4 max-w-2xl px-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/5 text-brand-orange text-xs font-semibold uppercase tracking-widest mb-4 border border-brand-orange/10">
+            <Wand2 className="w-3 h-3" />
+            <span>AI Architect Ready</span>
           </div>
-          <div className="flex flex-col gap-1">
-            <h3 className="text-xl font-poppins font-bold text-foreground">
-              No projects yet
-            </h3>
-            <p className="text-brand-gray-mid font-lora italic">
-              Begin your first architecture draft.
+          <h1 className="text-5xl md:text-6xl font-poppins font-bold tracking-tight text-brand-charcoal">
+            What will you build?
+          </h1>
+          <p className="text-xl text-brand-gray-mid font-lora italic max-w-lg mx-auto">
+            Describe your system, and Simulark will generate the blueprint.
+          </p>
+        </div>
+
+        <div className="w-full max-w-2xl px-6 relative group">
+          <div className="absolute inset-0 bg-brand-orange/20 blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700 rounded-full" />
+          <div className="relative flex items-center bg-white shadow-xl shadow-brand-charcoal/5 rounded-2xl border border-brand-gray-light/50 overflow-hidden focus-within:ring-2 focus-within:ring-brand-orange/20 focus-within:border-brand-orange/50 transition-all duration-300">
+            <div className="pl-6 text-brand-gray-mid">
+              <Search className="w-6 h-6" />
+            </div>
+            <input
+              type="text"
+              placeholder="E.g., 'E-commerce microservices with Next.js and Stripe'..."
+              className="w-full text-lg px-4 py-6 bg-transparent placeholder:text-brand-gray-light text-brand-charcoal focus:outline-none font-poppins"
+            />
+            <div className="pr-2">
+              <button className="bg-brand-charcoal text-brand-sand-light p-3 rounded-xl hover:scale-105 hover:bg-brand-orange transition-all duration-300">
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 text-sm text-brand-gray-mid font-medium">
+          <span>Try:</span>
+          <button className="hover:text-brand-orange transition-colors">SaaS Starter</button>
+          <span>•</span>
+          <button className="hover:text-brand-orange transition-colors">Video Platform</button>
+          <span>•</span>
+          <button className="hover:text-brand-orange transition-colors">IoT Pipeline</button>
+        </div>
+      </div>
+
+      {/* Projects Section (Secondary) */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <h2 className="text-xl font-poppins font-bold text-brand-charcoal">Recent Projects</h2>
+          <div className="flex gap-2">
+            {/* Filters could go here if needed, but keeping it clean */}
+          </div>
+        </div>
+
+        {error ? (
+          <div className="p-12 text-center rounded-3xl border border-red-100 bg-red-50/20">
+            <p className="text-red-500 font-poppins font-medium">
+              Failed to load projects: {error}
             </p>
           </div>
-          <button className="mt-4 px-8 py-3.5 border-2 border-foreground text-foreground rounded-2xl font-poppins font-bold hover:bg-foreground hover:text-white transition-all duration-300">
-            Get Started
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {typedProjects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              id={project.id}
-              name={project.name}
-              provider={project.provider || "Generic"}
-              updatedAt={project.updated_at || new Date().toISOString()}
-            />
-          ))}
-        </div>
-      )}
+        ) : !typedProjects || typedProjects.length === 0 ? (
+          <div className="p-12 text-center border-2 border-dashed border-brand-charcoal/5 rounded-3xl bg-white/30">
+            <p className="text-brand-gray-mid font-lora italic">
+              No recent projects. Start a new one above.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {typedProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                id={project.id}
+                name={project.name}
+                provider={project.provider || "Generic"}
+                updatedAt={project.updated_at || new Date().toISOString()}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
-}
-
-function SortOption({ label, value }: { label: string; value: string }) {
-  return <option value={value}>{label}</option>;
 }

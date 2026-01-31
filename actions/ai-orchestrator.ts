@@ -164,6 +164,15 @@ async function runGenerator(
 export async function generateArchitecture(
   input: v.InferInput<typeof UserPromptSchema>,
 ) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   // 1. Validate Input
   const result = v.safeParse(UserPromptSchema, input);
   if (!result.success) {
@@ -171,6 +180,39 @@ export async function generateArchitecture(
   }
 
   const { prompt, provider } = result.output;
+
+  // Rate Limiting Check
+  try {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("subscription_tier")
+      .eq("user_id", user.id)
+      .single();
+
+    const tier = profile?.subscription_tier || "free";
+    // Limit: Free=10, Pro=50, Enterprise=1000
+    const limit = tier === "pro" ? 50 : tier === "enterprise" ? 1000 : 10;
+
+    const { data: allowed, error: rpcError } = await supabase.rpc(
+      "check_and_increment_usage",
+      { limit_count: limit },
+    );
+
+    if (rpcError) {
+      console.error("[Orchestrator] Rate limit check error:", rpcError);
+      // Fail open or closed? Closed for safety instructions usually.
+      return { success: false, error: "Unable to verify rate limits." };
+    }
+
+    if (!allowed) {
+      return {
+        success: false,
+        error: `Daily generation limit reached for ${tier} plan.`,
+      };
+    }
+  } catch (e) {
+    console.error("Rate limit check exception:", e);
+  }
 
   try {
     // 2. Run Aggregator (Thinking)
@@ -195,11 +237,7 @@ export async function generateArchitecture(
     }
 
     // 5. Log to DB
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    // We already have 'user' and 'supabase' from top scope
     if (user) {
       await supabase.from("ai_generations").insert({
         user_id: user.id,
@@ -220,10 +258,7 @@ export async function generateArchitecture(
     console.error("[Orchestrator] Error:", error);
 
     // Log failure
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(); // Re-fetch user or move up
+    // We already have 'user' and 'supabase' from top scope
     if (user) {
       await supabase.from("ai_generations").insert({
         user_id: user.id,

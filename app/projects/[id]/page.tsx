@@ -7,6 +7,11 @@ import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { notFound } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { type Project } from "@/lib/schema/graph";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 interface ProjectPageProps {
   params: Promise<{
@@ -60,35 +65,38 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6 h-[calc(100vh-100px)] overflow-hidden">
-        {/* Project Header */}
-        <div className="flex flex-col gap-1 px-2">
-          <h1 className="text-3xl font-poppins font-bold tracking-tight text-foreground">
+      <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden -m-8 lg:-m-12">
+        {/* Project Header - overlay or integrated? Keeping it simple for now */}
+        {/* <div className="absolute top-4 left-4 z-10 p-4 pointer-events-none">
+          <h1 className="text-xl font-poppins font-bold tracking-tight text-foreground bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl inline-block pointer-events-auto shadow-sm">
             {project.name}
           </h1>
-          <p className="text-sm font-lora italic text-brand-gray-mid">
-            Drafting in {project.provider || "Generic"} environment
-          </p>
-        </div>
+        </div> */}
 
-        {/* Main Work Area */}
-        <div className="flex-1 flex gap-6 overflow-hidden">
-          {/* AI Assistant Panel */}
-          <AIAssistantPanel
-            projectId={id}
-            onGenerationSuccess={handleGenerationSuccess}
-          />
-
-          {/* Editor Area */}
-          <div className="flex-1 rounded-[2.5rem] overflow-hidden glass-card shadow-2xl shadow-black/5 border-white/40 relative">
-            <FlowEditor
-              ref={flowEditorRef}
-              initialNodes={project.nodes}
-              initialEdges={project.edges}
+        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+          {/* AI Assistant Panel (Left) */}
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="bg-white/50 backdrop-blur-sm border-r border-white/20">
+            <AIAssistantPanel
               projectId={id}
+              onGenerationSuccess={handleGenerationSuccess}
+              isResizable={true} // Prop to disable internal layout logic
             />
-          </div>
-        </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Editor Area (Right) */}
+          <ResizablePanel defaultSize={75}>
+            <div className="h-full w-full relative bg-[#faf9f5]">
+              <FlowEditor
+                ref={flowEditorRef}
+                initialNodes={project.nodes}
+                initialEdges={project.edges}
+                projectId={id}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </DashboardLayout>
   );

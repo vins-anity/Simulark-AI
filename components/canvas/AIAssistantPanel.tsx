@@ -15,11 +15,13 @@ import { cn } from "@/components/canvas/nodes/BaseNode";
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
   projectId: string;
+  isResizable?: boolean;
 }
 
 export function AIAssistantPanel({
   onGenerationSuccess,
   projectId,
+  isResizable = false,
 }: AIAssistantPanelProps) {
   const [prompt, setPrompt] = useState("");
   const [provider, setProvider] = useState<"AWS" | "GCP" | "Azure" | "Generic">(
@@ -52,26 +54,33 @@ export function AIAssistantPanel({
     }
   };
 
+  // If resizable, we typically disable the internal toggle or rely on the resizable panel to hide/collapse
+  // But for now, we'll just force open and full width to fill the panel.
+  const showContent = isResizable || isOpen;
+
   return (
     <div
       className={cn(
         "relative flex h-full transition-all duration-500 ease-in-out",
-        isOpen ? "w-[380px]" : "w-12",
+        isResizable ? "w-full" : isOpen ? "w-[380px]" : "w-12",
       )}
     >
-      {/* Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-brand-gray-light rounded-full flex items-center justify-center shadow-md z-10 hover:bg-brand-gray-light/10 transition-colors"
-      >
-        {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-      </button>
+      {/* Toggle Button - Only show if NOT resizable */}
+      {!isResizable && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-brand-gray-light rounded-full flex items-center justify-center shadow-md z-10 hover:bg-brand-gray-light/10 transition-colors"
+        >
+          {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        </button>
+      )}
 
       {/* Main Content */}
       <div
         className={cn(
-          "flex-1 flex flex-col glass-card border-r border-white/20 overflow-hidden transition-opacity duration-300",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+          "flex-1 flex flex-col overflow-hidden transition-opacity duration-300",
+          !isResizable && "glass-card border-r border-white/20",
+          showContent ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
       >
         {/* Header */}
@@ -184,8 +193,8 @@ export function AIAssistantPanel({
         </div>
       </div>
 
-      {/* Collapsed Sidebar Indicator */}
-      {!isOpen && (
+      {/* Collapsed Sidebar Indicator - Only show if NOT resizable */}
+      {!isResizable && !isOpen && (
         <div className="w-12 flex flex-col items-center pt-8 gap-6 border-r border-white/20 glass-card">
           <Sparkles size={20} className="text-brand-orange/40" />
           <div className="[writing-mode:vertical-lr] rotate-180 text-[10px] font-poppins font-bold tracking-[0.2em] text-brand-gray-mid uppercase">
