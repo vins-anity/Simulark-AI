@@ -69,12 +69,10 @@ export function Sidebar() {
   const planDetails = getPlanDetails(plan); // Use original getPlanDetails
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 bottom-0 bg-[#faf9f5] border-r border-[#e5e5e5] transition-all duration-300 z-30",
-        isCollapsed ? "w-20" : "w-64"
-      )}
-    >
+    <aside className={cn(
+      "h-screen sticky top-0 z-30 bg-[#faf9f5] border-r border-[#e5e5e5] transition-all duration-300 ease-in-out flex flex-col shrink-0 relative",
+      isCollapsed ? "w-20" : "w-64"
+    )}>
       {/* Toggle Button - Outside Overflow Area */}
       <button
         onClick={toggleSidebar}
@@ -98,7 +96,7 @@ export function Sidebar() {
               <span className="font-serif font-bold italic text-lg">S</span>
             </div>
             <span className={cn(
-              "font-poppins font-bold text-xl tracking-tight text-brand-charcoal whitespace-nowrap transition-all duration-300",
+              "font-poppins font-bold text-xl tracking-tight text-brand-charcoal whitespace-nowrap transition-all duration-300 overflow-hidden",
               isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
             )}>
               Simulark

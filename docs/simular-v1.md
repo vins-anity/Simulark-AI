@@ -15,7 +15,7 @@ Student ID: [Your ID]
 
 ## 1. Project Overview
 
-## Introduction
+## Introduction	
 
 In the contemporary software engineering landscape, a critical dissonance exists between
 high-level system design and low-level implementation. Solutions Architects typically rely on
@@ -345,28 +345,28 @@ graph TD
 User[User Browser]
 
 subgraph "Frontend Layer (Next.js 14+)"
-Canvas[Interactive Canvas`<br/>`(React Flow)]
-Worker[Web Worker`<br/>`(Layout Engine)]
-VisEngine[Visual Effects`<br/>`(CSS/SVG)]
-Validator[Validation Engine`<br/>`(Rules & Cost)]
+Canvas[Interactive Canvas `<br/>`(React Flow)]
+Worker[Web Worker `<br/>`(Layout Engine)]
+VisEngine[Visual Effects `<br/>`(CSS/SVG)]
+Validator[Validation Engine `<br/>`(Rules & Cost)]
 ContextBridge[Context Bridge Engine]
-UI[UI Components`<br/>`(Shadcn + Tailwind v4)]
+UI[UI Components `<br/>`(Shadcn + Tailwind v4)]
 end
 
 subgraph "Server Layer (Next.js Server Actions)"
-AuthGuard[Auth Guard`<br/>`(Supabase SSR)]
-SchemaVal[Schema Validation`<br/>`(Valibot)]
+AuthGuard[Auth Guard `<br/>`(Supabase SSR)]
+SchemaVal[Schema Validation `<br/>`(Valibot)]
 
 Orchestrator[Dual-Agent Orchestrator]
 end
 
 subgraph "AI Layer (OpenRouter)"
-Aggregator[Aggregator Agent`<br/>`(Solar Pro 3)]
-Generator[Generator Agent`<br/>`(Mistral Devstral)]
+Aggregator[Aggregator Agent `<br/>`(Solar Pro 3)]
+Generator[Generator Agent `<br/>`(Mistral Devstral)]
 end
 
 subgraph "Data & Auth Layer (Supabase)"
-Auth[OAuth2`<br/>`(GitHub/Gmail)]
+Auth[OAuth2 `<br/>`(GitHub/Gmail)]
 DB[(PostgreSQL)]
 end
 

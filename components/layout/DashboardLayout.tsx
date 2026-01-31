@@ -1,35 +1,42 @@
 "use client";
 
 import { Sidebar } from "./Sidebar";
-import { SidebarProvider, useSidebar } from "./SidebarProvider";
+import { useSidebar } from "./SidebarProvider";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  fullWidth?: boolean;
 }
 
-function MainContent({ children }: { children: React.ReactNode }) {
+function MainContent({ children, fullWidth }: { children: React.ReactNode; fullWidth?: boolean }) {
   const { isCollapsed } = useSidebar();
 
   return (
     <main
       className={cn(
-        "flex-1 min-h-screen overflow-y-auto transition-all duration-300 ease-in-out",
-        isCollapsed ? "ml-20" : "ml-64"
+        "flex-1 transition-all duration-300 ease-in-out",
+        fullWidth ? "h-screen overflow-hidden" : "min-h-screen overflow-y-auto"
       )}
     >
-      <div className="max-w-7xl mx-auto p-8 lg:p-12">{children}</div>
+      <div className={cn(
+        "h-full",
+        fullWidth ? "w-full" : "max-w-7xl mx-auto p-8 lg:p-12"
+      )}>
+        {children}
+      </div>
     </main>
   );
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, fullWidth = false }: DashboardLayoutProps) {
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen bg-[#faf9f5]">
-        <Sidebar />
-        <MainContent>{children}</MainContent>
-      </div>
-    </SidebarProvider>
+    <div className={cn(
+      "flex bg-[#faf9f5]",
+      fullWidth ? "h-screen overflow-hidden" : "min-h-screen"
+    )}>
+      <Sidebar />
+      <MainContent fullWidth={fullWidth}>{children}</MainContent>
+    </div>
   );
 }

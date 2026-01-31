@@ -22,8 +22,8 @@ const openai = new OpenAI({
 });
 
 // Models
-const MODEL_AGGREGATOR = "upstage/solar-pro-3-tokenizer"; // Using user suggestion or fallback
-const MODEL_GENERATOR = "mistralai/mistral-small-24b-instruct-2501"; // Good balance for JSON gen
+const MODEL_AGGREGATOR = "upstage/solar-pro-3:free"; // Reasoning + High Throughput
+const MODEL_GENERATOR = "mistralai/mistral-small-3.1-24b-instruct:free"; // Stable JSON generation
 
 // --- Types ---
 
@@ -46,7 +46,7 @@ async function runAggregator(prompt: string): Promise<string> {
         {
           role: "system",
           content:
-            "You are an Expert System Architect. Analyze the user request and outline a high-level architectural plan. Be concise and focus on components (Gateway, Service, DB) and connections. Do not output JSON.",
+            "You are an Expert System Architect. Analyze the user request and outline a high-level architectural plan. Be concise and focus on components (Gateway, Service, Database, Queue) and connections. Do not output JSON.",
         },
         { role: "user", content: prompt },
       ],
@@ -75,88 +75,106 @@ async function runGenerator(
   );
 
   const systemPrompt = `
-    You are an Infrastructure as Code generator. Output strictly valid JSON matching this schema:
+    You are an Expert Solution Architect. Based on the provided high-level architectural plan, generate a detailed technical architecture in JSON format.
+    The response MUST follow this exact schema:
     {
-      "nodes": [ { "id": "string", "type": "gateway" | "service" | "database" | "queue", "position": { "x": number, "y": number }, "data": { "label": "string", "serviceType": "string", "validationStatus": "valid" | "warning" | "error", "costEstimate": number } } ],
+      "nodes": [ { "id": "string", "type": "gateway" | "service" | "database" | "queue", "position": { "x": number, "y": number }, "data": { "label": "string", "serviceType": "gateway" | "service" | "database" | "queue", "validationStatus": "valid" | "warning" | "error", "costEstimate": number } } ],
       "edges": [ { "id": "string", "source": "string", "target": "string", "animated": boolean, "data": { "protocol": "http" | "queue" | "stream" } } ]
     }
+    CRITICAL: The "serviceType" value MUST be exactly one of: "gateway", "service", "database", or "queue". 
     Use the ${provider} cloud provider context where applicable.
     Ensure "nodes" and "edges" arrays are always present.
     Return ONLY JSON. No markdown formatting.
   `;
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: MODEL_GENERATOR,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Plan: ${plan}` },
-      ],
-      response_format: { type: "json_object" },
-    });
+  const models = [MODEL_GENERATOR, "google/gemma-3-27b-it:free"];
+  let lastError = null;
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error("No content received from Generator");
+  for (const model of models) {
+    try {
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Plan: ${plan}` },
+        ],
+        response_format: { type: "json_object" },
+      });
 
-    const json = JSON.parse(content);
-    return json as ArchitectureGraph;
-  } catch (error) {
-    console.error("[Generator] Error:", error);
-    // Return safe fallback matching schema
-    return {
-      nodes: [
-        {
-          id: "1",
-          type: "gateway",
-          position: { x: 250, y: 50 },
-          data: {
-            label: "API Gateway (Fallback)",
-            serviceType: "gateway",
-            validationStatus: "valid",
-            costEstimate: 0,
-          },
-        },
-        {
-          id: "2",
-          type: "service",
-          position: { x: 250, y: 200 },
-          data: {
-            label: "Core Service",
-            serviceType: "service",
-            validationStatus: "valid",
-            costEstimate: 10,
-          },
-        },
-        {
-          id: "3",
-          type: "database",
-          position: { x: 250, y: 350 },
-          data: {
-            label: "Primary DB",
-            serviceType: "database",
-            validationStatus: "valid",
-            costEstimate: 20,
-          },
-        },
-      ],
-      edges: [
-        {
-          id: "e1-2",
-          source: "1",
-          target: "2",
-          animated: true,
-          data: { protocol: "http" },
-        },
-        {
-          id: "e2-3",
-          source: "2",
-          target: "3",
-          animated: true,
-          data: { protocol: "http" },
-        },
-      ],
-    };
+      const content = completion.choices[0]?.message?.content;
+      if (!content) throw new Error("No content received from Generator");
+
+      const json = JSON.parse(content);
+      return json as ArchitectureGraph;
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`[Generator] Model ${model} failed:`, error.message);
+
+      // If it's a 429, try the next model immediately
+      if (error.status === 429 || error.code === 429) {
+        continue;
+      }
+
+      // For other errors, we might want to try the fallback too as it might be a model-specific error
+      continue;
+    }
   }
+
+  // If all models fail, return safe fallback
+  console.error("[Generator] All models failed, returning safe fallback. Last error:", lastError);
+  return {
+    nodes: [
+      {
+        id: "1",
+        type: "gateway",
+        position: { x: 250, y: 50 },
+        data: {
+          label: "API Gateway (Fallback)",
+          serviceType: "gateway",
+          validationStatus: "valid",
+          costEstimate: 0,
+        },
+      },
+      {
+        id: "2",
+        type: "service",
+        position: { x: 250, y: 200 },
+        data: {
+          label: "Core Service",
+          serviceType: "service",
+          validationStatus: "valid",
+          costEstimate: 10,
+        },
+      },
+      {
+        id: "3",
+        type: "database",
+        position: { x: 250, y: 350 },
+        data: {
+          label: "Primary DB",
+          serviceType: "database",
+          validationStatus: "valid",
+          costEstimate: 20,
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "e1-2",
+        source: "1",
+        target: "2",
+        animated: true,
+        data: { protocol: "http" },
+      },
+      {
+        id: "e2-3",
+        source: "2",
+        target: "3",
+        animated: true,
+        data: { protocol: "http" },
+      },
+    ],
+  };
 }
 
 // --- Main Orchestrator Action ---

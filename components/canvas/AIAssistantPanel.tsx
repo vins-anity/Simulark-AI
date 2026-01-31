@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { generateArchitecture } from "@/actions/ai-orchestrator";
-import { cn } from "@/components/canvas/nodes/BaseNode";
+import { cn } from "@/lib/utils";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -23,6 +23,8 @@ export function AIAssistantPanel({
   projectId,
   isResizable = false,
 }: AIAssistantPanelProps) {
+  console.log("AIAssistantPanel Render", { isResizable });
+
   const [prompt, setPrompt] = useState("");
   const [provider, setProvider] = useState<"AWS" | "GCP" | "Azure" | "Generic">(
     "Generic",
@@ -56,12 +58,15 @@ export function AIAssistantPanel({
 
   // If resizable, we typically disable the internal toggle or rely on the resizable panel to hide/collapse
   // But for now, we'll just force open and full width to fill the panel.
+  // Force content visible and remove internal transitions if resizable
   const showContent = isResizable || isOpen;
 
   return (
     <div
       className={cn(
-        "relative flex h-full transition-all duration-500 ease-in-out",
+        "relative flex h-full",
+        isResizable && "border-2 border-red-500/30", // Diagnostic border
+        !isResizable && "transition-all duration-500 ease-in-out",
         isResizable ? "w-full" : isOpen ? "w-[380px]" : "w-12",
       )}
     >
@@ -78,9 +83,10 @@ export function AIAssistantPanel({
       {/* Main Content */}
       <div
         className={cn(
-          "flex-1 flex flex-col overflow-hidden transition-opacity duration-300",
-          !isResizable && "glass-card border-r border-white/20",
-          showContent ? "opacity-100" : "opacity-0 pointer-events-none",
+          "flex-1 flex flex-col overflow-hidden",
+          isResizable ? "opacity-100" : "transition-opacity duration-300",
+          !isResizable && "glass-card border-l border-white/20",
+          !isResizable && !showContent && "opacity-0 pointer-events-none",
         )}
       >
         {/* Header */}
@@ -193,9 +199,9 @@ export function AIAssistantPanel({
         </div>
       </div>
 
-      {/* Collapsed Sidebar Indicator - Only show if NOT resizable */}
+      {/* Collapsed Sidebar Indicator - Only show if NOT resizable AND closed */}
       {!isResizable && !isOpen && (
-        <div className="w-12 flex flex-col items-center pt-8 gap-6 border-r border-white/20 glass-card">
+        <div className="w-12 flex flex-col items-center pt-8 gap-6 border-l border-white/20 glass-card">
           <Sparkles size={20} className="text-brand-orange/40" />
           <div className="[writing-mode:vertical-lr] rotate-180 text-[10px] font-poppins font-bold tracking-[0.2em] text-brand-gray-mid uppercase">
             AI Architect

@@ -122,6 +122,7 @@ const FlowEditorInner = forwardRef(
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          proOptions={{ hideAttribution: true }}
           fitView
           className="drafting-grid"
         >

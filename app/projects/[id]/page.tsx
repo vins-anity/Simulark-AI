@@ -63,9 +63,11 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
     return notFound();
   }
 
+  const PanelGroup = ResizablePanelGroup as any;
+
   return (
-    <DashboardLayout>
-      <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden -m-8 lg:-m-12">
+    <DashboardLayout fullWidth>
+      <div className="flex flex-col h-full overflow-hidden">
         {/* Project Header - overlay or integrated? Keeping it simple for now */}
         {/* <div className="absolute top-4 left-4 z-10 p-4 pointer-events-none">
           <h1 className="text-xl font-poppins font-bold tracking-tight text-foreground bg-white/50 backdrop-blur-md px-4 py-2 rounded-xl inline-block pointer-events-auto shadow-sm">
@@ -73,19 +75,7 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
           </h1>
         </div> */}
 
-        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-          {/* AI Assistant Panel (Left) */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="bg-white/50 backdrop-blur-sm border-r border-white/20">
-            <AIAssistantPanel
-              projectId={id}
-              onGenerationSuccess={handleGenerationSuccess}
-              isResizable={true} // Prop to disable internal layout logic
-            />
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          {/* Editor Area (Right) */}
+        <PanelGroup direction="horizontal" className="h-full w-full">
           <ResizablePanel defaultSize={75}>
             <div className="h-full w-full relative bg-[#faf9f5]">
               <FlowEditor
@@ -96,7 +86,17 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
               />
             </div>
           </ResizablePanel>
-        </ResizablePanelGroup>
+
+          <ResizableHandle withHandle />
+
+          <ResizablePanel defaultSize={25} minSize={10} className="bg-white/50 backdrop-blur-sm border-l border-white/20">
+            <AIAssistantPanel
+              projectId={id}
+              onGenerationSuccess={handleGenerationSuccess}
+              isResizable={true}
+            />
+          </ResizablePanel>
+        </PanelGroup>
       </div>
     </DashboardLayout>
   );

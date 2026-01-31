@@ -22,6 +22,8 @@ export const metadata: Metadata = {
     "Intelligent Backend Architecture Design & Visual Simulation Platform",
 };
 
+import { SidebarProvider } from "@/components/layout/SidebarProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,7 +45,9 @@ export default function RootLayout({
           } as React.CSSProperties
         }
       >
-        <BrandProvider>{children}</BrandProvider>
+        <SidebarProvider>
+          <BrandProvider>{children}</BrandProvider>
+        </SidebarProvider>
         <Toaster />
       </body>
     </html>
