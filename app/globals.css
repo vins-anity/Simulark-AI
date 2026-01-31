@@ -1,26 +1,61 @@
 @import "tailwindcss";
+@import "../styles/animations.css";
+@plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf9f5;
+  /* Anthropic-like Off-white */
+  --foreground: #141413;
+  /* Anthropic-like Dark charcoal */
+
+  --brand-orange: #d97757;
+  --brand-blue: #6a9bcc;
+  --brand-green: #788c5d;
+  --brand-gray-mid: #b0aea5;
+  --brand-gray-light: #e8e6dc;
+  --brand-sand-light: #faf9f5;
+  --brand-charcoal: #141413;
+
+  /* Glassmorphism Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 12px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-poppins), system-ui;
+  --font-serif: var(--font-lora), serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-gray-mid: var(--brand-gray-mid);
+  --color-brand-gray-light: var(--brand-gray-light);
+  --color-brand-sand-light: var(--brand-sand-light);
+  --color-brand-charcoal: var(--brand-charcoal);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.drafting-grid {
+  background-image: radial-gradient(var(--brand-gray-light) 1px,
+      transparent 1px);
+  background-size: 20px 20px;
 }
