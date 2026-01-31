@@ -8,6 +8,7 @@ import {
   ProjectSchema,
 } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/server";
+import { TEMPLATE_GRAPHS } from "@/lib/templates";
 
 // --- Create Project ---
 export async function createProject(
@@ -132,4 +133,41 @@ export async function getUserProjects() {
   }
 
   return { success: true, data: data as Project[] };
+}
+
+// --- Create Project from Template ---
+export async function createProjectFromTemplate(templateId: string, name: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const template = TEMPLATE_GRAPHS[templateId];
+  if (!template) {
+    return { success: false, error: "Template not found" };
+  }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({
+      user_id: user.id,
+      name,
+      provider: "Generic", // or derive from template
+      nodes: template.nodes,
+      edges: template.edges,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Create Template Project Error:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true, data };
 }

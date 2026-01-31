@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { createProjectFromTemplate } from "@/actions/projects";
 
 interface Template {
     id: string;
@@ -82,16 +83,27 @@ export default function TemplatesPage() {
     const handleClone = async (templateId: string) => {
         setCloningId(templateId);
 
-        // Simulate cloning process (mock only for now)
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            const template = templates.find(t => t.id === templateId);
+            const name = template ? `${template.title} (Clone)` : "New Project";
 
-        // TODO: In a real implementation, this would call an API to create a project from the template
-        toast.success("Template Cloned", {
-            description: "New project created from template. Redirecting...",
-        });
+            const result = await createProjectFromTemplate(templateId, name);
 
-        router.push("/dashboard");
-        setCloningId(null);
+            if (result.success && result.data) {
+                toast.success("Template Cloned", {
+                    description: "Redirecting to editor...",
+                });
+                router.push(`/projects/${result.data.id}`);
+            } else {
+                toast.error("Failed to clone template", {
+                    description: result.error || "Unknown error",
+                });
+            }
+        } catch (error) {
+            toast.error("An error occurred");
+        } finally {
+            setCloningId(null);
+        }
     };
 
     return (

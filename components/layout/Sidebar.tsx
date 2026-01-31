@@ -123,7 +123,7 @@ export function Sidebar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center rounded-xl transition-all duration-200 group relative",
+                        "flex items-center rounded-xl transition-all duration-200 group relative overflow-hidden",
                         isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5",
                         isActive
                           ? "bg-brand-charcoal text-brand-sand-light shadow-sm"
@@ -162,7 +162,7 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button className={cn(
-                  "w-full flex items-center rounded-xl text-brand-gray-mid hover:bg-brand-charcoal/5 hover:text-brand-charcoal transition-all duration-200 group",
+                  "w-full flex items-center rounded-xl text-brand-gray-mid hover:bg-brand-charcoal/5 hover:text-brand-charcoal transition-all duration-200 group overflow-hidden",
                   isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5"
                 )}>
                   <div className={cn(
@@ -197,7 +197,7 @@ export function Sidebar() {
                   <TooltipTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center rounded-xl transition-all duration-200 group w-full outline-none",
+                        "flex items-center rounded-xl transition-all duration-200 group w-full outline-none overflow-hidden",
                         isCollapsed
                           ? "justify-center p-3"
                           : "gap-3 px-3 py-2.5",

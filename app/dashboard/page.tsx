@@ -13,16 +13,16 @@ export default async function DashboardPage() {
     <div className="flex flex-col min-h-[85vh]">
       {/* Hero / Focus Section */}
       <div className="flex-1 flex flex-col items-center justify-center -mt-20 mb-20 space-y-8">
-        <div className="text-center space-y-4 max-w-2xl px-4">
+        <div className="text-center space-y-4 max-w-3xl px-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/5 text-brand-orange text-xs font-semibold uppercase tracking-widest mb-4 border border-brand-orange/10">
             <Wand2 className="w-3 h-3" />
             <span>AI Architect Ready</span>
           </div>
           <h1 className="text-5xl md:text-6xl font-poppins font-bold tracking-tight text-brand-charcoal">
-            What will you build?
+            Architect Systems. Export Context.
           </h1>
-          <p className="text-xl text-brand-gray-mid font-lora italic max-w-lg mx-auto">
-            Describe your system, and Simulark will generate the blueprint.
+          <p className="text-xl text-brand-gray-mid font-lora italic max-w-2xl mx-auto leading-relaxed">
+            Don't let your AI coding assistant guess your architecture. Generate visual blueprints, validate for anti-patterns, and sync the <strong className="font-bold not-italic text-brand-orange">Context</strong> to your IDE.
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
             </div>
             <input
               type="text"
-              placeholder="E.g., 'E-commerce microservices with Next.js and Stripe'..."
+              placeholder='E.g., "Design a Next.js 14 backend with Supabase, generic Queue for emails, and Stripe webhooks..."'
               className="w-full text-lg px-4 py-6 bg-transparent placeholder:text-brand-gray-light text-brand-charcoal focus:outline-none font-poppins"
             />
             <div className="pr-2">
@@ -45,13 +45,13 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex gap-3 text-sm text-brand-gray-mid font-medium">
+        <div className="flex gap-3 text-sm text-brand-gray-mid font-medium flex-wrap justify-center">
           <span>Try:</span>
-          <button className="hover:text-brand-orange transition-colors">SaaS Starter</button>
+          <button className="hover:text-brand-orange transition-colors">Event-Driven Microservices</button>
           <span>•</span>
-          <button className="hover:text-brand-orange transition-colors">Video Platform</button>
+          <button className="hover:text-brand-orange transition-colors">Secure Fintech API</button>
           <span>•</span>
-          <button className="hover:text-brand-orange transition-colors">IoT Pipeline</button>
+          <button className="hover:text-brand-orange transition-colors">RAG Pipeline</button>
         </div>
       </div>
 
