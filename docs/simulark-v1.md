@@ -6,16 +6,16 @@ Intelligent Backend Architecture Design and Visual
 
 ## Project Title: Capstone Software Development Project
 
-Module Name: CAI
-Course Name: BDSE
-Student Name: [Your Name]
-Student ID: [Your ID]
+* Module Name: CAI
+  Course Name: BDSE
+  Student Name: [Your Name]
+  Student ID: [Your ID]
 
 ## Submission Date: January 24, 2026
 
 ## 1. Project Overview
 
-## Introduction	
+## Introduction
 
 In the contemporary software engineering landscape, a critical dissonance exists between
 high-level system design and low-level implementation. Solutions Architects typically rely on

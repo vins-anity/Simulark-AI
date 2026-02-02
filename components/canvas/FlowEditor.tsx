@@ -126,11 +126,12 @@ const FlowEditorInner = forwardRef(
           fitView
           className="drafting-grid"
         >
-          <Background gap={20} size={1} color="var(--brand-gray-light)" />
-          <Controls className="!bg-white/80 !backdrop-blur-md !border-white/20 !rounded-xl !shadow-lg !m-4" />
+          <Background key="background" gap={20} size={1} color="var(--brand-gray-light)" />
+          <Controls key="controls" className="!bg-white/80 !backdrop-blur-md !border-white/20 !rounded-xl !shadow-lg !m-4" />
 
           {/* Floating Controls Panel */}
           <Panel
+            key="panel"
             position="top-right"
             className="flex gap-2 p-1.5 bg-white/80 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl m-4"
           >
