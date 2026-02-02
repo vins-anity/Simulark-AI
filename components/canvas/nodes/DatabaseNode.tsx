@@ -19,9 +19,9 @@ export function DatabaseNode(props: BaseNodeProps) {
       className="border-l-[#788c5d]" // Green accent
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">> type: persistent_vol</span>
-        <span className="opacity-70">> replicas: 1 (primary)</span>
-        <span className="text-green-600/80">> connection: active</span>
+        <span className="opacity-70">{'>'} type: persistent_vol</span>
+        <span className="opacity-70">{'>'} replicas: 1 (primary)</span>
+        <span className="text-green-600/80">{'>'} connection: active</span>
       </div>
     </BaseNode>
   );

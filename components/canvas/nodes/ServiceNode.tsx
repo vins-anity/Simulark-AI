@@ -23,9 +23,9 @@ export function ServiceNode(props: BaseNodeProps) {
       className="border-l-[#6a9bcc]" // Blue accent
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">> instance_type: t3.micro</span>
-        <span className="opacity-70">> region: us-east-1</span>
-        <span className="text-brand-orange/80">> status: healthy</span>
+        <span className="opacity-70">{'>'} instance_type: t3.micro</span>
+        <span className="opacity-70">{'>'} region: us-east-1</span>
+        <span className="text-brand-orange/80">{'>'} status: healthy</span>
       </div>
     </BaseNode>
   );
