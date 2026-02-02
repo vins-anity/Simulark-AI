@@ -19,7 +19,17 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 // Workstation Components
-function WorkstationHeader({ project, saving }: { project: Project | null, saving: boolean }) {
+function WorkstationHeader({
+  project,
+  saving,
+  isTerminalOpen,
+  onToggleTerminal
+}: {
+  project: Project | null,
+  saving: boolean,
+  isTerminalOpen?: boolean,
+  onToggleTerminal?: () => void
+}) {
   if (!project) return <div className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5]" />;
 
   return (
@@ -39,7 +49,7 @@ function WorkstationHeader({ project, saving }: { project: Project | null, savin
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 mr-4 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
+        <div className="hidden md:flex items-center gap-2 mr-4 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
           <span>Mem: 42%</span>
           <div className="h-2 w-px bg-brand-charcoal/10" />
           <span>Lat: 12ms</span>
@@ -48,7 +58,7 @@ function WorkstationHeader({ project, saving }: { project: Project | null, savin
         <Button
           variant="outline"
           size="sm"
-          className="h-8 rounded-none border-brand-charcoal/20 bg-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-charcoal hover:text-white transition-all"
+          className="h-8 rounded-none border-brand-charcoal/20 bg-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-charcoal hover:text-white transition-all hidden sm:flex"
         >
           <Icon icon="lucide:share-2" className="w-3 h-3 mr-2" />
           Share
@@ -60,6 +70,19 @@ function WorkstationHeader({ project, saving }: { project: Project | null, savin
           <Icon icon="lucide:save" className={cn("w-3 h-3 mr-2", saving && "animate-spin")} />
           {saving ? "Saving..." : "Deploy"}
         </Button>
+
+        <div className="h-4 w-px bg-brand-charcoal/10 mx-2" />
+
+        <button
+          onClick={onToggleTerminal}
+          className={cn(
+            "w-8 h-8 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5",
+            isTerminalOpen ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal/40 hover:text-brand-charcoal"
+          )}
+          title="Toggle Terminal"
+        >
+          <Icon icon="lucide:terminal-square" className="w-4 h-4" />
+        </button>
       </div>
     </header>
   );
@@ -118,6 +141,9 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
   const [id, setId] = useState<string | null>(null);
   const flowEditorRef = useRef<FlowEditorRef | null>(null);
 
+  // Terminal State
+  const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+
   useEffect(() => {
     async function init() {
       const { id: projectId } = await paramsPromise;
@@ -154,45 +180,51 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
     return notFound();
   }
 
-  const PanelGroup = ResizablePanelGroup as any;
-
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#faf9f5] font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
-      <WorkstationHeader project={project} saving={false} />
+      <WorkstationHeader
+        project={project}
+        saving={false}
+        isTerminalOpen={isTerminalOpen}
+        onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
+      />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         <ToolRail />
 
-        <div className="flex-1 flex flex-col h-full relative">
-          <PanelGroup direction="horizontal" className="h-full w-full">
-            <ResizablePanel style={{ overflow: 'hidden' }} order={1} defaultSize={60} minSize={0} className="relative">
-              <div className="absolute inset-0 bg-[#e5e5e5] pattern-dots pattern-brand-charcoal/5 pattern-bg-transparent pattern-size-4 pattern-opacity-100">
-                {/* Background Grid Layer would go here if not using CSS pattern */}
-              </div>
-              <FlowEditor
-                ref={flowEditorRef}
-                initialNodes={project.nodes}
-                initialEdges={project.edges}
-                projectId={id}
-              />
-              {/* Overlay Canvas Controls (Zoom etc) can be absolute positioned here */}
-              <div className="absolute bottom-6 left-6 p-1 bg-white border border-brand-charcoal/10 shadow-sm flex items-center gap-1 rounded-sm">
-                <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"><Icon icon="lucide:minus" className="w-4 h-4" /></button>
-                <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">100%</span>
-                <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"><Icon icon="lucide:plus" className="w-4 h-4" /></button>
-              </div>
-            </ResizablePanel>
+        <div className="flex-1 flex h-full relative">
+          {/* Canvas Area */}
+          <div className="flex-1 relative bg-[#e5e5e5]">
+            <div className="absolute inset-0 pattern-dots pattern-brand-charcoal/5 pattern-bg-transparent pattern-size-4 pattern-opacity-100" />
 
-            <ResizableHandle withHandle className="w-2 bg-brand-charcoal/5 hover:bg-brand-orange/50 transition-colors z-50 hover:w-2 active:bg-brand-orange active:w-2 focus:outline-none" />
+            <FlowEditor
+              ref={flowEditorRef}
+              initialNodes={project.nodes}
+              initialEdges={project.edges}
+              projectId={id}
+            />
 
-            <ResizablePanel style={{ overflow: 'hidden' }} order={2} defaultSize={40} minSize={0} className="bg-white border-l border-brand-charcoal/10 flex flex-col">
-              <AIAssistantPanel
-                projectId={id}
-                onGenerationSuccess={handleGenerationSuccess}
-                isResizable={true}
-              />
-            </ResizablePanel>
-          </PanelGroup>
+            {/* Overlay Canvas Controls */}
+            <div className="absolute bottom-6 left-6 p-1 bg-white border border-brand-charcoal/10 shadow-sm flex items-center gap-1 rounded-sm z-10">
+              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"><Icon icon="lucide:minus" className="w-4 h-4" /></button>
+              <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">100%</span>
+              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"><Icon icon="lucide:plus" className="w-4 h-4" /></button>
+            </div>
+          </div>
+
+          {/* Terminal Sidebar (Fixed Width, Collapsible) */}
+          <div
+            className={cn(
+              "bg-white border-l border-brand-charcoal/10 flex flex-col transition-all duration-300 ease-in-out absolute right-0 top-0 bottom-0 shadow-xl z-20",
+              isTerminalOpen ? "w-[400px] translate-x-0" : "w-[400px] translate-x-full"
+            )}
+          >
+            <AIAssistantPanel
+              projectId={id}
+              onGenerationSuccess={handleGenerationSuccess}
+              isResizable={false}
+            />
+          </div>
         </div>
       </div>
     </div>
