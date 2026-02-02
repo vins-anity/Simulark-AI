@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Icon } from "@iconify/react";
 
 interface MarketingLayoutClientProps {
     children: React.ReactNode;
@@ -32,87 +33,120 @@ export function MarketingLayoutClient({ children }: MarketingLayoutClientProps) 
     }, [supabase]);
 
     return (
-        <div className="min-h-screen bg-brand-sand-light selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-brand-charcoal">
-            {/* Header */}
-            <header className="fixed top-0 w-full z-50 border-b border-brand-charcoal/5 bg-brand-sand-light/80 backdrop-blur-md transition-all duration-300">
+        <div className="min-h-screen bg-[#faf9f5] selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-brand-charcoal flex flex-col">
+            {/* Command Bar Header */}
+            <header className="fixed top-0 w-full z-50 border-b border-brand-charcoal/10 bg-[#faf9f5]/90 backdrop-blur-md">
+                {/* Top Status Line */}
+                <div className="h-1 bg-brand-charcoal w-full" />
+
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 bg-brand-charcoal rounded-full flex items-center justify-center text-brand-sand-light transform group-hover:scale-110 transition-transform duration-300">
-                            <span className="font-serif font-bold italic">S</span>
+                    <Link href="/" className="flex items-center gap-3 group">
+                        <div className="w-8 h-8 border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
+                            <Icon icon="lucide:box" className="w-4 h-4" />
                         </div>
-                        <span className="font-poppins font-bold text-xl tracking-tight">Simulark</span>
+                        <div className="flex flex-col">
+                            <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors">SIMULARK</span>
+                            <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 leading-none mt-0.5">Architecture Engine</span>
+                        </div>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-brand-charcoal/80">
-                        <Link href="/features" className="hover:text-brand-orange transition-colors">Features</Link>
-                        <Link href="/pricing" className="hover:text-brand-orange transition-colors">Pricing</Link>
-                        <Link href="/about" className="hover:text-brand-orange transition-colors">About</Link>
-                        <Link href="/contact" className="hover:text-brand-orange transition-colors">Contact</Link>
+                    <nav className="hidden md:flex items-center gap-8">
+                        {["Features", "Pricing", "About", "Contact"].map((item) => (
+                            <Link
+                                key={item}
+                                href={`/${item.toLowerCase()}`}
+                                className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/70 hover:text-brand-orange transition-colors relative group"
+                            >
+                                <span className="opacity-0 group-hover:opacity-100 absolute -left-3 text-brand-orange transition-opacity">/</span>
+                                {item}
+                            </Link>
+                        ))}
+                    </nav>
+
+                    <div className="flex items-center gap-4">
                         {!loading && (
                             <>
                                 {user ? (
                                     <UserMenu />
                                 ) : (
-                                    <>
-                                        <div className="w-px h-4 bg-brand-charcoal/20 mx-2" />
-                                        <Link href="/auth/signin" className="hover:text-brand-charcoal transition-colors">Sign In</Link>
+                                    <div className="flex items-center gap-4">
+                                        <Link href="/auth/signin" className="font-mono text-xs uppercase tracking-widest text-brand-charcoal hover:text-brand-orange transition-colors">
+                                            [ Login ]
+                                        </Link>
                                         <Link href="/auth/signin">
-                                            <Button size="sm" className="bg-brand-charcoal text-brand-sand-light hover:bg-brand-charcoal/90 rounded-full px-6 shadow-lg shadow-brand-charcoal/20 transition-all hover:scale-105 active:scale-95">
-                                                Start Building
+                                            <Button size="sm" className="bg-brand-charcoal text-white hover:bg-brand-orange hover:text-white rounded-none px-6 h-9 border border-brand-charcoal font-mono uppercase tracking-wider text-[10px] transition-all">
+                                                Initialize
                                             </Button>
                                         </Link>
-                                    </>
+                                    </div>
                                 )}
                             </>
                         )}
-                    </nav>
+                    </div>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="pt-20">
+            <main className="flex-1 pt-[68px]">
                 {children}
             </main>
 
-            {/* Footer */}
-            <footer className="bg-[#1a1a19] text-brand-sand-light/80 py-24 border-t border-white/5 mt-20">
-                <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-                    <div className="col-span-1 md:col-span-2 space-y-6">
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-brand-sand-light rounded-full flex items-center justify-center text-[#1a1a19]">
-                                <span className="font-serif font-bold italic text-xs">S</span>
+            {/* Grid System Footer */}
+            <footer className="bg-white border-t border-brand-charcoal/10 pt-20 pb-10">
+                <div className="container mx-auto px-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20 border-b border-brand-charcoal/5 pb-20">
+                        <div className="col-span-1 md:col-span-2 space-y-8 pr-12">
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-brand-charcoal" />
+                                <span className="font-poppins font-bold text-xl tracking-tight">SIMULARK</span>
                             </div>
-                            <span className="font-poppins font-bold text-lg text-brand-sand-light tracking-tight">Simulark</span>
+                            <p className="font-lora text-brand-gray-mid max-w-sm">
+                                The intelligent layer for cloud architecture.
+                                Transforming natural language processing into executable infrastructure code.
+                            </p>
+                            <div className="flex gap-4">
+                                {["twitter", "github", "linkedin"].map((social) => (
+                                    <a key={social} href="#" className="w-8 h-8 flex items-center justify-center border border-brand-charcoal/10 hover:border-brand-charcoal hover:bg-brand-charcoal hover:text-white transition-all">
+                                        <Icon icon={`lucide:${social}`} className="w-4 h-4" />
+                                    </a>
+                                ))}
+                            </div>
                         </div>
-                        <p className="text-sm leading-relaxed max-w-sm font-light opacity-80">
-                            Intelligent backend architecture design for the modern era.
-                            Transforming natural language into deployable infrastructure with scholarly precision.
-                        </p>
+
+                        <div className="space-y-6">
+                            <h4 className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/40 border-b border-brand-charcoal/10 pb-2 mb-4 w-fit">
+                                // Index_01
+                            </h4>
+                            <ul className="space-y-3 font-mono text-xs text-brand-charcoal/70">
+                                <li><Link href="/features" className="hover:text-brand-orange transition-colors">Capabilities</Link></li>
+                                <li><Link href="/pricing" className="hover:text-brand-orange transition-colors">Resource Allocation</Link></li>
+                                <li><Link href="/docs" className="hover:text-brand-orange transition-colors">Documentation</Link></li>
+                                <li><Link href="/api" className="hover:text-brand-orange transition-colors">System API</Link></li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-6">
+                            <h4 className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/40 border-b border-brand-charcoal/10 pb-2 mb-4 w-fit">
+                                // Index_02
+                            </h4>
+                            <ul className="space-y-3 font-mono text-xs text-brand-charcoal/70">
+                                <li><Link href="/about" className="hover:text-brand-orange transition-colors">Origin Log</Link></li>
+                                <li><Link href="/careers" className="hover:text-brand-orange transition-colors">Join Unit</Link></li>
+                                <li><Link href="/contact" className="hover:text-brand-orange transition-colors">Establish Uplink</Link></li>
+                                <li><Link href="/status" className="flex items-center gap-2 hover:text-brand-orange transition-colors">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    System Status
+                                </Link></li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <h4 className="font-poppins font-semibold text-brand-sand-light text-sm">Product</h4>
-                        <ul className="space-y-2 text-sm font-light">
-                            <li><Link href="/features" className="hover:text-brand-orange transition-colors">Features</Link></li>
-                            <li><Link href="/pricing" className="hover:text-brand-orange transition-colors">Pricing</Link></li>
-                            <li><Link href="/api" className="hover:text-brand-orange transition-colors">API</Link></li>
-                        </ul>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="font-poppins font-semibold text-brand-sand-light text-sm">Company</h4>
-                        <ul className="space-y-2 text-sm font-light">
-                            <li><Link href="/about" className="hover:text-brand-orange transition-colors">About</Link></li>
-                            <li><Link href="/blog" className="hover:text-brand-orange transition-colors">Blog</Link></li>
-                            <li><Link href="/careers" className="hover:text-brand-orange transition-colors">Careers</Link></li>
-                        </ul>
-                    </div>
-                </div>
-                <div className="container mx-auto px-6 mt-12 pt-8 border-t border-white/10 text-xs font-light opacity-50 flex justify-between items-center">
-                    <p>&copy; {new Date().getFullYear()} Simulark Inc. All rights reserved.</p>
-                    <div className="flex gap-6">
-                        <Link href="/privacy" className="hover:text-brand-sand-light transition-colors">Privacy</Link>
-                        <Link href="/terms" className="hover:text-brand-sand-light transition-colors">Terms</Link>
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6 font-mono text-[10px] text-brand-charcoal/40 uppercase tracking-widest">
+                        <p>© {new Date().getFullYear()} SIMULARK SYSTEMS INC. [ALL RIGHTS RESERVED]</p>
+                        <div className="flex gap-8">
+                            <Link href="/privacy" className="hover:text-brand-charcoal transition-colors">Privacy Protocol</Link>
+                            <Link href="/terms" className="hover:text-brand-charcoal transition-colors">Terms of Service</Link>
+                        </div>
                     </div>
                 </div>
             </footer>

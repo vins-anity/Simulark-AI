@@ -1,67 +1,81 @@
+"use client";
+
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
-import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import { Icon } from "@iconify/react";
 
 export default function AboutPage() {
     return (
         <MarketingLayout>
-            <div className="bg-[#faf9f5]">
+            <div className="bg-[#faf9f5] min-h-screen">
                 {/* Hero */}
-                <div className="pt-32 pb-20 px-6 text-center max-w-4xl mx-auto">
-                    <Badge variant="outline" className="mb-6 bg-brand-charcoal/5 text-brand-charcoal border-brand-charcoal/20 px-4 py-1 rounded-full uppercase tracking-widest text-xs font-semibold">
-                        Our Story
-                    </Badge>
-                    <h1 className="text-5xl md:text-7xl font-poppins font-bold tracking-tight text-brand-charcoal leading-tight mb-8">
-                        Building the future of <span className="font-serif italic text-brand-orange">infrastructure</span>.
-                    </h1>
-                    <p className="text-xl text-brand-gray-mid font-lora max-w-2xl mx-auto leading-relaxed">
-                        We started Simulark with a simple question: Why is setting up backend architecture still so hard?
-                    </p>
+                <div className="pt-32 pb-24 px-6 border-b border-brand-charcoal/5">
+                    <div className="container mx-auto max-w-4xl text-center">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 border border-brand-charcoal/10 rounded-full mb-8 bg-white">
+                            <span className="w-1.5 h-1.5 bg-brand-charcoal rounded-full" />
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">
+                                Origin Log: 2024
+                            </span>
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-poppins font-bold text-brand-charcoal mb-10 tracking-tighter">
+                            Engineering <span className="text-brand-orange">velocity</span>.
+                        </h1>
+                        <p className="text-xl md:text-2xl font-lora text-brand-gray-mid leading-relaxed max-w-2xl mx-auto">
+                            We believe that infrastructure should be defined by intent, not boilerplate.
+                        </p>
+                    </div>
                 </div>
 
-                {/* Mission Section */}
-                <section className="py-20 px-6 bg-white">
-                    <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-                        <div className="space-y-6">
-                            <h2 className="text-3xl font-poppins font-bold text-brand-charcoal">Our Mission</h2>
-                            <div className="w-16 h-1 bg-brand-orange/60 rounded-full" />
-                            <p className="font-lora text-lg text-brand-gray-mid leading-relaxed">
-                                At Simulark, we believe that creativity shouldn't be bottlenecked by configuration.
-                                Architects and developers spend too much time wrestling with YAML files, cloud consoles,
-                                and dependency graphs.
-                            </p>
-                            <p className="font-lora text-lg text-brand-gray-mid leading-relaxed">
-                                Our mission is to provide an intelligent layer that translates high-level intent into
-                                rock-solid, deployable infrastructure. We empower you to design with the speed of thought
-                                and deploy with the precision of a machine.
-                            </p>
-                        </div>
-                        <div className="relative h-[400px] bg-brand-charcoal rounded-2xl overflow-hidden flex items-center justify-center p-8">
-                            {/* Abstract Art / Visualization */}
-                            <div className="absolute inset-0 bg-grid-white/[0.05]" />
-                            <div className="absolute w-64 h-64 bg-brand-orange/20 rounded-full blur-3xl rounded-tr-none" />
-                            <blockquote className="relative z-10 text-brand-sand-light font-poppins text-2xl font-light italic text-center">
-                                "The best code is the code you don't have to write."
-                            </blockquote>
+                {/* Manifesto */}
+                <section className="py-24 px-6">
+                    <div className="container mx-auto max-w-4xl">
+                        <div className="relative border-l border-brand-charcoal/20 pl-12 space-y-20">
+                            {[
+                                {
+                                    year: "THE PROBLEM",
+                                    title: "Cognitive Overhead",
+                                    content: "Modern cloud architecture requires maintaining a mental model of thousands of disconnected services, configurations, and specialized languages. It's an inefficient use of human intelligence."
+                                },
+                                {
+                                    year: "THE SOLUTION",
+                                    title: "Visual Abstraction",
+                                    content: "Simulark provides a visual interface that maps 1:1 with your mental model, handling the low-level translation to Terraform or CloudFormation automatically."
+                                },
+                                {
+                                    year: "THE GOAL",
+                                    title: "Pure Creation",
+                                    content: "Our mission is to reduce the 'time-to-infrastructure' to zero, allowing engineers to focus purely on system design and logic."
+                                }
+                            ].map((item, i) => (
+                                <div key={i} className="relative">
+                                    <div className="absolute -left-[54px] top-1 w-3 h-3 bg-white border-2 border-brand-charcoal rounded-full" />
+                                    <span className="font-mono text-xs text-brand-orange font-bold tracking-widest mb-2 block">
+                                        // {item.year}
+                                    </span>
+                                    <h2 className="text-3xl font-poppins font-bold text-brand-charcoal mb-4">
+                                        {item.title}
+                                    </h2>
+                                    <p className="font-lora text-lg text-brand-gray-mid leading-relaxed text-justify">
+                                        {item.content}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Values Section */}
-                <section className="py-24 px-6 bg-[#faf9f5]">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="text-center mb-16">
-                            <h2 className="text-3xl font-poppins font-bold text-brand-charcoal">Our Values</h2>
-                        </div>
-                        <div className="grid md:grid-cols-3 gap-8">
+                {/* Team / Stats */}
+                <section className="py-24 bg-brand-charcoal text-brand-sand-light border-t border-brand-charcoal/5">
+                    <div className="container mx-auto max-w-6xl px-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center divide-x divide-white/10">
                             {[
-                                { title: "Precision", text: "We don't guess. We verify. Every generated architecture is validated against industry standards." },
-                                { title: "Transparency", text: "No black boxes. We provide clean, exportable code that you can audit, own, and modify." },
-                                { title: "Innovation", text: "We constantly push the boundaries of what AI can facilitate in software engineering." }
-                            ].map((val, i) => (
-                                <div key={i} className="bg-white p-8 rounded-xl border border-brand-charcoal/5 shadow-sm">
-                                    <h3 className="text-xl font-bold font-poppins text-brand-charcoal mb-4">{val.title}</h3>
-                                    <p className="text-brand-gray-mid font-lora">{val.text}</p>
+                                { label: "Architectures Generated", value: "10k+" },
+                                { label: "Lines of Code Saved", value: "2M+" },
+                                { label: "Supported Providers", value: "3" },
+                                { label: "Uptime", value: "99.9%" },
+                            ].map((stat, i) => (
+                                <div key={i} className="px-4">
+                                    <div className="font-mono text-4xl font-bold mb-2 text-white">{stat.value}</div>
+                                    <div className="font-mono text-[10px] uppercase tracking-widest text-white/50">{stat.label}</div>
                                 </div>
                             ))}
                         </div>

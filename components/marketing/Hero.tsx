@@ -2,117 +2,144 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Icon } from "@iconify/react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight, Terminal } from "lucide-react";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { MouseEvent } from "react";
 
 export function Hero() {
-    const { scrollY } = useScroll();
-    const y1 = useTransform(scrollY, [0, 500], [0, 200]);
-    const y2 = useTransform(scrollY, [0, 500], [0, -150]);
-    const opacity = useTransform(scrollY, [0, 300], [1, 0]);
+    let mouseX = useMotionValue(0);
+    let mouseY = useMotionValue(0);
+
+    function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
+        let { left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set(clientX - left);
+        mouseY.set(clientY - top);
+    }
 
     return (
-        <section className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden">
-            {/* Abstract Background */}
-            <div className="absolute inset-0 z-0">
-                {/* Subtle Grain */}
-                <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-multiply pointer-events-none"></div>
-
-                {/* Gradient Orbs */}
-                <motion.div
-                    style={{ y: y1 }}
-                    className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-brand-orange/20 rounded-full blur-[100px]"
-                    animate={{ scale: [1, 1.2, 1], rotate: [0, 20, -10, 0] }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        <section
+            className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-[#faf9f5] border-b border-brand-charcoal/5"
+            onMouseMove={handleMouseMove}
+        >
+            {/* Interactive Grid Background */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div
+                    className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1908_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1908_1px,transparent_1px)] bg-[size:40px_40px]"
                 />
                 <motion.div
-                    style={{ y: y2 }}
-                    className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-brand-blue/20 rounded-full blur-[120px]"
-                    animate={{ scale: [1, 1.1, 0.9, 1], rotate: [0, -15, 10, 0] }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{
+                        background: useMotionTemplate`
+                            radial-gradient(
+                                650px circle at ${mouseX}px ${mouseY}px,
+                                rgba(255, 107, 0, 0.03),
+                                transparent 80%
+                            )
+                        `,
+                    }}
                 />
-
-                {/* Grid Lines */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
             </div>
 
-            <motion.div
-                style={{ opacity }}
-                className="container mx-auto px-6 z-10 text-center space-y-8 max-w-5xl"
-            >
-                {/* Badge */}
+            <div className="container mx-auto px-6 z-10 text-center space-y-10 max-w-5xl pt-20">
+
+                {/* Technical Badge */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 border border-brand-charcoal/5 backdrop-blur-sm shadow-sm"
+                    className="inline-flex items-center gap-3 px-3 py-1.5 border border-brand-charcoal/10 bg-white/50 backdrop-blur-sm rounded-sm"
                 >
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green/75 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-green"></span>
+                    <span className="w-2 h-2 bg-brand-orange animate-pulse" />
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">
+                        System v1.0.4 <span className="text-brand-gray-mid mx-2">|</span> Architecture ready
                     </span>
-                    <span className="text-xs font-medium uppercase tracking-widest text-[#1a1a19]/70">Simulark v1.0 Public Beta</span>
                 </motion.div>
 
                 {/* Headline */}
-                <motion.h1
-                    className="text-6xl md:text-8xl font-poppins font-bold tracking-tighter text-[#1a1a19] leading-[1.1]"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-                >
-                    Architecture, <br className="hidden md:block" />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-brand-orange/80 italic font-serif pr-2">refined</span>
-                    by intelligence.
-                </motion.h1>
+                <div className="space-y-4">
+                    <motion.h1
+                        className="text-6xl md:text-8xl font-poppins font-bold tracking-tighter text-[#1a1a19] leading-[1] relative inline-block"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                        Design systems,<br />
+                        <span className="font-serif italic font-light text-brand-charcoal/60 relative">
+                            not just diagrams.
+                            <svg className="absolute w-[110%] -bottom-2 -left-2 text-brand-orange/30 -z-10" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                <path d="M0 15 Q 50 20 100 15" stroke="currentColor" fill="none" strokeWidth="2" />
+                            </svg>
+                        </span>
+                    </motion.h1>
+                </div>
 
-                {/* Subhead */}
-                <motion.p
-                    className="text-xl md:text-2xl font-lora text-brand-gray-mid max-w-2xl mx-auto leading-relaxed"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                    Transform natural language into production-ready backend infrastructure.
-                    Export to Terraform, Diagram, or Code in seconds.
-                </motion.p>
-
-                {/* CTA Buttons */}
+                {/* Subhead with Technical Detail */}
                 <motion.div
-                    className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
-                    initial={{ opacity: 0, y: 20 }}
+                    className="flex flex-col items-center gap-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.8 }}
+                >
+                    <p className="text-xl md:text-2xl font-lora text-brand-gray-mid max-w-2xl mx-auto leading-relaxed">
+                        Transform abstract ideas into executable infrastructure.
+                        Export production-ready Terraform and code instantly.
+                    </p>
+
+                    <div className="hidden md:flex gap-8 text-[11px] font-mono text-brand-gray-mid/60 uppercase tracking-widest border-t border-brand-charcoal/5 pt-6 mt-2">
+                        <span>[ React Flow Engine ]</span>
+                        <span>[ AI Orchestration ]</span>
+                        <span>[ Multi-Cloud ]</span>
+                    </div>
+                </motion.div>
+
+                {/* CTA Actions */}
+                <motion.div
+                    className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-4"
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
                 >
                     <Link href="/auth/signin">
-                        <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-brand-charcoal hover:bg-brand-charcoal/90 text-brand-sand-light shadow-2xl hover:shadow-brand-charcoal/30 transition-all">
-                            <span className="mr-2">Start Designing Free</span>
-                            <Icon icon="lucide:arrow-right" className="w-5 h-5" />
+                        <Button size="lg" className="group h-14 px-8 text-sm font-mono uppercase tracking-wider rounded-none bg-brand-charcoal hover:bg-brand-orange text-brand-sand-light transition-all border border-brand-charcoal">
+                            <span className="mr-3">Start Architecting</span>
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Button>
                     </Link>
                     <Link href="/features">
-                        <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-brand-charcoal/20 hover:bg-brand-charcoal/5 hover:border-brand-charcoal/40 text-[#1a1a19] transition-all">
-                            How It Works
+                        <Button variant="outline" size="lg" className="group h-14 px-8 text-sm font-mono uppercase tracking-wider rounded-none border-brand-charcoal/20 hover:border-brand-charcoal text-brand-charcoal hover:bg-transparent transition-all">
+                            <Terminal className="w-4 h-4 mr-3 text-brand-gray-mid group-hover:text-brand-charcoal transition-colors" />
+                            <span>See How It Works</span>
                         </Button>
                     </Link>
                 </motion.div>
 
-                {/* Floating UI Mockup Preview */}
+                {/* Interactive Preview Placeholder */}
                 <motion.div
-                    className="mt-16 relative w-full max-w-4xl mx-auto aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/40 ring-1 ring-black/5 group"
-                    initial={{ opacity: 0, y: 40, rotateX: 10 }}
-                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                    transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-                    whileHover={{ scale: 1.02, transition: { duration: 0.4 } }}
+                    initial={{ opacity: 0, rotateX: 20, z: -100 }}
+                    animate={{ opacity: 1, rotateX: 0, z: 0 }}
+                    transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
+                    className="mt-20 w-full max-w-5xl aspect-[16/9] bg-white border border-brand-charcoal/10 shadow-2xl shadow-brand-charcoal/5 relative overflow-hidden group perspective-1000"
                 >
-                    <div className="absolute inset-0 bg-brand-charcoal/5 backdrop-blur-sm group-hover:backdrop-blur-0 transition-all duration-700"></div>
-                    <div className="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-brand-sand-light to-transparent"></div>
-                    {/* Placeholder for actual product screenshot/video */}
-                    <div className="w-full h-full flex items-center justify-center bg-white/20">
-                        <span className="font-poppins text-brand-charcoal/40 text-sm tracking-widest uppercase">Interactive Canvas Preview</span>
+                    {/* UI Mockup Header */}
+                    <div className="h-10 border-b border-brand-charcoal/5 bg-[#faf9f5] flex items-center px-4 gap-2">
+                        <div className="flex gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full border border-brand-charcoal/20 bg-transparent" />
+                            <div className="w-2.5 h-2.5 rounded-full border border-brand-charcoal/20 bg-transparent" />
+                            <div className="w-2.5 h-2.5 rounded-full border border-brand-charcoal/20 bg-transparent" />
+                        </div>
+                        <div className="mx-auto font-mono text-[10px] text-brand-gray-mid uppercase tracking-widest opacity-50">
+                            simulark_studio.exe
+                        </div>
+                    </div>
+                    {/* Placeholder Content */}
+                    <div className="absolute inset-0 top-10 flex items-center justify-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+                    <div className="absolute inset-0 top-10 flex items-center justify-center">
+                        <span className="font-poppins text-6xl font-black text-brand-charcoal/[0.03] uppercase tracking-tighter">
+                            Canvas Preview
+                        </span>
                     </div>
                 </motion.div>
-            </motion.div>
+            </div>
         </section>
     );
 }
