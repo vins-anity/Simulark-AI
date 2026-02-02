@@ -1,9 +1,7 @@
 "use client";
 
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath } from "@xyflow/react";
-import { Fragment } from "react";
 import { useSimulationStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
 
 export function SimulationEdge({
     id,
@@ -28,7 +26,7 @@ export function SimulationEdge({
         targetPosition,
     });
 
-    const { nodeStatus, chaosMode } = useSimulationStore();
+    const { nodeStatus } = useSimulationStore();
 
     // Check if either connected node is killed
     const isBlocked = nodeStatus[source] === "killed" || nodeStatus[target] === "killed";
@@ -36,7 +34,7 @@ export function SimulationEdge({
     // Protocol Logic
     // HTTP = Fast, solid particles
     // Queue = Slow, squares
-    // Stream = Very fast, continuous line? 
+    // Stream = Very fast, continuous line?
     // Default to standard slow flow if unspecified.
     const protocol = (data?.protocol as string) || "http";
 
@@ -45,7 +43,7 @@ export function SimulationEdge({
     const isCongested = (data?.congestion as boolean) || false;
 
     return (
-        <Fragment key={id}>
+        <>
             <BaseEdge
                 path={edgePath}
                 markerEnd={markerEnd}
@@ -84,7 +82,6 @@ export function SimulationEdge({
             {isBlocked && (
                 <EdgeLabelRenderer>
                     <div
-                        key={`${id}-blocked`}
                         style={{
                             position: 'absolute',
                             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
@@ -97,6 +94,6 @@ export function SimulationEdge({
                     </div>
                 </EdgeLabelRenderer>
             )}
-        </Fragment>
+        </>
     );
 }

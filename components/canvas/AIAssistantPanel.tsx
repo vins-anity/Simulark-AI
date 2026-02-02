@@ -113,17 +113,25 @@ export function AIAssistantPanel({
       const decoder = new TextDecoder();
       let accumulatedContent = "";
       let accumulatedReasoning = "";
+      let buffer = ""; // Buffer for incomplete lines
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter(line => line.trim() !== "");
+        buffer += chunk;
+
+        // Split buffer into lines, keeping incomplete line in buffer
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Last element is incomplete (or empty)
 
         for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+
           try {
-            const json = JSON.parse(line);
+            const json = JSON.parse(trimmedLine);
             if (json.type === "reasoning") {
               accumulatedReasoning += json.data;
               setMessages(prev => prev.map(m =>
@@ -136,8 +144,23 @@ export function AIAssistantPanel({
               ));
             }
           } catch (e) {
-            console.error("Parse error", e);
+            // Silently ignore parse errors for incomplete JSON
+            console.debug("Incomplete JSON line, buffering...");
           }
+        }
+      }
+
+      // Process any remaining data in buffer after stream ends
+      if (buffer.trim()) {
+        try {
+          const json = JSON.parse(buffer.trim());
+          if (json.type === "reasoning") {
+            accumulatedReasoning += json.data;
+          } else if (json.type === "content") {
+            accumulatedContent += json.data;
+          }
+        } catch (e) {
+          // Final buffer might be incomplete, ignore
         }
       }
 
