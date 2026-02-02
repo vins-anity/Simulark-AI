@@ -12,6 +12,7 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from "@xyflow/react";
 import {
   forwardRef,
@@ -23,7 +24,7 @@ import {
 } from "react";
 import "@xyflow/react/dist/style.css";
 
-import { Play, Save, Skull, Eye, EyeOff } from "lucide-react";
+import { Play, Save, Skull, Eye, EyeOff, Activity, Share2, ZoomIn, ZoomOut, Maximize, AlertTriangle } from "lucide-react";
 import { saveProject } from "@/actions/projects";
 import { DatabaseNode } from "./nodes/DatabaseNode";
 import { GatewayNode } from "./nodes/GatewayNode";
@@ -34,7 +35,8 @@ import { CacheNode } from "./nodes/CacheNode";
 import { SimulationEdge } from "./edges/SimulationEdge";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { ContextBridge } from "./ContextBridge"; // Import ContextBridge
+import { ContextBridge } from "./ContextBridge";
+import { Icon } from "@iconify/react";
 
 interface FlowEditorProps {
   initialNodes?: any[];
@@ -65,6 +67,7 @@ const FlowEditorInner = forwardRef(
     const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithIds);
     const [edges, setEdges, onEdgesChange] = useEdgesState(edgesWithIds);
     const workerRef = useRef<Worker | null>(null);
+    const { fitView } = useReactFlow();
 
     // Simulation Store
     const { chaosMode, setChaosMode, viewMode, setViewMode } = useSimulationStore();
@@ -138,12 +141,13 @@ const FlowEditorInner = forwardRef(
       workerRef.current.onmessage = (event) => {
         const { nodes: layoutNodes } = event.data;
         setNodes(layoutNodes);
+        setTimeout(() => fitView({ duration: 500 }), 100);
       };
 
       return () => {
         workerRef.current?.terminate();
       };
-    }, [setNodes]);
+    }, [setNodes, fitView]);
 
     const handleLayout = () => {
       if (workerRef.current) {
@@ -151,20 +155,8 @@ const FlowEditorInner = forwardRef(
       }
     };
 
-    const handleSave = async () => {
-      const result = await saveProject(projectId, {
-        nodes: nodes as any[],
-        edges: edges as any[],
-      });
-      if (result.success) {
-        console.log("Project saved successfully");
-      } else {
-        console.error("Failed to save project:", result.error);
-      }
-    };
-
     return (
-      <div className={cn("h-full w-full relative group transition-colors duration-500", chaosMode && "bg-black/90")}>
+      <div className={cn("h-full w-full relative group transition-colors duration-500 font-sans", chaosMode && "bg-black/90")}>
         <ReactFlow
           nodes={nodes}
           edges={augmentedEdges}
@@ -179,95 +171,78 @@ const FlowEditorInner = forwardRef(
         >
           <Background
             key="background"
-            gap={20}
-            size={1}
-            color={chaosMode ? "#330000" : "var(--brand-gray-light)"}
-            className="transition-colors duration-500"
+            gap={24}
+            size={1.5}
+            color={chaosMode ? "#330000" : "#d4d4d8"}
+            className="transition-colors duration-500 opacity-60"
           />
-          <Controls key="controls" className="!bg-white/80 !backdrop-blur-md !border-white/20 !rounded-xl !shadow-lg !m-4" />
 
-          {/* Simulation Controls Panel */}
-          <Panel
-            key="sim-panel"
-            position="top-center"
-            className="flex gap-2 p-1.5 bg-white/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl m-4 mt-6"
-          >
-            {/* Semantic Zoom Toggle */}
-            <div className="flex bg-brand-gray-light/20 p-1 rounded-xl">
+          {/* Custom Controls removed (handled by parent ToolRail mostly, except specific canvas actions) */}
+
+          {/* Top Center: Simulation State HUD */}
+          <Panel position="top-center" className="mt-6 pointer-events-none">
+            <div className="flex items-center gap-3 pointer-events-auto bg-white/90 backdrop-blur-md rounded-none border border-brand-charcoal/10 shadow-sm p-1.5 transition-all">
+              {/* View Mode Toggle */}
+              <div className="flex bg-[#faf9f5] border border-brand-charcoal/5 p-0.5">
+                <button
+                  onClick={() => setViewMode('concept')}
+                  className={cn(
+                    "px-3 py-1 text-[10px] font-mono uppercase tracking-widest transition-all hover:text-brand-charcoal",
+                    viewMode === 'concept' ? "bg-white text-brand-charcoal border border-brand-charcoal/10 shadow-sm" : "text-brand-charcoal/40"
+                  )}
+                >
+                  C-Level
+                </button>
+                <button
+                  onClick={() => setViewMode('implementation')}
+                  className={cn(
+                    "px-3 py-1 text-[10px] font-mono uppercase tracking-widest transition-all hover:text-brand-charcoal",
+                    viewMode === 'implementation' ? "bg-white text-brand-charcoal border border-brand-charcoal/10 shadow-sm" : "text-brand-charcoal/40"
+                  )}
+                >
+                  Tech-Level
+                </button>
+              </div>
+
+              <div className="w-px h-4 bg-brand-charcoal/10" />
+
+              {/* Chaos Toggle */}
               <button
-                onClick={() => setViewMode('concept')}
+                onClick={() => setChaosMode(!chaosMode)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-poppins font-semibold transition-all flex items-center gap-1.5",
-                  viewMode === 'concept' ? "bg-white shadow-sm text-foreground" : "text-brand-gray-mid hover:text-foreground"
+                  "flex items-center gap-2 px-3 py-1 text-[10px] font-mono uppercase tracking-widest transition-all border",
+                  chaosMode
+                    ? "bg-red-500 text-white border-red-600 animate-pulse"
+                    : "bg-transparent text-brand-charcoal/60 border-transparent hover:bg-red-50 hover:text-red-500"
                 )}
               >
-                <EyeOff size={14} /> Concept
-              </button>
-              <button
-                onClick={() => setViewMode('implementation')}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-poppins font-semibold transition-all flex items-center gap-1.5",
-                  viewMode === 'implementation' ? "bg-white shadow-sm text-foreground" : "text-brand-gray-mid hover:text-foreground"
-                )}
-              >
-                <Eye size={14} /> Detailed
+                <Activity className="w-3 h-3" />
+                {chaosMode ? "CHAOS: ACTIVE" : "SIM: STABLE"}
               </button>
             </div>
-
-            <div className="w-px h-6 bg-brand-gray-light/50 my-auto" />
-
-            {/* Chaos Mode Toggle */}
-            <button
-              onClick={() => setChaosMode(!chaosMode)}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold font-poppins transition-all border",
-                chaosMode
-                  ? "bg-red-500 text-white border-red-600 shadow-red-500/20 shadow-md animate-pulse"
-                  : "bg-transparent text-foreground border-transparent hover:bg-black/5"
-              )}
-            >
-              <Skull size={14} />
-              {chaosMode ? "CHAOS ACTIVE" : "Chaos Mode"}
-            </button>
           </Panel>
 
-          {/* Standard Controls Panel */}
-          <Panel
-            key="panel"
-            position="top-right"
-            className="flex gap-2 p-1.5 bg-white/80 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl m-4"
-          >
-            <button
-              onClick={handleLayout}
-              className="flex items-center gap-2 px-4 py-2 hover:bg-black/5 rounded-xl text-sm font-semibold font-poppins transition-all group"
-            >
-              <Play
-                size={16}
-                className="text-brand-orange transition-transform group-hover:scale-110"
-              />
-              Auto Layout
-            </button>
-
-            <div className="w-px h-6 bg-brand-gray-light/50 my-auto" />
-
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 hover:bg-black/5 rounded-xl text-sm font-semibold font-poppins transition-all"
-            >
-              <Save size={16} className="text-foreground/70" />
-              Save
-            </button>
-
-            {/* Context Bridge Component */}
-            <ContextBridge projectId={projectId} />
+          {/* Top Right: Actions */}
+          <Panel position="top-right" className="m-4">
+            <div className="flex gap-2">
+              <button
+                onClick={handleLayout}
+                className="h-8 w-8 bg-white border border-brand-charcoal/10 flex items-center justify-center text-brand-charcoal/60 hover:text-brand-orange hover:border-brand-orange transition-all shadow-sm"
+                title="Auto Layout"
+              >
+                <Icon icon="lucide:wand-2" className="w-4 h-4" />
+              </button>
+              <div className="h-8 w-px bg-transparent" /> {/* Spacer */}
+              <ContextBridge projectId={projectId} />
+            </div>
           </Panel>
 
-          {/* Chaos Instruction Overlay */}
+          {/* Bottom Center: Chaos Warning */}
           {chaosMode && (
-            <Panel key="chaos-overlay" position="bottom-center" className="mb-8">
-              <div className="bg-red-950/80 text-red-200 px-6 py-3 rounded-full backdrop-blur-md border border-red-500/30 text-sm font-mono flex items-center gap-2 animate-bounce-slight shadow-red-900/50 shadow-lg">
-                <Skull size={16} />
-                TAP ANY NODE TO TRIGGER FAILURE
+            <Panel position="bottom-center" className="mb-8">
+              <div className="bg-red-950/90 text-red-100 px-6 py-2 border-t-2 border-red-500 text-xs font-mono uppercase tracking-widest shadow-2xl flex items-center gap-3">
+                <AlertTriangle size={14} className="text-red-500 animate-bounce" />
+                <span>Failure Simulation Active // Click nodes to inject faults</span>
               </div>
             </Panel>
           )}

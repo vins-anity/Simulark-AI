@@ -1,30 +1,25 @@
 "use client";
 
 import {
-  ChevronLeft,
-  ChevronRight,
-  Send,
-  Sparkles,
-  Settings,
-  Bot,
-  User,
-  Paperclip,
-  Mic,
   ArrowUp,
-  Plus,
   MessageSquare,
   MoreHorizontal,
   Trash2,
   Edit2,
   Check,
-  X
+  X,
+  Terminal,
+  Cpu,
+  Zap,
+  ChevronDown
 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ThinkingPanel } from "./ThinkingPanel";
 import { createBrowserClient } from "@supabase/ssr";
-import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Icon } from "@iconify/react";
+import ReactMarkdown from "react-markdown";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,6 +27,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getProjectChats, createChat as createChatAction, updateChatTitle as updateChatTitleAction, deleteChat as deleteChatAction, addMessage, addMessages as addMessagesAction, getChatWithMessages, getOrCreateDefaultChat } from "@/actions/chats";
+import { toast } from "sonner";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -63,7 +60,6 @@ export function AIAssistantPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isOpen, setIsOpen] = useState(true);
   const [showChatList, setShowChatList] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +93,7 @@ export function AIAssistantPanel({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isGenerating]);
 
   const loadUserPreferences = async () => {
     const supabase = createBrowserClient(
@@ -120,18 +116,17 @@ export function AIAssistantPanel({
   const loadChats = async () => {
     setIsLoadingChats(true);
     try {
-      const response = await fetch(`/api/chats?projectId=${projectId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setChats(data.chats || []);
+      const { chats, error } = await getProjectChats(projectId);
+      if (error) {
+        toast.error("Error loading chats");
+        return;
+      }
+      setChats(chats as Chat[]);
 
-        // If there are chats, select the most recent one
-        if (data.chats && data.chats.length > 0) {
-          setCurrentChatId(data.chats[0].id);
-        } else {
-          // Create a default chat if none exist
-          await createNewChat("Chat 1", false);
-        }
+      if (chats && chats.length > 0) {
+        setCurrentChatId(chats[0].id);
+      } else {
+        await createNewChat("Main Terminal", false);
       }
     } catch (error) {
       console.error("Error loading chats:", error);
@@ -142,41 +137,38 @@ export function AIAssistantPanel({
 
   const loadMessages = async (chatId: string) => {
     try {
-      const response = await fetch(`/api/chats/${chatId}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Transform messages to our format
-        const loadedMessages: Message[] = data.messages.map((m: any) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          reasoning: m.reasoning || undefined,
-          isThinking: false,
-        }));
-        setMessages(loadedMessages);
+      const { messages, error } = await getChatWithMessages(chatId);
+      if (error) {
+        console.error("Error loading messages", error);
+        return;
       }
+      const loadedMessages: Message[] = (messages || []).map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        reasoning: m.reasoning || undefined,
+        isThinking: false,
+      }));
+      setMessages(loadedMessages);
     } catch (error) {
       console.error("Error loading messages:", error);
     }
   };
 
-  const createNewChat = async (title: string = `Chat ${chats.length + 1}`, select: boolean = true) => {
+  const createNewChat = async (title: string = `Terminal ${chats.length + 1}`, select: boolean = true) => {
     try {
-      const response = await fetch("/api/chats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, title }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setChats(prev => [data.chat, ...prev]);
-        if (select) {
-          setCurrentChatId(data.chat.id);
-          setMessages([]);
-        }
-        return data.chat;
+      const { chat, error } = await createChatAction(projectId, title);
+      if (error || !chat) {
+        toast.error("Failed to initialize new terminal");
+        return;
       }
+
+      setChats(prev => [chat, ...prev]);
+      if (select) {
+        setCurrentChatId(chat.id);
+        setMessages([]);
+      }
+      return chat;
     } catch (error) {
       console.error("Error creating chat:", error);
     }
@@ -184,20 +176,19 @@ export function AIAssistantPanel({
 
   const deleteChat = async (chatId: string) => {
     try {
-      const response = await fetch(`/api/chats/${chatId}`, {
-        method: "DELETE",
-      });
+      const { error } = await deleteChatAction(chatId, projectId);
+      if (error) {
+        toast.error("Failed to delete terminal");
+        return;
+      }
 
-      if (response.ok) {
-        setChats(prev => prev.filter(c => c.id !== chatId));
-        if (currentChatId === chatId) {
-          // Switch to another chat or create new one
-          const remaining = chats.filter(c => c.id !== chatId);
-          if (remaining.length > 0) {
-            setCurrentChatId(remaining[0].id);
-          } else {
-            await createNewChat("Chat 1");
-          }
+      setChats(prev => prev.filter(c => c.id !== chatId));
+      if (currentChatId === chatId) {
+        const remaining = chats.filter(c => c.id !== chatId);
+        if (remaining.length > 0) {
+          setCurrentChatId(remaining[0].id);
+        } else {
+          await createNewChat("Main Terminal");
         }
       }
     } catch (error) {
@@ -207,17 +198,14 @@ export function AIAssistantPanel({
 
   const updateChatTitle = async (chatId: string, newTitle: string) => {
     try {
-      const response = await fetch(`/api/chats/${chatId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle }),
-      });
-
-      if (response.ok) {
-        setChats(prev => prev.map(c =>
-          c.id === chatId ? { ...c, title: newTitle } : c
-        ));
+      const { error } = await updateChatTitleAction(chatId, newTitle);
+      if (error) {
+        toast.error("Failed to rename terminal");
+        return;
       }
+      setChats(prev => prev.map(c =>
+        c.id === chatId ? { ...c, title: newTitle } : c
+      ));
     } catch (error) {
       console.error("Error updating chat title:", error);
     }
@@ -226,15 +214,7 @@ export function AIAssistantPanel({
 
   const saveMessage = async (chatId: string, message: Message) => {
     try {
-      await fetch(`/api/chats/${chatId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role: message.role,
-          content: message.content,
-          reasoning: message.reasoning,
-        }),
-      });
+      await addMessage(chatId, message.role, message.content, message.reasoning);
     } catch (error) {
       console.error("Error saving message:", error);
     }
@@ -244,47 +224,37 @@ export function AIAssistantPanel({
     e?.preventDefault();
     if (!inputValue.trim() || isGenerating) return;
 
-    // Ensure we have a chat
     let activeChatId = currentChatId;
     if (!activeChatId) {
       const newChat = await createNewChat();
       if (!newChat) return;
       activeChatId = newChat.id;
     }
-
-    // At this point activeChatId is guaranteed to be non-null
     const chatId = activeChatId as string;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: inputValue.trim()
+      content: inputValue.trim(),
     };
 
-    const aiMsgId = (Date.now() + 1).toString();
-    const aiMsg: Message = {
-      id: aiMsgId,
-      role: "assistant",
-      content: "",
-      reasoning: "",
-      isThinking: true
-    };
-
-    setMessages(prev => [...prev, userMsg, aiMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setIsGenerating(true);
 
-    // Save user message
     await saveMessage(chatId, userMsg);
 
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userMsg.content, provider: cloudProvider }),
+        body: JSON.stringify({
+          prompt: userMsg.content,
+          provider: cloudProvider,
+        }),
       });
 
-      if (!response.ok) throw new Error(response.statusText);
+      if (!response.ok) throw new Error("Generation failed");
       if (!response.body) throw new Error("No response body");
 
       const reader = response.body.getReader();
@@ -292,6 +262,17 @@ export function AIAssistantPanel({
       let accumulatedContent = "";
       let accumulatedReasoning = "";
       let buffer = "";
+      const aiMsgId = (Date.now() + 1).toString();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: aiMsgId,
+          role: "assistant",
+          content: "",
+          isThinking: true,
+        },
+      ]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -299,10 +280,7 @@ export function AIAssistantPanel({
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
-
-        // Process complete lines from buffer
         const lines = buffer.split("\n");
-        // Keep the last potentially incomplete line in buffer
         buffer = lines.pop() || "";
 
         for (const line of lines) {
@@ -321,15 +299,15 @@ export function AIAssistantPanel({
               setMessages(prev => prev.map(m =>
                 m.id === aiMsgId ? { ...m, isThinking: false, content: accumulatedContent } : m
               ));
+            } else if (json.type === "result" && json.data) {
+              onGenerationSuccess(json.data);
             }
           } catch (e) {
-            // Line might be incomplete JSON, will be processed in next iteration
             console.debug("Skipping incomplete JSON line");
           }
         }
       }
 
-      // Process any remaining data in buffer
       if (buffer.trim()) {
         try {
           const json = JSON.parse(buffer.trim());
@@ -343,353 +321,203 @@ export function AIAssistantPanel({
             setMessages(prev => prev.map(m =>
               m.id === aiMsgId ? { ...m, content: accumulatedContent } : m
             ));
+          } else if (json.type === "result" && json.data) {
+            onGenerationSuccess(json.data);
           }
-        } catch (e) {
-          // Final buffer is incomplete, ignore
-        }
+        } catch (e) { }
       }
 
-      // Parse final JSON
-      try {
-        const finalJson = JSON.parse(accumulatedContent);
-        if (finalJson.nodes && finalJson.edges) {
-          onGenerationSuccess(finalJson);
-          setMessages(prev => prev.map(m =>
-            m.id === aiMsgId ? { ...m, content: "I've drafted the architecture based on your request. Check the canvas!" } : m
-          ));
-        }
-      } catch (e) {
-        console.error("JSON parse error", e);
-        setMessages(prev => prev.map(m =>
-          m.id === aiMsgId ? { ...m, isThinking: false, content: "I encountered an error parsing the architecture. Please try again." } : m
-        ));
-      }
-
-      // Save AI message after completion
       const finalAiMessage = {
         id: aiMsgId,
         role: "assistant" as const,
-        content: accumulatedContent.includes('"nodes"') ? "I've drafted the architecture based on your request. Check the canvas!" : accumulatedContent || "I couldn't generate a response.",
+        content: accumulatedContent.includes('"nodes"') ? "I've drafted the architecture based on your request. Check the workstation canvas." : accumulatedContent || "I couldn't generate a response.",
         reasoning: accumulatedReasoning,
       };
+
+      // Update local state to remove thinking flag and set final content
+      setMessages(prev => prev.map(m =>
+        m.id === aiMsgId ? { ...m, isThinking: false, content: finalAiMessage.content } : m
+      ));
+
       await saveMessage(chatId, finalAiMessage);
 
     } catch (err: any) {
+      const errorMsg = `Error: ${err.message}`;
       setMessages(prev => prev.map(m =>
-        m.id === aiMsgId ? { ...m, isThinking: false, content: `Error: ${err.message}` } : m
+        m.id === (Date.now() + 1).toString() ? { ...m, isThinking: false, content: errorMsg } : m
       ));
 
-      // Save error message
       await saveMessage(chatId, {
-        id: aiMsgId,
+        id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `Error: ${err.message}`,
+        content: errorMsg,
       });
     } finally {
       setIsGenerating(false);
-      setMessages(prev => prev.map(m =>
-        m.id === aiMsgId ? { ...m, isThinking: false } : m
-      ));
     }
   };
 
   const currentChat = chats.find(c => c.id === currentChatId);
 
   return (
-    <div className={cn(
-      "relative flex flex-col h-full bg-[#faf9f5]",
-      isResizable ? "w-full" : isOpen ? "w-[400px]" : "w-16",
-      !isResizable && "transition-all duration-300 border-l border-brand-charcoal/5 shadow-xl"
-    )}>
-      {/* Toggle Button */}
-      {!isResizable && (
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="absolute -left-3 top-6 w-6 h-6 bg-white border border-brand-charcoal/10 rounded-full flex items-center justify-center shadow-sm z-50 hover:bg-brand-orange hover:text-white transition-colors"
-        >
-          {isOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-      )}
-
-      {/* Closed State */}
-      {!isOpen && !isResizable && (
-        <div className="flex flex-col items-center pt-8 gap-4">
-          <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange">
-            <Sparkles size={16} />
-          </div>
-          <span className="[writing-mode:vertical-lr] text-xs font-bold tracking-widest text-brand-gray-mid">AI ARCHITECT</span>
+    <div className="flex flex-col h-full bg-white font-sans text-sm">
+      {/* Terminal Header */}
+      <div className="h-10 flex items-center justify-between px-3 border-b border-brand-charcoal/10 bg-[#faf9f5]">
+        <div className="flex items-center gap-2">
+          <Terminal className="w-3.5 h-3.5 text-brand-orange" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">System Terminal</span>
         </div>
-      )}
+        <div className="flex items-center gap-1">
+          <span className={cn("w-1.5 h-1.5 rounded-full block", isGenerating ? "bg-green-500 animate-pulse" : "bg-brand-charcoal/20")} />
+          <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/40">
+            {isGenerating ? "PROCESSING" : "IDLE"}
+          </span>
+        </div>
+      </div>
 
-      {/* Content */}
-      {(isOpen || isResizable) && (
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-brand-charcoal/5 bg-white/50 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orange/80 flex items-center justify-center text-white shadow-brand-orange/20 shadow-lg">
-                <Bot size={18} />
-              </div>
-              <div>
-                <h2 className="font-poppins font-bold text-sm text-brand-charcoal">AI Architect</h2>
-                <p className="text-[10px] text-brand-gray-mid font-medium">Powered by DeepSeek R1</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowChatList(!showChatList)}
-                title="Chat History"
-              >
-                <MessageSquare size={16} className="text-brand-gray-mid" />
-              </Button>
-              <Link href="/dashboard/settings" title="Settings">
-                <Settings size={16} className="text-brand-gray-mid hover:text-brand-charcoal transition-colors" />
-              </Link>
-            </div>
-          </div>
+      {/* Chat List Select (Dropdown/Drawer) */}
+      <div className="border-b border-brand-charcoal/5 px-3 py-2 bg-white flex items-center justify-between group cursor-pointer hover:bg-brand-charcoal/5" onClick={() => setShowChatList(!showChatList)}>
+        <div className="flex items-center gap-2 overflow-hidden">
+          <MessageSquare className="w-3.5 h-3.5 text-brand-charcoal/40" />
+          <span className="font-mono text-xs font-medium text-brand-charcoal truncate">
+            {currentChat?.title || "Select Terminal..."}
+          </span>
+        </div>
+        <ChevronDown className={cn("w-3 h-3 text-brand-charcoal/40 transition-transform", showChatList && "rotate-180")} />
+      </div>
 
-          {/* Chat List Sidebar */}
-          {showChatList && (
-            <div className="border-b border-brand-charcoal/5 bg-white/30 backdrop-blur-sm">
-              <div className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-brand-gray-mid">Chat History</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs gap-1"
-                    onClick={() => createNewChat()}
-                  >
-                    <Plus size={12} />
-                    New Chat
-                  </Button>
-                </div>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {isLoadingChats ? (
-                    <div className="text-xs text-brand-gray-mid py-2">Loading...</div>
-                  ) : chats.length === 0 ? (
-                    <div className="text-xs text-brand-gray-mid py-2">No chats yet</div>
-                  ) : (
-                    chats.map((chat) => (
-                      <div
-                        key={chat.id}
-                        className={cn(
-                          "flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer group",
-                          currentChatId === chat.id
-                            ? "bg-brand-orange/10 text-brand-orange"
-                            : "hover:bg-white/50 text-brand-charcoal"
-                        )}
-                        onClick={() => {
-                          setCurrentChatId(chat.id);
-                          setShowChatList(false);
-                        }}
-                      >
-                        {editingChatId === chat.id ? (
-                          <div className="flex items-center gap-1 flex-1">
-                            <input
-                              type="text"
-                              value={editingTitle}
-                              onChange={(e) => setEditingTitle(e.target.value)}
-                              className="flex-1 text-xs px-1 py-0.5 border rounded"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  updateChatTitle(chat.id, editingTitle);
-                                } else if (e.key === 'Escape') {
-                                  setEditingChatId(null);
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateChatTitle(chat.id, editingTitle);
-                              }}
-                            >
-                              <Check size={10} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingChatId(null);
-                              }}
-                            >
-                              <X size={10} />
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="text-xs truncate flex-1">{chat.title}</span>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                                >
-                                  <MoreHorizontal size={10} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-32">
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingChatId(chat.id);
-                                    setEditingTitle(chat.title);
-                                  }}
-                                >
-                                  <Edit2 size={12} className="mr-2" />
-                                  Rename
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-600"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteChat(chat.id);
-                                  }}
-                                >
-                                  <Trash2 size={12} className="mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Current Chat Title */}
-          {currentChat && !showChatList && (
-            <div className="px-4 py-2 border-b border-brand-charcoal/5 bg-white/30">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-brand-gray-mid truncate">
-                  {currentChat.title}
-                </span>
-                <span className="text-[10px] text-brand-gray-mid">
-                  {messages.filter(m => m.role === 'user').length} messages
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6" ref={scrollRef}>
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-60">
-                <div className="w-16 h-16 bg-brand-charcoal/5 rounded-full flex items-center justify-center mb-4">
-                  <Sparkles size={24} className="text-brand-charcoal/40" />
-                </div>
-                <h3 className="font-poppins font-semibold text-brand-charcoal mb-2">How can I help you architect?</h3>
-                <p className="text-xs text-brand-gray-mid max-w-[200px]">
-                  Try asking for a "Microservices app on AWS" or "Real-time chat with Supabase".
-                </p>
-              </div>
-            )}
-
-            {messages.map((msg) => (
-              <div key={msg.id} className={cn("flex gap-3", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
-                <Avatar className="w-6 h-6 mt-1 border border-black/5">
-                  <AvatarFallback className={cn("text-[10px]", msg.role === "assistant" ? "bg-brand-orange text-white" : "bg-brand-charcoal text-white")}>
-                    {msg.role === "assistant" ? <Bot size={14} /> : <User size={14} />}
-                  </AvatarFallback>
-                </Avatar>
-                <div className={cn("flex flex-col max-w-[85%]", msg.role === "user" ? "items-end" : "items-start")}>
-                  <div className={cn(
-                    "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
-                    msg.role === "user"
-                      ? "bg-brand-charcoal text-white rounded-tr-none"
-                      : "bg-white border border-brand-charcoal/5 text-brand-charcoal rounded-tl-none"
-                  )}>
-                    {msg.content || (msg.isThinking ? "Thinking..." : "")}
-                  </div>
-                  {msg.reasoning && (
-                    <div className="mt-2 w-full">
-                      <ThinkingPanel reasoning={msg.reasoning} isThinking={!!msg.isThinking} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            {isGenerating && messages[messages.length - 1]?.role !== 'assistant' && (
-              <div className="flex gap-3">
-                <Avatar className="w-6 h-6 mt-1 border border-black/5">
-                  <AvatarFallback className="bg-brand-orange text-white text-[10px]"><Bot size={14} /></AvatarFallback>
-                </Avatar>
-                <div className="flex items-center gap-2 p-3 bg-white border border-brand-charcoal/5 rounded-2xl rounded-tl-none shadow-sm">
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-brand-orange/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 bg-brand-orange/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 bg-brand-orange/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input Area */}
-          <div className="p-4 bg-white/50 backdrop-blur-md border-t border-brand-charcoal/5">
-            {messages.length === 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
-                {["Event-Driven System", "SaaS Boilerplate", "RAG Pipeline"].map(suggestion => (
-                  <button
-                    key={suggestion}
-                    onClick={() => setInputValue(suggestion)}
-                    className="px-3 py-1.5 bg-white border border-brand-charcoal/10 rounded-full text-[10px] font-medium text-brand-charcoal hover:bg-brand-orange/5 hover:border-brand-orange/30 transition-colors whitespace-nowrap"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="relative group">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
+      {showChatList && (
+        <div className="border-b border-brand-charcoal/10 bg-brand-charcoal/5 max-h-48 overflow-y-auto">
+          {isLoadingChats ? (
+            <div className="p-3 text-[10px] font-mono text-brand-charcoal/40">Loading channels...</div>
+          ) : (
+            chats.map(chat => (
+              <div
+                key={chat.id}
+                className={cn(
+                  "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white transition-colors group/item",
+                  currentChatId === chat.id && "bg-white border-l-2 border-brand-orange"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentChatId(chat.id);
+                  setShowChatList(false);
                 }}
-                placeholder="Describe your architecture..."
-                className="w-full min-h-[50px] max-h-[150px] p-3 pr-12 bg-white rounded-xl border border-brand-charcoal/10 focus:border-brand-orange/50 focus:ring-4 focus:ring-brand-orange/5 outline-none resize-none text-sm font-poppins shadow-sm transition-all"
-                rows={1}
-              />
-              <button
-                onClick={(e) => handleSubmit(e)}
-                disabled={!inputValue.trim() || isGenerating}
-                className="absolute right-2 bottom-2 p-2 bg-brand-charcoal text-white rounded-lg hover:bg-brand-orange disabled:opacity-50 disabled:hover:bg-brand-charcoal transition-all shadow-md active:scale-95"
               >
-                <ArrowUp size={16} />
-              </button>
-            </div>
-            <div className="flex justify-between items-center mt-2 px-1">
-              <div className="flex gap-2 text-[10px] text-brand-gray-mid">
-                <span className="flex items-center gap-1"><Paperclip size={10} /> Attach Context</span>
-                <span className="flex items-center gap-1"><Mic size={10} /> Voice</span>
+                <span className="font-mono text-xs text-brand-charcoal/70 truncate">{chat.title}</span>
+                <div className="opacity-0 group-hover/item:opacity-100 flex items-center gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }} className="hover:text-red-500 text-brand-charcoal/40"><Trash2 className="w-3 h-3" /></button>
+                </div>
               </div>
-              <div className="text-[10px] text-brand-gray-mid font-medium">
-                {cloudProvider} Mode
-              </div>
-            </div>
+            ))
+          )}
+          <div
+            className="p-2 flex items-center justify-center border-t border-brand-charcoal/5 cursor-pointer hover:bg-white text-brand-charcoal/50 hover:text-brand-orange transition-colors"
+            onClick={() => { createNewChat(); setShowChatList(false); }}
+          >
+            <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
+              <Icon icon="lucide:plus" className="w-3 h-3" /> Initialize New Channel
+            </span>
           </div>
         </div>
       )}
+
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-brand-charcoal/10 scrollbar-track-transparent" ref={scrollRef}>
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4">
+            <div className="w-12 h-12 rounded-full border border-dashed border-brand-charcoal flex items-center justify-center">
+              <Terminal className="w-6 h-6 text-brand-charcoal" />
+            </div>
+            <div className="max-w-[200px]">
+              <p className="font-mono text-xs text-brand-charcoal mb-1">TERMINAL READY</p>
+              <p className="font-serif italic text-xs text-brand-charcoal/70">Describe your architectural requirements to begin generation.</p>
+            </div>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                "flex flex-col gap-1 max-w-[95%]",
+                message.role === "user" ? "ml-auto items-end" : "items-start"
+              )}
+            >
+              <span className="font-mono text-[9px] uppercase text-brand-charcoal/40 mb-0.5">
+                {message.role === "user" ? "OPERATOR" : "SYSTEM"}
+              </span>
+
+              {message.reasoning && (
+                <ThinkingPanel
+                  reasoning={message.reasoning}
+                  isThinking={message.isThinking}
+                />
+              )}
+
+              {message.content && (
+                <div
+                  className={cn(
+                    "rounded-tr-xl rounded-bl-xl rounded-br-xl p-3 text-sm shadow-sm border",
+                    message.role === "user"
+                      ? "bg-brand-charcoal text-white rounded-tl-xl rounded-tr-none border-brand-charcoal"
+                      : "bg-white text-brand-charcoal border-brand-charcoal/10"
+                  )}
+                >
+                  {message.role === "assistant" ? (
+                    <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-brand-charcoal/5 prose-pre:text-brand-charcoal prose-code:text-brand-orange text-[13px]">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap font-sans">{message.content}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="p-3 bg-white border-t border-brand-charcoal/10">
+        <form
+          onSubmit={handleSubmit}
+          className="relative flex items-center gap-2 bg-[#faf9f5] border border-brand-charcoal/20 p-1.5 focus-within:ring-1 focus-within:ring-brand-orange/50 focus-within:border-brand-orange/50 transition-all rounded-sm"
+        >
+          <div className="pl-2">
+            <Icon icon="lucide:chevron-right" className="w-4 h-4 text-brand-charcoal/40 animate-pulse" />
+          </div>
+          <input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Enter command or requirements..."
+            className="flex-1 bg-transparent text-xs font-mono text-brand-charcoal placeholder:text-brand-charcoal/30 focus:outline-none py-2"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!inputValue.trim() || isGenerating}
+            className={cn(
+              "h-8 w-8 rounded-sm transition-all",
+              inputValue.trim()
+                ? "bg-brand-orange text-white hover:bg-brand-orange/90"
+                : "bg-brand-charcoal/10 text-brand-charcoal/40"
+            )}
+          >
+            <ArrowUp size={14} />
+          </Button>
+        </form>
+        <div className="flex justify-between items-center mt-2 px-1">
+          <div className="flex gap-2">
+            <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase cursor-pointer hover:text-brand-orange flex items-center gap-1">
+              <Icon icon="lucide:paperclip" className="w-3 h-3" /> Context
+            </span>
+            <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase cursor-pointer hover:text-brand-orange flex items-center gap-1">
+              <Icon icon="lucide:mic" className="w-3 h-3" /> Voice
+            </span>
+          </div>
+          <span className="text-[9px] font-mono text-brand-charcoal/30">v1.2.0</span>
+        </div>
+      </div>
     </div>
   );
 }
