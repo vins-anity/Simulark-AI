@@ -9,8 +9,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
-import { generateArchitecture } from "@/actions/ai-orchestrator";
+// Removed server action import
 import { cn } from "@/lib/utils";
+import { ThinkingPanel } from "./ThinkingPanel";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -23,7 +24,7 @@ export function AIAssistantPanel({
   projectId,
   isResizable = false,
 }: AIAssistantPanelProps) {
-  console.log("AIAssistantPanel Render", { isResizable });
+  // console.log("AIAssistantPanel Render", { isResizable });
 
   const [prompt, setPrompt] = useState("");
   const [provider, setProvider] = useState<"AWS" | "GCP" | "Azure" | "Generic">(
@@ -33,44 +34,105 @@ export function AIAssistantPanel({
   const [isOpen, setIsOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // New states for V2 Streaming
+  const [reasoningLog, setReasoningLog] = useState("");
+  const [isThinking, setIsThinking] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isGenerating) return;
 
     setIsGenerating(true);
     setError(null);
+    setReasoningLog("");
+    setIsThinking(true);
 
     try {
-      const result = await generateArchitecture({ prompt, provider });
-      if (result.success && result.data) {
-        onGenerationSuccess(result.data);
-        setPrompt("");
-      } else {
-        setError(result.error || "Generation failed. Please try again.");
+      console.log("[Frontend] Sending generation request...");
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, provider }),
+      });
+      console.log(`[Frontend] Response received. Status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
       }
-    } catch (err) {
-      setError("An unexpected error occurred.");
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        // The endpoint sends newline-delimited JSON objects
+        const lines = chunk.split("\n").filter(line => line.trim() !== "");
+
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line);
+
+            if (json.type === "reasoning") {
+              console.log("[Frontend] Reasoning chunk received");
+              setReasoningLog((prev) => prev + json.data);
+            } else if (json.type === "content") {
+              console.log("[Frontend] Content chunk received");
+              setIsThinking(false); // Switch to content mode
+              accumulatedContent += json.data;
+            } else if (json.type === "error") {
+              console.error("[Frontend] Stream reported error:", json.data);
+              throw new Error(json.data);
+            } else if (json.error) { // Fallback for older error format
+              throw new Error(json.error);
+            }
+          } catch (e) {
+            console.error("Error parsing chunk:", e);
+          }
+        }
+      }
+
+      // Final processing of content
+      try {
+        const finalJson = JSON.parse(accumulatedContent);
+        // Validate basic structure
+        if (finalJson.nodes && finalJson.edges) {
+          onGenerationSuccess(finalJson);
+          setPrompt(""); // Clear input on success
+        } else {
+          throw new Error("Invalid architecture generated");
+        }
+      } catch (e) {
+        console.error("Failed to parse final JSON:", e);
+        console.log("Raw content:", accumulatedContent);
+        throw new Error("Failed to generate valid architecture JSON.");
+      }
+
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
       console.error(err);
     } finally {
       setIsGenerating(false);
+      setIsThinking(false);
     }
   };
 
-  // If resizable, we typically disable the internal toggle or rely on the resizable panel to hide/collapse
-  // But for now, we'll just force open and full width to fill the panel.
-  // Force content visible and remove internal transitions if resizable
   const showContent = isResizable || isOpen;
 
   return (
     <div
       className={cn(
         "relative flex h-full",
-        isResizable && "border-2 border-red-500/30", // Diagnostic border
+        isResizable && "border-2 border-red-500/30",
         !isResizable && "transition-all duration-500 ease-in-out",
         isResizable ? "w-full" : isOpen ? "w-[380px]" : "w-12",
       )}
     >
-      {/* Toggle Button - Only show if NOT resizable */}
       {!isResizable && (
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -80,7 +142,6 @@ export function AIAssistantPanel({
         </button>
       )}
 
-      {/* Main Content */}
       <div
         className={cn(
           "flex-1 flex flex-col overflow-hidden",
@@ -89,7 +150,6 @@ export function AIAssistantPanel({
           !isResizable && !showContent && "opacity-0 pointer-events-none",
         )}
       >
-        {/* Header */}
         <div className="p-6 border-b border-brand-gray-light/30">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 bg-brand-orange/10 rounded-lg">
@@ -104,7 +164,11 @@ export function AIAssistantPanel({
           </p>
         </div>
 
-        {/* Content Area */}
+        {/* Thinking Panel - Inserted here */}
+        {(isGenerating || reasoningLog) && (
+          <ThinkingPanel reasoning={reasoningLog} isThinking={isThinking} />
+        )}
+
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
@@ -175,7 +239,6 @@ export function AIAssistantPanel({
             </button>
           </form>
 
-          {/* Tips / Examples */}
           <div className="mt-auto pt-6 border-t border-brand-gray-light/30">
             <h3 className="text-[11px] font-poppins font-bold text-brand-gray-mid uppercase tracking-wider mb-3">
               Quick Suggestions
@@ -199,7 +262,6 @@ export function AIAssistantPanel({
         </div>
       </div>
 
-      {/* Collapsed Sidebar Indicator - Only show if NOT resizable AND closed */}
       {!isResizable && !isOpen && (
         <div className="w-12 flex flex-col items-center pt-8 gap-6 border-l border-white/20 glass-card">
           <Sparkles size={20} className="text-brand-orange/40" />
