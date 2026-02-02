@@ -29,6 +29,8 @@ import { DatabaseNode } from "./nodes/DatabaseNode";
 import { GatewayNode } from "./nodes/GatewayNode";
 import { ServiceNode } from "./nodes/ServiceNode";
 import { QueueNode } from "./nodes/QueueNode";
+import { LoadbalancerNode } from "./nodes/LoadbalancerNode";
+import { CacheNode } from "./nodes/CacheNode";
 import { SimulationEdge } from "./edges/SimulationEdge";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -79,6 +81,8 @@ const FlowEditorInner = forwardRef(
         service: ServiceNode,
         database: DatabaseNode,
         queue: QueueNode,
+        loadbalancer: LoadbalancerNode,
+        cache: CacheNode,
       }),
       [],
     );

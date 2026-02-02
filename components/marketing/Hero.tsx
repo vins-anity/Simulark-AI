@@ -90,9 +90,9 @@ export function Hero() {
                             <Icon icon="lucide:arrow-right" className="w-5 h-5" />
                         </Button>
                     </Link>
-                    <Link href="/docs">
+                    <Link href="/features">
                         <Button variant="outline" size="lg" className="h-14 px-8 text-lg rounded-full border-brand-charcoal/20 hover:bg-brand-charcoal/5 hover:border-brand-charcoal/40 text-[#1a1a19] transition-all">
-                            View Documentation
+                            How It Works
                         </Button>
                     </Link>
                 </motion.div>

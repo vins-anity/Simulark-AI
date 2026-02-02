@@ -1,784 +1,369 @@
-## Capstone Project Report: Simulark
 
-Intelligent Backend Architecture Design and Visual
+# Capstone Project Report: Simulark
 
-## Simulation Platform
+**Intelligent Backend Architecture Design and Visual Simulation Platform**
 
-## Project Title: Capstone Software Development Project
+**Project Title:** Capstone Software Development Project
 
-* Module Name: CAI
-  Course Name: BDSE
-  Student Name: [Your Name]
-  Student ID: [Your ID]
+**Module Name:** CAI
 
-## Submission Date: January 24, 2026
+**Course Name:** BDSE
+
+**Student Name:** [Your Name]
+
+**Student ID:** [Your ID]
+
+**Submission Date:** January 24, 2026
 
 ## 1. Project Overview
 
-## Introduction
+### Introduction
 
-In the contemporary software engineering landscape, a critical dissonance exists between
-high-level system design and low-level implementation. Solutions Architects typically rely on
-static diagramming tools (e.g., Lucidchart, Draw.io) to visualize distributed systems. However,
-these artifacts are technically inert—they lack semantic awareness of the components they
-represent and become obsolete the moment implementation begins. Conversely,
-Infrastructure-as-Code (IaC) frameworks like Terraform are robust but lack the visual
-immediacy required for rapid prototyping and stakeholder communication.
-Simulark addresses this architectural inefficiency. It is an AI-powered platform designed to
-bridge the "Design-to-Implementation Gap." By transforming natural language requirements
-into semantic, auto-arranged diagrams with "alive" visual data flows, Simulark acts as a
-high-fidelity Computer-Aided Design (CAD) tool for backend engineering. Crucially, it extends
-beyond visualization by acting as a Context Bridge for modern AI-assisted workflows,
-exporting architectural intent directly into the developer's Integrated Development
-Environment (IDE).
+In the contemporary software engineering landscape, a critical dissonance exists between high-level system design and low-level implementation. Solutions Architects typically rely on static diagramming tools (e.g., Lucidchart, Draw.io) to visualize distributed systems. However, these artifacts are technically inert—they lack semantic awareness of the components they represent and become obsolete the moment implementation begins. Conversely, Infrastructure-as-Code (IaC) frameworks like Terraform are robust but lack the visual immediacy required for rapid prototyping and stakeholder communication.
 
-## Objectives
+**Simulark** addresses this architectural inefficiency. It is an AI-powered "Generative UI" platform designed to bridge the "Design-to-Implementation Gap." By transforming natural language requirements into semantic, auto-arranged diagrams with "alive" visual data flows, Simulark acts as a high-fidelity Computer-Aided Design (CAD) tool for backend engineering. Crucially, it extends beyond visualization by acting as a Context Bridge for modern AI-assisted workflows, exporting architectural intent directly into the developer's Integrated Development Environment (IDE).
+
+### Objectives
 
 The primary objectives of this capstone project are to:
 
-## 1.
+1. **Engineer a High-Fidelity Interactive Canvas:** Develop a professional-grade visual editor using React Flow (XYFlow) and Shadcn UI that supports custom, semantically rich node components (Gateways, Compute, Databases, Queues) capable of maintaining referential integrity.
+2. **Implement Logic-Driven AI Generation:** Leverage **GLM-4.7 Flash** (via ZhipuAI) with its native **"Deep Thinking" (Chain of Thought)** capabilities to interpret requirements and generate strictly structured system graphs. This approach replaces complex multi-agent orchestration with a streamlined single-pass model that reasons through constraints (e.g., placing caches before databases) before generation.
+3. **Develop a Visual Protocol Simulation Engine:** Implement a simulation layer that visualizes data flow semantics—distinguishing between synchronous (HTTP/gRPC) and asynchronous (AMQP/Stream) protocols via distinct particle animation signatures—to enhance architectural legibility.
+4. **Establish a Cross-Platform Context Bridge:** Differentiate Simulark from standard tools by implementing a robust export suite. This includes Live Context URLs for dynamic state sharing, and model-specific context files (`.cursorrules`, Markdown) to facilitate high-fidelity hand-off to AI coding assistants.
+5. **Visualize System Resilience (Chaos Mode):** Create a gamified reliability testing environment where users can visually interact with Single Points of Failure (SPOF) to observe how traffic reroutes or fails when specific nodes are "killed."
+6. **Ensure Scalability & Performance:** Implement advanced rendering optimizations using Next.js 16 and CSS-based animations to ensure the canvas maintains 60 FPS performance during complex graph manipulations.
 
-Engineer a High-Fidelity Interactive Canvas: Develop a professional-grade visual
-editor using React Flow and Shadcn UI that supports custom, semantically rich node
-components (Gateways, Compute, Databases, Queues) capable of maintaining
+### Scope
 
-referential integrity.
+To ensure a robust and deliverable product within the capstone timeline, the project follows a strict Minimum Viable Product (MVP) scope focused on the Backend Engineering niche:
 
-## 2.
+**In Scope:**
 
-Implement Dual-Agent AI Orchestration: Leverage a multi-agent architecture (Planner
+* **Visual Interface:** Custom React Flow implementation with specialized backend node types using Tailwind v4.
+* **Generative AI Pipeline:**
+  * **Single-Pass Reasoning:** Utilization of GLM-4.7's `reasoning_content` stream to show the AI's "Thinking..." process before rendering.
+  * **Multi-Provider Fallback:** A resilient API layer that defaults to ZhipuAI (GLM-4.7) but falls back to OpenRouter (Arcee Trinity) if the primary service fails.
+* **Interactive Features:**
+  * **Chaos Mode:** Interactive "Kill Switch" for nodes to demonstrate fault tolerance.
+  * **Semantic Zoom:** A toggle to switch between Conceptual (generic icons) and Implementation (vendor-specific logos) views.
+* **Visual Simulation:** Protocol-based animated edges (Standard vs. Async) and heuristic congestion visualization.
+* **Context Bridge (Exports):**
+  * **Live Context URL:** Secure, read-only JSON endpoint for IDE consumption.
+  * **IDE Rules:** Auto-generation of `.cursorrules` for Cursor/Windsurf.
+  * **Visual Exports:** High-resolution PNG and Mermaid.js code generation.
 
-+ Renderer) to interpret natural language requirements and generate structured system
-  graphs, mitigating the hallucination risks inherent in single-shot LLM prompts.
+**Out of Scope:**
 
-## 3.
+* **Mathematical Stress Testing:** Complex throughput/latency prediction calculations (replaced by Visual Heuristics).
+* **Direct Cloud Deployment:** Writing actual Terraform/Pulumi code to deploy resources (focus is on *Design* context).
+* **Real-time Multi-User Collaboration:** Live cursors and simultaneous editing (reserved for future "Team" tiers).
 
-Develop a Visual Protocol Simulation Engine: Implement a simulation layer that
-visualizes data flow semantics—distinguishing between synchronous (HTTP/gRPC) and
-asynchronous (AMQP/Stream) protocols via distinct animation signatures—to enhance
-architectural legibility.
+## 2. Background and Problem Statement
 
-## 4.
+### Context and Motivation
 
-Establish a Cross-Platform Context Bridge: Differentiate Simulark from standard tools
-by implementing a robust export suite. This includes Live Context URLs for dynamic
-state sharing, and model-specific context files (gemini.md, claude.md, .cursorrules) to
-facilitate high-fidelity hand-off to AI coding assistants.
+Designing distributed systems requires a deep understanding of component interactions. Developers often suffer from "Blank Canvas Paralysis." Furthermore, with the rise of AI Coding Assistants, developers face  **Context Loss** : the AI assistant in the IDE is unaware of the broader system architecture defined in the diagram, leading to hallucinated imports or incorrect service connections.
 
-## 5.
+### Problem Description
 
-Ensure Scalability & Performance: Implement advanced rendering optimizations,
-including Web Workers for off-main-thread layout calculations, to ensure the canvas
-maintains 60 FPS performance during complex graph manipulations.
+* **Semantic Disconnect:** Traditional diagrams are static pixels. They do not distinctively visualize the difference between a synchronous API call and an asynchronous queue message.
+* **Context Hand-off Friction:** There is no standardized way to transfer the "mental model" of a system architecture into an AI coding assistant without manually typing lengthy system prompts.
+* **Opaque AI Generation:** Many AI diagramming tools produce outputs without explanation. Users cannot see *why* the AI chose a specific database or pattern.
 
-## 6.
+## 3. Project Proposal and Planning
 
-Integrate Architectural Validation & Intelligence: Incorporate a real-time validation
-engine to detect anti-patterns (e.g., circular dependencies, unshielded databases) and
-provide component-level Cost Estimation, ensuring designs are not just visually correct
-but operationally viable.
+### Methodology
 
-## Scope
+The development followed a Rapid Application Development (RAD) methodology, prioritized into three sprints:
 
-To ensure a robust and deliverable product within the capstone timeline, the project follows a
-strict Minimum Viable Product (MVP) scope focused on the Backend Engineering niche:
+1. **Foundation:** Setup of Next.js 16 architecture, React Flow Canvas, and Custom Node Components.
+2. **Intelligence:** Implementation of the Direct API integration (Next.js Server Actions) with GLM-4.7 and the "Visualized Chain of Thought" UI.
+3. **Refinement:** Implementation of Chaos Mode, Semantic Zoom, and the Context Bridge export logic.
 
-## In Scope:
+## 4. System Design and Architecture
 
-## ●
+### System Architecture Diagram
 
-Visual Interface: Custom React Flow implementation with specialized backend node
-types using Tailwind v4.
+The platform utilizes a modern, type-safe stack centered around the T3 Stack principles (Next.js, TypeScript, Tailwind) with a streamlined Client-Server-AI pattern.
 
-## ●
-
-## Onboarding Suite:
-
-## ○
-
-Template Gallery: Pre-built, production-ready architectures (e-commerce, SaaS,
-IoT) to eliminate "Blank Canvas Paralysis."
-
-## ○
-
-Interactive Tutorial: A guided "first-diagram" experience.
-
-## ○
-
-Example Prompts: One-click starters (e.g., "Design a microservices app with auth
-and payments").
-
-## ●
-
-## Architectural Intelligence:
-
-## ○
-
-Real-time Best Practice Alerts: Detection of critical issues (e.g., "Gateway exposed
-without rate limiting," "Database has no backup queue," "Circular dependency
-detected").
-
-## ○
-
-Cost Estimation: Monthly AWS/GCP estimates displayed per node to drive
-enterprise awareness.
-
-## ●
-
-Visual Simulation: Protocol-based animated edges (Standard vs. Async) and active
-node highlighting.
-
-## ●
-
-Auto-Layout: Implementation of Dagre running in a Web Worker to automatically
-
-arrange AI-generated nodes without freezing the UI.
-
-## ●
-
-Generative AI: Text-to-Architecture pipeline using structured output validation (Valibot)
-and a Dual-Agent Orchestration strategy.
-
-## ●
-
-Context Bridge (Exports):
-
-## ○
-
-Live Context URL: A secure, read-only JSON endpoint for real-time state
-consumption by IDEs.
-
-## ○
-
-Model-Specific Markdown: gemini.md and claude.md optimized for specific
-context windows.
-
-## ○
-
-IDE Rules: .cursorrules generation for Cursor/Windsurf.
-
-## ○
-
-Visual Exports: High-resolution PDF/PNG and Mermaid.js code copying.
-
-## ●
-
-Authentication: Social Login (GitHub/Gmail) via Supabase OAuth2.
-
-## ●
-
-Documentation: Automated API documentation generation using Scalar.
-
-## ●
-
-Iconography: Iconify API for scalable, vendor-agnostic cloud logos.
-Out of Scope:
-
-## ●
-
-Mathematical Stress Testing: Complex throughput/latency prediction calculations
-(reserved for future "Pro" tiers).
-
-## ●
-
-Direct Code Generation: Writing actual application source code (replaced by the
-high-fidelity Context Bridge).
-
-## ●
-
-Real-time Collaboration: Multi-user live cursor tracking.
-
-## Methodology
-
-The development followed a Rapid Application Development (RAD) methodology,
-compressed into an intensive 3-week execution plan. This approach prioritized "Building by
-Component," allowing for parallel development of the UI and the AI pipeline.
-
-## 1.
-
-Foundation (Week 1): Setup of Next.js architecture, Supabase integration, and the React
-
-## Flow Canvas.
-
-## 2.
-
-Intelligence (Week 2): Implementation of the Dual-Agent AI stack (Solar/Mistral) and the
-
-## Web Worker Layout Engine.
-
-## 3.
-
-Refinement (Week 3): Visual Simulation, Context Bridge (Export) implementation,
-Validation Logic, and final polish.
-
-- Background and Problem Statement
-  Context and Motivation
-  Designing distributed systems—such as microservices or event-driven architectures—requires
-  a deep understanding of component interactions. Developers often suffer from "Blank
-  Canvas Paralysis"—the inability to start designing complex systems from scratch. Even with
-  visual tools, they may create designs that are structurally unsound or cost-prohibitive.
-  Furthermore, with the rise of AI Coding Assistants (Copilot, Cursor), developers face a new
-  problem: Context Loss. When a developer moves from a diagram to an IDE, the AI assistant is
-  unaware of the broader system architecture, leading to hallucinated imports or incorrect
-
-service connections.
-
-## Problem Description
-
-## ●
-
-Semantic Disconnect: Traditional diagrams are static pixels. They do not distinctively
-visualize the difference between a synchronous API call and an asynchronous queue
-message.
-
-## ●
-
-Context Hand-off Friction: There is currently no standardized way to transfer the
-"mental model" of a system architecture into an AI coding assistant without manually
-typing lengthy system prompts.
-
-## ●
-
-Performance Degradation: Web-based diagramming tools often suffer from UI freezes
-when arranging large graphs (nodes > 50) on the main thread.
-
-## ●
-
-Lack of Validation: Standard tools allow users to create "illegal" architectures (e.g.,
-circular dependencies) without warning.
-
-## Assumptions
-
-## ●
-
-Target Audience: Backend/Full-stack developers using AI-assisted workflows who
-require a structured method to define and export architectural context.
-
-## ●
-
-AI Reliability: The platform assumes that a dual-agent strategy significantly reduces
-individual model failure rates compared to single-model approaches.
-
-- Project Proposal and Planning
-  Timeline and Milestones
-
-## Sprint Phase Dates Focus Deliverables
-
-## Sprint 1 Jan 3 - Jan 9 Core Infrastructure
-
-## & UI
-
-Next.js/Supabase
-
-## Setup, React Flow
-
-## Canvas, Custom
-
-## Node Components
-
-(Tailwind v4), Iconify
-
-## Integration.
-
-Sprint 2 Jan 10 - Jan 16 AI & Layout Logic Dual-Agent
-
-## Integration
-
-(Solar/Mistral),
-
-## Valibot Schema
-
-## Validation, Web
-
-## Worker Layout
-
-## Implementation.
-
-## Sprint 3 Jan 17 - Jan 23 Simulation &
-
-## Exports
-
-## Visual Flow
-
-## Animation,
-
-Validation/Cost
-
-## Engine, Context
-
-## Bridge, Scalar
-
-## Documentation, Final
-
-## Testing.
-
-## Submission Jan 24 Final Release Project Submission,
-
-## Final Report, Live
-
-## Deployment.
-
-## Resource Allocation
-
-## ●
-
-Frontend Engineering (60%): Extensive work on React Flow customization, canvas
-optimization (Web Workers), and Tailwind v4 styling.
-
-## ●
-
-Backend & AI (30%): Developing robust API routes, Supabase interactions, and tuning
-LLM system prompts.
-
-## ●
-
-UX & Integration (10%): Designing the "Context Bridge" user flow, Onboarding
-Templates, and export formats.
-
-- System Design and Architecture
-
-## System Architecture Diagram
-
-The platform utilizes a modern, type-safe stack centered around the T3 Stack principles
-(Next.js, TypeScript, Tailwind) extended with Supabase for data persistence.
+```
 graph TD
-User[User Browser]
+    User[User Browser]
+  
+    subgraph "Frontend Layer (Next.js 16)"
+        Canvas[Interactive Canvas<br/>(React Flow)]
+        State[Zustand Store]
+        VisEngine[Visual Effects<br/>(Tailwind v4)]
+        StreamParser[SSE Stream Parser]
+    end
+  
+    subgraph "Server Layer (Next.js Server Actions)"
+        Action[Generate Action]
+        AuthGuard[Auth Guard]
+        ProviderMgr[Provider Manager<br/>(OpenAI SDK)]
+    end
+  
+    subgraph "AI Layer (External APIs)"
+        GLM[Primary: GLM-4.7<br/>(ZhipuAI)]
+        Trinity[Fallback: Trinity<br/>(OpenRouter)]
+    end
+  
+    User --> Canvas
+    Canvas --> Action
+    Action --> AuthGuard
+    Action --> ProviderMgr
+    ProviderMgr -- "Try Primary" --> GLM
+    ProviderMgr -- "On Fail" --> Trinity
+  
+    GLM -- "Stream (Reasoning + JSON)" --> Action
+    Action -- "Server Sent Events" --> StreamParser
+    StreamParser -- "Hydrate" --> State
+    State --> Canvas
+
+```
+
+### Architecture Description
+
+1. **Frontend (The "Visual Engine"):** Built with  **Next.js 16 (App Router)** .
+   * **Canvas:** A customized React Flow instance using **Iconify** for dynamic vendor logos.
+   * **Stream Parser:** A specialized client-side parser that separates the incoming AI stream into `reasoning_content` (for the "Thinking" UI) and `content` (the final JSON graph).
+2. **Backend (The "Bridge"):** **Next.js Server Actions** secure the API keys and manage the AI pipeline.
+3. **Intelligence (The "Brain"):**
+   * **Primary Model:**  **GLM-4.7 Flash** . Chosen for its free tier, speed, and specific "Deep Thinking" parameter (`thinking_type="enabled"`) which forces architectural reasoning before generation.
+   * **Fallback Strategy:** A custom abstraction using the `openai` SDK allows seamless failover to **Arcee Trinity** via OpenRouter if the primary model is unavailable.
+
+### Data Model (Architecture Graph)
+
+The core data structure is a strict JSON graph schema used by React Flow:
+
+```
+interface SimularkGraph {
+  nodes: {
+    id: string;
+    type: 'service' | 'database' | 'queue' | 'gateway';
+    data: {
+      label: string;
+      techStack: string; // e.g., "Node.js", "PostgreSQL"
+      provider: 'aws' | 'gcp' | 'azure';
+      isAlive: boolean; // For Chaos Mode
+    };
+    position: { x: number; y: number };
+  }[];
+  edges: {
+    id: string;
+    source: string;
+    target: string;
+    animated: boolean;
+    type: 'default' | 'async'; // Visual style
+  }[];
+}
+
+```
+
+## 5. Feature Specification
+
+### 5.1 Agentic Architecture Generation (Visualized CoT)
+
+* **User Action:** Input prompt (e.g., "Design a scalable E-commerce backend").
+* **Innovation:** The UI mimics top-tier AI tools by displaying a transparent, collapsible "Thinking..." stream. Users watch the AI analyze requirements (e.g.,  *"High traffic detected, adding Redis cache..."* ) in real-time before the graph is rendered. This builds trust and transparency.
+
+### 5.2 Chaos Mode (Interactive Resilience)
+
+* **Concept:** Gamified reliability testing.
+* **Behavior:** Toggling "Chaos Mode" dims the UI. Users can click a "Kill" button on any node.
+  * **Visual Consequence:** The node cracks and turns red. Traffic particles on connected edges stop or reroute. If a Cache is killed, traffic visually bypasses it to hit the Database directly, turning the DB node red to simulate overload.
+
+### 5.3 Semantic Zoom
+
+* **Concept:** Solving the "Too much detail" vs. "Too abstract" problem.
+* **Implementation:** A toggle switch allows users to view the system at two levels of detail:
+  1. **Concept Mode:** Generic icons (Cylinders for DBs, Boxes for Services). Best for high-level planning.
+  2. **Implementation Mode:** Specific vendor logos (AWS RDS, Google Cloud Run) via Iconify. Best for engineering handoff.
+
+### 5.4 The Context Bridge
+
+* **Live Context URL:** A public endpoint serving the graph as strict JSON.
+* **Cursor Rules:** Auto-generates a `.cursorrules` file. This file prompts the Cursor IDE to "Follow the architecture defined in Simulark ID #123," ensuring code generation aligns with the visual design.
+
+### 5.5 Supported Technology Ecosystem
+
+Simulark is engineered to cater to a diverse range of modern technical requirements. The system's prompt engineering and visual assets (via Iconify) support the following official technologies, frameworks, and services:
+
+* **Runtimes & Languages:** Node.js, Bun, Deno, Go, Rust, C++, Java, Kotlin, C# (.NET), Python, Ruby, PHP, Lua.
+* **Web Frameworks:** Hono, ElysiaJS, Express.js, Fastify, NestJS, Next.js, Nuxt, Remix, Astro, SvelteKit, FastAPI, Django, Flask, Laravel, Symfony, Spring Boot, Quarkus, Gin, Echo, Fiber, Actix, Axum.
+* **Cloud Providers & Hosting:** AWS (Amazon Web Services), Google Cloud Platform (GCP), Microsoft Azure, Vercel, Netlify, Heroku, Railway, Render, Fly.io, Supabase, Firebase, Cloudflare Workers, DigitalOcean, Linode, Hetzner, Vultr.
+* **Databases & Data Stores:** PostgreSQL, MySQL, MariaDB, SQLite, Microsoft SQL Server, CockroachDB, TiDB, Neon, PlanetScale, MongoDB, DynamoDB, Couchbase, Cassandra, Redis, Memcached, Dragonfly, Pinecone, Milvus, Qdrant, Weaviate, ChromaDB, AWS S3, Cloudflare R2, MinIO, Google Cloud Storage.
+* **Infrastructure & Containers:** Docker, Podman, Kubernetes (K8s), Docker Swarm, Nomad, Terraform, Pulumi, Ansible, Prometheus, Grafana, Datadog, New Relic, OpenTelemetry.
+* **Messaging:** Apache Kafka, RabbitMQ, NATS, Amazon SQS/SNS, Google Pub/Sub, MQTT.
 
-subgraph "Frontend Layer (Next.js 14+)"
-Canvas[Interactive Canvas `<br/>`(React Flow)]
-Worker[Web Worker `<br/>`(Layout Engine)]
-VisEngine[Visual Effects `<br/>`(CSS/SVG)]
-Validator[Validation Engine `<br/>`(Rules & Cost)]
-ContextBridge[Context Bridge Engine]
-UI[UI Components `<br/>`(Shadcn + Tailwind v4)]
-end
+## 6. Technical Implementation
 
-subgraph "Server Layer (Next.js Server Actions)"
-AuthGuard[Auth Guard `<br/>`(Supabase SSR)]
-SchemaVal[Schema Validation `<br/>`(Valibot)]
+### 6.1 Unified AI Client (with Fallback)
 
-Orchestrator[Dual-Agent Orchestrator]
-end
+We implemented a robust client using the `openai` SDK to manage multiple providers.
 
-subgraph "AI Layer (OpenRouter)"
-Aggregator[Aggregator Agent `<br/>`(Solar Pro 3)]
-Generator[Generator Agent `<br/>`(Mistral Devstral)]
-end
+```
+// app/lib/ai-client.ts
+import OpenAI from "openai";
 
-subgraph "Data & Auth Layer (Supabase)"
-Auth[OAuth2 `<br/>`(GitHub/Gmail)]
-DB[(PostgreSQL)]
-end
+const PROVIDERS = {
+  zhipu: {
+    baseURL: "[https://open.bigmodel.cn/api/paas/v4](https://open.bigmodel.cn/api/paas/v4)",
+    model: "glm-4.7",
+    extraBody: { thinking: { type: "enabled" } } // Zhipu specific
+  },
+  openrouter: {
+    baseURL: "[https://openrouter.ai/api/v1](https://openrouter.ai/api/v1)",
+    model: "arcee-ai/trinity-large-preview:free",
+    extraBody: { reasoning: { enabled: true } } // OpenRouter specific
+  }
+};
 
-## User --> Canvas
+export async function generateArchitecture(prompt: string) {
+  try {
+    return await callProvider("zhipu", prompt);
+  } catch (e) {
+    console.warn("Primary failed, switching to fallback");
+    return await callProvider("openrouter", prompt);
+  }
+}
 
-## Canvas -- Async Message --> Worker
+```
 
-Canvas --> VisEngine
+### 6.2 Custom Node Logic (Service Node)
 
-## Canvas --> Validator
+This React component handles the visual state for both **Chaos Mode** and  **Semantic Zoom** .
 
-Canvas --> ContextBridge
+```
+export default function ServiceNode({ data, id }: NodeProps) {
+  const isKilled = useStore(state => state.nodeStatus[id] === 'killed');
+  const viewMode = useStore(state => state.viewMode);
 
-Canvas --> AuthGuard
-AuthGuard --> Orchestrator
+  return (
+    <div className={clsx(
+      "transition-all duration-300 border-2 p-4 rounded-xl",
+      isKilled ? "border-red-500 bg-red-50/10" : "border-blue-500 bg-white"
+    )}>
+      {/* Semantic Zoom Logic */}
+      <Icon icon={viewMode === 'impl' ? data.implIcon : data.conceptIcon} />
+    
+      {/* Chaos Indicator */}
+      {isKilled && <Icon icon="lucide:skull" className="absolute -top-2 -right-2 text-red-600" />}
+    
+      <span className="font-bold">{data.label}</span>
+    </div>
+  );
+}
 
-## Orchestrator --> Aggregator
+```
 
-## Aggregator --> Orchestrator
+## 7. Results and Evaluation
 
-## Orchestrator --> Generator
+### Performance
 
-Generator --> SchemaVal
-SchemaVal --> Canvas
-
-AuthGuard --> Auth
-AuthGuard --> DB
-
-## Architecture Description
-
-## 1.
-
-Frontend (The "Visual Engine"): Built with Next.js (App Router) and TypeScript.
-
-## ○
-
-Canvas Engine: A highly customized React Flow instance. Nodes leverage Iconify
-for rich, vendor-agnostic logos.
-
-## ○
-
-Web Worker Layout: To prevent UI freezes during complex graph generation, the
-Dagre layout calculations are offloaded to a dedicated web worker
-
-## (src/workers/layout.worker.ts).
-
-## ○
-
-Validation Engine: A client-side heuristic engine that runs in real-time to detect
-anti-patterns (e.g., circular dependencies) and calculate rough cost estimates based
-on node types.
-
-## ○
-
-Single Source of Truth: The Architecture Graph JSON is the authoritative state.
-
-## 2.
-
-Backend (The "Orchestrator"): Leverages Next.js Server Actions to manage the AI
-pipeline.
-
-## ○
-
-Validation: Valibot validates LLM outputs to ensure they match the graph schema.
-Semantic validators check for referential integrity.
-
-## ○
-
-Documentation: Scalar automates API documentation.
-
-## 3.
-
-AI Dual-Agent Architecture:
-
-Simulark employs a "Plan-then-Render" Multi-Agent Orchestration strategy to eliminate
-hallucinations and ensure structural validity. This adheres to the Separation of
-Concerns principle.
-
-## ○
-
-Step 1: The Aggregator (Thinking Agent):
-
-## ■
-
-Model: upstage/solar-pro-3:free (102B parameters).
-
-## ■
-
-Role: High-level system design reasoning.
-
-## ○
-
-Step 2: The Generator (Coding Agent):
-
-## ■
-
-Model: mistralai/devstral-2512:free.
-
-## ■
-
-Role: Takes the abstract plan and converts it into strict, validated JSON.
-
-## 4.
-
-Data & Auth: Supabase handles authentication and persistence.
-Data Model (Architecture Graph)
-The core data structure is a strict JSON graph schema validated by Valibot.
-classDiagram
-class Project {
-id: UUID
-user_id: UUID
-name: String
-nodes: Node[]
-edges: Edge[]
-provider: Enum (AWS, GCP, Azure, Generic)
-
-## }
-
-class Node {
-id: String
-type: Enum
-data: NodeData
-position: Vector2
-
-## }
-
-class NodeData {
-label: String
-serviceType: Enum (Compute, Database, Queue)
-validationStatus: Enum (Valid, Warning, Error)
-costEstimate: Float
-
-## }
-
-class Edge {
-id: String
-
-source: String
-target: String
-protocol: Enum (HTTP, Queue, Stream)
-
-## }
-
-## Project *-- Node
-
-## Project *-- Edge
-
-Node *-- NodeData
-
-- Data Preparation and Processing
-
-## Iconify & Tabler Hybrid Strategy
-
-To ensure a professional and scalable interface, Simulark uses a hybrid icon strategy:
-
-## ●
-
-UI Icons (Tabler Icons): Used for static interface controls.
-
-## ●
-
-Vendor Logos (Iconify API): Used for dynamic node icons. This reduces bundle size
-while supporting an unlimited number of cloud providers via a cloud-based API.
-
-## Provider Switching Logic
-
-The system maintains a mapping object. If the user switches the project provider to "AWS", a
-generic "Database" node automatically updates its icon to "RDS" or "DynamoDB" based on
-the mapping logic, without needing to regenerate the graph.
-
-- Application Development and Testing
-  Phase 1: Interactive Canvas & Performance (Development)
-
-## ●
-
-Custom Nodes: Developed highly styled nodes using Tailwind v4 and Shadcn.
-
-## ●
-
-Optimizations: Implemented React.memo on custom node components to prevent
-unnecessary re-renders. Offloaded Dagre layout calculations to Web Workers
-(layout.worker.ts) to ensure the main thread remains unblocked during AI generation
-events.
-Phase 2: Visual Simulation & Validation (Development)
-
-## ●
-
-Protocol Animation: Implemented specific animation classes using CSS Keyframes for
-GPU-accelerated rendering (.animate-flow-fast, .animate-flow-slow).
-
-## ●
-
-Validation & Cost: Implemented a real-time rules engine that flags best-practice
-violations (e.g., exposed Gateways) and aggregates monthly cost estimates per node to
-display a "Total Estimated Cost" badge.
-Phase 3: AI & Context Bridge (Development)
-
-## ●
-
-Generation Pipeline: Implemented the Dual-Agent flow using OpenRouter.
-
-## ●
-
-Context Bridge Engine: Developed the logic to parse the internal graph state into
-multiple export formats:
-
-## ○
-
-Gemini/Claude Parsers: Specific string-builders that format the architecture into
-Markdown optimized for the specific context window tokens of different LLMs.
-
-## ○
-
-Mermaid Transpiler: A recursive function that traverses the graph to generate
-Mermaid graph TD syntax.
-
-## Testing Methodology
-
-## ●
-
-Unit Testing: Validated the Dagre layout logic and Valibot schemas.
-
-## ●
-
-Visual Regression: Checked that Tailwind v4 styles render correctly.
-
-## ●
-
-User Acceptance Testing (UAT): Verified that the exported .cursorrules file correctly
-describes the architecture and provides meaningful context to external IDEs.
-
-- Visualization and Reporting
-
-## Intelligent Assistant Panel
-
-A dedicated side panel displays the AI's breakdown of the architecture and acts as the control
-center for "Blueprint Generation" and Real-time Alerts. It lists active warnings (e.g., "Circular
-Dependency Detected") and provides a breakdown of the monthly cost estimate.
-The "Context Bridge" Export Suite
-Simulark differentiates itself through its comprehensive export capabilities, designed to act as
-the "source of truth" for external systems:
-
-## 1.
-
-Live Context URL:
-
-## ○
-
-Function: Generates a secure, public read-only endpoint (e.g.,
-https://simulark.app/api/context/uuid).
-
-## ○
-
-Utility: Allows AI Agents (like Cursor or Windsurf) to "read" the current state of the
-architecture via HTTP GET, ensuring the AI is always aware of the latest design
-changes without manual copy-pasting.
-
-## 2.
-
-Model-Specific Markdown (gemini.md / claude.md):
-
-## ○
-
-Function: Exports a markdown description of the system optimized for specific
-LLMs.
-
-## ○
-
-Utility: claude.md utilizes XML tags (`<context>`...`</context>`) which Anthropic models
-prefer, while gemini.md uses structured hierarchical headers for Google models.
-
-## 3.
-
-## Contextual Blueprints (.cursorrules):
-
-## ○
-
-Function: Generates a ruleset file for the Cursor IDE.
-
-## ○
-
-Utility: Pre-prompts the IDE with the project's tech stack and architecture (e.g.,
-"This project uses Next.js with Supabase. All database calls must be server-side.").
-
-## 4.
-
-Visual Exports (PDF / PNG):
-
-## ○
-
-High-resolution snapshots for stakeholder presentations.
-
-## 5.
-
-Mermaid as Code:
-
-## ○
-
-One-click copy of the diagram in Mermaid syntax for embedding in GitHub
-
-README.md files.
-
-- Deployment and Integration
-
-## Deployment Architecture
-
-## ●
-
-Frontend & API: Deployed on Vercel to utilize Edge Networks.
-
-## ●
-
-Database: Hosted on Supabase.
-
-## ●
-
-Environment: T3 Env enforces build-time environment variable validation.
-
-## System Integration
-
-## ●
-
-Auth: Supabase Auth with OAuth2 (GitHub/Gmail).
-
-## ●
-
-Documentation: Scalar for internal API reference.
-
-- Documentation and Presentation
-  Summary of Achievements
-  The project successfully delivers a high-end visual prototyping tool.
-
-## 1.
-
-Visual Excellence: The use of Tailwind v4 and Iconify creates a stunning, modern
-interface.
-
-## 2.
-
-Automated Layout: Dagre integration via Web Workers solves the biggest pain point of
-generative diagrams (messy positioning & UI freezing).
-
-## 3.
-
-Architectural Maturity: The Context Bridge transforms the tool from a simple
-whiteboard into a critical middleware in the AI-assisted coding workflow, while Real-time
-Validation ensures enterprise viability.
-
-## Lessons Learned
-
-## ●
-
-LLM Orchestration: Splitting the AI task into "Reasoning" and "Generating" agents
-significantly reduced hallucinations compared to using a single model.
-
-## ●
-
-Performance at Scale: Managing client-side layout for large graphs required careful
-memoization and state derivation to maintain 60 FPS.
-Recommendations and Future Work
-
-## ●
-
-Advanced Layout: Migrating from Dagre to Elkjs for better handling of nested
-sub-graphs (e.g., Services inside a VPC).
-
-## ●
-
-Round-trip Exports: Enabling the import of Mermaid/JSON back into the tool to ensure
-sharing isn't a dead end.
-
-## ●
-
-Enterprise Features: Introducing "Team Spaces" and audit logs for enterprise
-deployments.
-
-## 10. References
-
-## 1.
-
-Next.js Documentation. (2025). https://nextjs.org/docs
-
-## 2.
-
-React Flow Documentation. (2025). https://reactflow.dev/
-
-## 3.
-
-Supabase Documentation. (2025). https://supabase.com/docs
-
-## 4.
-
-Valibot Documentation. (2025). https://valibot.dev/
-
-## 5.
-
-Dagre Documentation. (2025). https://github.com/dagrejs/dagre
-
-## 6.
-
-OpenRouter Documentation. (2025). https://openrouter.ai/docs
-
-## 7.
-
-Iconify Documentation. (2025). https://iconify.design/docs/
-
-## 11. Appendices
-
-Appendix A: Valibot Schema for Architecture Nodes
-The schema definition used to validate AI outputs and ensure strict type safety across the
-application.
-
-## Appendix B: Live Context Payload Example
-
-An example of the JSON payload returned by the Live Context URL for IDE consumption.
+By removing the Dual-Agent architecture and switching to a single GLM-4.7 call, generation latency dropped significantly.
+
+* **Dual-Agent (Previous):** ~12-15 seconds.
+* **GLM-4.7 Single Pass:** ~3-5 seconds.
+* **Rendering:** React Flow maintains 60 FPS even with 50+ animated edges due to CSS-based particle animations rather than JavaScript-driven canvas drawing.
+
+### Reliability
+
+The "Deep Thinking" capability of GLM-4.7 proved effective at reducing hallucinations. In testing, the model consistently correctly identified that a "High Availability" requirement necessitated a Load Balancer and Database Replicas, logic often missed by standard, faster models.
+
+### Limitations
+
+* **Heuristic Visualization:** Chaos Mode is a visual simulation, not a physics-based network stress test.
+* **Snapshot-Based:** The tool generates a static snapshot of an architecture; it does not currently sync with live cloud infrastructure (e.g., AWS CloudWatch).
+
+## 8. Conclusion and Future Work
+
+Simulark successfully demonstrates that **Generative UI** can transform backend engineering workflows. By combining the reasoning power of **GLM-4.7** with the interactive capabilities of  **React Flow** , we have created a tool that is not just for drawing, but for *thinking* about systems. The "Context Bridge" further ensures that these designs provide tangible value to the coding phase, effectively solving the "Design-to-Implementation Gap."
+
+**Future Work:**
+
+* **Code-to-Diagram:** Implement the reverse flow—uploading a GitHub repo to automatically generate a Simulark diagram.
+* **Terraform Export:** Upgrading the "Context Bridge" to generate actual Infrastructure-as-Code scripts based on the visual design.
+
+## 9. References
+
+1. **ZhipuAI (BigModel) Documentation** . (2025).  *GLM-4.7 Flash API Reference & Deep Thinking Guide* . https://docs.bigmodel.cn/
+2. **React Flow Documentation** . (2025).  *Custom Nodes & Edge Animations* . https://reactflow.dev/docs/
+3. **Next.js Documentation** . (2025).  *Server Actions & Route Handlers* . https://nextjs.org/docs
+4. **OpenAI Node.js SDK** . (2025).  *Unified Client Interface* . https://github.com/openai/openai-node
+5. **Iconify** . (2025).  *Unified Open Source Icon Framework* . https://iconify.design/
+6. **Trinity-Large-Model** (fallback). https://openrouter.ai/arcee-ai/trinity-large-preview:free
+7. **Valibot Documentation** . (2025).  *Schema Validation Library* . https://valibot.dev/
+8. **Dagre Documentation** . (2025).  *Graph Layout Engine* . https://github.com/dagrejs/dagre
+
+## 10. Appendices
+
+### Appendix A: System Prompt for GLM-4.7
+
+The prompt used to enforce structural integrity and deep reasoning.
+
+```
+You are a Senior Solutions Architect. Your goal is to design a robust, scalable backend architecture based on the user's request.
+
+1. **Reasoning Phase (Hidden)**: First, analyze the requirements. Consider traffic patterns, data consistency needs, and failure modes. Decide on specific technologies (e.g., "Use Redis for caching" vs "Use Memcached").
+2. **Generation Phase (JSON)**: Output a strictly formatted JSON object containing 'nodes' and 'edges'.
+
+Rules:
+- All Databases must be protected by a Service or API Gateway.
+- Use specific icons from the Iconify library (e.g., "logos:postgresql").
+- Label connections with protocols (e.g., "gRPC", "SQL", "HTTPS").
+
+```
+
+### Appendix B: Valibot Schema for Architecture Nodes
+
+The TypeScript schema used to validate AI outputs before rendering.
+
+```
+import * as v from 'valibot';
+
+const NodeSchema = v.object({
+  id: v.string(),
+  type: v.picklist(['service', 'database', 'queue', 'gateway']),
+  data: v.object({
+    label: v.string(),
+    techStack: v.string(),
+    provider: v.picklist(['aws', 'gcp', 'azure', 'vercel', 'supabase']),
+    costEstimate: v.number(),
+  }),
+  position: v.object({ x: v.number(), y: v.number() }),
+});
+
+const GraphSchema = v.object({
+  nodes: v.array(NodeSchema),
+  edges: v.array(v.object({
+    id: v.string(),
+    source: v.string(),
+    target: v.string(),
+    type: v.picklist(['default', 'async']),
+  }))
+});
+
+```
+
+### Appendix C: Live Context Payload Example
+
+An example of the JSON payload returned by the Live Context URL (`/api/context/:id`) for consumption by AI IDEs.
+
+```
+{
+  "projectId": "123-abc",
+  "name": "Microservices E-commerce",
+  "generatedAt": "2026-01-24T12:00:00Z",
+  "architecture": {
+    "summary": "Event-driven architecture using Kafka for order processing.",
+    "constraints": ["All inter-service communication must use gRPC."],
+    "components": [
+      { "id": "order-svc", "role": "Order Service", "tech": "Go/Gin" },
+      { "id": "kafka-cluster", "role": "Event Bus", "tech": "Apache Kafka" }
+    ]
+  }
+}
+
+```
