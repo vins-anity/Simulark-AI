@@ -45,7 +45,5 @@ const spec = {
 };
 
 export const GET = ApiReference({
-    spec: {
-        content: spec
-    }
+    spec: spec as any
 });

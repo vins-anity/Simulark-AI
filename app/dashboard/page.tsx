@@ -1,84 +1,144 @@
-import { Box, Filter, Plus, Search, ArrowRight, Wand2 } from "lucide-react";
+"use client";
+
+import { Box, Filter, Plus, Search, ArrowRight, Wand2, Terminal, Cpu, Layout, Activity } from "lucide-react";
 import Link from "next/link";
 import { getUserProjects } from "@/actions/projects";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import type { Project } from "@/lib/schema/graph";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { Icon } from "@iconify/react";
 
-export default async function DashboardPage() {
-  const { data: projects, error } = await getUserProjects();
-  const typedProjects = projects as (Project & { updated_at?: string })[];
+export default function DashboardPage() {
+  const [projects, setProjects] = useState<(Project & { updated_at?: string })[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Client-side fetching to ensure hydration matches and for "live" feel
+  useEffect(() => {
+    async function load() {
+      try {
+        const { data, error } = await getUserProjects();
+        if (error) setError(error);
+        else setProjects(data as any);
+      } catch (e) {
+        setError("System malfunction");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   return (
-    <div className="flex flex-col min-h-[85vh]">
+    <div className="flex flex-col min-h-full font-sans">
       {/* Hero / Focus Section */}
-      <div className="flex-1 flex flex-col items-center justify-center -mt-20 mb-20 space-y-8">
-        <div className="text-center space-y-4 max-w-3xl px-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange/5 text-brand-orange text-xs font-semibold uppercase tracking-widest mb-4 border border-brand-orange/10">
-            <Wand2 className="w-3 h-3" />
-            <span>AI Architect Ready</span>
+      <div className="flex-1 flex flex-col items-center justify-center -mt-10 mb-20 space-y-12">
+        <div className="text-center space-y-6 max-w-3xl px-4">
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-brand-charcoal/20" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-brand-charcoal/10 text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              System Ready
+            </div>
+            <div className="h-px w-8 bg-brand-charcoal/20" />
           </div>
-          <h1 className="text-5xl md:text-6xl font-poppins font-bold tracking-tight text-brand-charcoal">
-            Architect Systems. Export Context.
+
+          <h1 className="text-5xl md:text-7xl font-poppins font-bold tracking-tighter text-brand-charcoal leading-none">
+            Welcome to <span className="text-brand-orange">Mission Control</span>.
           </h1>
-          <p className="text-xl text-brand-gray-mid font-lora italic max-w-2xl mx-auto leading-relaxed">
-            Don't let your AI coding assistant guess your architecture. Generate visual blueprints, validate for anti-patterns, and sync the <strong className="font-bold not-italic text-brand-orange">Context</strong> to your IDE.
+          <p className="text-xl text-brand-gray-mid font-lora max-w-2xl mx-auto leading-relaxed">
+            Initiate a new architectural sequence or resume active operations.
           </p>
         </div>
 
+        {/* Command Input */}
         <div className="w-full max-w-2xl px-6 relative group">
-          <div className="absolute inset-0 bg-brand-orange/20 blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700 rounded-full" />
-          <div className="relative flex items-center bg-white shadow-xl shadow-brand-charcoal/5 rounded-2xl border border-brand-gray-light/50 overflow-hidden focus-within:ring-2 focus-within:ring-brand-orange/20 focus-within:border-brand-orange/50 transition-all duration-300">
-            <div className="pl-6 text-brand-gray-mid">
-              <Search className="w-6 h-6" />
+          {/* Corner Markers */}
+          <div className="absolute top-0 left-6 w-2 h-2 border-t-2 border-l-2 border-brand-charcoal" />
+          <div className="absolute top-0 right-6 w-2 h-2 border-t-2 border-r-2 border-brand-charcoal" />
+          <div className="absolute bottom-0 left-6 w-2 h-2 border-b-2 border-l-2 border-brand-charcoal" />
+          <div className="absolute bottom-0 right-6 w-2 h-2 border-b-2 border-r-2 border-brand-charcoal" />
+
+          <div className="relative flex items-center bg-white p-2 border border-brand-charcoal/10 shadow-sm transition-all duration-300 focus-within:ring-1 focus-within:ring-brand-orange/50 focus-within:border-brand-orange/50">
+            <div className="pl-4 text-brand-charcoal/30 font-mono">
+              <Terminal className="w-5 h-5" />
             </div>
             <input
               type="text"
-              placeholder='E.g., "Design a Next.js 14 backend with Supabase, generic Queue for emails, and Stripe webhooks..."'
-              className="w-full text-lg px-4 py-6 bg-transparent placeholder:text-brand-gray-light text-brand-charcoal focus:outline-none font-poppins"
+              placeholder="Describe architecture to initialize... [e.g. 'Next.js SaaS with Stripe']"
+              className="w-full text-base px-4 py-4 bg-transparent placeholder:text-brand-gray-light/50 text-brand-charcoal focus:outline-none font-mono tracking-tight"
             />
-            <div className="pr-2">
-              <button className="bg-brand-charcoal text-brand-sand-light p-3 rounded-xl hover:scale-105 hover:bg-brand-orange transition-all duration-300">
-                <ArrowRight className="w-5 h-5" />
+            <div className="pr-1">
+              <button className="bg-brand-charcoal text-white hover:bg-brand-orange px-6 py-3 transition-colors duration-200 font-mono text-xs uppercase tracking-widest border border-brand-charcoal">
+                Execute
               </button>
             </div>
           </div>
+
+          <div className="absolute -bottom-6 left-6 flex gap-4 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
+            <span>CPU: 12%</span>
+            <span>MEM: 4.2GB</span>
+          </div>
         </div>
 
-        <div className="flex gap-3 text-sm text-brand-gray-mid font-medium flex-wrap justify-center">
-          <span>Try:</span>
-          <button className="hover:text-brand-orange transition-colors">Event-Driven Microservices</button>
-          <span>•</span>
-          <button className="hover:text-brand-orange transition-colors">Secure Fintech API</button>
-          <span>•</span>
-          <button className="hover:text-brand-orange transition-colors">RAG Pipeline</button>
+        {/* Quick Actions / Suggestions */}
+        <div className="flex gap-4 flex-wrap justify-center">
+          {[
+            { label: "Microservices", icon: "lucide:layers" },
+            { label: "Event-Driven", icon: "lucide:zap" },
+            { label: "RAG Pipeline", icon: "lucide:brain-circuit" }
+          ].map((action, i) => (
+            <button key={i} className="flex items-center gap-2 px-4 py-2 bg-white border border-brand-charcoal/10 hover:border-brand-orange hover:text-brand-orange transition-all font-mono text-xs uppercase tracking-wide text-brand-charcoal/60">
+              <Icon icon={action.icon} className="w-3 h-3" />
+              {action.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Projects Section (Secondary) */}
+      {/* Active Operations (Projects) */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between px-2">
-          <h2 className="text-xl font-poppins font-bold text-brand-charcoal">Recent Projects</h2>
+        <div className="flex items-center justify-between px-2 border-b border-brand-charcoal/5 pb-4">
+          <div className="flex items-center gap-2">
+            <Layout className="w-4 h-4 text-brand-orange" />
+            <h2 className="text-sm font-mono font-bold uppercase tracking-widest text-brand-charcoal">Active Operations</h2>
+            <span className="px-2 py-0.5 bg-brand-charcoal/5 rounded-full text-[10px] font-mono text-brand-charcoal/60">
+              {projects?.length || 0}
+            </span>
+          </div>
           <div className="flex gap-2">
-            {/* Filters could go here if needed, but keeping it clean */}
+            <Button variant="ghost" size="sm" className="font-mono text-xs uppercase tracking-wider text-brand-gray-mid hover:text-brand-charcoal">
+              View All
+            </Button>
           </div>
         </div>
 
         {error ? (
-          <div className="p-12 text-center rounded-3xl border border-red-100 bg-red-50/20">
-            <p className="text-red-500 font-poppins font-medium">
-              Failed to load projects: {error}
+          <div className="p-12 text-center border border-red-200 bg-red-50/50">
+            <p className="text-red-500 font-mono text-sm">
+              [ERROR]: Failed to load project index: {error}
             </p>
           </div>
-        ) : !typedProjects || typedProjects.length === 0 ? (
-          <div className="p-12 text-center border-2 border-dashed border-brand-charcoal/5 rounded-3xl bg-white/30">
-            <p className="text-brand-gray-mid font-lora italic">
-              No recent projects. Start a new one above.
+        ) : loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-64 border border-brand-charcoal/5 bg-white animate-pulse" />
+            ))}
+          </div>
+        ) : !projects || projects.length === 0 ? (
+          <div className="p-16 text-center border border-dashed border-brand-charcoal/10 bg-[#faf9f5]">
+            <Activity className="w-8 h-8 text-brand-charcoal/20 mx-auto mb-4" />
+            <p className="font-mono text-sm text-brand-charcoal/40 uppercase tracking-widest">
+              No active operations found
             </p>
+            <Button className="mt-6 bg-brand-charcoal text-white hover:bg-brand-orange rounded-none font-mono text-xs uppercase tracking-widest h-10 px-8">
+              Initialize First Project
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {typedProjects.map((project) => (
+            {projects.map((project) => (
               <ProjectCard
                 key={project.id}
                 id={project.id}

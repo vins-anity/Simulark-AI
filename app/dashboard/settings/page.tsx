@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createBrowserClient } from "@supabase/ssr";
 import { Icon } from "@iconify/react";
 import { getAvatarUrl } from "@/lib/utils/avatar";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
@@ -85,7 +85,7 @@ export default function SettingsPage() {
         if (dbError) {
             toast.error("Error", { description: "Failed to update preferences." });
         } else {
-            toast.success("Success", { description: "Settings saved successfully." });
+            toast.success("System Updated", { description: "Configuration parameters saved." });
         }
 
         setSaving(false);
@@ -101,57 +101,74 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8 font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-poppins font-bold text-brand-charcoal">Account Settings</h1>
-                <p className="text-brand-gray-mid font-lora italic">Manage your profile and architectural preferences.</p>
+        <div className="max-w-4xl space-y-12 font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
+            {/* Header */}
+            <div className="border-b border-brand-charcoal/10 pb-8">
+                <div className="flex items-center gap-2 mb-2">
+                    <Icon icon="lucide:settings-2" className="w-4 h-4 text-brand-orange" />
+                    <span className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/60">
+                        Configuration
+                    </span>
+                </div>
+                <h1 className="text-4xl font-poppins font-bold tracking-tight text-brand-charcoal">
+                    System Parameters
+                </h1>
+                <p className="text-xl text-brand-gray-mid font-lora italic mt-4 max-w-2xl">
+                    Calibrate your Simulark environment and architectural defaults.
+                </p>
             </div>
 
-            <div className="space-y-6">
-                {/* Profile Card */}
-                <Card className="border-brand-charcoal/5 shadow-sm bg-white/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-poppins">Profile Information</CardTitle>
-                        <CardDescription>Manage your public profile details.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-4 mb-4">
-                            <Avatar className="h-20 w-20 border border-brand-charcoal/10">
-                                <AvatarImage src={user?.user_metadata?.avatar_url || getAvatarUrl(user?.email || "User")} alt={fullName} />
-                                <AvatarFallback className="bg-brand-charcoal text-brand-sand-light text-2xl font-serif italic">
-                                    {fullName?.charAt(0) || "U"}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">{user?.email}</p>
-                                <p className="text-sm text-muted-foreground capitalize">{user?.app_metadata?.provider || "Email"} Account</p>
+            <div className="space-y-12">
+                {/* Profile Section */}
+                <section>
+                    <h2 className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/40 mb-6 flex items-center gap-2">
+                        <span>// OPERATOR PROFILE</span>
+                        <div className="h-px bg-brand-charcoal/10 flex-1" />
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="col-span-1">
+                            <div className="bg-white border border-brand-charcoal/10 p-6 flex flex-col items-center text-center">
+                                <Avatar className="h-32 w-32 border border-brand-charcoal/10 mb-4">
+                                    <AvatarImage src={user?.user_metadata?.avatar_url || getAvatarUrl(user?.email || "User")} alt={fullName} />
+                                    <AvatarFallback className="bg-brand-charcoal text-brand-sand-light text-4xl font-serif italic">
+                                        {fullName?.charAt(0) || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="font-mono text-xs text-brand-charcoal/40 uppercase tracking-widest mb-1">ID: {user?.id?.slice(0, 8)}</div>
+                                <div className="font-poppins font-bold text-lg text-brand-charcoal">{user?.email}</div>
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="fullName">Full Name</Label>
-                            <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                        <div className="col-span-1 md:col-span-2 space-y-6">
+                            <div className="grid gap-2">
+                                <Label htmlFor="fullName" className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/60">Operator Name</Label>
+                                <Input
+                                    id="fullName"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="rounded-none border-brand-charcoal/20 bg-white h-12 font-poppins focus-visible:ring-0 focus-visible:border-brand-orange"
+                                />
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </section>
 
-                {/* Preferences Card */}
-                <Card className="border-brand-charcoal/5 shadow-sm bg-white/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-poppins flex items-center gap-2">
-                            <Icon icon="lucide:wand-2" className="w-5 h-5 text-brand-orange" />
-                            AI & Generator Preferences
-                        </CardTitle>
-                        <CardDescription>Customize how Simulark generates your architecture by default.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                {/* Preferences Section */}
+                <section>
+                    <h2 className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/40 mb-6 flex items-center gap-2">
+                        <span>// GENERATOR DEFAULTS</span>
+                        <div className="h-px bg-brand-charcoal/10 flex-1" />
+                    </h2>
+
+                    <div className="bg-white border border-brand-charcoal/10 p-8 space-y-8">
                         <div className="grid gap-2">
-                            <Label htmlFor="cloud">Default Cloud Provider</Label>
+                            <Label htmlFor="cloud" className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/60">Target Cloud Provider</Label>
                             <Select value={cloudProvider} onValueChange={setCloudProvider}>
-                                <SelectTrigger id="cloud" className="bg-white">
+                                <SelectTrigger id="cloud" className="rounded-none border-brand-charcoal/20 bg-[#faf9f5] h-12 focus:ring-0">
                                     <SelectValue placeholder="Select Cloud" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-none border-brand-charcoal font-sans">
                                     <SelectItem value="aws">Amazon Web Services (AWS)</SelectItem>
                                     <SelectItem value="gcp">Google Cloud Platform (GCP)</SelectItem>
                                     <SelectItem value="azure">Microsoft Azure</SelectItem>
@@ -159,14 +176,14 @@ export default function SettingsPage() {
                             </Select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="language">Preferred Language</Label>
+                                <Label htmlFor="language" className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/60">Runtime Language</Label>
                                 <Select value={language} onValueChange={setLanguage}>
-                                    <SelectTrigger id="language" className="bg-white">
+                                    <SelectTrigger id="language" className="rounded-none border-brand-charcoal/20 bg-[#faf9f5] h-12 focus:ring-0">
                                         <SelectValue placeholder="Select Language" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-none border-brand-charcoal font-sans">
                                         <SelectItem value="typescript">TypeScript / Node.js</SelectItem>
                                         <SelectItem value="python">Python</SelectItem>
                                         <SelectItem value="go">Go (Golang)</SelectItem>
@@ -176,12 +193,12 @@ export default function SettingsPage() {
                                 </Select>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="framework">Preferred Framework</Label>
+                                <Label htmlFor="framework" className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/60">Core Framework</Label>
                                 <Select value={framework} onValueChange={setFramework}>
-                                    <SelectTrigger id="framework" className="bg-white">
+                                    <SelectTrigger id="framework" className="rounded-none border-brand-charcoal/20 bg-[#faf9f5] h-12 focus:ring-0">
                                         <SelectValue placeholder="Select Framework" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-none border-brand-charcoal font-sans">
                                         <SelectItem value="nextjs">Next.js</SelectItem>
                                         <SelectItem value="express">Express</SelectItem>
                                         <SelectItem value="fastapi">FastAPI</SelectItem>
@@ -192,21 +209,25 @@ export default function SettingsPage() {
                                 </Select>
                             </div>
                         </div>
-                    </CardContent>
-                    <CardFooter className="bg-brand-charcoal/5 p-4 flex justify-between items-center rounded-b-lg">
-                        <p className="text-xs text-muted-foreground">These settings will be applied to all new projects.</p>
-                        <Button onClick={handleSave} disabled={saving} className="bg-brand-charcoal text-brand-sand-light hover:bg-brand-charcoal/90">
-                            {saving ? (
-                                <>
-                                    <Icon icon="lucide:loader-2" className="mr-2 h-4 w-4 animate-spin" />
-                                    Saving...
-                                </>
-                            ) : (
-                                "Save Changes"
-                            )}
-                        </Button>
-                    </CardFooter>
-                </Card>
+                    </div>
+                </section>
+
+                <div className="flex justify-end pt-8 border-t border-brand-charcoal/10">
+                    <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="bg-brand-charcoal text-white hover:bg-brand-orange rounded-none h-14 px-8 font-mono text-xs uppercase tracking-widest transition-all"
+                    >
+                        {saving ? (
+                            <>
+                                <Icon icon="lucide:loader-2" className="mr-2 h-4 w-4 animate-spin" />
+                                PROCESSING...
+                            </>
+                        ) : (
+                            "SAVE CONFIGURATION"
+                        )}
+                    </Button>
+                </div>
             </div>
         </div>
     );

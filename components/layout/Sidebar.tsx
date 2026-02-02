@@ -8,6 +8,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Box,
+  Layers,
+  FileCode
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,8 +18,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr"; // Keep original supabase client
-import { getPlanDetails } from "@/lib/subscription"; // Keep original getPlanDetails
+import { createBrowserClient } from "@supabase/ssr";
+import { getPlanDetails } from "@/lib/subscription";
 import { useSidebar } from "./SidebarProvider";
 import {
   Tooltip,
@@ -32,11 +35,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Icon } from "@iconify/react";
 
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Templates", href: "/dashboard/templates", icon: BookOpen },
-  // Settings removed from here, will be a dropdown at the bottom
+  { name: "Mission Control", href: "/dashboard", icon: "lucide:layout-dashboard" },
+  { name: "Blueprints", href: "/dashboard/templates", icon: "lucide:book-open" },
+  // { name: "Archives", href: "/dashboard/projects", icon: "lucide:archive" }, // Future
 ];
 
 export function Sidebar() {
@@ -66,53 +70,56 @@ export function Sidebar() {
     fetchPlan();
   }, []);
 
-  const planDetails = getPlanDetails(plan); // Use original getPlanDetails
+  const planDetails = getPlanDetails(plan);
 
   return (
     <aside className={cn(
-      "h-screen sticky top-0 z-30 bg-[#faf9f5] border-r border-[#e5e5e5] transition-all duration-300 ease-in-out flex flex-col shrink-0 relative",
-      isCollapsed ? "w-20" : "w-64"
+      "h-screen sticky top-0 z-30 bg-[#faf9f5] border-r border-brand-charcoal/10 transition-all duration-300 ease-in-out flex flex-col shrink-0 relative font-sans",
+      isCollapsed ? "w-20" : "w-72"
     )}>
-      {/* Toggle Button - Outside Overflow Area */}
+      {/* Toggle Button */}
       <button
         onClick={toggleSidebar}
         className={cn(
-          "absolute -right-3 top-8 z-50 bg-white border border-[#e5e5e5] rounded-full p-1 shadow-sm hover:bg-gray-50 transition-transform duration-300 flex items-center justify-center h-6 w-6 text-brand-gray-mid hover:text-brand-charcoal",
+          "absolute -right-3 top-8 z-50 bg-white border border-brand-charcoal/10 rounded-none p-1 shadow-sm hover:bg-brand-charcoal hover:text-white transition-all duration-300 flex items-center justify-center h-6 w-6 text-brand-charcoal",
           isCollapsed ? "rotate-180" : ""
         )}
       >
         <ChevronLeft className="w-3 h-3" />
       </button>
 
-      {/* Content Wrapper - Clips Overflow */}
+      {/* Header */}
       <div className={cn(
         "flex flex-col h-full w-full overflow-hidden",
-        isCollapsed ? "px-4" : "px-6 py-8"
+        isCollapsed ? "px-3 py-6" : "px-6 py-8"
       )}>
-        {/* Header (Logo) */}
-        <div className={cn("flex items-center mb-8 h-10 shrink-0", isCollapsed ? "justify-center mt-8" : "")}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-brand-charcoal rounded-lg flex items-center justify-center text-brand-sand-light shadow-md shrink-0">
-              <span className="font-serif font-bold italic text-lg">S</span>
-            </div>
-            <span className={cn(
-              "font-poppins font-bold text-xl tracking-tight text-brand-charcoal whitespace-nowrap transition-all duration-300 overflow-hidden",
-              isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
+        <div className={cn("flex items-center mb-12 h-10 shrink-0", isCollapsed ? "justify-center" : "")}>
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className={cn(
+              "border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange",
+              isCollapsed ? "w-10 h-10" : "w-8 h-8"
             )}>
-              Simulark
-            </span>
-          </div>
+              <Icon icon="lucide:box" className="w-4 h-4" />
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col overflow-hidden">
+                <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors">SIMULARK</span>
+                <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 leading-none mt-0.5">Architecture Engine</span>
+              </div>
+            )}
+          </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="space-y-2 flex-1">
+        <nav className="space-y-1 flex-1">
           {!isCollapsed && (
-            <p className="px-3 text-xs font-bold text-brand-gray-mid uppercase tracking-wider mb-2 transition-opacity duration-300">
-              Main Menu
-            </p>
+            <div className="px-1 mb-4 flex items-center gap-2 text-[10px] font-mono font-bold text-brand-charcoal/40 uppercase tracking-widest">
+              <span>// SYSTEM NAVIGATION</span>
+              <div className="h-px bg-brand-charcoal/10 flex-1" />
+            </div>
           )}
 
-          <TooltipProvider delayDuration={300}>
+          <TooltipProvider delayDuration={0}>
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -121,30 +128,32 @@ export function Sidebar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center rounded-xl transition-all duration-200 group relative overflow-hidden",
-                        isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5",
+                        "flex items-center transition-all duration-200 group relative",
+                        isCollapsed ? "justify-center p-3 rounded-lg mx-auto" : "gap-3 px-4 py-3 border-r-2",
                         isActive
-                          ? "bg-brand-charcoal text-brand-sand-light shadow-sm"
-                          : "text-brand-gray-mid hover:bg-brand-charcoal/5 hover:text-brand-charcoal"
+                          ? isCollapsed
+                            ? "bg-brand-charcoal text-white rounded-none"
+                            : "border-brand-orange bg-brand-charcoal/5 text-brand-charcoal"
+                          : "border-transparent text-brand-charcoal/60 hover:text-brand-charcoal hover:bg-brand-charcoal/5"
                       )}
                     >
-                      <item.icon
+                      <Icon
+                        icon={item.icon}
                         className={cn(
-                          "transition-transform duration-200 group-hover:scale-110 shrink-0",
-                          isCollapsed ? "w-6 h-6" : "w-5 h-5",
-                          isActive ? "text-brand-orange" : "text-brand-gray-light"
+                          "shrink-0 transition-colors",
+                          isCollapsed ? "w-5 h-5" : "w-4 h-4",
+                          isActive ? "text-brand-orange" : "group-hover:text-brand-charcoal"
                         )}
                       />
-                      <span className={cn(
-                        "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
-                        isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
-                      )}>
-                        {item.name}
-                      </span>
+                      {!isCollapsed && (
+                        <span className="font-mono text-xs uppercase tracking-wider font-medium">
+                          {item.name}
+                        </span>
+                      )}
                     </Link>
                   </TooltipTrigger>
                   {isCollapsed && (
-                    <TooltipContent side="right">
+                    <TooltipContent side="right" className="font-mono text-xs uppercase rounded-none border-brand-charcoal">
                       <p>{item.name}</p>
                     </TooltipContent>
                   )}
@@ -152,122 +161,109 @@ export function Sidebar() {
               );
             })}
           </TooltipProvider>
-        </nav>
 
-        {/* Quick Action: New Project */}
-        <div className="mt-auto">
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className={cn(
-                  "w-full flex items-center rounded-xl text-brand-gray-mid hover:bg-brand-charcoal/5 hover:text-brand-charcoal transition-all duration-200 group overflow-hidden",
-                  isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5"
-                )}>
-                  <div className={cn(
-                    "rounded-full border border-current flex items-center justify-center group-hover:bg-brand-charcoal group-hover:border-transparent group-hover:text-brand-sand-light transition-colors",
-                    isCollapsed ? "w-8 h-8" : "w-5 h-5"
-                  )}>
-                    <Plus className={cn("font-bold", isCollapsed ? "w-5 h-5" : "w-3 h-3")} />
-                  </div>
-                  <span className={cn(
-                    "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
-                    isCollapsed ? "max-w-0 opacity-0" : "max-w-[200px] opacity-100"
-                  )}>
-                    New Project
-                  </span>
-                </button>
-              </TooltipTrigger>
-              {isCollapsed && (
-                <TooltipContent side="right">
-                  <p>New Project</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-
-        {/* Settings & Plan Dropdown */}
-        <div className={cn("mt-4 mb-6", isCollapsed ? "flex justify-center" : "px-3")}>
-          <DropdownMenu>
-            <TooltipProvider delayDuration={300}>
+          {/* New Project Action */}
+          <div className={cn("mt-8", isCollapsed ? "px-0" : "px-0")}>
+            {!isCollapsed && (
+              <div className="px-1 mb-4 flex items-center gap-2 text-[10px] font-mono font-bold text-brand-charcoal/40 uppercase tracking-widest">
+                <span>// OPERATIONS</span>
+                <div className="h-px bg-brand-charcoal/10 flex-1" />
+              </div>
+            )}
+            <TooltipProvider delayDuration={0}>
               <Tooltip>
-                <DropdownMenuTrigger asChild>
-                  <TooltipTrigger asChild>
-                    <button
-                      className={cn(
-                        "flex items-center rounded-xl transition-all duration-200 group w-full outline-none overflow-hidden",
-                        isCollapsed
-                          ? "justify-center p-3"
-                          : "gap-3 px-3 py-2.5",
-                        pathname === "/dashboard/settings"
-                          ? "bg-white shadow-sm text-brand-charcoal font-semibold"
-                          : "text-brand-gray-mid hover:bg-black/5 hover:text-brand-charcoal",
+                <TooltipTrigger asChild>
+                  <Link href="/dashboard/templates">
+                    <button className={cn(
+                      "w-full flex items-center transition-all duration-200 group border border-dashed border-brand-charcoal/20 hover:border-brand-orange/50 hover:bg-brand-orange/5",
+                      isCollapsed ? "justify-center p-3 h-12 w-12 mx-auto" : "gap-3 p-3"
+                    )}>
+                      <div className={cn(
+                        "flex items-center justify-center text-brand-charcoal/60 group-hover:text-brand-orange transition-colors",
+                        isCollapsed ? "" : ""
+                      )}>
+                        <Plus className="w-4 h-4" />
+                      </div>
+                      {!isCollapsed && (
+                        <span className="font-mono text-xs uppercase tracking-wider font-medium text-brand-charcoal/60 group-hover:text-brand-orange">
+                          New Architecture
+                        </span>
                       )}
-                    >
-                      <Settings
-                        size={isCollapsed ? 24 : 20}
-                        className="group-hover:text-brand-charcoal transition-colors text-brand-gray-mid"
-                      />
-                      <span
-                        className={cn(
-                          "whitespace-nowrap transition-all duration-300 overflow-hidden",
-                          isCollapsed
-                            ? "max-w-0 opacity-0"
-                            : "max-w-[200px] opacity-100",
-                        )}
-                      >
-                        Settings
-                      </span>
                     </button>
-                  </TooltipTrigger>
-                </DropdownMenuTrigger>
+                  </Link>
+                </TooltipTrigger>
                 {isCollapsed && (
-                  <TooltipContent side="right">
-                    <p>Settings & Plan</p>
+                  <TooltipContent side="right" className="font-mono text-xs uppercase rounded-none border-brand-charcoal">
+                    <p>New Architecture</p>
                   </TooltipContent>
                 )}
               </Tooltip>
             </TooltipProvider>
+          </div>
+        </nav>
 
+        {/* Footer / Settings */}
+        <div className="mt-auto pt-6 border-t border-brand-charcoal/5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={cn(
+                "flex items-center w-full transition-all duration-200 group outline-none",
+                isCollapsed ? "justify-center" : "gap-3 px-2 py-2 hover:bg-brand-charcoal/5"
+              )}>
+                <div className="w-8 h-8 bg-brand-charcoal text-white flex items-center justify-center font-serif italic text-sm border border-brand-charcoal">
+                  {/* User Initials Placeholder - Could be from context */}
+                  U
+                </div>
+                {!isCollapsed && (
+                  <div className="flex flex-col items-start overflow-hidden">
+                    <span className="font-mono text-xs font-medium text-brand-charcoal truncate w-full text-left">User Account</span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        plan === 'free' ? "bg-brand-gray-mid" : "bg-brand-orange"
+                      )} />
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50">
+                        {planDetails.name} Ticket
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {!isCollapsed && (
+                  <Settings className="w-4 h-4 text-brand-charcoal/20 ml-auto group-hover:text-brand-charcoal transition-colors" />
+                )}
+              </button>
+            </DropdownMenuTrigger>
             <DropdownMenuContent
               side={isCollapsed ? "right" : "top"}
-              align={isCollapsed ? "end" : "center"}
-              className="w-64 p-2 rounded-2xl glass-card border-white/40 shadow-xl mb-2"
+              align={isCollapsed ? "end" : "center"} // Align center when expanded to stay above/near
+              className="w-64 p-0 rounded-none border border-brand-charcoal bg-white shadow-2xl mb-2"
+              sideOffset={10}
             >
-              <div className="p-3 mb-2 rounded-xl bg-gradient-to-br from-brand-orange/5 to-brand-orange/10 border border-brand-orange/10">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-brand-orange uppercase tracking-wider">
-                    Current Plan
-                  </span>
-                  <Badge className="bg-brand-orange text-white hover:bg-brand-orange border-none text-[10px] px-2 h-5">
-                    {planDetails.name}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-brand-charcoal/70">
-                  <span>Generations</span>
-                  <span className="font-mono font-medium">
-                    {plan === 'pro' || plan === 'business' ? 'Unlimited' : plan === 'starter' ? '50/day' : '10/day'}
-                  </span>
+              <div className="p-4 bg-[#faf9f5] border-b border-brand-charcoal/10">
+                <div className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/50 mb-2">Current Status</div>
+                <div className="flex justify-between items-center">
+                  <span className="font-poppins font-bold text-brand-charcoal">{planDetails.name} Plan</span>
+                  <Badge className="bg-brand-orange text-white rounded-none font-mono text-[9px] uppercase">Active</Badge>
                 </div>
               </div>
-
-              <DropdownMenuSeparator className="bg-black/5" />
-              <DropdownMenuItem className="rounded-xl focus:bg-black/5 cursor-pointer">
-                <Link href="/dashboard/settings" className="flex w-full">
-                  General Settings
+              <div className="p-2 space-y-1">
+                <Link href="/dashboard/settings">
+                  <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-brand-charcoal hover:text-white focus:bg-brand-charcoal focus:text-white px-3 py-2">
+                    System Configuration
+                  </DropdownMenuItem>
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl focus:bg-black/5 cursor-pointer">
-                Billing & Usage
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-black/5" />
-              <DropdownMenuItem className="rounded-xl focus:bg-red-50 focus:text-red-600 text-red-500 cursor-pointer">
-                Sign Out
-              </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-brand-charcoal hover:text-white focus:bg-brand-charcoal focus:text-white px-3 py-2">
+                  Billing Records
+                </DropdownMenuItem>
+                <div className="h-px bg-brand-charcoal/10 my-1" />
+                <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white px-3 py-2 text-red-500">
+                  Terminate Session
+                </DropdownMenuItem>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
-    </aside >
+    </aside>
   );
 }

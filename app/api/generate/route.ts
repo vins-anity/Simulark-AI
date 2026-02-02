@@ -62,7 +62,6 @@ export async function POST(req: NextRequest) {
                         }
                     }
 
-                    console.log(`[API] Generation complete: ${chunkCount} chunks, ${Date.now() - startTime}ms`);
                     controller.close();
                 } catch (err: any) {
                     console.error("[API] Streaming error:", err.message);

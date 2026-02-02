@@ -47,12 +47,23 @@ const FlowEditorInner = forwardRef(
     { initialNodes = [], initialEdges = [], projectId }: FlowEditorProps,
     ref,
   ) => {
-    const [nodes, setNodes, onNodesChange] = useNodesState(
-      initialNodes as Node[],
-    );
-    const [edges, setEdges, onEdgesChange] = useEdgesState(
-      initialEdges as Edge[],
-    );
+    // Ensure all nodes and edges have unique ids to prevent React key warnings
+    const nodesWithIds = useMemo(() => {
+      return (initialNodes as Node[]).map((node, index) => ({
+        ...node,
+        id: node.id || `node-${index}-${Date.now()}`,
+      }));
+    }, [initialNodes]);
+
+    const edgesWithIds = useMemo(() => {
+      return (initialEdges as Edge[]).map((edge, index) => ({
+        ...edge,
+        id: edge.id || `edge-${index}-${Date.now()}`,
+      }));
+    }, [initialEdges]);
+
+    const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithIds);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(edgesWithIds);
     const workerRef = useRef<Worker | null>(null);
 
     // Simulation Store

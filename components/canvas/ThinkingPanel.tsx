@@ -22,18 +22,20 @@ function parseProgressSteps(reasoning: string): ProgressStep[] {
     const steps: ProgressStep[] = [];
     const seen = new Set<string>();
 
-    // Define patterns to look for in the reasoning
+    // Define patterns to look for in the reasoning - order matters for display
     const patterns = [
+        { regex: /analyz|understand|requirement|specification/i, text: "Analyzing requirements...", icon: <BrainCircuit size={12} /> },
         { regex: /planning|designing|architecting|structuring/i, text: "Planning architecture...", icon: <Layers size={12} /> },
-        { regex: /gateway|api|entry|ingress/i, text: "Setting up API Gateway...", icon: <Network size={12} /> },
-        { regex: /load.?balancer|lb|balancing/i, text: "Adding Load Balancer...", icon: <ArrowRight size={12} /> },
-        { regex: /service|microservice|backend|server/i, text: "Configuring Services...", icon: <Server size={12} /> },
-        { regex: /database|db|postgres|mysql|redis|mongo/i, text: "Setting up Database...", icon: <Database size={12} /> },
-        { regex: /cache|caching|redis/i, text: "Adding Cache Layer...", icon: <Layers size={12} /> },
-        { regex: /queue|message|kafka|rabbitmq|sqs/i, text: "Configuring Message Queue...", icon: <ArrowRight size={12} /> },
-        { regex: /connect|connection|link|route/i, text: "Connecting services...", icon: <Network size={12} /> },
-        { regex: /optimiz|improv|enhanc|scale/i, text: "Optimizing architecture...", icon: <Layers size={12} /> },
-        { regex: /validat|verify|check|test/i, text: "Validating configuration...", icon: <Check size={12} /> },
+        { regex: /gateway|api gateway|entry point|ingress/i, text: "Setting up API Gateway...", icon: <Network size={12} /> },
+        { regex: /load balancer|loadbalancer|lb|nginx|haproxy/i, text: "Adding Load Balancer...", icon: <ArrowRight size={12} /> },
+        { regex: /service|microservice|backend|server|compute/i, text: "Configuring Services...", icon: <Server size={12} /> },
+        { regex: /database|db|postgres|mysql|mongodb|dynamodb/i, text: "Setting up Database...", icon: <Database size={12} /> },
+        { regex: /cache|caching|redis|memcached|cdn/i, text: "Adding Cache Layer...", icon: <Layers size={12} /> },
+        { regex: /queue|message|kafka|rabbitmq|sqs|sns/i, text: "Configuring Message Queue...", icon: <ArrowRight size={12} /> },
+        { regex: /connect|connection|link|route|network/i, text: "Connecting services...", icon: <Network size={12} /> },
+        { regex: /optimiz|improv|enhanc|scale|performance/i, text: "Optimizing architecture...", icon: <Layers size={12} /> },
+        { regex: /validat|verify|check|test|review/i, text: "Validating configuration...", icon: <Check size={12} /> },
+        { regex: /finaliz|complet|generate|output/i, text: "Finalizing architecture...", icon: <Check size={12} /> },
     ];
 
     // Check for each pattern in the reasoning
@@ -62,28 +64,50 @@ export function ThinkingPanel({ reasoning, isThinking }: ThinkingPanelProps) {
     // Parse progress steps from reasoning
     const progressSteps = useMemo(() => parseProgressSteps(reasoning), [reasoning]);
 
-    // Determine which step is currently active based on reasoning length
+    // Determine which step is currently active based on reasoning content
     const stepsWithStatus = useMemo(() => {
+        if (progressSteps.length === 0) {
+            return [];
+        }
+
         if (!isThinking) {
             // All steps completed when done thinking
-            return progressSteps.map((step, index) => ({
+            return progressSteps.map((step) => ({
                 ...step,
                 status: "completed" as const,
             }));
         }
 
-        // Distribute reasoning progress across steps
-        const totalSteps = progressSteps.length;
-        const reasoningLength = reasoning.length;
-        const charsPerStep = 200; // Approximate chars per step
+        // Find which step is currently being mentioned in the reasoning
+        // by looking at the most recent content
+        const reasoningLower = reasoning.toLowerCase();
+        const lastFewChars = reasoningLower.slice(-500); // Look at last 500 chars
+
+        let activeIndex = 0;
+
+        // Find the last pattern that matches in the reasoning
+        for (let i = progressSteps.length - 1; i >= 0; i--) {
+            const stepPattern = progressSteps[i].text.toLowerCase().replace(/\./g, '');
+            // Check if this step's keywords appear in recent reasoning
+            const keywords = stepPattern.split(' ').filter(w => w.length > 3);
+            if (keywords.some(kw => lastFewChars.includes(kw))) {
+                activeIndex = i;
+                break;
+            }
+        }
+
+        // If no recent match, estimate based on reasoning length progression
+        if (activeIndex === 0 && reasoning.length > 100) {
+            const progress = Math.min(reasoning.length / 2000, 0.9); // Assume ~2000 chars total
+            activeIndex = Math.floor(progress * progressSteps.length);
+        }
 
         return progressSteps.map((step, index) => {
-            const threshold = (index + 1) * charsPerStep;
             let status: "pending" | "active" | "completed" = "pending";
 
-            if (reasoningLength > threshold + charsPerStep) {
+            if (index < activeIndex) {
                 status = "completed";
-            } else if (reasoningLength > threshold - charsPerStep / 2) {
+            } else if (index === activeIndex) {
                 status = "active";
             }
 
@@ -187,8 +211,9 @@ export function ThinkingPanel({ reasoning, isThinking }: ThinkingPanelProps) {
                             {/* Show raw reasoning in a collapsible section if user wants to see it */}
                             {reasoning && (
                                 <details className="mt-3 border-t border-brand-gray-light/30 pt-2">
-                                    <summary className="text-[10px] text-brand-gray-mid cursor-pointer hover:text-foreground transition-colors">
-                                        View raw thinking
+                                    <summary className="text-[10px] text-brand-gray-mid cursor-pointer hover:text-foreground transition-colors flex items-center gap-1">
+                                        <span>View AI thinking</span>
+                                        <span className="text-[8px] opacity-50">({Math.round(reasoning.length / 100) / 10}k chars)</span>
                                     </summary>
                                     <div className="mt-2 font-mono text-[10px] leading-relaxed text-foreground/60 whitespace-pre-wrap max-h-32 overflow-y-auto">
                                         {reasoning}

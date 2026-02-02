@@ -34,7 +34,7 @@ export function SimulationEdge({
     // Protocol Logic
     // HTTP = Fast, solid particles
     // Queue = Slow, squares
-    // Stream = Very fast, continuous line?
+    // Stream = Very fast, continuous line? 
     // Default to standard slow flow if unspecified.
     const protocol = (data?.protocol as string) || "http";
 
@@ -43,7 +43,7 @@ export function SimulationEdge({
     const isCongested = (data?.congestion as boolean) || false;
 
     return (
-        <>
+        <g id={id}>
             <BaseEdge
                 path={edgePath}
                 markerEnd={markerEnd}
@@ -94,6 +94,6 @@ export function SimulationEdge({
                     </div>
                 </EdgeLabelRenderer>
             )}
-        </>
+        </g>
     );
 }

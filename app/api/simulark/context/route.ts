@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Project ID required" }, { status: 400 });
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: project, error } = await supabase
         .from("projects")
         .select("*")

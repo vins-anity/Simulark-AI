@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createProjectFromTemplate } from "@/actions/projects";
+import { cn } from "@/lib/utils";
 
 interface Template {
     id: string;
@@ -15,8 +14,8 @@ interface Template {
     description: string;
     tags: string[];
     icon: string;
-    color: string;
     difficulty: "Beginner" | "Intermediate" | "Advanced";
+    id_code: string;
 }
 
 const templates: Template[] = [
@@ -26,8 +25,8 @@ const templates: Template[] = [
         description: "Complete B2B SaaS architecture with Auth, Stripe Billing, and Multi-tenancy.",
         tags: ["Next.js", "Supabase", "Stripe"],
         icon: "lucide:rocket",
-        color: "bg-blue-500/10 text-blue-500",
         difficulty: "Intermediate",
+        id_code: "TMP-001"
     },
     {
         id: "e-commerce",
@@ -35,8 +34,8 @@ const templates: Template[] = [
         description: "Scalable online store backend with Product Catalog, Cart, and Order processing.",
         tags: ["Microservices", "Redis", "PostgreSQL"],
         icon: "lucide:shopping-bag",
-        color: "bg-green-500/10 text-green-500",
         difficulty: "Advanced",
+        id_code: "TMP-002"
     },
     {
         id: "iot-dashboard",
@@ -44,8 +43,8 @@ const templates: Template[] = [
         description: "Real-time data ingestion architecture for IoT devices using MQTT and TimescaleDB.",
         tags: ["MQTT", "TimescaleDB", "WebSockets"],
         icon: "lucide:cpu",
-        color: "bg-orange-500/10 text-orange-500",
         difficulty: "Advanced",
+        id_code: "TMP-003"
     },
     {
         id: "blog-cms",
@@ -53,8 +52,8 @@ const templates: Template[] = [
         description: "Simple yet powerful content management system architecture for media-heavy blogs.",
         tags: ["Strapi", "S3", "CDN"],
         icon: "lucide:file-text",
-        color: "bg-purple-500/10 text-purple-500",
         difficulty: "Beginner",
+        id_code: "TMP-004"
     },
     {
         id: "chat-app",
@@ -62,8 +61,8 @@ const templates: Template[] = [
         description: "Scalable WebSocket-based chat application with message persistence and presence.",
         tags: ["Socket.io", "Redis", "MongoDB"],
         icon: "lucide:message-circle",
-        color: "bg-pink-500/10 text-pink-500",
         difficulty: "Intermediate",
+        id_code: "TMP-005"
     },
     {
         id: "ai-rag",
@@ -71,8 +70,8 @@ const templates: Template[] = [
         description: "Retrieval-Augmented Generation pipeline for custom knowledge base AI assistants.",
         tags: ["Vector DB", "OpenAI", "LangChain"],
         icon: "lucide:brain-circuit",
-        color: "bg-indigo-500/10 text-indigo-500",
         difficulty: "Advanced",
+        id_code: "TMP-006"
     }
 ];
 
@@ -90,7 +89,7 @@ export default function TemplatesPage() {
             const result = await createProjectFromTemplate(templateId, name);
 
             if (result.success && result.data) {
-                toast.success("Template Cloned", {
+                toast.success("Blueprint Initialized", {
                     description: "Redirecting to editor...",
                 });
                 router.push(`/projects/${result.data.id}`);
@@ -107,63 +106,79 @@ export default function TemplatesPage() {
     };
 
     return (
-        <div className="font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
-            <div className="max-w-4xl mx-auto text-center mb-12 space-y-4">
-                <Badge variant="outline" className="bg-brand-orange/10 text-brand-orange border-brand-orange/20 px-4 py-1 rounded-full uppercase tracking-widest text-xs font-semibold">
-                    Architecture Gallery
-                </Badge>
-                <h1 className="text-4xl md:text-5xl font-poppins font-bold tracking-tight text-brand-charcoal">
-                    Start with a Blueprint
+        <div className="font-sans flex flex-col min-h-screen">
+            {/* Header */}
+            <div className="max-w-4xl mb-16 space-y-6">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="w-2 h-2 bg-brand-orange animate-pulse" />
+                    <span className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/60">
+                        Archive Access: Granted
+                    </span>
+                </div>
+                <h1 className="text-4xl md:text-6xl font-poppins font-bold tracking-tight text-brand-charcoal">
+                    Blueprint Archive
                 </h1>
-                <p className="text-xl text-brand-gray-mid font-lora italic">
-                    Don't start from scratch. Choose a production-ready template.
+                <p className="text-xl text-brand-gray-mid font-lora italic max-w-2xl leading-relaxed">
+                    Pre-configured architectural patterns for rapid deployment. Select a blueprint to initialize your project.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {templates.map((template) => (
-                    <Card key={template.id} className="group border-brand-charcoal/5 shadow-sm hover:shadow-xl transition-all duration-300 bg-white/50 backdrop-blur-sm hover:-translate-y-1">
-                        <CardHeader>
-                            <div className="flex justify-between items-start mb-2">
-                                <div className={`p-3 rounded-xl ${template.color} transition-colors group-hover:bg-opacity-20`}>
-                                    <Icon icon={template.icon} className="w-6 h-6" />
+                    <div
+                        key={template.id}
+                        className="group relative bg-white border border-brand-charcoal/10 hover:border-brand-charcoal transition-all duration-300 flex flex-col min-h-[280px]"
+                    >
+                        {/* Header Band */}
+                        <div className="h-1 bg-brand-charcoal w-full transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+
+                        <div className="p-8 flex flex-col flex-1">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="p-0 text-brand-charcoal opacity-60 group-hover:text-brand-orange group-hover:opacity-100 transition-colors">
+                                    <Icon icon={template.icon} className="w-8 h-8" />
                                 </div>
-                                <Badge variant="secondary" className="bg-brand-charcoal/5 text-brand-charcoal/70 font-normal">
-                                    {template.difficulty}
-                                </Badge>
+                                <span className="font-mono text-[10px] uppercase text-brand-charcoal/30">
+                                    {template.id_code}
+                                </span>
                             </div>
-                            <CardTitle className="font-poppins text-lg">{template.title}</CardTitle>
-                            <CardDescription className="line-clamp-2 h-10">{template.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-wrap gap-2">
-                                {template.tags.map(tag => (
-                                    <span key={tag} className="text-xs px-2 py-1 rounded-md bg-brand-charcoal/5 text-brand-charcoal/70 font-mono">
-                                        {tag}
-                                    </span>
-                                ))}
+
+                            <h3 className="font-poppins font-bold text-xl text-brand-charcoal mb-2 group-hover:translate-x-1 transition-transform">
+                                {template.title}
+                            </h3>
+                            <p className="text-sm font-lora text-brand-gray-mid mb-6 line-clamp-3">
+                                {template.description}
+                            </p>
+
+                            <div className="mt-auto pt-6 border-t border-brand-charcoal/5">
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    {template.tags.map(tag => (
+                                        <span key={tag} className="text-[10px] px-2 py-0.5 border border-brand-charcoal/10 text-brand-charcoal/60 font-mono uppercase tracking-wide">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    className={cn(
+                                        "w-full rounded-none h-10 font-mono uppercase tracking-widest text-[10px] transition-all border",
+                                        "bg-white text-brand-charcoal border-brand-charcoal hover:bg-brand-charcoal hover:text-white"
+                                    )}
+                                    onClick={() => handleClone(template.id)}
+                                    disabled={!!cloningId}
+                                >
+                                    {cloningId === template.id ? (
+                                        <>
+                                            <Icon icon="lucide:loader-2" className="mr-2 h-3 w-3 animate-spin" />
+                                            Initializing...
+                                        </>
+                                    ) : (
+                                        "Initialize Blueprint"
+                                    )}
+                                </Button>
                             </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button
-                                className="w-full bg-white border border-brand-charcoal/10 text-brand-charcoal hover:bg-brand-charcoal hover:text-brand-sand-light transition-all shadow-sm"
-                                onClick={() => handleClone(template.id)}
-                                disabled={!!cloningId}
-                            >
-                                {cloningId === template.id ? (
-                                    <>
-                                        <Icon icon="lucide:loader-2" className="mr-2 h-4 w-4 animate-spin" />
-                                        Cloning...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Icon icon="lucide:copy" className="mr-2 h-4 w-4" />
-                                        Use Template
-                                    </>
-                                )}
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>

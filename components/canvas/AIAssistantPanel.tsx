@@ -10,14 +10,28 @@ import {
   User,
   Paperclip,
   Mic,
-  ArrowUp
+  ArrowUp,
+  Plus,
+  MessageSquare,
+  MoreHorizontal,
+  Trash2,
+  Edit2,
+  Check,
+  X
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { ThinkingPanel } from "./ThinkingPanel";
 import { createBrowserClient } from "@supabase/ssr";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -33,6 +47,14 @@ interface Message {
   isThinking?: boolean;
 }
 
+interface Chat {
+  id: string;
+  project_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export function AIAssistantPanel({
   onGenerationSuccess,
   projectId,
@@ -42,43 +64,196 @@ export function AIAssistantPanel({
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [showChatList, setShowChatList] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Chat state
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   // Settings / Preferences
   const [cloudProvider, setCloudProvider] = useState("Generic");
 
+  // Load chats on mount
   useEffect(() => {
-    // Scroll to bottom on new messages
+    loadChats();
+    loadUserPreferences();
+  }, [projectId]);
+
+  // Load messages when current chat changes
+  useEffect(() => {
+    if (currentChatId) {
+      loadMessages(currentChatId);
+    } else {
+      setMessages([]);
+    }
+  }, [currentChatId]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  useEffect(() => {
-    // Fetch user preferences
+  const loadUserPreferences = async () => {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    async function loadPrefs() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('users')
-          .select('preferences')
-          .eq('user_id', user.id)
-          .single();
-        if (data?.preferences?.cloudProvider) {
-          setCloudProvider(data.preferences.cloudProvider);
-        }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from('users')
+        .select('preferences')
+        .eq('user_id', user.id)
+        .single();
+      if (data?.preferences?.cloudProvider) {
+        setCloudProvider(data.preferences.cloudProvider);
       }
     }
-    loadPrefs();
-  }, []);
+  };
+
+  const loadChats = async () => {
+    setIsLoadingChats(true);
+    try {
+      const response = await fetch(`/api/chats?projectId=${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setChats(data.chats || []);
+
+        // If there are chats, select the most recent one
+        if (data.chats && data.chats.length > 0) {
+          setCurrentChatId(data.chats[0].id);
+        } else {
+          // Create a default chat if none exist
+          await createNewChat("Chat 1", false);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading chats:", error);
+    } finally {
+      setIsLoadingChats(false);
+    }
+  };
+
+  const loadMessages = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chats/${chatId}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Transform messages to our format
+        const loadedMessages: Message[] = data.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          reasoning: m.reasoning || undefined,
+          isThinking: false,
+        }));
+        setMessages(loadedMessages);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+  };
+
+  const createNewChat = async (title: string = `Chat ${chats.length + 1}`, select: boolean = true) => {
+    try {
+      const response = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, title }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setChats(prev => [data.chat, ...prev]);
+        if (select) {
+          setCurrentChatId(data.chat.id);
+          setMessages([]);
+        }
+        return data.chat;
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+    }
+  };
+
+  const deleteChat = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chats/${chatId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setChats(prev => prev.filter(c => c.id !== chatId));
+        if (currentChatId === chatId) {
+          // Switch to another chat or create new one
+          const remaining = chats.filter(c => c.id !== chatId);
+          if (remaining.length > 0) {
+            setCurrentChatId(remaining[0].id);
+          } else {
+            await createNewChat("Chat 1");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+    }
+  };
+
+  const updateChatTitle = async (chatId: string, newTitle: string) => {
+    try {
+      const response = await fetch(`/api/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      if (response.ok) {
+        setChats(prev => prev.map(c =>
+          c.id === chatId ? { ...c, title: newTitle } : c
+        ));
+      }
+    } catch (error) {
+      console.error("Error updating chat title:", error);
+    }
+    setEditingChatId(null);
+  };
+
+  const saveMessage = async (chatId: string, message: Message) => {
+    try {
+      await fetch(`/api/chats/${chatId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: message.role,
+          content: message.content,
+          reasoning: message.reasoning,
+        }),
+      });
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputValue.trim() || isGenerating) return;
+
+    // Ensure we have a chat
+    let activeChatId = currentChatId;
+    if (!activeChatId) {
+      const newChat = await createNewChat();
+      if (!newChat) return;
+      activeChatId = newChat.id;
+    }
+
+    // At this point activeChatId is guaranteed to be non-null
+    const chatId = activeChatId as string;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -99,6 +274,9 @@ export function AIAssistantPanel({
     setInputValue("");
     setIsGenerating(true);
 
+    // Save user message
+    await saveMessage(chatId, userMsg);
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -113,7 +291,7 @@ export function AIAssistantPanel({
       const decoder = new TextDecoder();
       let accumulatedContent = "";
       let accumulatedReasoning = "";
-      let buffer = ""; // Buffer for incomplete lines
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -122,9 +300,10 @@ export function AIAssistantPanel({
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
 
-        // Split buffer into lines, keeping incomplete line in buffer
+        // Process complete lines from buffer
         const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Last element is incomplete (or empty)
+        // Keep the last potentially incomplete line in buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -132,35 +311,41 @@ export function AIAssistantPanel({
 
           try {
             const json = JSON.parse(trimmedLine);
-            if (json.type === "reasoning") {
+            if (json.type === "reasoning" && json.data) {
               accumulatedReasoning += json.data;
               setMessages(prev => prev.map(m =>
                 m.id === aiMsgId ? { ...m, reasoning: accumulatedReasoning } : m
               ));
-            } else if (json.type === "content") {
+            } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
               setMessages(prev => prev.map(m =>
                 m.id === aiMsgId ? { ...m, isThinking: false, content: accumulatedContent } : m
               ));
             }
           } catch (e) {
-            // Silently ignore parse errors for incomplete JSON
-            console.debug("Incomplete JSON line, buffering...");
+            // Line might be incomplete JSON, will be processed in next iteration
+            console.debug("Skipping incomplete JSON line");
           }
         }
       }
 
-      // Process any remaining data in buffer after stream ends
+      // Process any remaining data in buffer
       if (buffer.trim()) {
         try {
           const json = JSON.parse(buffer.trim());
-          if (json.type === "reasoning") {
+          if (json.type === "reasoning" && json.data) {
             accumulatedReasoning += json.data;
-          } else if (json.type === "content") {
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId ? { ...m, reasoning: accumulatedReasoning } : m
+            ));
+          } else if (json.type === "content" && json.data) {
             accumulatedContent += json.data;
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId ? { ...m, content: accumulatedContent } : m
+            ));
           }
         } catch (e) {
-          // Final buffer might be incomplete, ignore
+          // Final buffer is incomplete, ignore
         }
       }
 
@@ -180,10 +365,26 @@ export function AIAssistantPanel({
         ));
       }
 
+      // Save AI message after completion
+      const finalAiMessage = {
+        id: aiMsgId,
+        role: "assistant" as const,
+        content: accumulatedContent.includes('"nodes"') ? "I've drafted the architecture based on your request. Check the canvas!" : accumulatedContent || "I couldn't generate a response.",
+        reasoning: accumulatedReasoning,
+      };
+      await saveMessage(chatId, finalAiMessage);
+
     } catch (err: any) {
       setMessages(prev => prev.map(m =>
         m.id === aiMsgId ? { ...m, isThinking: false, content: `Error: ${err.message}` } : m
       ));
+
+      // Save error message
+      await saveMessage(chatId, {
+        id: aiMsgId,
+        role: "assistant",
+        content: `Error: ${err.message}`,
+      });
     } finally {
       setIsGenerating(false);
       setMessages(prev => prev.map(m =>
@@ -191,6 +392,8 @@ export function AIAssistantPanel({
       ));
     }
   };
+
+  const currentChat = chats.find(c => c.id === currentChatId);
 
   return (
     <div className={cn(
@@ -232,10 +435,157 @@ export function AIAssistantPanel({
                 <p className="text-[10px] text-brand-gray-mid font-medium">Powered by DeepSeek R1</p>
               </div>
             </div>
-            <Link href="/dashboard/settings" title="Settings">
-              <Settings size={16} className="text-brand-gray-mid hover:text-brand-charcoal transition-colors" />
-            </Link>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowChatList(!showChatList)}
+                title="Chat History"
+              >
+                <MessageSquare size={16} className="text-brand-gray-mid" />
+              </Button>
+              <Link href="/dashboard/settings" title="Settings">
+                <Settings size={16} className="text-brand-gray-mid hover:text-brand-charcoal transition-colors" />
+              </Link>
+            </div>
           </div>
+
+          {/* Chat List Sidebar */}
+          {showChatList && (
+            <div className="border-b border-brand-charcoal/5 bg-white/30 backdrop-blur-sm">
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-brand-gray-mid">Chat History</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs gap-1"
+                    onClick={() => createNewChat()}
+                  >
+                    <Plus size={12} />
+                    New Chat
+                  </Button>
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {isLoadingChats ? (
+                    <div className="text-xs text-brand-gray-mid py-2">Loading...</div>
+                  ) : chats.length === 0 ? (
+                    <div className="text-xs text-brand-gray-mid py-2">No chats yet</div>
+                  ) : (
+                    chats.map((chat) => (
+                      <div
+                        key={chat.id}
+                        className={cn(
+                          "flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer group",
+                          currentChatId === chat.id
+                            ? "bg-brand-orange/10 text-brand-orange"
+                            : "hover:bg-white/50 text-brand-charcoal"
+                        )}
+                        onClick={() => {
+                          setCurrentChatId(chat.id);
+                          setShowChatList(false);
+                        }}
+                      >
+                        {editingChatId === chat.id ? (
+                          <div className="flex items-center gap-1 flex-1">
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              className="flex-1 text-xs px-1 py-0.5 border rounded"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  updateChatTitle(chat.id, editingTitle);
+                                } else if (e.key === 'Escape') {
+                                  setEditingChatId(null);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateChatTitle(chat.id, editingTitle);
+                              }}
+                            >
+                              <Check size={10} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingChatId(null);
+                              }}
+                            >
+                              <X size={10} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-xs truncate flex-1">{chat.title}</span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                                >
+                                  <MoreHorizontal size={10} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-32">
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingChatId(chat.id);
+                                    setEditingTitle(chat.title);
+                                  }}
+                                >
+                                  <Edit2 size={12} className="mr-2" />
+                                  Rename
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-red-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteChat(chat.id);
+                                  }}
+                                >
+                                  <Trash2 size={12} className="mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Chat Title */}
+          {currentChat && !showChatList && (
+            <div className="px-4 py-2 border-b border-brand-charcoal/5 bg-white/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-brand-gray-mid truncate">
+                  {currentChat.title}
+                </span>
+                <span className="text-[10px] text-brand-gray-mid">
+                  {messages.filter(m => m.role === 'user').length} messages
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6" ref={scrollRef}>
