@@ -46,52 +46,60 @@ export function UserMenu() {
     if (!user) return null;
 
     return (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border border-brand-charcoal/10">
-                        <AvatarImage src={user.user_metadata?.avatar_url || getAvatarUrl(user.email || "User")} alt={user.user_metadata?.full_name || "User"} />
-                        <AvatarFallback className="bg-brand-charcoal text-brand-sand-light font-serif italic">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-none hover:bg-transparent p-0">
+                    <Avatar className="h-10 w-10 rounded-none border border-brand-charcoal">
+                        <AvatarImage src={user.user_metadata?.avatar_url || getAvatarUrl(user.email || "User")} alt={user.user_metadata?.full_name || "User"} className="rounded-none" />
+                        <AvatarFallback className="rounded-none bg-brand-charcoal text-brand-sand-light font-mono">
                             {user.email?.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-brand-sand-light/95 backdrop-blur-md border border-brand-charcoal/10 shadow-xl rounded-xl" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
+            <DropdownMenuContent className="w-64 bg-[#faf9f5] border border-brand-charcoal rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-0" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal p-4 border-b border-brand-charcoal/10 bg-brand-charcoal/5">
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none font-poppins text-brand-charcoal">
+                        <p className="text-sm font-bold font-poppins text-brand-charcoal uppercase tracking-tight">
                             {user.user_metadata?.full_name || "User"}
                         </p>
-                        <p className="text-xs leading-none text-brand-charcoal/60 font-mono">
+                        <p className="text-[10px] leading-none text-brand-charcoal/60 font-mono">
                             {user.email}
                         </p>
                     </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-brand-charcoal/5" />
-                <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer focus:bg-brand-charcoal/5 focus:text-brand-charcoal">
-                        <Icon icon="lucide:layout-grid" className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings" className="cursor-pointer focus:bg-brand-charcoal/5 focus:text-brand-charcoal">
-                        <Icon icon="lucide:settings" className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/dashboard/templates" className="cursor-pointer focus:bg-brand-charcoal/5 focus:text-brand-charcoal">
-                        <Icon icon="lucide:library" className="mr-2 h-4 w-4" />
-                        <span>Templates</span>
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-brand-charcoal/5" />
-                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer focus:bg-red-50 focus:text-red-900 text-red-700">
-                    <Icon icon="lucide:log-out" className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                </DropdownMenuItem>
+
+                <div className="p-2 space-y-1">
+                    <DropdownMenuItem asChild className="rounded-none focus:bg-brand-orange/10 focus:text-brand-charcoal data-[highlighted]:bg-brand-orange/10 cursor-pointer">
+                        <Link href="/dashboard" className="flex items-center py-2 px-2">
+                            <Icon icon="lucide:layout-grid" className="mr-3 h-4 w-4" />
+                            <span className="font-mono text-xs uppercase tracking-wider">Dashboard</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-none focus:bg-brand-orange/10 focus:text-brand-charcoal data-[highlighted]:bg-brand-orange/10 cursor-pointer">
+                        <Link href="/dashboard/settings" className="flex items-center py-2 px-2">
+                            <Icon icon="lucide:settings" className="mr-3 h-4 w-4" />
+                            <span className="font-mono text-xs uppercase tracking-wider">Settings</span>
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="rounded-none focus:bg-brand-orange/10 focus:text-brand-charcoal data-[highlighted]:bg-brand-orange/10 cursor-pointer">
+                        <Link href="/dashboard/templates" className="flex items-center py-2 px-2">
+                            <Icon icon="lucide:library" className="mr-3 h-4 w-4" />
+                            <span className="font-mono text-xs uppercase tracking-wider">Templates</span>
+                        </Link>
+                    </DropdownMenuItem>
+                </div>
+
+                <div className="bg-brand-charcoal h-px w-full" />
+
+                <div className="p-2">
+                    <DropdownMenuItem onClick={handleSignOut} className="rounded-none focus:bg-red-500/10 focus:text-red-700 text-red-600 cursor-pointer data-[highlighted]:bg-red-500/10">
+                        <div className="flex items-center py-1 px-2">
+                            <Icon icon="lucide:log-out" className="mr-3 h-4 w-4" />
+                            <span className="font-mono text-xs uppercase tracking-wider">Log out</span>
+                        </div>
+                    </DropdownMenuItem>
+                </div>
             </DropdownMenuContent>
         </DropdownMenu>
     );
