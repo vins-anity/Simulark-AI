@@ -12,72 +12,100 @@ The platform addresses the "Context Loss" problem inherent in modern software en
 
 ### Interactive Architecture Canvas
 Simulark provides a professional-grade visual environment built on **XYFlow (React Flow)**, offering capabilities far beyond static diagramming tools.
-- **Semantic Components**: Unlike generic shape tools, Simulark uses specialized nodes with strict semantic definitions for Gateways, Compute services, Databases, and Queues. This ensures the underlying data model remains structurally valid.
-- **Smart Auto-Layout**: The system automatically arranges generated architectures using directed graph algorithms, ensuring legibility even for complex distributed systems.
-- **Dynamic Interaction**: Users can manipulate the architecture directly, with the system maintaining referential integrity between components.
+- **Semantic Components**: Specialized nodes with strict semantic definitions for Gateways, Compute services, Databases, Queues, Caches, Storage, Functions, and AI components.
+- **Smart Auto-Layout**: Automatic arrangement using directed graph algorithms (Dagre) for legibility even with complex distributed systems.
+- **Dynamic Interaction**: Direct manipulation of architecture with referential integrity between components.
 
 ### Agentic "Deep Thinking" Generation
-The platform utilizes a sophisticated multi-stage AI pipeline to generate architectures that are not just visually appealing but technically sound.
-- **Reasoning-First Approach**: Leveraging models with "Deep Thinking" capabilities (such as GLM-4.7 Flash), the system analyzes architectural constraints—such as scalability, consistency, and availability—before generating any visual elements.
-- **Multi-Agent Orchestration**: A dedicated **Aggregator Agent** outlines the high-level plan, while a **Generator Agent** transforms that plan into a strict JSON graph structure, minimizing hallucinations.
-- **Hybrid AI Pipeline**: The system employs a robust fallback strategy, utilizing **OpenRouter** (Solar Pro/Mistral Large) and **ZhipuAI** to ensure high availability and optimal performance.
+A sophisticated multi-stage AI pipeline generates technically sound architectures.
+- **Reasoning-First Approach**: Leveraging models with "Deep Thinking" capabilities (GLM-4.7 Flash) to analyze constraints before generating visual elements.
+- **Multi-Provider Fallback**: Hybrid pipeline using **ZhipuAI** (primary) and **OpenRouter** (fallback) for high availability.
+- **Streaming Architecture**: Server-Sent Events (SSE) stream the AI's thought process directly to the UI.
 
-### Visual Simulation & Resilience
-Simulark moves beyond static diagrams by visualizing the runtime behavior of the system.
-- **Protocol Visualization**: Data flows are animated to strictly represent their protocol nature. Synchronous operations (HTTP/gRPC) and asynchronous patterns (Queues/Streams) are visually distinct, allowing instant recognition of blocking vs. non-blocking paths.
-- **Chaos Mode (Resilience Testing)**: A gamified simulation environment that allows users to test system fault tolerance. Interacting with the "Kill Switch" on any node triggers a simulation of failure, visually demonstrating how traffic reroutes or where bottlenecks emerge without the component.
+### Visual Simulation & Resilience Testing
+Beyond static diagrams with runtime behavior visualization.
+- **Protocol Visualization**: Animated data flows representing protocol nature (HTTP/gRPC vs Queues/Streams).
+- **Chaos Mode**: Gamified simulation for fault tolerance testing. "Kill Switch" on nodes triggers failure simulation.
+- **Congestion Detection**: Visual indicators when nodes have high fan-in/out.
 
 ### The Context Bridge
-Designed for the modern AI-assisted workflow, Simulark acts as a context provider for IDEs and coding assistants.
-- **Live Context URL**: The platform exposes secure, read-only JSON endpoints that represent the current architectural state.
-- **IDE Integration**: Automatically generates configuration files (such as `.cursorrules` or Markdown context) for tools like **Cursor** and **Windsurf**. This ensures that the code generation phase adheres strictly to the architectural constraints defined in the diagram.
-- **Semantic Zoom**: A dual-view system allowing stakeholders to toggle between a "Concept Mode" for high-level discussion and an "Implementation Mode" featuring specific vendor technologies (e.g., AWS RDS, Apache Kafka) for engineering execution.
+Modern AI-assisted workflow context provider.
+- **Live Context URL**: Secure, read-only JSON endpoints for current architectural state.
+- **IDE Integration**: Generates `.cursorrules` and Markdown context for **Cursor** and **Windsurf**.
+- **Skill Export**: Downloadable AI Skills (SKILL.md) for use with AI coding agents.
+- **Export Options**: Mermaid diagrams, PNG, SVG, PDF formats.
 
 ---
 
 ## Technical Architecture
 
-The Simulark platform is built on a modern, type-safe stack designed for performance and maintainability.
+A modern, type-safe stack designed for performance and maintainability.
 
 ### Frontend
-- **Framework**: **Next.js 16** (App Router) for server-side rendering and efficient routing.
-- **Language**: **TypeScript** for strict type safety across the entire application.
-- **Styling**: **Tailwind CSS v4** for a high-performance, utility-first design system.
-- **State Management**: **Zustand** for global client-side state, managing the complex interactions of the simulation engine.
-- **Canvas Engine**: **XYFlow (React Flow)** custom implementation with **Dagre** for graph layout calculations.
+- **Framework**: Next.js 16 (App Router) with React 19
+- **Language**: TypeScript with strict mode
+- **Styling**: Tailwind CSS v4
+- **State Management**: Zustand for global client state
+- **Canvas Engine**: XYFlow (React Flow) with Dagre layout
+- **UI Components**: Shadcn/UI with Radix primitives
+- **Animations**: Framer Motion
 
 ### Backend & Infrastructure
-- **Authentication & Database**: **Supabase** facilitates secure user authentication (Auth), persistent storage (PostgreSQL), and complex data relationships.
-- **Data Security**: Implementation of Row-Level Security (RLS) policies ensures strong data isolation.
-- **Rate Limiting**: Custom PostgreSQL RPC functions manage API usage limits based on user subscription tiers.
+- **Runtime**: Bun runtime for fast execution
+- **Authentication & Database**: Supabase (Auth + PostgreSQL)
+- **Security**: Row-Level Security (RLS) policies
+- **Rate Limiting**: Upstash Redis with tiered limits
+- **AI Providers**: ZhipuAI (GLM-4.7 Flash), OpenRouter
 
-### Artificial Intelligence & Orchestration
-- **Orchestration**: Server-side logic handles the communication between multiple AI providers.
-- **Schema Validation**: **Valibot** provides runtime validation of AI-generated JSON, ensuring that all diagrams adhere to the strict internal schema before rendering.
-- **Streaming**: Implementation of Server-Sent Events (SSE) to stream the AI's "thought process" directly to the UI, enhancing transparency.
+### AI & Validation
+- **Schema Validation**: Valibot for runtime validation of AI-generated JSON
+- **Streaming**: Server-Sent Events for real-time AI responses
+- **Tech Ecosystem**: Normalized technology mappings for consistent rendering
 
 ---
 
 ## Project Structure
 
-The codebase is organized to separate concerns between the visualization engine, data management, and AI orchestration.
-
-- `actions/`: Contains Server Actions for backend logic, including AI orchestration and database operations.
-- `app/`: Follows the Next.js App Router conventions for pages and API endpoints.
-- `components/canvas/`: Houses the core logic for the visual editor, including custom node definitions and edge behaviors.
-- `components/ui/`: Reusable UI components built with Shadcn/UI primitives.
-- `lib/store.ts`: The central Zustand store managing the simulation state, view modes, and node statuses.
-- `lib/ai-client.ts`: The abstraction layer for AI provider communication (OpenRouter/ZhipuAI).
-- `supabase/migrations/`: Database schema definitions and SQL functions.
+```
+simulark-app/
+├── actions/                 # Server Actions (AI orchestration, DB ops)
+├── app/                     # Next.js App Router pages & API routes
+│   ├── api/
+│   │   ├── generate/        # AI architecture generation endpoint
+│   │   ├── chats/          # Chat history management
+│   │   ├── projects/       # Project CRUD operations
+│   │   ├── health/         # Health check endpoint
+│   │   └── export-skill/   # Skill export functionality
+│   ├── dashboard/           # Protected dashboard pages
+│   └── projects/[id]/       # Project editor
+├── components/
+│   ├── canvas/              # Core canvas components
+│   │   ├── nodes/          # Custom node definitions
+│   │   ├── edges/          # Custom edge behaviors
+│   │   └── FlowEditor.tsx  # Main canvas component
+│   ├── ui/                 # Reusable UI components
+│   └── layout/             # Layout components
+├── lib/
+│   ├── ai-client.ts         # AI provider abstraction
+│   ├── ai-orchestrator.ts   # Multi-agent orchestration
+│   ├── schema/              # Valibot schemas
+│   ├── store.ts             # Zustand stores
+│   ├── tech-normalizer.ts   # Technology normalization
+│   ├── skill-generator.ts   # AI Skill export logic
+│   └── logger.ts            # Production logging
+├── supabase/
+│   └── migrations/          # Database migrations
+└── docs/                    # Documentation
+```
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- **Bun**: This project uses the Bun runtime for fast dependency installation and script execution.
-- **Supabase**: A valid Supabase project is required for the backend.
-- **API Keys**: Access to OpenRouter and/or ZhipuAI is necessary for the generative features.
+- **Bun**: Runtime for fast dependency installation
+- **Supabase**: Backend (Auth + Database)
+- **API Keys**: ZhipuAI and/or OpenRouter for generative features
 
 ### Installation
 
@@ -89,25 +117,98 @@ The codebase is organized to separate concerns between the visualization engine,
 
 2. **Install dependencies**
    ```bash
-   bun install
+   pnpm install
    ```
 
 3. **Environment Configuration**
-   Copy the example environment file and configure your keys.
    ```bash
    cp .env.example .env.local
    ```
-   *Update `.env.local` with your Supabase credentials and AI provider keys.*
-
-4. **Start the Development Server**
-   ```bash
-   bun dev
+   
+   Required environment variables:
+   ```env
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   SUPABASE_SERVICE_ROLE_KEY=
+   
+   # AI Providers
+   ZHIPU_API_KEY=
+   OPENROUTER_API_KEY=
+   
+   # Redis (Upstash)
+   UPSTASH_REDIS_REST_URL=
+   UPSTASH_REDIS_REST_TOKEN=
    ```
 
-The application will be available at `http://localhost:3000`.
+4. **Start Development Server**
+   ```bash
+   pnpm dev
+   ```
+
+   Application available at `http://localhost:3000`
+
+### Production Build
+```bash
+pnpm build
+pnpm start
+```
+
+---
+
+## API Reference
+
+### Generate Architecture
+```typescript
+POST /api/generate
+Content-Type: application/json
+
+{
+  "prompt": "Design a serverless e-commerce backend",
+  "model": "glm-4.7-flash",
+  "mode": "startup",  // startup | corporate | default
+  "quickMode": false
+}
+```
+
+### Health Check
+```typescript
+GET /api/health
+
+Response:
+{
+  "status": "healthy",
+  "timestamp": "2026-02-09T...",
+  "version": "1.0.0",
+  "services": {
+    "supabase": { "status": "configured" },
+    "redis": { "status": "healthy", "latency": 5 }
+  }
+}
+```
+
+---
+
+## Subscription Plans
+
+| Plan | Price | Features |
+|------|-------|----------|
+| **Sandbox** (Free) | $0 | Up to 3 Projects, Standard Node Library |
+| **Sketch** (Starter) | $29/mo | Unlimited Projects, Chaos Engineering, Export to Terraform |
+| **Blueprint** (Pro) | $100/mo | Team Workspaces, SSO, Global Component Sync |
+| **Launch** (Business) | Contact | Dedicated SLAs, On-premise, White-labeling |
 
 ---
 
 ## License
 
-This project is distributed under the MIT License. Please refer to the `LICENSE` file for more details.
+MIT License. See LICENSE file for details.
+
+---
+
+## Acknowledgments
+
+- **XYFlow** for the React Flow canvas library
+- **Valibot** for modular schema validation
+- **Supabase** for authentication and database
+- **ZhipuAI** for GLM-4 reasoning capabilities

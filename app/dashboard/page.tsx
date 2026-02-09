@@ -113,162 +113,168 @@ export default function DashboardPage() {
   const totalPages = Math.ceil(totalProjects / ITEMS_PER_PAGE);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden font-sans">
-      {/* Hero / Focus Section - Compact */}
-      <div className="flex flex-col items-center justify-center py-6 space-y-6 shrink-0">
-        <div className="text-center space-y-2 max-w-3xl px-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="h-px w-6 bg-brand-charcoal/20" />
-            <div className="inline-flex items-center gap-2 px-2 py-0.5 bg-white border border-brand-charcoal/10 text-[9px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60">
-              <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-              System Ready
+    <div className="flex-1 w-full h-full relative overflow-hidden font-sans bg-[#faf9f5]">
+      {/* Mission Control - Centered & Independent */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-0 pb-32 pointer-events-none">
+        <div className="pointer-events-auto flex flex-col items-center space-y-8 w-full max-w-4xl px-4">
+
+          {/* Header Text */}
+          <div className="text-center space-y-4 w-full">
+            <div className="flex items-center justify-center gap-4">
+              <div className="h-px w-8 bg-brand-charcoal/20" />
+              <div className="inline-flex items-center gap-2.5 px-3 py-1 bg-white border border-brand-charcoal/10 text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                System Ready
+              </div>
+              <div className="h-px w-8 bg-brand-charcoal/20" />
             </div>
-            <div className="h-px w-6 bg-brand-charcoal/20" />
+
+            <h1 className="text-5xl md:text-7xl font-poppins font-bold tracking-tighter text-brand-charcoal leading-none">
+              Mission Control
+            </h1>
+            <p className="text-lg text-brand-gray-mid font-lora max-w-2xl mx-auto">
+              Design, simulate, and deploy architecture.
+            </p>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-poppins font-bold tracking-tighter text-brand-charcoal leading-none">
-            Mission Control
-          </h1>
-          <p className="text-sm text-brand-gray-mid font-lora max-w-lg mx-auto">
-            Design, simulate, and deploy architecture.
-          </p>
-        </div>
+          {/* Command Input & Create Button */}
+          <div className="w-full max-w-3xl px-2 relative group">
+            {/* Corner Markers */}
+            <div className="absolute top-0 left-2 w-2 h-2 border-t-2 border-l-2 border-brand-charcoal" />
+            <div className="absolute top-0 right-2 w-2 h-2 border-t-2 border-r-2 border-brand-charcoal" />
+            <div className="absolute bottom-0 left-2 w-2 h-2 border-b-2 border-l-2 border-brand-charcoal" />
+            <div className="absolute bottom-0 right-2 w-2 h-2 border-b-2 border-r-2 border-brand-charcoal" />
 
-        {/* Command Input & Create Button - Compact */}
-        <div className="w-full max-w-xl px-4 relative group">
-          {/* Corner Markers */}
-          <div className="absolute top-0 left-4 w-1.5 h-1.5 border-t border-l border-brand-charcoal" />
-          <div className="absolute top-0 right-4 w-1.5 h-1.5 border-t border-r border-brand-charcoal" />
-          <div className="absolute bottom-0 left-4 w-1.5 h-1.5 border-b border-l border-brand-charcoal" />
-          <div className="absolute bottom-0 right-4 w-1.5 h-1.5 border-b border-r border-brand-charcoal" />
-
-          <div className="relative flex items-center bg-white p-1.5 border border-brand-charcoal/10 shadow-sm transition-all duration-300 focus-within:ring-1 focus-within:ring-brand-orange/50">
-            <div className="pl-3 text-brand-charcoal/30 font-mono">
-              <Terminal className="w-4 h-4" />
-            </div>
-            <form onSubmit={handleExecute} className="w-full flex items-center">
-              <input
-                type="text"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe architecture..."
-                className="w-full text-sm px-3 py-2 bg-transparent placeholder:text-brand-gray-light/50 text-brand-charcoal focus:outline-none font-mono tracking-tight"
-                disabled={isExecuting}
-              />
-              <div className="pr-1 flex items-center gap-2">
-                {/* Spark / Random prompt button */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isExecuting}
-                  onClick={handleRandomPrompt}
-                  className="h-7 w-7 p-0 text-brand-charcoal/30 hover:text-brand-orange hover:bg-transparent"
-                  title="Random Spark"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                </Button>
-                <div className="w-px h-3 bg-brand-charcoal/10" />
-                {/* Create New Blank Button */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isExecuting}
-                  onClick={handleCreateNew}
-                  className="h-7 px-2 font-mono text-[10px] uppercase text-brand-charcoal/50 hover:text-brand-orange hover:bg-transparent"
-                  title="Start Blank Project"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Blank
-                </Button>
-                <div className="w-px h-3 bg-brand-charcoal/10" />
-                <button
-                  type="submit"
-                  disabled={!prompt.trim() || isExecuting}
-                  className="bg-brand-charcoal text-white hover:bg-brand-orange px-4 py-1.5 transition-colors duration-200 font-mono text-[10px] uppercase tracking-widest border border-brand-charcoal disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isExecuting ? "..." : "Run"}
-                </button>
+            <div className="relative flex items-center bg-white p-2.5 border border-brand-charcoal/10 shadow-lg transition-all duration-300 focus-within:ring-1 focus-within:ring-brand-orange/50">
+              <div className="pl-4 text-brand-charcoal/30 font-mono">
+                <Terminal className="w-5 h-5" />
               </div>
-            </form>
+              <form onSubmit={handleExecute} className="w-full flex items-center">
+                <input
+                  type="text"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe architecture..."
+                  className="w-full text-lg px-4 py-3 bg-transparent placeholder:text-brand-gray-light/50 text-brand-charcoal focus:outline-none font-mono tracking-tight"
+                  disabled={isExecuting}
+                />
+                <div className="pr-1 flex items-center gap-2">
+                  {/* Spark / Random prompt button */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isExecuting}
+                    onClick={handleRandomPrompt}
+                    className="h-9 w-9 p-0 text-brand-charcoal/30 hover:text-brand-orange hover:bg-transparent"
+                    title="Random Spark"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                  </Button>
+                  <div className="w-px h-4 bg-brand-charcoal/10" />
+                  {/* Create New Blank Button */}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isExecuting}
+                    onClick={handleCreateNew}
+                    className="h-9 px-3 font-mono text-[10px] uppercase text-brand-charcoal/50 hover:text-brand-orange hover:bg-transparent"
+                    title="Start Blank Project"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Blank
+                  </Button>
+                  <div className="w-px h-4 bg-brand-charcoal/10" />
+                  <button
+                    type="submit"
+                    disabled={!prompt.trim() || isExecuting}
+                    className="bg-brand-charcoal text-white hover:bg-brand-orange px-6 py-2 transition-colors duration-200 font-mono text-[10px] uppercase tracking-widest border border-brand-charcoal disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isExecuting ? "..." : "Run"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
 
 
-      {/* Active Operations (Projects) - Fill Remaining Space */}
-      <div className="flex flex-col flex-1 min-h-0 pt-6 space-y-3">
-        <div className="flex items-center justify-between px-2 border-b border-brand-charcoal/5 pb-2 shrink-0">
-          <div className="flex items-center gap-2">
-            <Layout className="w-3.5 h-3.5 text-brand-orange" />
-            <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-brand-charcoal">Active Operations</h2>
-            <span className="px-1.5 py-0.5 bg-brand-charcoal/5 rounded-full text-[9px] font-mono text-brand-charcoal/60">
-              {totalProjects}
-            </span>
+      {/* Active Operations (Projects) - Docked Bottom */}
+      <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-[#faf9f5] via-[#faf9f5] to-transparent pt-12 pb-6 px-6">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="flex items-center justify-between px-2 border-b border-brand-charcoal/5 pb-2">
+            <div className="flex items-center gap-2">
+              <Layout className="w-3.5 h-3.5 text-brand-orange" />
+              <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-brand-charcoal">Active Operations</h2>
+              <span className="px-1.5 py-0.5 bg-brand-charcoal/5 rounded-full text-[9px] font-mono text-brand-charcoal/60">
+                {totalProjects}
+              </span>
+            </div>
+
+            {/* Pagination Controls - Inline Right */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-mono text-brand-charcoal/40 mr-2">
+                  {currentPage} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || loading}
+                  className="h-6 w-6 p-0 rounded-sm border-brand-charcoal/10"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || loading}
+                  className="h-6 w-6 p-0 rounded-sm border-brand-charcoal/10"
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Pagination Controls - Inline Right */}
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-mono text-brand-charcoal/40 mr-2">
-                {currentPage} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1 || loading}
-                className="h-6 w-6 p-0 rounded-sm border-brand-charcoal/10"
-              >
-                <ChevronLeft className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || loading}
-                className="h-6 w-6 p-0 rounded-sm border-brand-charcoal/10"
-              >
-                <ChevronRight className="w-3 h-3" />
-              </Button>
+          {error ? (
+            <div className="p-4 text-center border border-red-200 bg-red-50/50 rounded-md">
+              <p className="text-red-500 font-mono text-xs">
+                [ERROR]: {error}
+              </p>
+            </div>
+          ) : loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 border border-brand-charcoal/5 bg-white animate-pulse rounded-md" />
+              ))}
+            </div>
+          ) : !projects || projects.length === 0 ? (
+            <div className="h-32 flex flex-col items-center justify-center border border-dashed border-brand-charcoal/10 bg-[#faf9f5] rounded-md">
+              <Activity className="w-6 h-6 text-brand-charcoal/20 mb-2" />
+              <p className="font-mono text-xs text-brand-charcoal/40 uppercase tracking-widest">
+                No operations
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  id={project.id}
+                  name={project.name}
+                  provider={project.provider || "Generic"}
+                  updatedAt={project.updated_at || new Date().toISOString()}
+                  className="h-32"
+                />
+              ))}
             </div>
           )}
         </div>
-
-        {error ? (
-          <div className="p-4 text-center border border-red-200 bg-red-50/50 rounded-md">
-            <p className="text-red-500 font-mono text-xs">
-              [ERROR]: {error}
-            </p>
-          </div>
-        ) : loading ? (
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-32 border border-brand-charcoal/5 bg-white animate-pulse rounded-md" />
-            ))}
-          </div>
-        ) : !projects || projects.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center border border-dashed border-brand-charcoal/10 bg-[#faf9f5] rounded-md">
-            <Activity className="w-6 h-6 text-brand-charcoal/20 mb-2" />
-            <p className="font-mono text-xs text-brand-charcoal/40 uppercase tracking-widest">
-              No operations
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                id={project.id}
-                name={project.name}
-                provider={project.provider || "Generic"}
-                updatedAt={project.updated_at || new Date().toISOString()}
-                className="h-40" // Comfortably fit symbol and text
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,19 +1,29 @@
 import { createEnv } from "@t3-oss/env-nextjs";
-import * as v from "valibot";
+import { pipe, string, minLength, optional } from "valibot";
 
 export const env = createEnv({
   server: {
-    NODE_ENV: v.picklist(["development", "test", "production"]),
-    SUPABASE_SERVICE_ROLE_KEY: v.string(),
-    OPENROUTER_API_KEY: v.string(),
-    UPSTASH_REDIS_REST_URL: v.string(),
-    UPSTASH_REDIS_REST_TOKEN: v.string(),
+    // AI Providers
+    ZHIPU_API_KEY: pipe(string(), minLength(1)),
+    OPENROUTER_API_KEY: optional(string()),
+
+    // Supabase
+    SUPABASE_SERVICE_ROLE_KEY: optional(string()),
+
+    // Upstash Redis
+    UPSTASH_REDIS_REST_URL: pipe(string(), minLength(1)),
+    UPSTASH_REDIS_REST_TOKEN: pipe(string(), minLength(1)),
   },
   client: {
-    NEXT_PUBLIC_SUPABASE_URL: v.string(),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: v.string(),
+    NEXT_PUBLIC_SUPABASE_URL: pipe(string(), minLength(1)),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: pipe(string(), minLength(1)),
   },
-  experimental__runtimeEnv: {
+  runtimeEnv: {
+    ZHIPU_API_KEY: process.env.ZHIPU_API_KEY,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },

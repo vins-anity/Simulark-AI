@@ -4,7 +4,6 @@ import {
   addEdge,
   Background,
   type Connection,
-  Controls,
   type Edge,
   type Node,
   Panel,
@@ -25,7 +24,7 @@ import {
 } from "react";
 import "@xyflow/react/dist/style.css";
 
-import { Activity, AlertTriangle, Info, X, Download, ChevronDown } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { saveProject } from "@/actions/projects";
 import { toast } from "sonner";
 import { DatabaseNode } from "./nodes/DatabaseNode";
@@ -42,14 +41,8 @@ import { NodeProperties } from "./nodes/NodeProperties";
 import { SimulationEdge } from "./edges/SimulationEdge";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { Icon } from "@iconify/react";
-import { applyLayout, applyLayoutAsync } from "@/lib/layout";
-// Note: toPng, toSvg, and jsPDF are now imported dynamically inside exportGraph to prevent Turbopack panics.
+import { applyLayoutAsync } from "@/lib/layout";
 import { generateMermaidCode } from "@/lib/utils";
-// Note: generateMermaidCode helper was previously at the bottom of this file. Using it from utils if available is cleaner.
-// If it's not in utils, I should inline it. I will assume it's NOT in utils and I need to define it or import the local one.
-// Actually, I should just remove these comments and ensure function exists. I will define it if missing.
-
 
 interface FlowEditorProps {
   initialNodes?: any[];
@@ -57,72 +50,37 @@ interface FlowEditorProps {
   projectId: string;
 }
 
-const FlowEditorInner = forwardRef(
-  (
-    { initialNodes = [], initialEdges = [], projectId }: FlowEditorProps,
-    ref,
-  ) => {
-    // Ensure all nodes and edges have unique ids and default positions
-    const nodesWithIds = useMemo(() => {
-      return (initialNodes as Node[]).map((node, index) => ({
-        ...node,
-        id: node.id || `node-${index}-${Date.now()}`,
-        // Provide default position if missing
-        position: node.position || { x: 100 + (index * 250), y: 100 + (index % 3) * 150 },
-      }));
-    }, [initialNodes]);
-
-    const edgesWithIds = useMemo(() => {
-      return (initialEdges as Edge[]).map((edge, index) => ({
-        ...edge,
-        id: edge.id || `edge - ${index} -${Date.now()} `,
-      }));
-    }, [initialEdges]);
-
-    const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithIds);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(edgesWithIds);
-    // Selected Node State Removed (handled by BaseNode internal toolbar)
-    const [showExportMenu, setShowExportMenu] = useState(false);
+const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
+  ({ initialNodes = [], initialEdges = [], projectId }, ref) => {
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const { fitView, getNodes, getEdges } = useReactFlow();
-
-    // Simulation Store
-    const { chaosMode, setChaosMode, viewMode, setViewMode } = useSimulationStore();
-
-    // Auto-save: Debounced persistence for node/edge changes
+    const { chaosMode } = useSimulationStore();
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isInitializedRef = useRef(false);
-    const prevNodesLengthRef = useRef(nodesWithIds.length);
-    const prevEdgesLengthRef = useRef(edgesWithIds.length);
 
     useEffect(() => {
-      // Skip initial mount to avoid saving the same data we just loaded
       if (!isInitializedRef.current) {
         isInitializedRef.current = true;
-        prevNodesLengthRef.current = nodes.length;
-        prevEdgesLengthRef.current = edges.length;
         return;
       }
 
-      // Debounce save to prevent excessive API calls
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
 
       saveTimerRef.current = setTimeout(async () => {
-        // Only save if there's actual content
         if (nodes.length === 0 && edges.length === 0) {
-          console.log('[FlowEditor] Skipping save: empty graph');
           return;
         }
-        console.log(`[FlowEditor] Auto-saving... (${nodes.length} nodes, ${edges.length} edges)`);
+
         try {
-          await saveProject(projectId, { nodes: nodes as any, edges: edges as any });
-          console.log('[FlowEditor] Auto-save complete.');
+          await saveProject(projectId, { nodes, edges });
         } catch (error) {
-          console.error('[FlowEditor] Auto-save failed:', error);
-          toast.error('Failed to save changes. Please try again.');
+          console.error("[FlowEditor] Auto-save failed:", error);
+          toast.error("Failed to save changes. Please try again.");
         }
-      }, 1500); // 1.5 second debounce
+      }, 1500);
 
       return () => {
         if (saveTimerRef.current) {
@@ -132,13 +90,8 @@ const FlowEditorInner = forwardRef(
     }, [nodes, edges, projectId]);
 
     useImperativeHandle(ref, () => ({
-      updateGraph: (data: { nodes: Node[]; edges: Edge[] }) => {
-        // Ensure all AI-provided nodes have default positions if missing
-        const nodesWithPositions = data.nodes.map((node, index) => ({
-          ...node,
-          position: node.position || { x: 100 + (index * 250), y: 100 + (index % 3) * 150 },
-        }));
-        setNodes(nodesWithPositions);
+      updateGraph: (data: { nodes: any[]; edges: any[] }) => {
+        setNodes(data.nodes);
         setEdges(data.edges);
       },
       autoLayout: async (direction: "DOWN" | "RIGHT" = "DOWN") => {
@@ -149,9 +102,8 @@ const FlowEditorInner = forwardRef(
           const { nodes: layoutNodes } = await applyLayoutAsync(currentNodes, currentEdges, { direction: layoutDirection });
           setNodes(layoutNodes);
           setTimeout(() => fitView({ duration: 500 }), 100);
-          // Save removed - debounced useEffect handles persistence
         } catch (error) {
-          console.error("AutoLayout error:", error);
+          console.error("[FlowEditor] AutoLayout error:", error);
         }
       },
       get nodes() { return getNodes(); },
@@ -165,7 +117,6 @@ const FlowEditorInner = forwardRef(
           const element = document.querySelector('.react-flow') as HTMLElement;
           if (!element) return;
 
-          // Dynamic imports to prevent Turbopack/SSR issues with DOM-heavy libraries
           const { toPng, toSvg } = await import("html-to-image");
 
           switch (format) {
@@ -188,9 +139,7 @@ const FlowEditorInner = forwardRef(
             case 'pdf': {
               const { jsPDF } = await import("jspdf");
               const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: '#ffffff' });
-              const pdf = new jsPDF({
-                orientation: 'landscape',
-              });
+              const pdf = new jsPDF({ orientation: 'landscape' });
               const imgProps = pdf.getImageProperties(dataUrl);
               const pdfWidth = pdf.internal.pageSize.getWidth();
               const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -203,13 +152,11 @@ const FlowEditorInner = forwardRef(
       }
     }));
 
-
     const nodeTypes = useMemo(
       () => ({
         database: DatabaseNode,
         gateway: GatewayNode,
         service: ServiceNode,
-        // Map new types to ServiceNode (shared visual structure)
         frontend: ServiceNode,
         backend: ServiceNode,
         queue: QueueNode,
@@ -223,13 +170,11 @@ const FlowEditorInner = forwardRef(
       []
     );
 
-    // Register Custom Edge
     const edgeTypes = useMemo(() => ({
       default: SimulationEdge,
       simulation: SimulationEdge
     }), []);
 
-    // Congestion Logic
     const augmentedEdges = useMemo(() => {
       const fanIn = new Map<string, number>();
       edges.forEach((e) => {
@@ -238,13 +183,8 @@ const FlowEditorInner = forwardRef(
 
       return edges.map((edge) => {
         const sourceFanIn = fanIn.get(edge.source) || 0;
-        // If source node is overloaded (fan-in > 2), mark outgoing edge as congested
         if (sourceFanIn > 2) {
-          return {
-            ...edge,
-            data: { ...edge.data, congestion: true },
-            animated: true, // Force animation
-          };
+          return { ...edge, data: { ...edge.data, congestion: true }, animated: true };
         }
         return edge;
       });
@@ -252,29 +192,15 @@ const FlowEditorInner = forwardRef(
 
     const onConnect = useCallback(
       (params: Connection) => {
-        const newEdges = addEdge(params, edges);
-        setEdges(newEdges);
-        // Save removed - debounced useEffect handles persistence
+        setEdges((eds) => addEdge(params, eds));
       },
-      [edges, setEdges],
+      [setEdges],
     );
 
-    const onNodeDragStop = useCallback(
-      (_: React.MouseEvent, node: Node, nodes: Node[]) => {
-        // Save removed - debounced useEffect handles persistence
-        // Note: React Flow auto-updates state via onNodesChange during drag
-      },
-      []
+    const selectedNodes = useMemo(() =>
+      nodes.filter((n): n is any & { selected: true } => n.selected === true),
+      [nodes]
     );
-
-    const handleLayout = async () => {
-      const currentNodes = getNodes();
-      const currentEdges = getEdges();
-      const { nodes: layoutNodes } = await applyLayoutAsync(currentNodes, currentEdges);
-      setNodes(layoutNodes);
-      setTimeout(() => fitView({ duration: 500 }), 100);
-      // Save removed - debounced useEffect handles persistence
-    };
 
     return (
       <div className={cn("h-full w-full relative group transition-colors duration-500 font-sans", chaosMode && "bg-black/90")}>
@@ -284,7 +210,6 @@ const FlowEditorInner = forwardRef(
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeDragStop={onNodeDragStop}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
@@ -292,23 +217,12 @@ const FlowEditorInner = forwardRef(
           className="drafting-grid"
         >
           <Background
-            key="background"
             gap={24}
             size={1.5}
             color={chaosMode ? "#330000" : "#d4d4d8"}
             className="transition-colors duration-500 opacity-60"
           />
 
-          {/* Controls removed to prevent duplication */}
-
-          {/* Custom Controls removed (handled by parent ToolRail mostly, except specific canvas actions) */}
-
-          {/* Simulation State HUD Panel Removed - Logic moved to Header */}
-
-
-          {/* Top Right: Actions Panel Removed (Consolidated into WorkstationHeader) */}
-
-          {/* Bottom Center: Chaos Warning */}
           {chaosMode && (
             <Panel position="bottom-center" className="mb-8">
               <div className="bg-red-950/90 text-red-100 px-6 py-2 border-t-2 border-red-500 text-xs font-mono uppercase tracking-widest shadow-2xl flex items-center gap-3">
@@ -318,29 +232,25 @@ const FlowEditorInner = forwardRef(
             </Panel>
           )}
 
-          {/* Node Details Panel Removed (Replaced by floating NodeProperties) */}
-          {nodes.filter(n => n.selected).map(node => (
+          {selectedNodes.map(node => (
             <Panel key={node.id} position="top-right" className="mr-4 mt-16">
               <NodeProperties id={node.id} data={node.data} type={node.type} />
             </Panel>
           ))}
-
         </ReactFlow>
       </div>
     );
   },
 );
 
-
-
 FlowEditorInner.displayName = "FlowEditorInner";
 
 export interface FlowEditorRef {
-  updateGraph: (data: { nodes: Node[]; edges: Edge[] }) => void;
+  updateGraph: (data: { nodes: any[]; edges: any[] }) => void;
   autoLayout: (direction?: "DOWN" | "RIGHT") => Promise<void>;
   exportGraph: (format: 'mermaid' | 'png' | 'pdf' | 'svg') => Promise<void>;
-  nodes: Node[];
-  edges: Edge[];
+  nodes: any[];
+  edges: any[];
 }
 
 export const FlowEditor = forwardRef<FlowEditorRef, FlowEditorProps>((props, ref) => {
