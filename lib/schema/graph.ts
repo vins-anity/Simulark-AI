@@ -25,10 +25,10 @@ export const NodeDataSchema = v.object({
 export const NodeSchema = v.object({
   id: v.string(),
   type: v.string(), // Maps to React Flow node types (e.g., 'customNode')
-  position: v.object({
+  position: v.optional(v.object({
     x: v.number(),
     y: v.number(),
-  }),
+  })),
   data: NodeDataSchema,
 });
 

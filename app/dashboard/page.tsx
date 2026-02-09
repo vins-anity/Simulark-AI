@@ -2,7 +2,8 @@
 
 import { Box, Filter, Plus, Search, ArrowRight, Wand2, Terminal, Cpu, Layout, Activity } from "lucide-react";
 import Link from "next/link";
-import { getUserProjects } from "@/actions/projects";
+import { useRouter } from "next/navigation";
+import { getUserProjects, createProject } from "@/actions/projects";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import type { Project } from "@/lib/schema/graph";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,9 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<(Project & { updated_at?: string })[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [prompt, setPrompt] = useState("");
+  const [isExecuting, setIsExecuting] = useState(false);
+  const router = useRouter();
 
   // Client-side fetching to ensure hydration matches and for "live" feel
   useEffect(() => {
@@ -29,6 +33,30 @@ export default function DashboardPage() {
     }
     load();
   }, []);
+
+  // Handle command execution
+  const handleExecute = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt.trim() || isExecuting) return;
+
+    setIsExecuting(true);
+    try {
+      // Create a new project with the prompt as the name
+      const result = await createProject(prompt.trim());
+      if (result.success && result.data) {
+        // Store the initial prompt in session storage for the canvas page
+        sessionStorage.setItem(`initial-prompt-${result.data.id}`, prompt.trim());
+        // Redirect to the canvas page
+        router.push(`/projects/${result.data.id}`);
+      } else {
+        setError(result.error || "Failed to create project");
+      }
+    } catch (err) {
+      setError("Failed to execute command");
+    } finally {
+      setIsExecuting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-full font-sans">
@@ -64,16 +92,25 @@ export default function DashboardPage() {
             <div className="pl-4 text-brand-charcoal/30 font-mono">
               <Terminal className="w-5 h-5" />
             </div>
-            <input
-              type="text"
-              placeholder="Describe architecture to initialize... [e.g. 'Next.js SaaS with Stripe']"
-              className="w-full text-base px-4 py-4 bg-transparent placeholder:text-brand-gray-light/50 text-brand-charcoal focus:outline-none font-mono tracking-tight"
-            />
-            <div className="pr-1">
-              <button className="bg-brand-charcoal text-white hover:bg-brand-orange px-6 py-3 transition-colors duration-200 font-mono text-xs uppercase tracking-widest border border-brand-charcoal">
-                Execute
-              </button>
-            </div>
+            <form onSubmit={handleExecute} className="w-full flex items-center">
+              <input
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe architecture to initialize... [e.g. 'Next.js SaaS with Stripe']"
+                className="w-full text-base px-4 py-4 bg-transparent placeholder:text-brand-gray-light/50 text-brand-charcoal focus:outline-none font-mono tracking-tight"
+                disabled={isExecuting}
+              />
+              <div className="pr-1">
+                <button
+                  type="submit"
+                  disabled={!prompt.trim() || isExecuting}
+                  className="bg-brand-charcoal text-white hover:bg-brand-orange px-6 py-3 transition-colors duration-200 font-mono text-xs uppercase tracking-widest border border-brand-charcoal disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExecuting ? "Initializing..." : "Execute"}
+                </button>
+              </div>
+            </form>
           </div>
 
           <div className="absolute -bottom-6 left-6 flex gap-4 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">

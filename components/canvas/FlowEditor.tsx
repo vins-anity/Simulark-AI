@@ -56,11 +56,13 @@ const FlowEditorInner = forwardRef(
     { initialNodes = [], initialEdges = [], projectId }: FlowEditorProps,
     ref,
   ) => {
-    // Ensure all nodes and edges have unique ids to prevent React key warnings
+    // Ensure all nodes and edges have unique ids and default positions
     const nodesWithIds = useMemo(() => {
       return (initialNodes as Node[]).map((node, index) => ({
         ...node,
-        id: node.id || `node - ${index} -${Date.now()} `,
+        id: node.id || `node-${index}-${Date.now()}`,
+        // Provide default position if missing
+        position: node.position || { x: 100 + (index * 250), y: 100 + (index % 3) * 150 },
       }));
     }, [initialNodes]);
 
@@ -83,13 +85,18 @@ const FlowEditorInner = forwardRef(
 
     useImperativeHandle(ref, () => ({
       updateGraph: (data: { nodes: Node[]; edges: Edge[] }) => {
-        setNodes(data.nodes);
+        // Ensure all AI-provided nodes have default positions if missing
+        const nodesWithPositions = data.nodes.map((node, index) => ({
+          ...node,
+          position: node.position || { x: 100 + (index * 250), y: 100 + (index % 3) * 150 },
+        }));
+        setNodes(nodesWithPositions);
         setEdges(data.edges);
 
         setTimeout(() => {
           if (workerRef.current) {
             workerRef.current.postMessage({
-              nodes: data.nodes,
+              nodes: nodesWithPositions,
               edges: data.edges,
             });
           }
@@ -97,9 +104,12 @@ const FlowEditorInner = forwardRef(
       },
       autoLayout: (direction: "DOWN" | "RIGHT" = "DOWN") => {
         if (workerRef.current) {
-          workerRef.current.postMessage({ nodes, edges, direction });
+          // Use getNodes/getEdges to avoid stale closure
+          workerRef.current.postMessage({ nodes: getNodes(), edges: getEdges(), direction });
         }
       },
+      get nodes() { return getNodes(); },
+      get edges() { return getEdges(); },
       exportGraph: async (format: 'mermaid' | 'png' | 'pdf' | 'svg') => {
         if (format === 'mermaid') {
           const mermaidCode = generateMermaidCode(getNodes(), getEdges());
@@ -216,7 +226,8 @@ const FlowEditorInner = forwardRef(
 
     const handleLayout = () => {
       if (workerRef.current) {
-        workerRef.current.postMessage({ nodes, edges });
+        // Use getNodes/getEdges for consistency
+        workerRef.current.postMessage({ nodes: getNodes(), edges: getEdges() });
       }
     };
 
@@ -320,6 +331,8 @@ export interface FlowEditorRef {
   updateGraph: (data: { nodes: Node[]; edges: Edge[] }) => void;
   autoLayout: (direction?: "DOWN" | "RIGHT") => void;
   exportGraph: (format: 'mermaid' | 'png' | 'pdf' | 'svg') => Promise<void>;
+  nodes: Node[];
+  edges: Edge[];
 }
 
 export const FlowEditor = forwardRef<FlowEditorRef, FlowEditorProps>((props, ref) => {

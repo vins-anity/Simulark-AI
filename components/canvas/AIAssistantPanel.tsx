@@ -51,6 +51,9 @@ interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
   projectId: string;
   isResizable?: boolean;
+  getCurrentNodes?: () => any[];
+  getCurrentEdges?: () => any[];
+  initialPrompt?: string; // New prop for auto-generation on page load
 }
 
 interface Message {
@@ -73,6 +76,9 @@ export function AIAssistantPanel({
   onGenerationSuccess,
   projectId,
   isResizable = false,
+  getCurrentNodes = () => [],
+  getCurrentEdges = () => [],
+  initialPrompt,
 }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -114,6 +120,19 @@ export function AIAssistantPanel({
       messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
     }
   }, [messages, isGenerating]);
+
+  // Auto-generate architecture when initialPrompt is provided (from dashboard)
+  useEffect(() => {
+    if (initialPrompt && !isGenerating && messages.length === 0) {
+      // Set the input value and trigger generation
+      setInputValue(initialPrompt);
+      // Trigger submit programmatically
+      const form = document.getElementById('ai-prompt-form');
+      if (form) {
+        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
+    }
+  }, [initialPrompt, isGenerating, messages.length]);
 
   const loadUserPreferences = async () => {
     const supabase = createBrowserClient(
@@ -248,7 +267,7 @@ export function AIAssistantPanel({
 
 
 
-  // Helper to generate structured summary
+  // Helper to generate structured summary (professional, archimyst.com style)
   const generateArchitectureSummary = (data: { nodes: any[], edges: any[] }) => {
     const nodeCount = data.nodes.length;
     const edgeCount = data.edges.length;
@@ -262,17 +281,27 @@ export function AIAssistantPanel({
     // Extract techs
     const techs = Array.from(new Set(data.nodes.map(n => n.data?.tech).filter(Boolean)));
 
-    return `### 🏗️ Architecture Blueprint Generated
+    // Build component summary
+    const componentLines: string[] = [];
+    if (services.length) componentLines.push(`**Services**: ${services.map(n => n.data?.label || n.id).join(', ')}`);
+    if (dbs.length) componentLines.push(`**Data Layer**: ${dbs.map(n => n.data?.label || n.id).join(', ')}`);
+    if (queues.length) componentLines.push(`**Messaging**: ${queues.map(n => n.data?.label || n.id).join(', ')}`);
+    if (others.length) componentLines.push(`**Infrastructure**: ${others.map(n => n.data?.label || n.id).join(', ')}`);
 
-**System Overview**
-A **${nodeCount}-node** architecture with **${edgeCount} connections**.
+    return `### Architecture Blueprint Generated
+
+**System Overview**: ${nodeCount}-node architecture with ${edgeCount} connections.
+
+${componentLines.length > 0 ? componentLines.join('\n\n') : ''}
 
 | Component Type | Count | Technologies |
 | :--- | :--- | :--- |
-| 🟢 **Services** | ${services.length} | ${services.map(n => n.data?.tech || 'Generic').join(', ') || 'None'} |
-| 🗄️ **Databases** | ${dbs.length} | ${dbs.map(n => n.data?.tech || 'Generic').join(', ') || 'None'} |
-| 🔄 **Queues** | ${queues.length} | ${queues.map(n => n.data?.tech || 'Generic').join(', ') || 'None'} |
-| 📦 **Others** | ${others.length} | - |
+| Services | ${services.length} | ${techs.slice(0, 3).join(', ') || '-'} |
+| Databases | ${dbs.length} | ${dbs.map(n => n.data?.tech).filter(Boolean).join(', ') || '-'} |
+| Queues | ${queues.length} | ${queues.map(n => n.data?.tech).filter(Boolean).join(', ') || '-'} |
+| Others | ${others.length} | - |
+
+This architecture separates concerns across dedicated service layers, enabling independent scaling and simplified maintenance. The data flow follows a clear request-response pattern through the load balancer.
 
 **Next Steps**
 - Review the canvas for the visual layout.
@@ -325,7 +354,9 @@ A **${nodeCount}-node** architecture with **${edgeCount} connections**.
           prompt: userMessage.content,
           projectId,
           mode: chatMode, // Pass the selected mode
-          model: model // Pass selected model
+          model: model, // Pass selected model
+          currentNodes: getCurrentNodes(), // Call the getter
+          currentEdges: getCurrentEdges(), // Call the getter
         }),
       });
 
@@ -357,8 +388,10 @@ A **${nodeCount}-node** architecture with **${edgeCount} connections**.
               ));
             } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
+              // Hide raw JSON - only show processing status, not the actual content
+              // The final summary will be displayed after generation completes
               setMessages(prev => prev.map(m =>
-                m.id === aiMsgId ? { ...m, isThinking: false, content: accumulatedContent } : m
+                m.id === aiMsgId ? { ...m, isThinking: false, content: "Generating architecture diagram..." } : m
               ));
             } else if (json.type === "result" && json.data) {
               lastGeneratedData = json.data; // Capture data
@@ -538,6 +571,7 @@ A **${nodeCount}-node** architecture with **${edgeCount} connections**.
       {/* Input Area - REFACTORED */}
       <div className="p-3 bg-white border-t border-brand-charcoal/10">
         <form
+          id="ai-prompt-form"
           onSubmit={handleSubmit}
           className="relative flex flex-col gap-2 bg-[#faf9f5] border border-brand-charcoal/20 p-2 focus-within:ring-1 focus-within:ring-brand-orange/50 focus-within:border-brand-orange/50 transition-all rounded-sm"
         >

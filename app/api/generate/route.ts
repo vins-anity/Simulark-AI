@@ -17,14 +17,15 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
 
     try {
-        const { prompt, model, mode } = await req.json();
+        const { prompt, model, mode, currentNodes, currentEdges } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
         }
 
         console.log(`[API] Starting generation (Model: ${model || "auto"}, Mode: ${mode || "default"})`);
-        const stream = await generateArchitectureStream(prompt, model, mode);
+        console.log(`[API DEBUG] User prompt: ${prompt.substring(0, 200).replace(/\n/g, " ")}${prompt.length > 200 ? "..." : ""}`);
+        const stream = await generateArchitectureStream(prompt, model, mode, currentNodes, currentEdges);
 
         // Create a robust stream that separates reasoning from content
         const encoder = new TextEncoder();
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
             async start(controller) {
                 let chunkCount = 0;
                 let accumulatedContent = ""; // Track full content for parsing
+                let hasJsonResult = false; // Track if we got a proper JSON result
 
                 try {
                     // Use the OpenAI SDK's native iterator pattern
@@ -64,27 +66,67 @@ export async function POST(req: NextRequest) {
                         }
                     }
 
+                    // DEBUG: Log accumulated content for diagnosis
+                    console.log("[API DEBUG] Raw accumulated content length:", accumulatedContent.length);
+                    console.log("[API DEBUG] Raw content preview (first 300 chars):", accumulatedContent.substring(0, 300).replace(/\n/g, " "));
+
                     // Parse accumulated content and emit result chunk for canvas rendering
                     if (accumulatedContent) {
                         try {
                             // Clean markdown code blocks if present
                             let jsonStr = accumulatedContent.trim();
+
+                            // Try multiple cleanup strategies
+                            // Strategy 1: Remove code block markers
                             if (jsonStr.startsWith('```json')) {
                                 jsonStr = jsonStr.slice(7);
-                            }
-                            if (jsonStr.startsWith('```')) {
+                            } else if (jsonStr.startsWith('```')) {
                                 jsonStr = jsonStr.slice(3);
                             }
                             if (jsonStr.endsWith('```')) {
                                 jsonStr = jsonStr.slice(0, -3);
                             }
+
+                            // Strategy 2: Find first { and last } to extract JSON
+                            const firstBrace = jsonStr.indexOf('{');
+                            const lastBrace = jsonStr.lastIndexOf('}');
+                            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+                            }
+
+                            console.log("[API DEBUG] Cleaned content for parsing (first 200 chars):", jsonStr.substring(0, 200).replace(/\n/g, " "));
+                            console.log("[API DEBUG] Cleaned content length:", jsonStr.length);
+
                             const parsed = JSON.parse(jsonStr.trim());
                             if (parsed.nodes && parsed.edges) {
                                 console.log(`[API] Emitting result with ${parsed.nodes.length} nodes, ${parsed.edges.length} edges`);
                                 controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: parsed }) + "\n"));
+                                hasJsonResult = true;
+                            } else {
+                                console.warn("[API] Parsed JSON missing nodes or edges:", { hasNodes: !!parsed.nodes, hasEdges: !!parsed.edges });
                             }
-                        } catch (parseErr) {
-                            console.warn("[API] Could not parse content as architecture JSON:", parseErr);
+                        } catch (parseErr: any) {
+                            console.error("[API] Could not parse content as architecture JSON:", parseErr.message);
+                            console.error("[API] Content that failed to parse (first 500 chars):", accumulatedContent.substring(0, 500).replace(/\n/g, " "));
+                        }
+                    }
+
+                    // If no JSON result was emitted, send a warning to the client
+                    if (!hasJsonResult && accumulatedContent.length > 0) {
+                        console.warn("[API] No valid JSON architecture found in response. Content length:", accumulatedContent.length);
+                        // Try one more time with more aggressive JSON extraction
+                        try {
+                            const jsonMatch = accumulatedContent.match(/\{[\s\S]*\}/);
+                            if (jsonMatch) {
+                                const parsed = JSON.parse(jsonMatch[0]);
+                                if (parsed.nodes && parsed.edges) {
+                                    console.log(`[API] Recovery: Found JSON with ${parsed.nodes.length} nodes, ${parsed.edges.length} edges`);
+                                    controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: parsed }) + "\n"));
+                                    hasJsonResult = true;
+                                }
+                            }
+                        } catch (recoveryErr: any) {
+                            console.error("[API] Recovery parse also failed:", recoveryErr.message);
                         }
                     }
 

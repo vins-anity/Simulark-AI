@@ -1,6 +1,6 @@
 "use client";
 
-import { getProject } from "@/actions/projects";
+import { getProject, saveProject } from "@/actions/projects";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
@@ -209,6 +209,7 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string | null>(null);
   const flowEditorRef = useRef<FlowEditorRef | null>(null);
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
 
   // Terminal State
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
@@ -217,6 +218,14 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
     async function init() {
       const { id: projectId } = await paramsPromise;
       setId(projectId);
+
+      // Check for initial prompt from dashboard
+      const prompt = sessionStorage.getItem(`initial-prompt-${projectId}`);
+      if (prompt) {
+        setInitialPrompt(prompt);
+        sessionStorage.removeItem(`initial-prompt-${projectId}`);
+      }
+
       const { data, error } = await getProject(projectId);
       if (error || !data) {
         setLoading(false);
@@ -228,9 +237,13 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
     init();
   }, [paramsPromise]);
 
-  const handleGenerationSuccess = (data: any) => {
+  const handleGenerationSuccess = async (data: any) => {
     if (flowEditorRef.current) {
       flowEditorRef.current.updateGraph(data);
+    }
+    // Persist to database
+    if (id && data.nodes && data.edges) {
+      await saveProject(id, { nodes: data.nodes, edges: data.edges });
     }
   };
 
@@ -345,6 +358,9 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
               projectId={id}
               onGenerationSuccess={handleGenerationSuccess}
               isResizable={false}
+              getCurrentNodes={() => flowEditorRef.current?.nodes || []}
+              getCurrentEdges={() => flowEditorRef.current?.edges || []}
+              initialPrompt={initialPrompt || undefined}
             />
           </div>
         </div>

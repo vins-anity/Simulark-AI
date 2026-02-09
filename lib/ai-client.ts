@@ -16,8 +16,8 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
         baseURL: "https://open.bigmodel.cn/api/paas/v4",
         apiKey: env.ZHIPU_API_KEY,
         model: "glm-4.7-flash", // Using Flash as per doc
+        // IMPORTANT: Keep thinking enabled but system prompt handles JSON in content
         reasoningParam: { thinking: { type: "enabled" } },
-        // reasoningParam: {}, optional disabled
     },
     openrouter: {
         baseURL: "https://openrouter.ai/api/v1",
@@ -47,14 +47,20 @@ export function createAIClient(provider: AIProvider = "zhipu") {
     return { client, config };
 }
 
-export async function generateArchitectureStream(prompt: string, modelId?: string, mode: "default" | "startup" | "corporate" = "default") {
+export async function generateArchitectureStream(
+    prompt: string,
+    modelId?: string,
+    mode: "default" | "startup" | "corporate" = "default",
+    currentNodes: any[] = [],
+    currentEdges: any[] = []
+) {
     if (modelId) {
         console.log(`[AI Client] Generating with selected model: ${modelId} in mode: ${mode}`);
         // Map modelId to provider
         if (modelId === "glm-4.7-flash") {
-            return await callModelStream("zhipu", prompt, mode);
+            return await callModelStream("zhipu", prompt, mode, currentNodes, currentEdges);
         } else if (modelId === "arcee-ai") {
-            return await callModelStream("openrouter", prompt, mode);
+            return await callModelStream("openrouter", prompt, mode, currentNodes, currentEdges);
         }
     }
 
@@ -62,14 +68,14 @@ export async function generateArchitectureStream(prompt: string, modelId?: strin
     // 1. Try Primary (Zhipu)
     try {
         console.log(`[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Mode: ${mode}. Prompt length: ${prompt.length}`);
-        const stream = await callModelStream("zhipu", prompt, mode);
+        const stream = await callModelStream("zhipu", prompt, mode, currentNodes, currentEdges);
         console.log("[AI Client] Zhipu stream established successfully.");
         return stream;
     } catch (error: any) {
         console.warn(`[AI Client] Zhipu failed (Error: ${error.message}). Switching to OpenRouter fallback...`);
         // 2. Fallback (OpenRouter)
         try {
-            const stream = await callModelStream("openrouter", prompt, mode);
+            const stream = await callModelStream("openrouter", prompt, mode, currentNodes, currentEdges);
             console.log("[AI Client] OpenRouter stream established successfully.");
             return stream;
         } catch (fbError: any) {
@@ -79,7 +85,13 @@ export async function generateArchitectureStream(prompt: string, modelId?: strin
     }
 }
 
-async function callModelStream(provider: AIProvider, prompt: string, mode: "default" | "startup" | "corporate" = "default") {
+async function callModelStream(
+    provider: AIProvider,
+    prompt: string,
+    mode: "default" | "startup" | "corporate" = "default",
+    currentNodes: any[] = [],
+    currentEdges: any[] = []
+) {
     const { client, config } = createAIClient(provider);
 
     let roleDescription = "Senior Solutions Architect";
@@ -97,31 +109,48 @@ async function callModelStream(provider: AIProvider, prompt: string, mode: "defa
         focusArea = "scalability, fault tolerance, cost-efficiency, and modern architectural best practices.";
     }
 
+    const contextPrompt = currentNodes.length > 0
+        ? `\n\nCURRENT ARCHITECTURE STATE:
+The user already has an existing diagram. 
+Existing Nodes: ${JSON.stringify(currentNodes.map(n => ({ id: n.id, type: n.type, label: n.data?.label, tech: n.data?.tech })))}
+Existing Edges: ${JSON.stringify(currentEdges.map(e => ({ id: e.id, source: e.source, target: e.target })))}
+
+Your task is to MODIFY or IMPROVE this architecture based on the user's prompt. 
+- You MUST maintain the context of existing components.
+- If the user asks for a change, provide the UPDATED full architecture JSON.
+- If the user asks to "add" something, include existing nodes plus new ones.
+- If the user asks to "improve" or "simplify", rewrite the JSON accordingly.
+- Ensure node IDs remain consistent if they refer to the same component.`
+        : '';
+
     const systemPrompt = `You are a ${roleDescription}. 
-  Analyze the user's request and generate a detailed backend architecture.
-  
-  Phase 1: Deep Thinking. Plan the architecture, considering ${focusArea}. Output your thoughts in the reasoning stream.
-  
-  Phase 2: JSON Generation. Output the final architecture as a strict JSON object.
-  The JSON MUST follow this schema:
-  {
-    "nodes": [ { "id": "string", "type": "gateway" | "service" | "database" | "queue", "position": { "x": number, "y": number }, "data": { "label": "string", "tech": "string", "serviceType": "gateway" | "service" | "database" | "queue", "validationStatus": "valid" | "warning" | "error", "costEstimate": number } } ],
-    "edges": [ { "id": "string", "source": "string", "target": "string", "animated": boolean, "data": { "protocol": "http" | "queue" | "stream" } } ]
-  }
-  
-  Examples of protocol usage:
-  - Use "http" for synchronous calls (Service -> Service).
-  - Use "queue" for async messaging (Service -> Queue, Queue -> Service).
-  - Use "stream" for high-throughput data (Service -> Stream).
-  
-  Constraints:
-  - Services must connect to Databases via defined protocols.
-  - High traffic implies Load Balancers (Gateways).
-  - Caches should be placed before Databases for read-heavy loads.
-  - SELECT REAL WORLD TECHNOLOGIES for the "tech" field (e.g., "Next.js", "PostgreSQL", "Redis", "Kafka", "AWS", "Vercel").
-  - "tech" field MUST match standard names to ensure icon rendering.
-  
-  Return ONLY the JSON in the final response content. Do not include markdown formatting like \`\`\`json.`;
+    Analyze the user's request and generate a detailed backend architecture.
+    ${contextPrompt}
+    
+    CRITICAL INSTRUCTIONS:
+    1. Think about the architecture in your reasoning/thinking process.
+    2. Then, OUTPUT THE FINAL JSON in the content field - this is REQUIRED.
+    3. The reasoning should NOT contain the JSON.
+    4. The content field MUST contain ONLY the JSON object.
+    
+    JSON Schema (output this in the content field, NOT in reasoning):
+    {
+      "nodes": [ { "id": "string", "type": "gateway" | "service" | "database" | "queue", "position": { "x": number, "y": number }, "data": { "label": "string", "tech": "string", "serviceType": "gateway" | "service" | "database" | "queue", "validationStatus": "valid" | "warning" | "error", "costEstimate": number } } ],
+      "edges": [ { "id": "string", "source": "string", "target": "string", "animated": boolean, "data": { "protocol": "http" | "queue" | "stream" } } ]
+    }
+    
+    Protocol Examples:
+    - Use "http" for synchronous calls (Service -> Service).
+    - Use "queue" for async messaging (Service -> Queue, Queue -> Service).
+    - Use "stream" for high-throughput data (Service -> Stream).
+    
+    Constraints:
+    - Services must connect to Databases via defined protocols.
+    - High traffic implies Load Balancers (Gateways).
+    - Caches should be placed before Databases for read-heavy loads.
+    - SELECT REAL WORLD TECHNOLOGIES for the "tech" field (e.g., "Next.js", "PostgreSQL", "Redis", "Kafka", "AWS", "Vercel").
+    
+    IMPORTANT: Output the complete JSON in the content field. Do not use markdown code blocks. Do not include the reasoning in the content. The content must start with "{" and contain the full architecture definition.`;
 
     console.log(`[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})`);
 
