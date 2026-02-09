@@ -299,10 +299,7 @@ const FlowEditorInner = forwardRef(
             className="transition-colors duration-500 opacity-60"
           />
 
-          <Controls
-            showInteractive={false}
-            className="bg-white border border-brand-charcoal/10 shadow-lg rounded-none"
-          />
+          {/* Controls removed to prevent duplication */}
 
           {/* Custom Controls removed (handled by parent ToolRail mostly, except specific canvas actions) */}
 

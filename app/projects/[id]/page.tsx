@@ -27,6 +27,7 @@ import { useSimulationStore } from "@/lib/store";
 import { Activity } from "lucide-react";
 
 // Workstation Components
+// Workstation Components
 function WorkstationHeader({
   project,
   saving,
@@ -50,129 +51,133 @@ function WorkstationHeader({
   return (
     <header className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5] flex items-center justify-between px-4 shrink-0 z-20 relative">
       <div className="flex items-center gap-4">
-        <Link href="/dashboard" className="text-brand-charcoal/40 hover:text-brand-charcoal transition-colors">
+        {/* Navigation */}
+        <Link href="/dashboard" className="text-brand-charcoal/40 hover:text-brand-charcoal transition-colors p-1" title="Back to Dashboard">
           <Icon icon="lucide:arrow-left" className="w-4 h-4" />
         </Link>
         <div className="h-4 w-px bg-brand-charcoal/10" />
-        <div className="flex items-center gap-2">
+
+        {/* Project Identity */}
+        <div className="flex items-center gap-2 mr-4">
           <Icon icon="lucide:box" className="w-4 h-4 text-brand-orange" />
           <span className="font-poppins font-bold text-sm text-brand-charcoal tracking-tight">{project.name}</span>
+          <Badge variant="outline" className="hidden lg:flex rounded-none border-brand-charcoal/20 text-[9px] h-5 px-1 font-mono uppercase tracking-widest text-brand-charcoal/60 bg-transparent">
+            Draft
+          </Badge>
         </div>
-        <Badge variant="outline" className="rounded-none border-brand-charcoal/20 text-[10px] font-mono uppercase tracking-widest text-brand-charcoal/60 bg-transparent">
-          Draft Protocol
-        </Badge>
+
+        {/* Main Menu Bar */}
+        <div className="flex items-center gap-1">
+          {/* File Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+                File
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
+              <DropdownMenuItem onClick={() => { }} className="cursor-not-allowed opacity-50">
+                New Project...
+              </DropdownMenuItem>
+              <div className="h-px bg-slate-100 my-1" />
+              <DropdownMenuItem onClick={onExportSkill} className="cursor-pointer">
+                <Icon icon="lucide:file-code" className="w-3.5 h-3.5 mr-2 text-brand-orange" /> Export as Skill
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('mermaid')} className="cursor-pointer">
+                <Icon icon="lucide:download" className="w-3.5 h-3.5 mr-2" /> Export Mermaid
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport('png')} className="cursor-pointer">
+                <Icon icon="lucide:image" className="w-3.5 h-3.5 mr-2" /> Export Image (PNG)
+              </DropdownMenuItem>
+              <div className="h-px bg-slate-100 my-1" />
+              <DropdownMenuItem className="cursor-pointer font-bold text-brand-orange">
+                <Icon icon="lucide:save" className="w-3.5 h-3.5 mr-2" /> Save Version
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* View Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+                View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
+              <DropdownMenuItem onClick={onToggleTerminal} className="cursor-pointer">
+                <Icon icon={isTerminalOpen ? "lucide:check" : "lucide:terminal-square"} className="w-3.5 h-3.5 mr-2" />
+                Terminal Panel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { }} className="cursor-not-allowed opacity-50">
+                Toggle Grid
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Layout Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+                Layout
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
+              <DropdownMenuItem onClick={() => onAutolayout('DOWN')} className="cursor-pointer">
+                <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" /> Auto-Layout (Vertical)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAutolayout('RIGHT')} className="cursor-pointer">
+                <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" /> Auto-Layout (Horizontal)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Simulation Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+                Simulation
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
+              <DropdownMenuItem onClick={() => setChaosMode(!chaosMode)} className="cursor-pointer">
+                <Icon icon={chaosMode ? "lucide:check" : "lucide:zap"} className={cn("w-3.5 h-3.5 mr-2", chaosMode && "text-red-500")} />
+                Chaos Mode {chaosMode ? "(Active)" : ""}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="hidden md:flex items-center gap-2 mr-4 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
-          <span>Mem: 42%</span>
-          <div className="h-2 w-px bg-brand-charcoal/10" />
+      <div className="flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-2 mr-2 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-brand-charcoal/5 rounded-sm">
+            <span className={cn("w-1.5 h-1.5 rounded-full", saving ? "bg-amber-400 animate-pulse" : "bg-green-400")} />
+            {saving ? "SAVING..." : "SYSTEM ONLINE"}
+          </div>
           <span>Lat: 12ms</span>
         </div>
 
-        {/* Autolayout Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 rounded-none text-brand-charcoal/60 hover:text-brand-orange hover:bg-brand-orange/5 font-mono text-[10px] uppercase tracking-widest hidden sm:flex"
-            >
-              <Icon icon="lucide:layout-dashboard" className="w-3.5 h-3.5 mr-2" />
-              AUTOLAYOUT
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 font-mono text-xs bg-white border border-brand-charcoal/20 shadow-xl">
-            <DropdownMenuItem onClick={() => onAutolayout('DOWN')} className="cursor-pointer">
-              <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" /> Hierarchical
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAutolayout('RIGHT')} className="cursor-pointer">
-              <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" /> Tiered (Tech)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="h-4 w-px bg-brand-charcoal/10" />
 
-        {/* Share / Export Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 rounded-none border-brand-charcoal/20 bg-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-charcoal hover:text-white transition-all hidden sm:flex"
-            >
-              <Icon icon="lucide:share-2" className="w-3 h-3 mr-2" />
-              SHARE
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 font-mono text-xs p-0 bg-white border border-brand-charcoal/20 shadow-xl">
-            <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-brand-charcoal/5 border-b border-brand-charcoal/10">
-              Export Protocol
-            </div>
-            <DropdownMenuItem onClick={onExportSkill} className="cursor-pointer px-3 py-2">
-              <Icon icon="lucide:file-code" className="w-3.5 h-3.5 mr-2 text-brand-orange" /> .cursorrules
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExport('mermaid')} className="cursor-pointer px-3 py-2">
-              <Icon icon="lucide:download" className="w-3.5 h-3.5 mr-2" /> Mermaid.js
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
-              // toast.success("Link copied!"); // defined elsewhere or assume toast works
-            }} className="cursor-pointer px-3 py-2">
-              <Icon icon="lucide:link" className="w-3.5 h-3.5 mr-2" /> Live Context Link
-            </DropdownMenuItem>
-
-            <div className="h-px bg-brand-charcoal/10" />
-
-            <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-brand-charcoal/5 border-b border-brand-charcoal/10">
-              Visuals
-            </div>
-            <DropdownMenuItem onClick={() => onExport('png')} className="cursor-pointer px-3 py-2">
-              <Icon icon="lucide:image" className="w-3.5 h-3.5 mr-2" /> PNG Image
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExport('pdf')} className="cursor-pointer px-3 py-2">
-              <Icon icon="lucide:file-text" className="w-3.5 h-3.5 mr-2" /> PDF Document
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
+        {/* Deploy Action */}
         <Button
           size="sm"
-          className="h-8 rounded-none bg-brand-charcoal text-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-orange transition-all"
+          className="h-8 rounded-none bg-brand-charcoal text-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-orange transition-all shadow-sm"
         >
-          <Icon icon="lucide:save" className={cn("w-3 h-3 mr-2", saving && "animate-spin")} />
-          {saving ? "Saving..." : "Deploy"}
+          <Icon icon="lucide:rocket" className="w-3 h-3 mr-2" />
+          Deploy
         </Button>
 
-        <div className="h-4 w-px bg-brand-charcoal/10 mx-2" />
-
-        {/* Chaos Toggle */}
+        {/* Share Action */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          onClick={() => setChaosMode(!chaosMode)}
-          className={cn(
-            "h-8 rounded-none font-mono text-[10px] uppercase tracking-widest transition-all gap-2",
-            chaosMode
-              ? "bg-red-50 text-red-500 hover:bg-red-100 border border-red-200"
-              : "text-brand-charcoal/40 hover:text-brand-charcoal"
-          )}
+          className="h-8 w-8 p-0 rounded-none border-brand-charcoal/20 text-brand-charcoal/60 hover:text-brand-charcoal hover:border-brand-charcoal/40"
+          onClick={() => navigator.clipboard.writeText(window.location.href)}
+          title="Copy Link"
         >
-          <Activity className={cn("w-3.5 h-3.5", chaosMode && "animate-pulse")} />
-          <span className="hidden lg:inline">{chaosMode ? "CHAOS: ACTIVE" : "SIM: STABLE"}</span>
+          <Icon icon="lucide:share-2" className="w-3.5 h-3.5" />
         </Button>
-
-        <div className="h-4 w-px bg-brand-charcoal/10 mx-2" />
-
-        <button
-          onClick={onToggleTerminal}
-          className={cn(
-            "w-8 h-8 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5",
-            isTerminalOpen ? "bg-brand-orange/10 text-brand-orange" : "text-brand-charcoal/40 hover:text-brand-charcoal"
-          )}
-          title="Toggle Terminal"
-        >
-          <Icon icon="lucide:terminal-square" className="w-4 h-4" />
-        </button>
       </div>
     </header>
   );

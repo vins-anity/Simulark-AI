@@ -31,7 +31,7 @@ export function SimulationEdge({
         borderRadius: 10,
     });
 
-    const { nodeStatus } = useSimulationStore();
+    const { nodeStatus, chaosMode } = useSimulationStore();
     const { setEdges } = useReactFlow();
     const [isHovered, setIsHovered] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -39,6 +39,8 @@ export function SimulationEdge({
     const isBlocked = nodeStatus[source] === "killed" || nodeStatus[target] === "killed";
     const protocol = (data?.protocol as string) || "http";
     const protocolConfig = getProtocolConfig(protocol);
+    // Determine base color based on Chaos Mode
+    const baseColor = chaosMode ? "#e4e4e7" : CONNECTOR_COLORS.default;
     const isQueue = protocol === 'queue';
     const isCongested = (data?.congestion as boolean) || false;
     const label = (data?.label as string) || "";
@@ -70,8 +72,8 @@ export function SimulationEdge({
                 style={{
                     ...style,
                     strokeWidth: (protocolConfig.style as any)?.strokeWidth || 1.5,
-                    stroke: isBlocked ? CONNECTOR_COLORS.error : isCongested ? "#f97316" : CONNECTOR_COLORS.default,
-                    strokeOpacity: isBlocked ? 0.5 : 0.85,
+                    stroke: isBlocked ? CONNECTOR_COLORS.error : isCongested ? "#f97316" : baseColor,
+                    strokeOpacity: isBlocked ? 0.5 : (chaosMode ? 0.6 : 0.85),
                     strokeDasharray: strokeDasharray,
                 }}
             />
@@ -82,7 +84,7 @@ export function SimulationEdge({
                     {/* Single particle with speed based on protocol */}
                     <circle
                         r={isQueue ? 4 : 2.5}
-                        fill={isCongested ? CONNECTOR_COLORS.error : CONNECTOR_COLORS.default}
+                        fill={isCongested ? CONNECTOR_COLORS.error : baseColor}
                     >
                         <animateMotion
                             dur={`${animationDuration}ms`}
@@ -92,7 +94,7 @@ export function SimulationEdge({
                     </circle>
                     {/* Second particle for fast connections */}
                     {protocolConfig.animationSpeed === 'fast' && (
-                        <circle r="2" fill={CONNECTOR_COLORS.default} opacity="0.5">
+                        <circle r="2" fill={baseColor} opacity="0.5">
                             <animateMotion
                                 dur={`${animationDuration}ms`}
                                 repeatCount="indefinite"
@@ -110,7 +112,7 @@ export function SimulationEdge({
                     width="6"
                     height="6"
                     fill="transparent"
-                    stroke={isCongested ? CONNECTOR_COLORS.error : CONNECTOR_COLORS.default}
+                    stroke={isCongested ? CONNECTOR_COLORS.error : baseColor}
                     strokeWidth="1.5"
                     x="-3"
                     y="-3"

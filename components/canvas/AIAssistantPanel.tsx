@@ -727,7 +727,7 @@ This architecture separates concerns across dedicated service layers, enabling i
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {/* Icons */}
               <div className="flex items-center gap-1">
                 <Button

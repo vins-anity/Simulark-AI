@@ -9,6 +9,7 @@ interface ProjectCardProps {
   name: string;
   provider: string;
   updatedAt: string;
+  className?: string;
 }
 
 export function ProjectCard({
@@ -16,6 +17,7 @@ export function ProjectCard({
   name,
   provider,
   updatedAt,
+  className,
 }: ProjectCardProps) {
   // Simplified Diagram Symbol - Clean, minimal
   const DiagramSymbol = () => (
@@ -29,16 +31,16 @@ export function ProjectCard({
   );
 
   return (
-    <Link href={`/projects/${id}`} className="block">
-      <div className="group relative bg-white border border-brand-charcoal/5 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-        <div className="h-32 w-full border-b border-brand-charcoal/5">
+    <Link href={`/projects/${id}`} className={cn("block", className)}>
+      <div className="group relative bg-white border border-brand-charcoal/5 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
+        <div className="h-20 w-full border-b border-brand-charcoal/5 shrink-0">
           <DiagramSymbol />
         </div>
 
-        <div className="p-5 flex flex-col gap-3">
+        <div className="p-4 flex flex-col gap-2 flex-1">
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
-              <h3 className="font-poppins font-bold text-base text-brand-charcoal group-hover:text-brand-orange transition-colors">
+              <h3 className="font-poppins font-bold text-base text-brand-charcoal group-hover:text-brand-orange transition-colors line-clamp-1">
                 {name}
               </h3>
               <span className="text-[10px] font-medium text-brand-gray-mid flex items-center gap-1.5 mt-1 uppercase tracking-wider">
@@ -48,7 +50,7 @@ export function ProjectCard({
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-2 pt-2">
+          <div className="flex items-center justify-between mt-auto pt-2">
             <div className="flex items-center gap-2 text-[10px] text-brand-gray-mid">
               <span>Edited {new Date(updatedAt).toLocaleDateString()}</span>
             </div>

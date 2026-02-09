@@ -74,7 +74,7 @@ export function Sidebar() {
 
   return (
     <aside className={cn(
-      "h-screen sticky top-0 z-30 bg-[#faf9f5] border-r border-brand-charcoal/10 transition-all duration-300 ease-in-out flex flex-col shrink-0 relative font-sans",
+      "h-full bg-[#faf9f5] border-r border-brand-charcoal/10 transition-all duration-300 ease-in-out flex flex-col shrink-0 relative font-sans",
       isCollapsed ? "w-20" : "w-72"
     )}>
       {/* Toggle Button */}
@@ -91,7 +91,7 @@ export function Sidebar() {
       {/* Header */}
       <div className={cn(
         "flex flex-col h-full w-full overflow-hidden",
-        isCollapsed ? "px-3 py-6" : "px-6 py-8"
+        isCollapsed ? "px-3 py-4" : "px-6 py-6"
       )}>
         <div className={cn("flex items-center mb-12 h-10 shrink-0", isCollapsed ? "justify-center" : "")}>
           <Link href="/" className="flex items-center gap-3 group">

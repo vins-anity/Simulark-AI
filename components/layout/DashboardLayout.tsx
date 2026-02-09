@@ -15,13 +15,13 @@ function MainContent({ children, fullWidth }: { children: React.ReactNode; fullW
   return (
     <main
       className={cn(
-        "flex-1 transition-all duration-300 ease-in-out",
-        fullWidth ? "h-screen overflow-hidden" : "min-h-screen overflow-y-auto"
+        "flex-1 flex flex-col h-screen overflow-hidden",
+        fullWidth ? "" : ""
       )}
     >
       <div className={cn(
-        "h-full",
-        fullWidth ? "w-full" : "max-w-7xl mx-auto p-8 lg:p-12"
+        "flex-1 min-h-0",
+        fullWidth ? "w-full" : "max-w-7xl mx-auto p-4 lg:p-6"
       )}>
         {children}
       </div>
@@ -31,10 +31,7 @@ function MainContent({ children, fullWidth }: { children: React.ReactNode; fullW
 
 export function DashboardLayout({ children, fullWidth = false }: DashboardLayoutProps) {
   return (
-    <div className={cn(
-      "flex bg-[#faf9f5]",
-      fullWidth ? "h-screen overflow-hidden" : "min-h-screen"
-    )}>
+    <div className="flex bg-[#faf9f5] h-screen overflow-hidden w-screen">
       <Sidebar />
       <MainContent fullWidth={fullWidth}>{children}</MainContent>
     </div>

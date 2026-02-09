@@ -132,18 +132,37 @@ export async function getProject(projectId: string) {
 }
 
 // --- Get User Projects ---
-export async function getUserProjects() {
+export async function getUserProjects(page = 1, limit = 9) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  // Get total count (approximation is fine for performance)
+  const { count, error: countError } = await supabase
+    .from("projects")
+    .select("*", { count: "exact", head: true });
+
+  if (countError) {
+    return { success: false, error: countError.message };
+  }
+
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
   const { data, error } = await supabase
     .from("projects")
     .select("*")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .range(from, to);
 
   if (error) {
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: data as Project[] };
+  return { success: true, data: data as Project[], total: count || 0 };
 }
 
 // --- Create Project from Template ---
