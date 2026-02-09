@@ -388,10 +388,9 @@ This architecture separates concerns across dedicated service layers, enabling i
               ));
             } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
-              // Hide raw JSON - only show processing status, not the actual content
-              // The final summary will be displayed after generation completes
+              // Show accumulated content preview if available, otherwise show processing status
               setMessages(prev => prev.map(m =>
-                m.id === aiMsgId ? { ...m, isThinking: false, content: "Generating architecture diagram..." } : m
+                m.id === aiMsgId ? { ...m, isThinking: false, content: accumulatedContent || "Generating architecture diagram..." } : m
               ));
             } else if (json.type === "result" && json.data) {
               lastGeneratedData = json.data; // Capture data

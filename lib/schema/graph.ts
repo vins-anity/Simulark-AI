@@ -34,7 +34,18 @@ export const NodeSchema = v.object({
 
 // --- Edge Schemas ---
 
-export const EdgeProtocolSchema = v.picklist(["http", "queue", "stream"]);
+export const EdgeProtocolSchema = v.picklist([
+  "http",
+  "https",
+  "graphql",
+  "websocket",
+  "queue",
+  "stream",
+  "database",
+  "cache",
+  "oauth",
+  "grpc",
+]);
 
 export const EdgeDataSchema = v.object({
   protocol: v.optional(EdgeProtocolSchema, "http"),
