@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateArchitectureStream } from "@/lib/ai-client";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
+import { createClient } from "@/lib/supabase/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
+
+// Rate limiter: counts all generations per user regardless of project
+// FREE_TIER_DAILY_LIMIT is configured in .env.local (default: 10)
+const ratelimit = new Ratelimit({
+    redis: new Redis({
+        url: env.UPSTASH_REDIS_REST_URL,
+        token: env.UPSTASH_REDIS_REST_TOKEN,
+    }),
+    limiter: Ratelimit.slidingWindow(env.FREE_TIER_DAILY_LIMIT, "1 d"),
+    analytics: true,
+});
 
 // Helper to add timeout to a promise
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -16,14 +32,41 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 
 export async function POST(req: NextRequest) {
     try {
+        // Authentication check
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Rate limiting (10 generations per day for free tier)
+        const { success, limit, reset, remaining } = await ratelimit.limit(user.id);
+        if (!success) {
+            const resetDate = new Date(reset);
+            return NextResponse.json(
+                {
+                    error: "Daily limit reached. Free tier users have 10 generations per day.",
+                    resetAt: resetDate.toISOString(),
+                },
+                {
+                    status: 429,
+                    headers: {
+                        "X-RateLimit-Limit": limit.toString(),
+                        "X-RateLimit-Remaining": remaining.toString(),
+                        "X-RateLimit-Reset": reset.toString(),
+                    }
+                }
+            );
+        }
+
         const { prompt, model, mode, currentNodes, currentEdges, quickMode } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
         }
 
-        console.log(`[API] Starting generation (Model: ${model || "auto"}, Mode: ${mode || "default"}${quickMode ? ", QUICK" : ""})`);
-        console.log(`[API DEBUG] User prompt: ${prompt.substring(0, 200).replace(/\n/g, " ")}${prompt.length > 200 ? "..." : ""}`);
+        logger.info("Starting generation", { model: model || "auto", mode: mode || "default", quickMode });
+        logger.debug("User prompt", { preview: prompt.substring(0, 200), length: prompt.length });
         const stream = await generateArchitectureStream(prompt, model, mode, currentNodes, currentEdges, quickMode || false);
 
         // Create a robust stream that separates reasoning from content
@@ -66,8 +109,7 @@ export async function POST(req: NextRequest) {
                     }
 
                     // DEBUG: Log accumulated content for diagnosis
-                    console.log("[API DEBUG] Raw accumulated content length:", accumulatedContent.length);
-                    console.log("[API DEBUG] Raw content preview (first 300 chars):", accumulatedContent.substring(0, 300).replace(/\n/g, " "));
+                    logger.debug("Raw accumulated content", { length: accumulatedContent.length, preview: accumulatedContent.substring(0, 100) });
 
                     // Parse accumulated content and emit result chunk for canvas rendering
                     if (accumulatedContent) {
@@ -93,29 +135,26 @@ export async function POST(req: NextRequest) {
                                 jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
                             }
 
-                            console.log("[API DEBUG] Cleaned content for parsing (first 200 chars):", jsonStr.substring(0, 200).replace(/\n/g, " "));
-                            console.log("[API DEBUG] Cleaned content length:", jsonStr.length);
+                            logger.debug("Cleaned content for parsing", { length: jsonStr.length });
 
                             const parsed = JSON.parse(jsonStr.trim());
                             if (parsed.nodes && parsed.edges) {
                                 // Enrich nodes with tech ecosystem data (icons, normalized IDs)
                                 const enrichedNodes = enrichNodesWithTech(parsed.nodes);
                                 const enrichedData = { ...parsed, nodes: enrichedNodes };
-                                console.log(`[API] Emitting result with ${enrichedNodes.length} nodes, ${parsed.edges.length} edges`);
+                                logger.info("Emitting result", { nodes: enrichedNodes.length, edges: parsed.edges.length });
                                 controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: enrichedData }) + "\n"));
                                 hasJsonResult = true;
                             } else {
-                                console.warn("[API] Parsed JSON missing nodes or edges:", { hasNodes: !!parsed.nodes, hasEdges: !!parsed.edges });
+                                logger.warn("Parsed JSON missing nodes or edges", { hasNodes: !!parsed.nodes, hasEdges: !!parsed.edges });
                             }
                         } catch (parseErr: any) {
-                            console.error("[API] Could not parse content as architecture JSON:", parseErr.message);
-                            console.error("[API] Content that failed to parse (first 500 chars):", accumulatedContent.substring(0, 500).replace(/\n/g, " "));
+                            logger.error("Could not parse content as architecture JSON", parseErr, { contentLength: accumulatedContent.length });
                         }
                     }
 
-                    // If no JSON result was emitted, send a warning to the client
                     if (!hasJsonResult && accumulatedContent.length > 0) {
-                        console.warn("[API] No valid JSON architecture found in response. Content length:", accumulatedContent.length);
+                        logger.warn("No valid JSON architecture found in response", { contentLength: accumulatedContent.length });
                         // Try one more time with more aggressive JSON extraction
                         try {
                             const jsonMatch = accumulatedContent.match(/\{[\s\S]*\}/);
@@ -124,20 +163,20 @@ export async function POST(req: NextRequest) {
                                 if (parsed.nodes && parsed.edges) {
                                     const enrichedNodes = enrichNodesWithTech(parsed.nodes);
                                     const enrichedData = { ...parsed, nodes: enrichedNodes };
-                                    console.log(`[API] Recovery: Found JSON with ${enrichedNodes.length} nodes, ${parsed.edges.length} edges`);
+                                    logger.info("Recovery: Found JSON", { nodes: enrichedNodes.length, edges: parsed.edges.length });
                                     controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: enrichedData }) + "\n"));
                                     hasJsonResult = true;
                                 }
                             }
                         } catch (recoveryErr: any) {
-                            console.error("[API] Recovery parse also failed:", recoveryErr.message);
+                            logger.error("Recovery parse also failed", recoveryErr);
                         }
                     }
 
                     controller.close();
                 } catch (err: any) {
-                    console.error("[API] Streaming error:", err.message);
-                    controller.enqueue(encoder.encode(JSON.stringify({ type: 'error', data: err.message }) + "\n"));
+                    logger.error("Streaming error", err);
+                    controller.enqueue(encoder.encode(JSON.stringify({ type: 'error', data: "An error occurred during generation" }) + "\n"));
                     controller.error(err);
                 }
             },
