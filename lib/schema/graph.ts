@@ -75,6 +75,7 @@ export const ProjectSchema = v.object({
   provider: v.optional(ProviderSchema, "Generic"),
   nodes: v.array(NodeSchema),
   edges: v.array(EdgeSchema),
+  metadata: v.optional(v.record(v.string(), v.any()), {}), // Project-specific UI settings
 });
 
 export type NodeType = v.InferOutput<typeof NodeTypeSchema>;

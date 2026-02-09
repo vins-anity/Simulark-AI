@@ -34,6 +34,7 @@ export function BaseNode({
   className,
   icon,
   label,
+  type,
 }: BaseNodeProps) {
   const { viewMode, chaosMode, nodeStatus, toggleNodeStatus } = useSimulationStore();
   const { setNodes, getNodes } = useReactFlow();
@@ -126,50 +127,50 @@ export function BaseNode({
   };
 
   // ============================================
-  // C-LEVEL VIEW: "Strategic Island" / Business Focus
+  // UNIFIED VIEW: "Strategic Island" card focus
   // ============================================
-  if (viewMode === "concept") {
-    return (
-      <>
-        <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={20}>
-          <NodeProperties id={id} data={data} type={data?.serviceType as string} />
-        </NodeToolbar>
-        <div
-          onPointerDown={handlePointerDown}
-          onClick={handleClick}
-          onContextMenu={handleContextMenu}
-          className={cn(
-            "relative flex flex-col transition-all duration-300 ease-out group",
-            "w-72 h-auto rounded-lg overflow-hidden bg-white",
-            "border border-brand-charcoal/10 shadow-sm",
-            !isKilled && "hover:border-brand-orange/40 hover:shadow-md",
-            !isKilled && selected && "ring-2 ring-brand-orange/20 border-brand-orange shadow-brand-orange/10",
-            chaosMode && !isKilled && "cursor-crosshair hover:bg-red-500/10",
-            isKilled && "bg-red-50 border-red-200 grayscale opacity-80",
-            className
-          )}
-        >
-          {/* Handles for edges - Transparent but functional */}
-          <Handle type="target" position={Position.Top} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
-          <Handle type="source" position={Position.Bottom} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
+  return (
+    <>
+      <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={20}>
+        <NodeProperties id={id} data={data} type={(data?.serviceType as string) || type} />
+      </NodeToolbar>
+      <div
+        onPointerDown={handlePointerDown}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        className={cn(
+          "relative flex flex-col transition-all duration-300 ease-out group",
+          "w-72 h-auto rounded-lg overflow-hidden bg-white",
+          "border border-brand-charcoal/10 shadow-sm",
+          !isKilled && "hover:border-brand-orange/40 hover:shadow-md",
+          !isKilled && selected && "ring-2 ring-brand-orange/20 border-brand-orange shadow-brand-orange/10",
+          chaosMode && !isKilled && "cursor-crosshair hover:bg-red-500/10",
+          isKilled && "bg-red-50 border-red-200 grayscale opacity-80",
+          className
+        )}
+      >
+        {/* Handles for edges - Transparent but functional */}
+        <Handle type="target" position={Position.Top} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
+        <Handle type="source" position={Position.Bottom} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
 
-          {/* Top Resize Handle Visual */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
+        {/* Top Resize Handle Visual */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
 
-          <div className="p-4 flex flex-col gap-3">
-            {/* Header: Icon + Title */}
-            <div className="flex items-start gap-4">
-              {/* Icon Container */}
-              <div className="shrink-0 w-10 h-10 rounded-lg bg-white border border-brand-charcoal/5 shadow-sm flex items-center justify-center text-brand-orange">
-                {nodeLogo ? (
-                  <Icon icon={nodeLogo} className="w-6 h-6 text-brand-charcoal" />
-                ) : (
-                  icon || <Component size={20} />
-                )}
-              </div>
+        <div className="p-4 flex flex-col gap-3">
+          {/* Header: Icon + Title + Tech */}
+          <div className="flex items-start gap-4">
+            {/* Icon Container */}
+            <div className="shrink-0 w-10 h-10 rounded-lg bg-white border border-brand-charcoal/5 shadow-sm flex items-center justify-center text-brand-orange">
+              {nodeLogo ? (
+                <Icon icon={nodeLogo} className="w-6 h-6 text-brand-charcoal" />
+              ) : (
+                icon || <Component size={20} />
+              )}
+            </div>
 
-              {/* Title & Subtitle */}
-              <div className="flex flex-col min-w-0 flex-1">
+            {/* Title & Metadata */}
+            <div className="flex flex-col min-w-0 flex-1 relative">
+              <div className="flex justify-between items-start w-full">
                 {isEditingLabel ? (
                   <input
                     type="text"
@@ -180,152 +181,43 @@ export function BaseNode({
                       if (e.key === "Enter") handleSaveLabel();
                       if (e.key === "Escape") setIsEditingLabel(false);
                     }}
-                    className="font-poppins font-bold text-sm text-brand-charcoal leading-tight bg-white border border-brand-orange rounded px-1 focus:outline-none focus:ring-1 focus:ring-brand-orange w-full"
+                    className="font-poppins font-bold text-sm text-brand-charcoal leading-tight bg-white border border-brand-orange rounded px-1 focus:outline-none focus:ring-1 focus:ring-brand-orange w-[70%]"
                     autoFocus
                   />
                 ) : (
                   <h3
-                    className="font-poppins font-bold text-sm text-brand-charcoal leading-snug cursor-text truncate"
+                    className="font-poppins font-bold text-sm text-brand-charcoal leading-snug cursor-text truncate pr-2 max-w-[70%]"
                     onDoubleClick={handleEditLabel}
                     title={nodeLabel}
                   >
                     {nodeLabel}
                   </h3>
                 )}
-                <span className="text-[10px] font-mono uppercase tracking-wider text-brand-charcoal/50 truncate">
-                  {(data?.tier as string) || "SERVICE"}
-                </span>
+
+                {/* Service Name (Tech) - Top Right */}
+                <div className="text-[10px] text-brand-charcoal/50 font-medium font-mono uppercase tracking-wider truncate max-w-[30%] text-right">
+                  {nodeTechLabel || (data?.tech as string) || "Service"}
+                </div>
               </div>
-            </div>
 
-            {/* Divider */}
-            <div className="h-px w-full bg-brand-charcoal/5" />
-
-            {/* Description / Metadata */}
-            <div className="text-[11px] text-brand-charcoal/60 leading-relaxed font-sans">
-              {(data?.description as string) || "Core infrastructure component handling request processing and data flow management."}
+              {/* Node Type Badge - Below Title */}
+              <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-[10px] font-mono uppercase tracking-wider bg-brand-charcoal/5 text-brand-charcoal/60 w-fit">
+                {(data?.serviceType as string) || (data?.tier as string) || type || "SERVICE"}
+              </span>
             </div>
           </div>
 
-          {/* Bottom Resize Handle Visual */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
+          {/* Divider */}
+          <div className="h-px w-full bg-brand-charcoal/5" />
+
+          {/* Description */}
+          <div className="text-[11px] text-brand-charcoal/60 leading-relaxed font-sans line-clamp-3">
+            {(data?.description as string) || "Core infrastructure component."}
+          </div>
         </div>
 
-        {contextMenu && (
-          <NodeContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onEdit={handleEditLabel}
-            onDuplicate={handleDuplicate}
-            onDelete={handleDelete}
-            onClose={() => setContextMenu(null)}
-          />
-        )}
-      </>
-    );
-  }
-
-  // ============================================
-  // TECH-LEVEL VIEW: "Circuit Schematic" / Technical Focus
-  // ============================================
-  return (
-    <>
-      <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={20}>
-        <NodeProperties id={id} data={data} type={data?.serviceType as string} />
-      </NodeToolbar>
-      <div
-        onPointerDown={handlePointerDown}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-        className={cn(
-          "relative transition-all duration-300 ease-out group",
-          "min-w-[200px] max-w-[280px]",
-          // Circuit board aesthetic with softer colors
-          "bg-[#0f172a] border-2 shadow-lg",
-          "hover:shadow-xl hover:scale-[1.01]",
-          !isKilled && "border-sky-500/30 hover:border-sky-400/50",
-          !isKilled && selected && "border-sky-400 ring-2 ring-sky-400/20 shadow-sky-400/15 shadow-2xl",
-          chaosMode && !isKilled && "cursor-crosshair hover:border-red-500",
-          isKilled && "bg-red-950/20 border-red-500/50 grayscale opacity-70",
-          className,
-        )}
-      >
-        {/* Connection Ports (Visual) */}
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex gap-1">
-          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
-          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
-        </div>
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
-          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
-        </div>
-
-        <Handle type="target" position={Position.Top} className="!w-3 !h-3 !-top-1.5 !bg-sky-500 !border-2 !border-sky-300 opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !-bottom-1.5 !bg-sky-500 !border-2 !border-sky-300 opacity-0" />
-
-        {/* Header: Technical ID */}
-        <div className="flex items-center gap-2 p-2 border-b border-sky-500/15 bg-gradient-to-r from-sky-500/5 to-transparent">
-          <div className={cn(
-            "w-7 h-7 flex items-center justify-center rounded border shrink-0",
-            isKilled ? "bg-red-900/50 border-red-500" : "bg-sky-950/50 border-sky-500/30"
-          )}>
-            {isKilled ? (
-              <ZapOff size={14} className="text-red-400" />
-            ) : nodeLogo ? (
-              <Icon icon={nodeLogo} className="w-4 h-4 text-sky-400" />
-            ) : (
-              <Cpu size={14} className="text-sky-400" />
-            )}
-          </div>
-
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="font-mono text-[7px] uppercase tracking-widest text-sky-400/50 leading-none">
-              NODE-{id.slice(0, 6).toUpperCase()}
-            </span>
-            <span className="font-mono font-bold text-[11px] text-slate-200 truncate mt-0.5">
-              {nodeLabel}
-            </span>
-          </div>
-
-          <div className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            isKilled ? "bg-red-500 animate-pulse" : "bg-sky-400 shadow-sm shadow-sky-400/30"
-          )} />
-        </div>
-
-        {/* Technical Specs */}
-        <div className="p-2 space-y-1.5">
-          {/* Tech Stack */}
-          <div className="flex items-center justify-between text-[8px] font-mono">
-            <span className="text-sky-400/50 uppercase tracking-wider">Stack</span>
-            <span className="text-slate-300 font-semibold">{nodeTechLabel || nodeLabel}</span>
-          </div>
-
-          {/* Instance Type */}
-          <div className="flex items-center justify-between text-[8px] font-mono">
-            <span className="text-sky-400/50 uppercase tracking-wider">Type</span>
-            <span className="text-slate-300">{(data?.tier as string) || "Standard"}</span>
-          </div>
-
-          {/* Latency/Performance */}
-          <div className="flex items-center justify-between text-[8px] font-mono pt-1 border-t border-sky-500/10">
-            <span className="text-sky-400/50 uppercase tracking-wider">Latency</span>
-            <span className="text-sky-300 font-bold">~12ms</span>
-          </div>
-
-          {/* Custom Technical Details */}
-          {children && (
-            <div className="mt-2 p-1.5 bg-black/40 border border-sky-500/15 rounded text-[8px] font-mono text-sky-300/70 leading-tight">
-              {children}
-            </div>
-          )}
-        </div>
-
-        {/* Status Bar */}
-        <div className={cn(
-          "h-1 w-full",
-          isKilled ? "bg-red-500" : "bg-gradient-to-r from-sky-500/60 via-sky-400/60 to-sky-500/60"
-        )} />
+        {/* Bottom Resize Handle Visual */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
       </div>
 
       {contextMenu && (

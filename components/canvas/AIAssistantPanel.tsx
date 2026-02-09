@@ -25,6 +25,7 @@ import {
 import { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ThinkingPanel } from "./ThinkingPanel";
+import { LoadingState } from "./LoadingState";
 import { createBrowserClient } from "@supabase/ssr";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
@@ -54,6 +55,7 @@ interface AIAssistantPanelProps {
   getCurrentNodes?: () => any[];
   getCurrentEdges?: () => any[];
   initialPrompt?: string; // New prop for auto-generation on page load
+  initialMetadata?: Record<string, any>; // New prop for persistence
 }
 
 interface Message {
@@ -79,13 +81,13 @@ export function AIAssistantPanel({
   getCurrentNodes = () => [],
   getCurrentEdges = () => [],
   initialPrompt,
+  initialMetadata = {}, // Default empty
 }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showChatList, setShowChatList] = useState(false);
   const [isThinkingOpen, setIsThinkingOpen] = useState(true);
-  const [chatMode, setChatMode] = useState<"default" | "startup" | "corporate">("default"); // Default to standard mode
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat state
@@ -95,9 +97,33 @@ export function AIAssistantPanel({
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
+  // Load initial settings or default
+  const [chatMode, setChatModeState] = useState<"default" | "startup" | "corporate">(
+    (initialMetadata?.mode as "default" | "startup" | "corporate") || "default"
+  );
+
   // Settings / Preferences
   const [cloudProvider, setCloudProvider] = useState("Generic");
-  const [model, setModel] = useState("glm-4.7-flash");
+  const [model, setModelState] = useState(
+    (initialMetadata?.model as string) || "glm-4.7-flash"
+  );
+  const [quickMode, setQuickMode] = useState(false); // Fast generation with lean prompt
+
+  // Wrappers to persist on change
+  const setChatMode = (mode: "default" | "startup" | "corporate") => {
+    setChatModeState(mode);
+    // Save to metadata (we only save metadata here, not nodes/edges)
+    import("@/actions/projects").then(({ saveProject }) => {
+      saveProject(projectId, { metadata: { ...initialMetadata, mode, model } });
+    });
+  };
+
+  const setModel = (newModel: string) => {
+    setModelState(newModel);
+    import("@/actions/projects").then(({ saveProject }) => {
+      saveProject(projectId, { metadata: { ...initialMetadata, mode: chatMode, model: newModel } });
+    });
+  };
 
   // Load chats on mount
   useEffect(() => {
@@ -357,6 +383,7 @@ This architecture separates concerns across dedicated service layers, enabling i
           model: model, // Pass selected model
           currentNodes: getCurrentNodes(), // Call the getter
           currentEdges: getCurrentEdges(), // Call the getter
+          quickMode: quickMode, // Enable fast generation with lean prompt
         }),
       });
 
@@ -388,9 +415,14 @@ This architecture separates concerns across dedicated service layers, enabling i
               ));
             } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
-              // Show accumulated content preview if available, otherwise show processing status
+              // Show placeholder if content looks like JSON code
+              const isJsonLike = accumulatedContent.trim().startsWith('{') || accumulatedContent.trim().startsWith('```');
               setMessages(prev => prev.map(m =>
-                m.id === aiMsgId ? { ...m, isThinking: false, content: accumulatedContent || "Generating architecture diagram..." } : m
+                m.id === aiMsgId ? {
+                  ...m,
+                  isThinking: false,
+                  content: isJsonLike ? "__LOADING__" : accumulatedContent
+                } : m
               ));
             } else if (json.type === "result" && json.data) {
               lastGeneratedData = json.data; // Capture data
@@ -410,8 +442,9 @@ This architecture separates concerns across dedicated service layers, enabling i
       // If we have generated data, prioritize the structured summary logic
       if (lastGeneratedData) {
         finalContent = generateArchitectureSummary(lastGeneratedData);
-      } else if (accumulatedContent.includes('"nodes"')) {
-        // Fallback if result type missing but content has JSON
+      } else if (accumulatedContent.includes('"nodes"') || accumulatedContent.trim().startsWith('{') || accumulatedContent.trim().startsWith('```')) {
+        // Fallback if result type missing but content has JSON/Code
+        // This prevents showing the raw verbose JSON
         finalContent = "I've drafted the architecture. Check the canvas for details.";
       } else if (!accumulatedContent) {
         finalContent = "I couldn't generate a response.";
@@ -554,13 +587,16 @@ This architecture separates concerns across dedicated service layers, enabling i
                   )}
                 >
                   {message.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-brand-charcoal/5 prose-pre:text-brand-charcoal prose-code:text-brand-orange text-[13px]">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </div>
+                    message.content === "__LOADING__" ? (
+                      <LoadingState />
+                    ) : (
+                      <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-brand-charcoal/5 prose-pre:text-brand-charcoal prose-code:text-brand-orange text-[13px]">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    )
                   ) : (
                     <div className="whitespace-pre-wrap font-sans">{message.content}</div>
-                  )}
-                </div>
+                  )}    </div>
               )}
             </div>
           ))
@@ -670,6 +706,24 @@ This architecture separates concerns across dedicated service layers, enabling i
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Quick Mode Toggle */}
+              <Button
+                type="button"
+                size="sm"
+                variant={quickMode ? "default" : "ghost"}
+                className={cn(
+                  "h-6 px-2 text-xs rounded-full flex items-center gap-1 transition-all",
+                  quickMode
+                    ? "bg-amber-500 text-white hover:bg-amber-600"
+                    : "text-brand-charcoal/60 hover:text-amber-500"
+                )}
+                onClick={() => setQuickMode(!quickMode)}
+                title={quickMode ? "Quick Mode ON - Faster generation" : "Enable Quick Mode for faster drafts"}
+              >
+                <Zap className="w-3 h-3" />
+                {quickMode && <span>Quick</span>}
+              </Button>
             </div>
 
             {/* Right: Actions */}

@@ -139,7 +139,7 @@ function generateDataFlowPatterns(nodes: Node[], edges: Edge[]): string {
 
     // Trace from each entry point
     entryPoints.forEach(entry => {
-        const entryName: string = entry.data?.label || 'Gateway';
+        const entryName: string = (entry.data?.label as string) || 'Gateway';
         flows += `\n**From ${entryName}:**\n`;
 
         const visited = new Set<string>();
@@ -156,7 +156,7 @@ function generateDataFlowPatterns(nodes: Node[], edges: Edge[]): string {
                 const target = nodes.find(n => n.id === edge.target);
                 if (!target) return;
 
-                const targetName: string = target.data?.label || target.type || 'Unknown';
+                const targetName: string = (target.data?.label as string) || target.type || 'Unknown';
                 const newPath = [...current.path, targetName];
 
                 if (outgoingEdges.length === 1 || target.type === 'database') {

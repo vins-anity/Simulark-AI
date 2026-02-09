@@ -1,8 +1,7 @@
-import { X, Info, Zap, Settings2 } from "lucide-react";
+import { X, Trash2, Database, Zap, HardDrive, Globe, Cpu, Box } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
-import { useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { TechCombobox } from "../TechCombobox";
 import { Icon } from "@iconify/react";
 
 interface NodePropertiesProps {
@@ -11,117 +10,108 @@ interface NodePropertiesProps {
     type?: string;
 }
 
-export function NodeProperties({ id, data, type }: NodePropertiesProps) {
-    const { setNodes, getNodes } = useReactFlow();
-    const [showServiceSwitcher, setShowServiceSwitcher] = useState(false);
+// Service type categories
+const SERVICE_TYPES: Record<string, { label: string; icon: any }> = {
+    service: { label: "SERVICE", icon: Cpu },
+    frontend: { label: "FRONTEND", icon: Globe },
+    backend: { label: "BACKEND", icon: Box },
+    database: { label: "DATABASE", icon: Database },
+    function: { label: "FUNCTION", icon: Zap },
+    storage: { label: "STORAGE", icon: HardDrive },
+    client: { label: "CLIENT", icon: Globe }, // Legacy support
+    gateway: { label: "GATEWAY", icon: Box },
+    queue: { label: "QUEUE", icon: Box },
+    cache: { label: "CACHE", icon: Database },
+    ai: { label: "AI MODEL", icon: Cpu },
+};
 
-    // Mock Service Options
-    const serviceOptions = [
-        { id: "generic", label: "Generic", icon: "lucide:box" },
-        { id: "aws", label: "AWS Lambda", icon: "logos:aws-lambda" },
-        { id: "google", label: "Cloud Run", icon: "logos:google-cloud-run" },
-        { id: "azure", label: "Azure Fn", icon: "logos:azure-functions" },
-        { id: "vercel", label: "Vercel", icon: "logos:vercel-icon" },
-        { id: "supabase", label: "Supabase", icon: "logos:supabase-icon" },
-    ];
+export function NodeProperties({ id, data, type = "service" }: NodePropertiesProps) {
+    const { setNodes } = useReactFlow();
 
-    const handleServiceChange = (tech: string) => {
+    const serviceType = SERVICE_TYPES[type] || SERVICE_TYPES.service;
+    const TypeIcon = serviceType.icon;
+
+    const handleUpdate = (updates: Record<string, any>) => {
         setNodes((nodes) =>
-            nodes.map((n) =>
-                n.id === id ? { ...n, data: { ...n.data, tech: tech, techLabel: tech } } : n
-            )
+            nodes.map((n) => {
+                if (n.id !== id) return n;
+                return {
+                    ...n,
+                    data: { ...n.data, ...updates }
+                };
+            })
         );
-        toast.success(`Switched to ${tech}`);
-        setShowServiceSwitcher(false);
     };
 
-    const handleClose = () => {
-        setNodes((nodes) =>
-            nodes.map((n) =>
-                n.id === id ? { ...n, selected: false } : n
-            )
-        );
+    const handleTechChange = (techLabel: string, techItem?: any) => {
+        // Update both tech label and logo for immediate visual feedback
+        handleUpdate({
+            tech: techLabel,
+            logo: techItem?.icon,
+            techLabel: techLabel
+        });
     };
 
     const handleDelete = () => {
         setNodes((nodes) => nodes.filter((n) => n.id !== id));
-        toast.success("Node deleted");
+        toast.success("Resource deleted");
     };
 
-    if (showServiceSwitcher) {
-        return (
-            <div className="w-64 bg-white rounded-lg shadow-xl border border-brand-charcoal/10 overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between p-3 border-b border-brand-charcoal/5 bg-brand-charcoal/5">
-                    <h4 className="text-xs font-mono font-bold uppercase text-brand-charcoal/70">Replace Node</h4>
-                    <button onClick={() => setShowServiceSwitcher(false)} className="text-brand-charcoal/40 hover:text-brand-charcoal">
-                        <X size={14} />
-                    </button>
-                </div>
-                <div className="p-2 grid grid-cols-2 gap-2">
-                    {serviceOptions.map((option) => (
-                        <button
-                            key={option.id}
-                            onClick={() => handleServiceChange(option.label)}
-                            className="flex flex-col items-center justify-center gap-2 p-3 rounded-md border border-brand-charcoal/5 hover:border-brand-orange/50 hover:bg-brand-orange/5 transition-all group"
-                        >
-                            <Icon icon={option.icon} className="w-6 h-6 text-brand-charcoal/60 group-hover:text-brand-charcoal" />
-                            <span className="text-[10px] font-mono text-brand-charcoal/60 group-hover:text-brand-charcoal">{option.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
-    }
+    const handleClose = () => {
+        setNodes((nodes) => nodes.map((n) => n.id === id ? { ...n, selected: false } : n));
+    };
 
     return (
-        <div className="w-72 bg-white rounded-lg shadow-2xl border border-brand-charcoal/10 overflow-hidden font-sans">
+        <div className="w-56 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border border-brand-charcoal/10 overflow-hidden font-sans animation-in slide-in-from-right-10 duration-200">
             {/* Header */}
-            <div className="flex justify-between items-start p-4 border-b border-brand-charcoal/5">
-                <div>
-                    <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 mb-1">Node Properties</h3>
-                    <p className="text-lg font-bold text-brand-charcoal leading-none">{data?.label || "Node"}</p>
+            <div className="flex items-center justify-between px-3 py-2 border-b border-brand-charcoal/5 bg-gray-50/80">
+                <div className="flex items-center gap-2 overflow-hidden">
+                    {data.logo ? (
+                        <Icon icon={data.logo} className="w-5 h-5 shrink-0" />
+                    ) : (
+                        <TypeIcon size={16} className="text-brand-charcoal/40 shrink-0" />
+                    )}
+                    <input
+                        value={data.label || ""}
+                        onChange={(e) => handleUpdate({ label: e.target.value })}
+                        className="text-xs font-bold text-brand-charcoal bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-full placeholder:text-gray-300 truncate"
+                        placeholder="Node Name"
+                    />
                 </div>
                 <button
                     onClick={handleClose}
-                    className="text-brand-charcoal/20 hover:text-brand-charcoal/60 transition-colors"
-                    title="Close"
+                    className="text-brand-charcoal/20 hover:text-brand-charcoal/60 transition-colors shrink-0"
                 >
-                    <X size={16} />
+                    <X size={12} />
                 </button>
             </div>
 
-            <div className="p-4 space-y-4">
-                {/* Type Field */}
-                <div className="space-y-1">
-                    <label className="text-[9px] font-mono uppercase text-brand-charcoal/40">Type</label>
-                    <div className="p-2 bg-brand-charcoal/5 text-xs font-mono text-brand-charcoal rounded-sm border border-brand-charcoal/10">
-                        {type || 'Unknown'}
-                    </div>
+            <div className="p-3 space-y-3">
+                {/* Service Type Badge */}
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-mono font-bold uppercase text-brand-charcoal/40 tracking-tight px-1.5 py-0.5 bg-brand-charcoal/5 rounded">
+                        {serviceType.label}
+                    </span>
                 </div>
 
-                {/* Service Tech Field */}
-                <div className="space-y-1">
-                    <label className="text-[9px] font-mono uppercase text-brand-charcoal/40">Service Tech</label>
-                    <div
-                        className="flex justify-between items-center p-2 bg-white text-xs font-mono text-brand-charcoal rounded-sm border border-brand-charcoal/10"
-                    >
-                        <span>{data?.tech as string || 'Generic'}</span>
-                        <button
-                            onClick={() => setShowServiceSwitcher(true)}
-                            className="text-[9px] font-bold text-brand-orange hover:text-brand-orange/70 transition-colors uppercase tracking-wider"
-                        >
-                            CHANGE
-                        </button>
-                    </div>
-                </div>
+                {/* Tech Selection */}
+                <TechCombobox
+                    value={data.tech}
+                    onChange={handleTechChange}
+                    className="h-7 text-[10px]"
+                    type={type}
+                />
 
-                {/* Actions Footer */}
-                <div className="pt-2 flex justify-end">
+                {/* Footer Actions */}
+                <div className="pt-2 flex items-center justify-between border-t border-brand-charcoal/5">
+                    <span className="text-[9px] font-mono text-brand-charcoal/20 truncate max-w-[80px]" title={id}>
+                        {id.split('-')[0]}
+                    </span>
                     <button
-                        className="text-[10px] font-mono uppercase tracking-wider text-red-500 hover:text-red-700 flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity"
+                        className="text-[9px] font-mono text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors px-1 py-0.5 rounded hover:bg-red-50"
                         onClick={handleDelete}
                     >
-                        <Info size={12} /> DELETE NODE
+                        <Trash2 size={10} /> Delete
                     </button>
                 </div>
             </div>

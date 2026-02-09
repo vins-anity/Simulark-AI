@@ -5,6 +5,7 @@ import { useSimulationStore } from "@/lib/store";
 import { useState } from "react";
 import { Pencil } from "lucide-react";
 import { ConnectionLabelDialog } from "./ConnectionLabelDialog";
+import { getProtocolConfig, getProtocolLabel, getAnimationDuration, CONNECTOR_COLORS } from "@/lib/schema/connectors";
 
 export function SimulationEdge({
     id,
@@ -37,10 +38,12 @@ export function SimulationEdge({
 
     const isBlocked = nodeStatus[source] === "killed" || nodeStatus[target] === "killed";
     const protocol = (data?.protocol as string) || "http";
+    const protocolConfig = getProtocolConfig(protocol);
     const isQueue = protocol === 'queue';
-    const isStream = protocol === 'stream';
     const isCongested = (data?.congestion as boolean) || false;
     const label = (data?.label as string) || "";
+    const protocolLabel = getProtocolLabel(protocol);
+    const animationDuration = getAnimationDuration(protocol);
 
     const handleLabelClick = () => {
         setIsDialogOpen(true);
@@ -56,6 +59,9 @@ export function SimulationEdge({
         );
     };
 
+    // Get dash array from config
+    const strokeDasharray = protocolConfig.style?.strokeDasharray || undefined;
+
     return (
         <>
             <BaseEdge
@@ -63,52 +69,36 @@ export function SimulationEdge({
                 markerEnd={markerEnd}
                 style={{
                     ...style,
-                    strokeWidth: 2,
-                    stroke: isBlocked ? "#ef4444" : isCongested ? "#f97316" : "#b0aea5",
-                    strokeOpacity: isBlocked ? 0.5 : 0.8,
+                    strokeWidth: (protocolConfig.style as any)?.strokeWidth || 1.5,
+                    stroke: isBlocked ? CONNECTOR_COLORS.error : isCongested ? "#f97316" : CONNECTOR_COLORS.default,
+                    strokeOpacity: isBlocked ? 0.5 : 0.85,
+                    strokeDasharray: strokeDasharray,
                 }}
             />
 
-            {/* Protocol-specific animations */}
+            {/* Speed-based animated particle */}
             {!isBlocked && (
                 <svg>
-                    {/* HTTP: Fast small dots */}
-                    {protocol === 'http' && (
-                        <>
-                            <circle r="2.5" fill="#d97757">
-                                <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} />
-                            </circle>
-                            <circle r="2.5" fill="#d97757" opacity="0.6">
-                                <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} begin="0.4s" />
-                            </circle>
-                        </>
-                    )}
-
-                    {/* Stream: Continuous flowing gradient line */}
-                    {protocol === 'stream' && (
-                        <g>
-                            <circle r="3" fill="url(#streamGradient)">
-                                <animateMotion dur="0.8s" repeatCount="indefinite" path={edgePath} />
-                            </circle>
-                            <circle r="2" fill="#6a9bcc" opacity="0.8">
-                                <animateMotion dur="0.8s" repeatCount="indefinite" path={edgePath} begin="0.2s" />
-                            </circle>
-                            <circle r="2" fill="#6a9bcc" opacity="0.6">
-                                <animateMotion dur="0.8s" repeatCount="indefinite" path={edgePath} begin="0.4s" />
-                            </circle>
-                            <defs>
-                                <linearGradient id="streamGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" stopColor="#6a9bcc" />
-                                    <stop offset="100%" stopColor="#4a7ba0" />
-                                </linearGradient>
-                            </defs>
-                        </g>
-                    )}
-
-                    {/* Queue: Default slow particle (handled separately below) */}
-                    {protocol !== 'http' && protocol !== 'stream' && protocol !== 'queue' && (
-                        <circle r="3" fill={isCongested ? "#ef4444" : "#d97757"}>
-                            <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} />
+                    {/* Single particle with speed based on protocol */}
+                    <circle
+                        r={isQueue ? 4 : 2.5}
+                        fill={isCongested ? CONNECTOR_COLORS.error : CONNECTOR_COLORS.default}
+                    >
+                        <animateMotion
+                            dur={`${animationDuration}ms`}
+                            repeatCount="indefinite"
+                            path={edgePath}
+                        />
+                    </circle>
+                    {/* Second particle for fast connections */}
+                    {protocolConfig.animationSpeed === 'fast' && (
+                        <circle r="2" fill={CONNECTOR_COLORS.default} opacity="0.5">
+                            <animateMotion
+                                dur={`${animationDuration}ms`}
+                                repeatCount="indefinite"
+                                path={edgePath}
+                                begin={`${animationDuration / 3}ms`}
+                            />
                         </circle>
                     )}
                 </svg>
@@ -117,15 +107,15 @@ export function SimulationEdge({
             {/* Queue Visualization */}
             {!isBlocked && isQueue && (
                 <rect
-                    width="8"
-                    height="8"
+                    width="6"
+                    height="6"
                     fill="transparent"
-                    stroke={isCongested ? "#ef4444" : "#6a9bcc"}
-                    strokeWidth="2"
-                    x="-4"
-                    y="-4"
+                    stroke={isCongested ? CONNECTOR_COLORS.error : CONNECTOR_COLORS.default}
+                    strokeWidth="1.5"
+                    x="-3"
+                    y="-3"
                 >
-                    <animateMotion dur="4s" repeatCount="indefinite" path={edgePath} begin="1s" />
+                    <animateMotion dur={`${animationDuration * 1.5}ms`} repeatCount="indefinite" path={edgePath} begin="500ms" />
                 </rect>
             )}
 
@@ -149,7 +139,7 @@ export function SimulationEdge({
                     ) : (
                         <div className="flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-brand-charcoal/10 px-2 py-0.5 rounded-sm shadow-sm hover:border-brand-orange/50 transition-all">
                             <span className="text-[10px] font-mono text-brand-charcoal/70">
-                                {label || `${protocol.toUpperCase()}`}
+                                {label || protocolLabel}
                             </span>
                             {isHovered && (
                                 <Pencil className="w-2.5 h-2.5 text-brand-orange opacity-0 group-hover:opacity-100 transition-opacity" />

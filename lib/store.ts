@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ViewMode = 'concept' | 'implementation';
+export type ViewMode = 'fullstack';
 export type NodeStatus = 'active' | 'killed';
 export type EdgeStatus = 'active' | 'blocked' | 'rerouted';
 
@@ -19,7 +19,7 @@ interface SimulationState {
 }
 
 export const useSimulationStore = create<SimulationState>((set) => ({
-    viewMode: 'implementation', // Default to detailed view
+    viewMode: 'fullstack', // Default to fullstack (concept) view
     chaosMode: false,
     nodeStatus: {},
 

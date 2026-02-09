@@ -1,84 +1,37 @@
-import { Icon } from "@iconify/react";
+import { TECH_ECOSYSTEM } from "./tech-ecosystem";
 
-/**
- * Maps technology names to Iconify icon strings.
- * Based on 'Supported Technology Ecosystem' in docs/add-features.md.
- */
-export const TECH_ICONS: Record<string, string> = {
-    // Runtimes & Languages
-    "Node.js": "logos:nodejs-icon",
-    "Bun": "logos:bun",
-    "Deno": "logos:deno",
-    "Go": "logos:go",
-    "Rust": "logos:rust",
-    "Python": "logos:python",
-    "Java": "logos:java",
-    "Kotlin": "logos:kotlin-icon",
-    "C#": "logos:c-sharp",
-    "Ruby": "logos:ruby",
-    "PHP": "logos:php",
-    "Lua": "logos:lua",
-
-    // Frameworks
-    "Next.js": "logos:nextjs-icon",
-    "React": "logos:react",
-    "Vue": "logos:vue",
-    "Svelte": "logos:svelte-icon",
-    "Angular": "logos:angular-icon",
-    "NestJS": "logos:nestjs",
-    "Express.js": "skill-icons:expressjs-light",
-    "Fastify": "logos:fastify-icon",
-    "Hono": "logos:hono",
-    "ElysiaJS": "logos:elysia", // Check if available, or generic
-    "Django": "logos:django-icon",
-    "Flask": "logos:flask",
-    "FastAPI": "logos:fastapi-icon",
-    "Spring Boot": "logos:spring-icon",
-    "Laravel": "logos:laravel",
-    "Symfony": "logos:symfony",
-
-    // Cloud & Hosting
-    "AWS": "logos:aws",
-    "GCP": "logos:google-cloud",
-    "Azure": "logos:azure-icon",
-    "Vercel": "logos:vercel-icon",
-    "Netlify": "logos:netlify",
-    "Heroku": "logos:heroku-icon",
-    "Supabase": "logos:supabase-icon",
-    "Firebase": "logos:firebase",
-    "Cloudflare": "logos:cloudflare",
-    "DigitalOcean": "logos:digital-ocean-icon",
-    "Docker": "logos:docker-icon",
-    "Kubernetes": "logos:kubernetes",
-    "Terraform": "logos:terraform-icon",
-
-    // Databases
-    "PostgreSQL": "logos:postgresql",
-    "MySQL": "logos:mysql",
-    "MongoDB": "logos:mongodb-icon",
-    "Redis": "logos:redis",
-    "SQLite": "logos:sqlite",
-    "Cassandra": "logos:cassandra-icon",
-    "Elasticsearch": "logos:elasticsearch",
-    "DynamoDB": "logos:aws-dynamodb",
-    "MariaDB": "logos:mariadb-icon",
-    "Neo4j": "logos:neo4j",
-    "Qdrant": "simple-icons:qdrant",
-    "Pinecone": "logos:pinecone",
-
-    // Messaging
-    "Kafka": "logos:kafka-icon",
-    "RabbitMQ": "logos:rabbitmq-icon",
-    "SQS": "logos:aws-sqs",
-    "SNS": "logos:aws-sns",
-    "Pub/Sub": "logos:google-cloud-pub-sub",
+export const TYPE_ICONS: Record<string, string> = {
+    gateway: "lucide:network",
+    service: "lucide:server",
+    database: "lucide:database",
+    queue: "lucide:layers",
+    storage: "lucide:hard-drive",
+    function: "lucide:zap",
+    client: "lucide:monitor",
+    ai: "lucide:bot",
 };
 
 /**
- * Returns the icon string for a given tech name.
- * Falls back to a generic icon if not found.
+ * Get the most appropriate icon for a technology name or service type
  */
-export function getTechIcon(tech: string | undefined): string | null {
-    if (!tech) return null;
-    return TECH_ICONS[tech] || null;
+export function getTechIcon(tech: string = "", type: string = "service"): string {
+    if (!tech && !type) return TYPE_ICONS.service;
+    if (!tech) return TYPE_ICONS[type] || TYPE_ICONS.service;
+
+    const normalizedTech = tech.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    // 1. Try exact match in ecosystem
+    const exactMatch = TECH_ECOSYSTEM.find(item => item.id === normalizedTech || item.label.toLowerCase() === normalizedTech);
+    if (exactMatch) return exactMatch.icon;
+
+    // 2. Try substring match in ecosystem
+    const fuzzyMatch = TECH_ECOSYSTEM.find(item =>
+        item.id.includes(normalizedTech) ||
+        normalizedTech.includes(item.id) ||
+        item.label.toLowerCase().includes(normalizedTech)
+    );
+    if (fuzzyMatch) return fuzzyMatch.icon;
+
+    // 3. Fallback to type icons
+    return TYPE_ICONS[type] || TYPE_ICONS.service;
 }

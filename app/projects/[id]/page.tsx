@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useSimulationStore } from "@/lib/store";
+import { Activity } from "lucide-react";
 
 // Workstation Components
 function WorkstationHeader({
@@ -42,6 +44,7 @@ function WorkstationHeader({
   onExportSkill: () => void,
   onAutolayout: (direction: "DOWN" | "RIGHT") => void
 }) {
+  const { chaosMode, setChaosMode } = useSimulationStore();
   if (!project) return <div className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5]" />;
 
   return (
@@ -138,6 +141,24 @@ function WorkstationHeader({
         >
           <Icon icon="lucide:save" className={cn("w-3 h-3 mr-2", saving && "animate-spin")} />
           {saving ? "Saving..." : "Deploy"}
+        </Button>
+
+        <div className="h-4 w-px bg-brand-charcoal/10 mx-2" />
+
+        {/* Chaos Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setChaosMode(!chaosMode)}
+          className={cn(
+            "h-8 rounded-none font-mono text-[10px] uppercase tracking-widest transition-all gap-2",
+            chaosMode
+              ? "bg-red-50 text-red-500 hover:bg-red-100 border border-red-200"
+              : "text-brand-charcoal/40 hover:text-brand-charcoal"
+          )}
+        >
+          <Activity className={cn("w-3.5 h-3.5", chaosMode && "animate-pulse")} />
+          <span className="hidden lg:inline">{chaosMode ? "CHAOS: ACTIVE" : "SIM: STABLE"}</span>
         </Button>
 
         <div className="h-4 w-px bg-brand-charcoal/10 mx-2" />
@@ -361,6 +382,7 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
               getCurrentNodes={() => flowEditorRef.current?.nodes || []}
               getCurrentEdges={() => flowEditorRef.current?.edges || []}
               initialPrompt={initialPrompt || undefined}
+              initialMetadata={project.metadata}
             />
           </div>
         </div>

@@ -1,66 +1,76 @@
-import ELK from 'elkjs/lib/elk.bundled.js';
+import dagre from "dagre";
 
-const elk = new ELK();
+self.onmessage = (event: MessageEvent) => {
+  const { nodes, edges, options } = event.data;
 
-self.onmessage = async (event: MessageEvent) => {
-  const { nodes, edges, direction = "DOWN" } = event.data;
-
-  // Configuration for different layout styles
-  const layoutOptions = {
-    'elk.algorithm': 'layered',
-    'elk.direction': direction, // 'DOWN' (Hierarchical) or 'RIGHT' (Tiered)
-
-    // Spacing
-    'elk.spacing.nodeNode': '100', // Wider horizontal spacing
-    'elk.layered.spacing.nodeNodeBetweenLayers': '120', // Taller vertical spacing
-
-    // Aesthetic & Flow
-    'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
-    'elk.edgeRouting': 'ORTHOGONAL', // Circuit-board style edges
-    'elk.layered.spacing.edgeNodeBetweenLayers': '50',
-
-    // Port handling (Mocking center ports)
-    'elk.portConstraints': 'FIXED_SIDE',
-  };
-
-  const graph = {
-    id: "root",
-    layoutOptions,
-    children: nodes.map((node: any) => ({
-      id: node.id,
-      // Better heuristic for Node dimensions (BaseNode is approx 240x160 with padding)
-      width: node.measured?.width ?? 240,
-      height: node.measured?.height ?? 160
-    })),
-    edges: edges.map((edge: any) => ({
-      id: edge.id,
-      sources: [edge.source],
-      targets: [edge.target]
-    }))
-  };
+  const {
+    direction = "TB",
+    nodeWidth = 350,
+    nodeHeight = 250,
+    rankSep = 150,
+    nodeSep = 150,
+  } = options || {};
 
   try {
-    const layoutedGraph = await elk.layout(graph);
-
-    // Map back to React Flow
-    const layoutNodes = nodes.map((node: any) => {
-      // @ts-ignore
-      const layoutNode = layoutedGraph.children?.find((n: any) => n.id === node.id);
-      if (!layoutNode) return node;
-
-      return {
-        ...node,
-        position: {
-          x: layoutNode.x,
-          y: layoutNode.y,
-        }
-      };
+    const g = new dagre.graphlib.Graph({ multigraph: true });
+    g.setGraph({
+      rankdir: direction,
+      nodesep: nodeSep,
+      ranksep: rankSep,
     });
 
-    self.postMessage({ nodes: layoutNodes });
-  } catch (err) {
-    console.error("ELK Layout Error", err);
-    // Return original nodes on error to avoid crash
-    self.postMessage({ nodes });
+    g.setDefaultEdgeLabel(() => ({}));
+
+    // Add nodes
+    for (const node of nodes) {
+      try {
+        g.setNode(node.id, {
+          width: nodeWidth,
+          height: nodeHeight,
+          label: node.id,
+        });
+      } catch (e) {
+        console.warn(`[Worker] Failed to add node ${node.id}`, e);
+      }
+    }
+
+    // Add edges
+    for (const edge of edges) {
+      try {
+        g.setEdge(edge.source, edge.target, {}, edge.id);
+      } catch (e) {
+        // Ignore edge errors
+      }
+    }
+
+    if (g.nodes().length === 0) {
+      self.postMessage({ nodes, edges });
+      return;
+    }
+
+    dagre.layout(g);
+
+    const positionedNodes = nodes.map((node: any) => {
+      try {
+        const nodeData = g.node(node.id);
+        if (nodeData && typeof nodeData.x === "number" && typeof nodeData.y === "number") {
+          return {
+            ...node,
+            position: {
+              x: nodeData.x - nodeWidth / 2,
+              y: nodeData.y - nodeHeight / 2,
+            },
+          };
+        }
+      } catch (e) {
+        // Ignore
+      }
+      return node;
+    });
+
+    self.postMessage({ nodes: positionedNodes, edges });
+  } catch (error) {
+    console.error("[Worker] Layout error:", error);
+    self.postMessage({ nodes, edges, error: String(error) });
   }
 };

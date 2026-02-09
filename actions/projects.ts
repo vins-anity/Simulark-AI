@@ -46,7 +46,10 @@ export async function createProject(
 }
 
 // --- Save Project (with Versioning) ---
-export async function saveProject(projectId: string, graph: ArchitectureGraph) {
+export async function saveProject(
+  projectId: string,
+  graph: Partial<ArchitectureGraph> & { metadata?: Record<string, any> }
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -75,6 +78,7 @@ export async function saveProject(projectId: string, graph: ArchitectureGraph) {
       version: currentProject.version,
       nodes: currentProject.nodes,
       edges: currentProject.edges,
+      // Note: We might want to save metadata in versions too, but keeping it simple for now
     });
 
   if (versionError) {
@@ -83,14 +87,21 @@ export async function saveProject(projectId: string, graph: ArchitectureGraph) {
   }
 
   // 3. Update Project with NEW state and increment version
+  const updateData: any = {
+    version: currentProject.version + 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (graph.nodes) updateData.nodes = graph.nodes;
+  if (graph.edges) updateData.edges = graph.edges;
+  if (graph.metadata) {
+    // Merge existing metadata with new metadata
+    updateData.metadata = { ...currentProject.metadata, ...graph.metadata };
+  }
+
   const { data, error } = await supabase
     .from("projects")
-    .update({
-      nodes: graph.nodes,
-      edges: graph.edges,
-      version: currentProject.version + 1,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", projectId)
     .select()
     .single();

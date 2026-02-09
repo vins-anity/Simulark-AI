@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateArchitectureStream } from "@/lib/ai-client";
+import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
 export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
 
@@ -14,18 +15,16 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 }
 
 export async function POST(req: NextRequest) {
-    const startTime = Date.now();
-
     try {
-        const { prompt, model, mode, currentNodes, currentEdges } = await req.json();
+        const { prompt, model, mode, currentNodes, currentEdges, quickMode } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
         }
 
-        console.log(`[API] Starting generation (Model: ${model || "auto"}, Mode: ${mode || "default"})`);
+        console.log(`[API] Starting generation (Model: ${model || "auto"}, Mode: ${mode || "default"}${quickMode ? ", QUICK" : ""})`);
         console.log(`[API DEBUG] User prompt: ${prompt.substring(0, 200).replace(/\n/g, " ")}${prompt.length > 200 ? "..." : ""}`);
-        const stream = await generateArchitectureStream(prompt, model, mode, currentNodes, currentEdges);
+        const stream = await generateArchitectureStream(prompt, model, mode, currentNodes, currentEdges, quickMode || false);
 
         // Create a robust stream that separates reasoning from content
         const encoder = new TextEncoder();
@@ -99,8 +98,11 @@ export async function POST(req: NextRequest) {
 
                             const parsed = JSON.parse(jsonStr.trim());
                             if (parsed.nodes && parsed.edges) {
-                                console.log(`[API] Emitting result with ${parsed.nodes.length} nodes, ${parsed.edges.length} edges`);
-                                controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: parsed }) + "\n"));
+                                // Enrich nodes with tech ecosystem data (icons, normalized IDs)
+                                const enrichedNodes = enrichNodesWithTech(parsed.nodes);
+                                const enrichedData = { ...parsed, nodes: enrichedNodes };
+                                console.log(`[API] Emitting result with ${enrichedNodes.length} nodes, ${parsed.edges.length} edges`);
+                                controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: enrichedData }) + "\n"));
                                 hasJsonResult = true;
                             } else {
                                 console.warn("[API] Parsed JSON missing nodes or edges:", { hasNodes: !!parsed.nodes, hasEdges: !!parsed.edges });
@@ -120,8 +122,10 @@ export async function POST(req: NextRequest) {
                             if (jsonMatch) {
                                 const parsed = JSON.parse(jsonMatch[0]);
                                 if (parsed.nodes && parsed.edges) {
-                                    console.log(`[API] Recovery: Found JSON with ${parsed.nodes.length} nodes, ${parsed.edges.length} edges`);
-                                    controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: parsed }) + "\n"));
+                                    const enrichedNodes = enrichNodesWithTech(parsed.nodes);
+                                    const enrichedData = { ...parsed, nodes: enrichedNodes };
+                                    console.log(`[API] Recovery: Found JSON with ${enrichedNodes.length} nodes, ${parsed.edges.length} edges`);
+                                    controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: enrichedData }) + "\n"));
                                     hasJsonResult = true;
                                 }
                             }

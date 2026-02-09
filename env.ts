@@ -6,6 +6,8 @@ export const env = createEnv({
     NODE_ENV: v.picklist(["development", "test", "production"]),
     SUPABASE_SERVICE_ROLE_KEY: v.string(),
     OPENROUTER_API_KEY: v.string(),
+    UPSTASH_REDIS_REST_URL: v.string(),
+    UPSTASH_REDIS_REST_TOKEN: v.string(),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: v.string(),
