@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
 
     try {
-        const { prompt } = await req.json();
+        const { prompt, model, mode } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
         }
 
-        console.log(`[API] Starting generation`);
-        const stream = await generateArchitectureStream(prompt);
+        console.log(`[API] Starting generation (Model: ${model || "auto"}, Mode: ${mode || "default"})`);
+        const stream = await generateArchitectureStream(prompt, model, mode);
 
         // Create a robust stream that separates reasoning from content
         const encoder = new TextEncoder();
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         const readable = new ReadableStream({
             async start(controller) {
                 let chunkCount = 0;
+                let accumulatedContent = ""; // Track full content for parsing
 
                 try {
                     // Use the OpenAI SDK's native iterator pattern
@@ -58,7 +59,32 @@ export async function POST(req: NextRequest) {
                             controller.enqueue(encoder.encode(JSON.stringify({ type: 'reasoning', data: reasoning }) + "\n"));
                         }
                         if (content) {
+                            accumulatedContent += content;
                             controller.enqueue(encoder.encode(JSON.stringify({ type: 'content', data: content }) + "\n"));
+                        }
+                    }
+
+                    // Parse accumulated content and emit result chunk for canvas rendering
+                    if (accumulatedContent) {
+                        try {
+                            // Clean markdown code blocks if present
+                            let jsonStr = accumulatedContent.trim();
+                            if (jsonStr.startsWith('```json')) {
+                                jsonStr = jsonStr.slice(7);
+                            }
+                            if (jsonStr.startsWith('```')) {
+                                jsonStr = jsonStr.slice(3);
+                            }
+                            if (jsonStr.endsWith('```')) {
+                                jsonStr = jsonStr.slice(0, -3);
+                            }
+                            const parsed = JSON.parse(jsonStr.trim());
+                            if (parsed.nodes && parsed.edges) {
+                                console.log(`[API] Emitting result with ${parsed.nodes.length} nodes, ${parsed.edges.length} edges`);
+                                controller.enqueue(encoder.encode(JSON.stringify({ type: 'result', data: parsed }) + "\n"));
+                            }
+                        } catch (parseErr) {
+                            console.warn("[API] Could not parse content as architecture JSON:", parseErr);
                         }
                     }
 

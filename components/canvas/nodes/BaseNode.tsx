@@ -1,11 +1,16 @@
 "use client";
 
-import { Handle, type NodeProps, Position } from "@xyflow/react";
+import { Handle, type NodeProps, Position, useReactFlow } from "@xyflow/react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useSimulationStore } from "@/lib/store";
 import { Skull, ZapOff, Activity, Cpu, Database, Server, Component } from "lucide-react";
 import { Icon } from "@iconify/react";
+import { useState, useRef, useEffect } from "react";
+import { NodeContextMenu } from "./NodeContextMenu";
+import { NodeProperties } from "./NodeProperties";
+import { toast } from "sonner";
+import { NodeToolbar } from "@xyflow/react";
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -31,156 +36,308 @@ export function BaseNode({
   label,
 }: BaseNodeProps) {
   const { viewMode, chaosMode, nodeStatus, toggleNodeStatus } = useSimulationStore();
+  const { setNodes, getNodes } = useReactFlow();
   const nodeLabel = (data?.label as string) || label || "Node";
   const nodeLogo = (data?.logo as string) || null;
   const nodeTechLabel = (data?.techLabel as string) || null;
 
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editedLabel, setEditedLabel] = useState(nodeLabel);
   const isKilled = nodeStatus[id] === "killed";
 
-  const handleChaosClick = (e: React.MouseEvent) => {
+  // Click vs Drag detection
+  const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
+  // Reset properties open state when node is deselected
+  useEffect(() => {
+    if (!selected) {
+      setIsPropertiesOpen(false);
+    }
+  }, [selected]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Chaos mode handling
     if (chaosMode) {
-      e.stopPropagation(); // Prevent selection
+      e.stopPropagation();
       toggleNodeStatus(id);
+      return;
+    }
+
+    // Check for drag
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Only open properties if moved less than 10px (pure click/tap)
+    if (dist < 10) {
+      setIsPropertiesOpen(true);
     }
   };
 
-  // --- C-LEVEL VIEW (Abstract, Simple) ---
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleEditLabel = () => {
+    setIsEditingLabel(true);
+    setEditedLabel(nodeLabel);
+  };
+
+  const handleSaveLabel = () => {
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.id === id ? { ...node, data: { ...node.data, label: editedLabel } } : node
+      )
+    );
+    setIsEditingLabel(false);
+  };
+
+  const handleDuplicate = () => {
+    const currentNode = getNodes().find((n) => n.id === id);
+    if (currentNode) {
+      const newNode = {
+        ...currentNode,
+        id: `${id}-copy-${Date.now()}`,
+        position: {
+          x: currentNode.position.x + 50,
+          y: currentNode.position.y + 50,
+        },
+        data: {
+          ...currentNode.data,
+          label: `${nodeLabel} (Copy)`,
+        },
+      };
+      setNodes((nodes) => [...nodes, newNode]);
+      toast.success("Node duplicated");
+    }
+  };
+
+  const handleDelete = () => {
+    setNodes((nodes) => nodes.filter((node) => node.id !== id));
+    toast.success("Node deleted");
+  };
+
+  // ============================================
+  // C-LEVEL VIEW: "Strategic Island" / Business Focus
+  // ============================================
   if (viewMode === "concept") {
     return (
-      <div
-        onClick={handleChaosClick}
-        className={cn(
-          "relative flex items-center justify-center transition-all duration-300 ease-out group",
-          "w-[120px] h-[120px] rounded-full",
-          "glass-card backdrop-blur-md shadow-sm",
-          !isKilled && "bg-white/80 border border-brand-charcoal/10 hover:border-brand-orange/50",
-          !isKilled && selected && "ring-2 ring-brand-orange border-brand-orange shadow-brand-orange/20 shadow-xl scale-105",
-          chaosMode && !isKilled && "cursor-crosshair hover:bg-red-500/10 hover:border-red-500",
-          isKilled && "bg-red-950/20 border-red-500 grayscale opacity-70",
-          className
-        )}
-      >
-        {/* Handles hidden but functional */}
-        <Handle type="target" position={Position.Top} className="opacity-0 w-full h-full border-0 !bg-transparent" />
-        <Handle type="source" position={Position.Bottom} className="opacity-0 w-full h-full border-0 !bg-transparent" />
-
-        <div className="flex flex-col items-center gap-2 pointer-events-none">
-          {isKilled ? (
-            <Skull className="text-red-500 w-8 h-8 animate-pulse" />
-          ) : nodeLogo ? (
-            <Icon icon={nodeLogo} className="w-8 h-8 text-brand-charcoal" />
-          ) : (
-            <div className="text-brand-charcoal/60">{icon || <Component size={24} />}</div>
+      <>
+        <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={20}>
+          <NodeProperties id={id} data={data} type={data?.serviceType as string} />
+        </NodeToolbar>
+        <div
+          onPointerDown={handlePointerDown}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+          className={cn(
+            "relative flex flex-col transition-all duration-300 ease-out group",
+            "w-72 h-auto rounded-lg overflow-hidden bg-white",
+            "border border-brand-charcoal/10 shadow-sm",
+            !isKilled && "hover:border-brand-orange/40 hover:shadow-md",
+            !isKilled && selected && "ring-2 ring-brand-orange/20 border-brand-orange shadow-brand-orange/10",
+            chaosMode && !isKilled && "cursor-crosshair hover:bg-red-500/10",
+            isKilled && "bg-red-50 border-red-200 grayscale opacity-80",
+            className
           )}
-          <span className="font-poppins font-medium text-[10px] text-center max-w-[90px] leading-tight text-brand-charcoal/80">
-            {nodeLabel}
-          </span>
+        >
+          {/* Handles for edges - Transparent but functional */}
+          <Handle type="target" position={Position.Top} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
+          <Handle type="source" position={Position.Bottom} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
+
+          {/* Top Resize Handle Visual */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
+
+          <div className="p-4 flex flex-col gap-3">
+            {/* Header: Icon + Title */}
+            <div className="flex items-start gap-4">
+              {/* Icon Container */}
+              <div className="shrink-0 w-10 h-10 rounded-lg bg-white border border-brand-charcoal/5 shadow-sm flex items-center justify-center text-brand-orange">
+                {nodeLogo ? (
+                  <Icon icon={nodeLogo} className="w-6 h-6 text-brand-charcoal" />
+                ) : (
+                  icon || <Component size={20} />
+                )}
+              </div>
+
+              {/* Title & Subtitle */}
+              <div className="flex flex-col min-w-0 flex-1">
+                {isEditingLabel ? (
+                  <input
+                    type="text"
+                    value={editedLabel}
+                    onChange={(e) => setEditedLabel(e.target.value)}
+                    onBlur={handleSaveLabel}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveLabel();
+                      if (e.key === "Escape") setIsEditingLabel(false);
+                    }}
+                    className="font-poppins font-bold text-sm text-brand-charcoal leading-tight bg-white border border-brand-orange rounded px-1 focus:outline-none focus:ring-1 focus:ring-brand-orange w-full"
+                    autoFocus
+                  />
+                ) : (
+                  <h3
+                    className="font-poppins font-bold text-sm text-brand-charcoal leading-snug cursor-text truncate"
+                    onDoubleClick={handleEditLabel}
+                    title={nodeLabel}
+                  >
+                    {nodeLabel}
+                  </h3>
+                )}
+                <span className="text-[10px] font-mono uppercase tracking-wider text-brand-charcoal/50 truncate">
+                  {(data?.tier as string) || "SERVICE"}
+                </span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px w-full bg-brand-charcoal/5" />
+
+            {/* Description / Metadata */}
+            <div className="text-[11px] text-brand-charcoal/60 leading-relaxed font-sans">
+              {(data?.description as string) || "Core infrastructure component handling request processing and data flow management."}
+            </div>
+          </div>
+
+          {/* Bottom Resize Handle Visual */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
         </div>
 
-        {/* Status Dot */}
-        <div className={cn(
-          "absolute top-2 right-2 w-2 h-2 rounded-full",
-          isKilled ? "bg-red-500" : "bg-green-500 animate-pulse shadow-green-400/50 shadow-sm"
-        )} />
-      </div>
+        {contextMenu && (
+          <NodeContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onEdit={handleEditLabel}
+            onDuplicate={handleDuplicate}
+            onDelete={handleDelete}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+      </>
     );
   }
 
-  // --- TECH-LEVEL VIEW (Detailed, "Wow", Official Logos) ---
+  // ============================================
+  // TECH-LEVEL VIEW: "Circuit Schematic" / Technical Focus
+  // ============================================
   return (
-    <div
-      onClick={handleChaosClick}
-      className={cn(
-        "relative transition-all duration-300 ease-out group min-w-[280px]",
-        // Shape & Base
-        "rounded-sm border-l-[3px]",
-        "bg-[#faf9f5] border-y border-r border-brand-charcoal/10 shadow-sm",
-        // Selection
-        !isKilled && selected && "shadow-brand-orange/20 shadow-xl border-brand-charcoal/40 ring-1 ring-brand-charcoal/10",
-        // Chaos
-        chaosMode && !isKilled && "cursor-crosshair hover:border-red-500",
-        // Killed
-        isKilled && "bg-red-50 grayscale opacity-80 border-l-red-500",
-        className,
-      )}
-    >
-      {/* Connection Points (Explicit Visual Ports) */}
-      <Handle type="target" position={Position.Top} className={cn(
-        "!w-3 !h-3 !-top-1.5 !bg-brand-charcoal !border-2 !border-white !rounded-full transition-all",
-        selected && "!bg-brand-orange !scale-125"
-      )} />
+    <>
+      <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={20}>
+        <NodeProperties id={id} data={data} type={data?.serviceType as string} />
+      </NodeToolbar>
+      <div
+        onPointerDown={handlePointerDown}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        className={cn(
+          "relative transition-all duration-300 ease-out group",
+          "min-w-[200px] max-w-[280px]",
+          // Circuit board aesthetic with softer colors
+          "bg-[#0f172a] border-2 shadow-lg",
+          "hover:shadow-xl hover:scale-[1.01]",
+          !isKilled && "border-sky-500/30 hover:border-sky-400/50",
+          !isKilled && selected && "border-sky-400 ring-2 ring-sky-400/20 shadow-sky-400/15 shadow-2xl",
+          chaosMode && !isKilled && "cursor-crosshair hover:border-red-500",
+          isKilled && "bg-red-950/20 border-red-500/50 grayscale opacity-70",
+          className,
+        )}
+      >
+        {/* Connection Ports (Visual) */}
+        <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
+          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
+        </div>
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
+          <div className={cn("w-1.5 h-1.5 rounded-full border", selected ? "bg-sky-400 border-sky-300" : "bg-slate-500/40 border-slate-400/60")} />
+        </div>
 
-      {/* Header Section */}
-      <div className="flex items-center gap-3 p-3 border-b border-brand-charcoal/5 bg-white/50">
-        {/* Logo Box */}
-        <div className={cn(
-          "w-10 h-10 flex items-center justify-center rounded-sm bg-white border border-brand-charcoal/10 shadow-sm",
-          isKilled && "bg-red-100"
-        )}>
-          {isKilled ? (
-            <ZapOff size={20} className="text-red-500" />
-          ) : nodeLogo ? (
-            <Icon icon={nodeLogo} className="w-6 h-6" />
-          ) : (
-            <div className="text-brand-charcoal/60">{icon || <Cpu size={20} />}</div>
+        <Handle type="target" position={Position.Top} className="!w-3 !h-3 !-top-1.5 !bg-sky-500 !border-2 !border-sky-300 opacity-0" />
+        <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !-bottom-1.5 !bg-sky-500 !border-2 !border-sky-300 opacity-0" />
+
+        {/* Header: Technical ID */}
+        <div className="flex items-center gap-2 p-2 border-b border-sky-500/15 bg-gradient-to-r from-sky-500/5 to-transparent">
+          <div className={cn(
+            "w-7 h-7 flex items-center justify-center rounded border shrink-0",
+            isKilled ? "bg-red-900/50 border-red-500" : "bg-sky-950/50 border-sky-500/30"
+          )}>
+            {isKilled ? (
+              <ZapOff size={14} className="text-red-400" />
+            ) : nodeLogo ? (
+              <Icon icon={nodeLogo} className="w-4 h-4 text-sky-400" />
+            ) : (
+              <Cpu size={14} className="text-sky-400" />
+            )}
+          </div>
+
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="font-mono text-[7px] uppercase tracking-widest text-sky-400/50 leading-none">
+              NODE-{id.slice(0, 6).toUpperCase()}
+            </span>
+            <span className="font-mono font-bold text-[11px] text-slate-200 truncate mt-0.5">
+              {nodeLabel}
+            </span>
+          </div>
+
+          <div className={cn(
+            "w-1.5 h-1.5 rounded-full shrink-0",
+            isKilled ? "bg-red-500 animate-pulse" : "bg-sky-400 shadow-sm shadow-sky-400/30"
+          )} />
+        </div>
+
+        {/* Technical Specs */}
+        <div className="p-2 space-y-1.5">
+          {/* Tech Stack */}
+          <div className="flex items-center justify-between text-[8px] font-mono">
+            <span className="text-sky-400/50 uppercase tracking-wider">Stack</span>
+            <span className="text-slate-300 font-semibold">{nodeTechLabel || nodeLabel}</span>
+          </div>
+
+          {/* Instance Type */}
+          <div className="flex items-center justify-between text-[8px] font-mono">
+            <span className="text-sky-400/50 uppercase tracking-wider">Type</span>
+            <span className="text-slate-300">{(data?.tier as string) || "Standard"}</span>
+          </div>
+
+          {/* Latency/Performance */}
+          <div className="flex items-center justify-between text-[8px] font-mono pt-1 border-t border-sky-500/10">
+            <span className="text-sky-400/50 uppercase tracking-wider">Latency</span>
+            <span className="text-sky-300 font-bold">~12ms</span>
+          </div>
+
+          {/* Custom Technical Details */}
+          {children && (
+            <div className="mt-2 p-1.5 bg-black/40 border border-sky-500/15 rounded text-[8px] font-mono text-sky-300/70 leading-tight">
+              {children}
+            </div>
           )}
         </div>
 
-        <div className="flex flex-col min-w-0">
-          <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/40 leading-none mb-1">
-            Component ID: {id.slice(0, 4)}
-          </span>
-          <span className="font-poppins font-bold text-sm text-brand-charcoal truncate">
-            {nodeLabel}
-          </span>
-        </div>
-
-        {/* Status Indicator */}
-        <div className="ml-auto flex flex-col items-end gap-1">
-          <div className={cn(
-            "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono tracking-wider font-bold uppercase",
-            isKilled ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"
-          )}>
-            {isKilled ? (
-              <>Offline <Activity size={8} /></>
-            ) : (
-              <>Active <Activity size={8} className="animate-pulse" /></>
-            )}
-          </div>
-        </div>
+        {/* Status Bar */}
+        <div className={cn(
+          "h-1 w-full",
+          isKilled ? "bg-red-500" : "bg-gradient-to-r from-sky-500/60 via-sky-400/60 to-sky-500/60"
+        )} />
       </div>
 
-      {/* Content Body */}
-      <div className="p-3 bg-[#faf9f5]">
-        {/* Metadata Grid */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="flex flex-col bg-white border border-brand-charcoal/5 p-1.5 rounded-sm">
-            <span className="text-[8px] font-mono uppercase text-brand-charcoal/40">Technology</span>
-            <span className="text-[10px] font-semibold text-brand-charcoal truncate">
-              {nodeTechLabel || nodeLabel}
-            </span>
-          </div>
-          <div className="flex flex-col bg-white border border-brand-charcoal/5 p-1.5 rounded-sm">
-            <span className="text-[8px] font-mono uppercase text-brand-charcoal/40">Tier / Size</span>
-            <span className="text-[10px] font-semibold text-brand-charcoal truncate">
-              {(data?.tier as string) || "Standard"}
-            </span>
-          </div>
-        </div>
-
-        {/* Custom Children (Technical Details) */}
-        {children && (
-          <div className="text-[10px] font-mono text-brand-charcoal/70 bg-brand-charcoal/5 p-2 rounded-sm border border-brand-charcoal/5 whitespace-pre-wrap">
-            {children}
-          </div>
-        )}
-      </div>
-
-      {/* Connection Points (Explicit Visual Ports) */}
-      <Handle type="source" position={Position.Bottom} className={cn(
-        "!w-3 !h-3 !-bottom-1.5 !bg-brand-charcoal !border-2 !border-white !rounded-full transition-all",
-        selected && "!bg-brand-orange !scale-125"
-      )} />
-    </div>
+      {contextMenu && (
+        <NodeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onEdit={handleEditLabel}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+    </>
   );
 }

@@ -12,6 +12,12 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react";
@@ -23,12 +29,18 @@ function WorkstationHeader({
   project,
   saving,
   isTerminalOpen,
-  onToggleTerminal
+  onToggleTerminal,
+  onExport,
+  onExportSkill,
+  onAutolayout // Renamed from onAutofix
 }: {
   project: Project | null,
   saving: boolean,
   isTerminalOpen?: boolean,
-  onToggleTerminal?: () => void
+  onToggleTerminal?: () => void,
+  onExport: (format: 'mermaid' | 'png' | 'pdf' | 'svg') => void,
+  onExportSkill: () => void,
+  onAutolayout: (direction: "DOWN" | "RIGHT") => void
 }) {
   if (!project) return <div className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5]" />;
 
@@ -55,14 +67,71 @@ function WorkstationHeader({
           <span>Lat: 12ms</span>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 rounded-none border-brand-charcoal/20 bg-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-charcoal hover:text-white transition-all hidden sm:flex"
-        >
-          <Icon icon="lucide:share-2" className="w-3 h-3 mr-2" />
-          Share
-        </Button>
+        {/* Autolayout Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-none text-brand-charcoal/60 hover:text-brand-orange hover:bg-brand-orange/5 font-mono text-[10px] uppercase tracking-widest hidden sm:flex"
+            >
+              <Icon icon="lucide:layout-dashboard" className="w-3.5 h-3.5 mr-2" />
+              AUTOLAYOUT
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 font-mono text-xs bg-white border border-brand-charcoal/20 shadow-xl">
+            <DropdownMenuItem onClick={() => onAutolayout('DOWN')} className="cursor-pointer">
+              <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" /> Hierarchical
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAutolayout('RIGHT')} className="cursor-pointer">
+              <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" /> Tiered (Tech)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Share / Export Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-none border-brand-charcoal/20 bg-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-charcoal hover:text-white transition-all hidden sm:flex"
+            >
+              <Icon icon="lucide:share-2" className="w-3 h-3 mr-2" />
+              SHARE
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 font-mono text-xs p-0 bg-white border border-brand-charcoal/20 shadow-xl">
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-brand-charcoal/5 border-b border-brand-charcoal/10">
+              Export Protocol
+            </div>
+            <DropdownMenuItem onClick={onExportSkill} className="cursor-pointer px-3 py-2">
+              <Icon icon="lucide:file-code" className="w-3.5 h-3.5 mr-2 text-brand-orange" /> .cursorrules
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onExport('mermaid')} className="cursor-pointer px-3 py-2">
+              <Icon icon="lucide:download" className="w-3.5 h-3.5 mr-2" /> Mermaid.js
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              // toast.success("Link copied!"); // defined elsewhere or assume toast works
+            }} className="cursor-pointer px-3 py-2">
+              <Icon icon="lucide:link" className="w-3.5 h-3.5 mr-2" /> Live Context Link
+            </DropdownMenuItem>
+
+            <div className="h-px bg-brand-charcoal/10" />
+
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-brand-charcoal/5 border-b border-brand-charcoal/10">
+              Visuals
+            </div>
+            <DropdownMenuItem onClick={() => onExport('png')} className="cursor-pointer px-3 py-2">
+              <Icon icon="lucide:image" className="w-3.5 h-3.5 mr-2" /> PNG Image
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onExport('pdf')} className="cursor-pointer px-3 py-2">
+              <Icon icon="lucide:file-text" className="w-3.5 h-3.5 mr-2" /> PDF Document
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button
           size="sm"
           className="h-8 rounded-none bg-brand-charcoal text-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-orange transition-all"
@@ -165,6 +234,56 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
     }
   };
 
+  const handleAutolayout = (direction: "DOWN" | "RIGHT") => {
+    flowEditorRef.current?.autoLayout(direction);
+  };
+
+  const handleExport = (format: 'mermaid' | 'png' | 'pdf' | 'svg') => {
+    flowEditorRef.current?.exportGraph(format);
+  };
+
+  const handleExportSkill = async () => {
+    // ... (existing export skill logic)
+    if (!flowEditorRef.current || !project) return;
+
+    try {
+      const nodes = flowEditorRef.current.nodes;
+      const edges = flowEditorRef.current.edges;
+
+      const response = await fetch('/api/export-skill', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectName: project.name,
+          projectDescription: (project as any).description || undefined,
+          nodes,
+          edges,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate skill');
+      }
+
+      // Download the ZIP file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project.name.toLowerCase().replace(/\s+/g, '-')}-skill.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting skill:', error);
+      alert('Failed to export skill. Please try again.');
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="h-screen w-screen bg-[#faf9f5] flex items-center justify-center">
@@ -187,6 +306,9 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
         saving={false}
         isTerminalOpen={isTerminalOpen}
         onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
+        onExport={handleExport}
+        onExportSkill={handleExportSkill}
+        onAutolayout={handleAutolayout}
       />
 
       <div className="flex-1 flex overflow-hidden relative">

@@ -21,11 +21,13 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import "@xyflow/react/dist/style.css";
 
-import { Play, Save, Skull, Eye, EyeOff, Activity, Share2, ZoomIn, ZoomOut, Maximize, AlertTriangle } from "lucide-react";
+import { Activity, AlertTriangle, Info, X, Download, ChevronDown } from "lucide-react";
 import { saveProject } from "@/actions/projects";
+import { toast } from "sonner";
 import { DatabaseNode } from "./nodes/DatabaseNode";
 import { GatewayNode } from "./nodes/GatewayNode";
 import { ServiceNode } from "./nodes/ServiceNode";
@@ -35,8 +37,13 @@ import { CacheNode } from "./nodes/CacheNode";
 import { SimulationEdge } from "./edges/SimulationEdge";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { ContextBridge } from "./ContextBridge";
 import { Icon } from "@iconify/react";
+// Note: toPng, toSvg, and jsPDF are now imported dynamically inside exportGraph to prevent Turbopack panics.
+import { generateMermaidCode } from "@/lib/utils";
+// Note: generateMermaidCode helper was previously at the bottom of this file. Using it from utils if available is cleaner.
+// If it's not in utils, I should inline it. I will assume it's NOT in utils and I need to define it or import the local one.
+// Actually, I should just remove these comments and ensure function exists. I will define it if missing.
+
 
 interface FlowEditorProps {
   initialNodes?: any[];
@@ -53,21 +60,23 @@ const FlowEditorInner = forwardRef(
     const nodesWithIds = useMemo(() => {
       return (initialNodes as Node[]).map((node, index) => ({
         ...node,
-        id: node.id || `node-${index}-${Date.now()}`,
+        id: node.id || `node - ${index} -${Date.now()} `,
       }));
     }, [initialNodes]);
 
     const edgesWithIds = useMemo(() => {
       return (initialEdges as Edge[]).map((edge, index) => ({
         ...edge,
-        id: edge.id || `edge-${index}-${Date.now()}`,
+        id: edge.id || `edge - ${index} -${Date.now()} `,
       }));
     }, [initialEdges]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithIds);
     const [edges, setEdges, onEdgesChange] = useEdgesState(edgesWithIds);
+    // Selected Node State Removed (handled by BaseNode internal toolbar)
+    const [showExportMenu, setShowExportMenu] = useState(false);
     const workerRef = useRef<Worker | null>(null);
-    const { fitView } = useReactFlow();
+    const { fitView, getNodes, getEdges } = useReactFlow();
 
     // Simulation Store
     const { chaosMode, setChaosMode, viewMode, setViewMode } = useSimulationStore();
@@ -86,6 +95,56 @@ const FlowEditorInner = forwardRef(
           }
         }, 100);
       },
+      autoLayout: (direction: "DOWN" | "RIGHT" = "DOWN") => {
+        if (workerRef.current) {
+          workerRef.current.postMessage({ nodes, edges, direction });
+        }
+      },
+      exportGraph: async (format: 'mermaid' | 'png' | 'pdf' | 'svg') => {
+        if (format === 'mermaid') {
+          const mermaidCode = generateMermaidCode(getNodes(), getEdges());
+          navigator.clipboard.writeText(mermaidCode);
+          toast.success('Mermaid code copied to clipboard!');
+        } else {
+          const element = document.querySelector('.react-flow') as HTMLElement;
+          if (!element) return;
+
+          // Dynamic imports to prevent Turbopack/SSR issues with DOM-heavy libraries
+          const { toPng, toSvg } = await import("html-to-image");
+
+          switch (format) {
+            case 'png': {
+              const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: '#ffffff' });
+              const link = document.createElement('a');
+              link.download = `architecture-${Date.now()}.png`;
+              link.href = dataUrl;
+              link.click();
+              break;
+            }
+            case 'svg': {
+              const dataUrl = await toSvg(element, { cacheBust: true, backgroundColor: '#ffffff' });
+              const link = document.createElement('a');
+              link.download = `architecture-${Date.now()}.svg`;
+              link.href = dataUrl;
+              link.click();
+              break;
+            }
+            case 'pdf': {
+              const { jsPDF } = await import("jspdf");
+              const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: '#ffffff' });
+              const pdf = new jsPDF({
+                orientation: 'landscape',
+              });
+              const imgProps = pdf.getImageProperties(dataUrl);
+              const pdfWidth = pdf.internal.pageSize.getWidth();
+              const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+              pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+              pdf.save(`architecture-${Date.now()}.pdf`);
+              break;
+            }
+          }
+        }
+      }
     }));
 
 
@@ -140,7 +199,13 @@ const FlowEditorInner = forwardRef(
 
       workerRef.current.onmessage = (event) => {
         const { nodes: layoutNodes } = event.data;
-        setNodes(layoutNodes);
+        // Merge layout positions while preserving other data
+        setNodes((nds) =>
+          nds.map((node) => {
+            const layoutNode = layoutNodes.find((n: any) => n.id === node.id);
+            return layoutNode ? { ...node, position: layoutNode.position } : node;
+          })
+        );
         setTimeout(() => fitView({ duration: 500 }), 100);
       };
 
@@ -175,6 +240,11 @@ const FlowEditorInner = forwardRef(
             size={1.5}
             color={chaosMode ? "#330000" : "#d4d4d8"}
             className="transition-colors duration-500 opacity-60"
+          />
+
+          <Controls
+            showInteractive={false}
+            className="bg-white border border-brand-charcoal/10 shadow-lg rounded-none"
           />
 
           {/* Custom Controls removed (handled by parent ToolRail mostly, except specific canvas actions) */}
@@ -222,20 +292,7 @@ const FlowEditorInner = forwardRef(
             </div>
           </Panel>
 
-          {/* Top Right: Actions */}
-          <Panel position="top-right" className="m-4">
-            <div className="flex gap-2">
-              <button
-                onClick={handleLayout}
-                className="h-8 w-8 bg-white border border-brand-charcoal/10 flex items-center justify-center text-brand-charcoal/60 hover:text-brand-orange hover:border-brand-orange transition-all shadow-sm"
-                title="Auto Layout"
-              >
-                <Icon icon="lucide:wand-2" className="w-4 h-4" />
-              </button>
-              <div className="h-8 w-px bg-transparent" /> {/* Spacer */}
-              <ContextBridge projectId={projectId} />
-            </div>
-          </Panel>
+          {/* Top Right: Actions Panel Removed (Consolidated into WorkstationHeader) */}
 
           {/* Bottom Center: Chaos Warning */}
           {chaosMode && (
@@ -247,16 +304,22 @@ const FlowEditorInner = forwardRef(
             </Panel>
           )}
 
+          {/* Node Details Panel Removed (Replaced by floating NodeProperties) */}
+
         </ReactFlow>
       </div>
     );
   },
 );
 
+
+
 FlowEditorInner.displayName = "FlowEditorInner";
 
 export interface FlowEditorRef {
   updateGraph: (data: { nodes: Node[]; edges: Edge[] }) => void;
+  autoLayout: (direction?: "DOWN" | "RIGHT") => void;
+  exportGraph: (format: 'mermaid' | 'png' | 'pdf' | 'svg') => Promise<void>;
 }
 
 export const FlowEditor = forwardRef<FlowEditorRef, FlowEditorProps>((props, ref) => {

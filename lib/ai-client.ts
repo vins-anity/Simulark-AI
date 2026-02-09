@@ -47,18 +47,29 @@ export function createAIClient(provider: AIProvider = "zhipu") {
     return { client, config };
 }
 
-export async function generateArchitectureStream(prompt: string) {
+export async function generateArchitectureStream(prompt: string, modelId?: string, mode: "default" | "startup" | "corporate" = "default") {
+    if (modelId) {
+        console.log(`[AI Client] Generating with selected model: ${modelId} in mode: ${mode}`);
+        // Map modelId to provider
+        if (modelId === "glm-4.7-flash") {
+            return await callModelStream("zhipu", prompt, mode);
+        } else if (modelId === "arcee-ai") {
+            return await callModelStream("openrouter", prompt, mode);
+        }
+    }
+
+    // Default fallback logic
     // 1. Try Primary (Zhipu)
     try {
-        console.log(`[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Prompt length: ${prompt.length}`);
-        const stream = await callModelStream("zhipu", prompt);
+        console.log(`[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Mode: ${mode}. Prompt length: ${prompt.length}`);
+        const stream = await callModelStream("zhipu", prompt, mode);
         console.log("[AI Client] Zhipu stream established successfully.");
         return stream;
     } catch (error: any) {
         console.warn(`[AI Client] Zhipu failed (Error: ${error.message}). Switching to OpenRouter fallback...`);
         // 2. Fallback (OpenRouter)
         try {
-            const stream = await callModelStream("openrouter", prompt);
+            const stream = await callModelStream("openrouter", prompt, mode);
             console.log("[AI Client] OpenRouter stream established successfully.");
             return stream;
         } catch (fbError: any) {
@@ -68,13 +79,28 @@ export async function generateArchitectureStream(prompt: string) {
     }
 }
 
-async function callModelStream(provider: AIProvider, prompt: string) {
+async function callModelStream(provider: AIProvider, prompt: string, mode: "default" | "startup" | "corporate" = "default") {
     const { client, config } = createAIClient(provider);
 
-    const systemPrompt = `You are a Senior Solutions Architect. 
+    let roleDescription = "Senior Solutions Architect";
+    let focusArea = "scalability, fault tolerance, and best practices";
+
+    if (mode === "startup") {
+        roleDescription = "Lean Startup CTO";
+        focusArea = "MVP speed, minimal costs, managed services, and rapid iteration. Avoid over-engineering.";
+    } else if (mode === "corporate") {
+        roleDescription = "Enterprise Architect";
+        focusArea = "high availability, compliance, security, redundancy, and enterprise integration patterns.";
+    } else {
+        // Standard / Default mode
+        roleDescription = "Senior Solutions Architect";
+        focusArea = "scalability, fault tolerance, cost-efficiency, and modern architectural best practices.";
+    }
+
+    const systemPrompt = `You are a ${roleDescription}. 
   Analyze the user's request and generate a detailed backend architecture.
   
-  Phase 1: Deep Thinking. Plan the architecture, considering scalability, fault tolerance, and best practices. Output your thoughts in the reasoning stream.
+  Phase 1: Deep Thinking. Plan the architecture, considering ${focusArea}. Output your thoughts in the reasoning stream.
   
   Phase 2: JSON Generation. Output the final architecture as a strict JSON object.
   The JSON MUST follow this schema:

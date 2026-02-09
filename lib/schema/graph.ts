@@ -39,6 +39,7 @@ export const EdgeProtocolSchema = v.picklist(["http", "queue", "stream"]);
 export const EdgeDataSchema = v.object({
   protocol: v.optional(EdgeProtocolSchema, "http"),
   latency: v.optional(v.number()),
+  label: v.optional(v.string()), // Connection name/label
 });
 
 export const EdgeSchema = v.object({
