@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Terminal } from "lucide-react";
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue, useTransform } from "framer-motion";
 import { MouseEvent } from "react";
+import { HeroCanvas } from "@/components/marketing/HeroCanvas";
 
 export function Hero() {
     let mouseX = useMotionValue(0);
@@ -16,6 +17,9 @@ export function Hero() {
         mouseY.set(clientY - top);
     }
 
+    const xDisplay = useTransform(mouseX, (v) => `X: ${Math.round(v)}`);
+    const yDisplay = useTransform(mouseY, (v) => `Y: ${Math.round(v)}`);
+
     return (
         <section
             className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-[#faf9f5] border-b border-brand-charcoal/5"
@@ -26,6 +30,20 @@ export function Hero() {
                 <div
                     className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1908_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1908_1px,transparent_1px)] bg-[size:40px_40px]"
                 />
+
+                {/* Mouse Coordinate Tracking Labels */}
+                <motion.div
+                    className="absolute hidden md:flex flex-col font-mono text-[10px] text-brand-orange/50 pointer-events-none z-0"
+                    style={{
+                        left: mouseX,
+                        top: mouseY,
+                        x: 20,
+                        y: 20,
+                    }}
+                >
+                    <motion.span>{xDisplay}</motion.span>
+                    <motion.span>{yDisplay}</motion.span>
+                </motion.div>
                 <motion.div
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                     style={{
@@ -51,7 +69,7 @@ export function Hero() {
                 >
                     <span className="w-2 h-2 bg-brand-orange animate-pulse" />
                     <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">
-                        System v1.0.4 <span className="text-brand-gray-mid mx-2">|</span> Architecture ready
+                        Beta System <span className="text-brand-gray-mid mx-2">FREE FOREVER</span>
                     </span>
                 </motion.div>
 
@@ -80,15 +98,15 @@ export function Hero() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3, duration: 0.8 }}
                 >
-                    <p className="text-xl md:text-2xl font-lora text-brand-gray-mid max-w-2xl mx-auto leading-relaxed">
-                        Transform abstract ideas into executable infrastructure.
-                        Export production-ready Terraform and code instantly.
+                    <p className="text-xl md:text-2xl font-lora text-brand-charcoal/60 max-w-2xl mx-auto leading-relaxed">
+                        From architectural intent to implementation.
+                        Design visually and export production-ready infrastructure instantly.
                     </p>
 
-                    <div className="hidden md:flex gap-8 text-[11px] font-mono text-brand-gray-mid/60 uppercase tracking-widest border-t border-brand-charcoal/5 pt-6 mt-2">
-                        <span>[ React Flow Engine ]</span>
-                        <span>[ AI Orchestration ]</span>
-                        <span>[ Multi-Cloud ]</span>
+                    <div className="hidden md:flex gap-8 text-[12px] font-mono text-brand-gray-mid/100 uppercase tracking-widest border-t border-brand-charcoal/5 pt-6 mt-2">
+                        <span>[ Modern Solutions ]</span>
+                        <span>[ Proven Architectures ]</span>
+                        <span>[ AI IDE Context ]</span>
                     </div>
                 </motion.div>
 
@@ -121,23 +139,45 @@ export function Hero() {
                     className="mt-20 w-full max-w-5xl aspect-[16/9] bg-white border border-brand-charcoal/10 shadow-2xl shadow-brand-charcoal/5 relative overflow-hidden group perspective-1000"
                 >
                     {/* UI Mockup Header */}
-                    <div className="h-10 border-b border-brand-charcoal/5 bg-[#faf9f5] flex items-center px-4 gap-2">
-                        <div className="flex gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full border border-brand-charcoal/20 bg-transparent" />
-                            <div className="w-2.5 h-2.5 rounded-full border border-brand-charcoal/20 bg-transparent" />
-                            <div className="w-2.5 h-2.5 rounded-full border border-brand-charcoal/20 bg-transparent" />
+                    <div className="h-10 border-b border-brand-charcoal/10 bg-[#faf9f5] flex items-center px-4 gap-2 z-20 relative">
+                        <div className="flex gap-2">
+                            <div className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-sm" />
+                            <div className="w-3 h-3 rounded-full bg-[#FEBC2E] shadow-sm" />
+                            <div className="w-3 h-3 rounded-full bg-[#28C840] shadow-sm" />
                         </div>
-                        <div className="mx-auto font-mono text-[10px] text-brand-gray-mid uppercase tracking-widest opacity-50">
-                            simulark_studio.exe
+                        <div className="mx-auto font-mono text-[10px] text-brand-gray-mid uppercase tracking-widest opacity-120">
+                            simulark_studio
+                        </div>
+
+                        {/* Draft Metadata: Top Right */}
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[8px] text-brand-charcoal/40 hidden sm:block">
+                            PROJECT_ID: SLK-99 [REV_A]
                         </div>
                     </div>
-                    {/* Placeholder Content */}
-                    <div className="absolute inset-0 top-10 flex items-center justify-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-                    <div className="absolute inset-0 top-10 flex items-center justify-center">
-                        <span className="font-poppins text-6xl font-black text-brand-charcoal/[0.03] uppercase tracking-tighter">
-                            Canvas Preview
-                        </span>
+
+                    {/* Interactive Canvas */}
+                    <div className="absolute inset-0 top-10 flex items-center justify-center bg-[#faf9f5]">
+                        <HeroCanvas />
                     </div>
+
+                    {/* Schematic Frames: Corners */}
+                    <div className="absolute top-12 left-4 z-20 font-mono text-[8px] text-brand-charcoal/40 uppercase tracking-tighter pointer-events-none transition-opacity group-hover:opacity-100 opacity-40">
+                        <div className="flex flex-col">
+                            <span>SCALE: 1:1</span>
+                            <span>COORD_SYS: WGS84</span>
+                        </div>
+                    </div>
+
+                    <div className="absolute bottom-4 right-4 z-20 font-mono text-[8px] text-brand-charcoal/40 uppercase tracking-tighter pointer-events-none transition-opacity group-hover:opacity-100 opacity-40">
+                        <div className="flex flex-col text-right">
+                            <span>REVISION: FEB_2026_ALPHA</span>
+                            <span>ENCODING: UTF-8</span>
+                        </div>
+                    </div>
+
+                    {/* Technical Corners (Small L-shapes) */}
+                    <div className="absolute top-12 left-2 w-4 h-4 border-t border-l border-brand-charcoal/20 pointer-events-none" />
+                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-brand-charcoal/20 pointer-events-none" />
                 </motion.div>
             </div>
         </section>
