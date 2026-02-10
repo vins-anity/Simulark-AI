@@ -48,7 +48,7 @@ export async function createProject(
 // --- Save Project (with Versioning) ---
 export async function saveProject(
   projectId: string,
-  graph: Partial<ArchitectureGraph> & { metadata?: Record<string, any> },
+  graph: Partial<ArchitectureGraph> & { metadata?: Record<string, unknown> },
 ) {
   const supabase = await createClient();
   const {
@@ -87,7 +87,15 @@ export async function saveProject(
   }
 
   // 3. Update Project with NEW state and increment version
-  const updateData: any = {
+  interface UpdateProjectData {
+    version: number;
+    updated_at: string;
+    nodes?: unknown;
+    edges?: unknown;
+    metadata?: Record<string, unknown>;
+  }
+
+  const updateData: UpdateProjectData = {
     version: currentProject.version + 1,
     updated_at: new Date().toISOString(),
   };

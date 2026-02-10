@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { callAIWithResilience } from "./ai-resilience";
+import { buildEnhancedSystemPrompt } from "./prompt-engineering";
 
 export type AIProvider =
   | "zhipu"
@@ -203,180 +205,36 @@ async function callModelStream(
 ) {
   const { client, config } = createAIClient(provider);
 
-  let roleDescription = "Senior Fullstack Solutions Architect";
-  let focusArea =
-    "scalability, fault tolerance, cost-efficiency, and rapid delivery";
-  let archetypeInstructions = "";
-
-  // Project Archetype Logic (Smart Node Selection)
-  if (mode === "startup") {
-    roleDescription = "Lean Startup CTO";
-    focusArea = "MVP speed, minimal costs, and rapid iteration.";
-    archetypeInstructions = `
-        STRATEGY: STARTUP / LEAN
-        - Prefer managed services and high-level abstractions (Next.js, Supabase, Vercel, Clerk, Stripe).
-        - Avoid complex infrastructure like Kubernetes or self-hosted Kafka unless critical.
-        - Focus on "Time to Market" and developer productivity.
-        - Use modern, developer-friendly tech that minimizes maintenance.
-        `;
-  } else if (mode === "corporate") {
-    roleDescription = "Enterprise Architect";
-    focusArea = "high availability, compliance, security, and redundancy.";
-    archetypeInstructions = `
-        STRATEGY: ENTERPRISE / CORPORATE
-        - Prioritize robustness, high availability, and security.
-        - Use established enterprise patterns (Microservices, gRPC, Event-driven with Kafka, SQL with Read Replicas).
-        - Consider compliance requirements and formal infrastructure (AWS/GCP/Azure, Kubernetes, IAM, dedicated VPCS).
-        - Detail data isolation and high-throughput reliability.
-        `;
-  } else {
-    // Standard / Default mode
-    roleDescription = "Senior Fullstack Solutions Architect";
-    focusArea = "best-in-class performance, scalability, and modern standards.";
-    archetypeInstructions = `
-        STRATEGY: MODERN FULLSTACK
-        - Generate a balanced end-to-end stack using the most reliable modern tools.
-        - Use "Best of Breed" technologies (e.g. Next.js + FastAPI + Postgres).
-        `;
-  }
-
-  const contextPrompt =
-    currentNodes.length > 0
-      ? `\n\nCURRENT ARCHITECTURE STATE:
-The user already has an existing diagram. 
-Existing Nodes: ${JSON.stringify(currentNodes.map((n) => ({ id: n.id, type: n.type, label: n.data?.label, tech: n.data?.tech })))}
-Existing Edges: ${JSON.stringify(currentEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })))}
-
-Your task is to MODIFY or IMPROVE this architecture based on the user's prompt. 
-- You MUST maintain the context of existing components.
-- If the user asks for a change, provide the UPDATED full architecture JSON.
-- If the user asks to "add" something, include existing nodes plus new ones.
-- If the user asks to "improve" or "simplify", rewrite the JSON accordingly.
-- Ensure node IDs remain consistent if they refer to the same component.`
-      : "";
-
-  // QUICK MODE: Use a condensed prompt for faster generation
-  let systemPrompt: string;
-
-  if (quickMode) {
-    systemPrompt = `You are a ${roleDescription}. Generate a JSON architecture for: "${prompt}"
-${archetypeInstructions}
-${contextPrompt}
-
-OUTPUT ONLY JSON (no markdown, no explanation):
-{
-  "nodes": [{ "id": "string", "type": "gateway|service|frontend|backend|database|queue|ai", "position": {"x": number, "y": number}, "data": { "label": "string", "description": "brief purpose", "tech": "nextjs|react|nodejs|postgres|redis|supabase|vercel|etc", "serviceType": "same as type" }}],
-  "edges": [{ "id": "string", "source": "string", "target": "string", "animated": boolean, "data": { "protocol": "http|https|graphql|websocket|queue|stream|database|cache|oauth|grpc" }}]
-}
-
-Use real tech IDs: nextjs, react, bunjs/nodejs, postgres/supabase, redis/upstash, vercel/flyio/render/railway/cloudflare, edgefunctions/lambda/cloudfn, aws, gcp, openai, anthropic, kafka, rabbitmq, etc.
- 
- CRITICAL: ALL nodes MUST be connected to at least one other node. No orphaned nodes allowed!`;
-  } else {
-    // Full detailed prompt for quality generation
-    systemPrompt = `You are a ${roleDescription}. ${focusArea}
-    Analyze the user's request and generate a detailed Fullstack Architecture.
-    
-    ${archetypeInstructions}
-    
-    INTELLIGENT TECH SELECTION:
-    Automatically choose the best-suited stack based on the prompt intent and archetype.
-    - Example: If user says "Python scraper", choose "FastAPI" + "Playwright" + "PostgreSQL".
-    - Example: If user says "Realtime chat", choose "Next.js" + "Supabase" (or WebSocket server) + "Redis".
-    - List alternative options in the reasoning phase if specific tech isn't mandated.
-    - Ensure the frontend framework matches the backend ecosystem (e.g., React + Node, or Angular + Java, or just best-in-class).
-    ${contextPrompt}
-    
-    CRITICAL INSTRUCTIONS:
-    1. Think about the architecture in your reasoning/thinking process. Use the following LAYERING PATTERN:
-       - Layer 1 (Top/Left): ENTRY - Load Balancers, API Gateways, CDN, Frontend Clients.
-       - Layer 2 (Middle): APP - Core Services, Auth, Business Logic, Workers, AI Agents.
-       - Layer 3 (Bottom/Right): DATA - Databases, Caches, Object Storage, Queues.
-    2. Then, OUTPUT THE FINAL JSON in the content field.
-    3. The reasoning should NOT contain the JSON.
-    4. The content field MUST contain ONLY the JSON object.
-    
-    JSON Schema:
-    {
-      "nodes": [ { 
-        "id": "string", 
-        "type": "gateway" | "service" | "frontend" | "backend" | "database" | "queue" | "ai", 
-        "position": { "x": number, "y": number }, 
-        "data": { 
-          "label": "string", 
-          "description": "string",
-          "tech": "string", // REQUIRED! Use EXACT IDs from this list:
-          // Frontend: "react", "vue", "angular", "svelte", "nextjs", "remix", "vite", "astro", "flutter", "react-native"
-          // Backend: "nodejs", "python", "go", "rust", "java", "bun", "deno", "express", "nestjs", "fastapi", "django", "spring"
-          // Database: "postgres", "mysql", "mongodb", "redis", "cassandra", "elasticsearch", "dynamodb", "supabase", "firebase", "planetscale", "neon"
-          // Cloud: "aws", "gcp", "azure", "vercel", "netlify", "heroku", "digitalocean", "flyio", "cloudflare"
-          // Compute: "lambda", "cloud-run", "azure-functions", "workers"
-          // Storage: "s3", "gcs", "r2"
-          // AI: "openai", "anthropic", "huggingface", "pinecone", "langchain", "google-gemini", "meta-llama", "deepseek", "mistral"
-          // DevOps: "docker", "kubernetes", "terraform", "github-actions", "jenkins", "prometheus", "grafana", "nginx"
-          // Queues: "kafka", "rabbitmq", "sqs"
-          "serviceType": "gateway" | "service" | "frontend" | "backend" | "database" | "queue" | "ai", 
-          "validationStatus": "valid" | "warning" | "error", 
-          "costEstimate": number 
-        } 
-      } ],
-      "edges": [ { 
-        "id": "string", 
-        "source": "string", 
-        "target": "string", 
-        "animated": boolean, 
-        "data": { 
-          "protocol": "http" | "https" | "graphql" | "websocket" | "queue" | "stream" | "database" | "cache" | "oauth" | "grpc" 
-        } 
-      } ]
-    }
-    
-    Node Description Guidelines:
-    Each node should include a 'description' field that explains:
-    - What this component does
-    - Why it's needed for this architecture
-    - Key configuration considerations
-    
-    Node Type Guidelines:
-    - 'frontend': Web clients, Mobile apps, associated with "frontend" tech (React, Next.js, Flutter).
-    - 'backend': API servers, Workers, associated with "backend" tech (Node.js, Python, Go).
-    - 'service': Generic/Fallback for services where specific type is unclear or hybrid.
-    - 'ai': For AI models, LLMs, Vector DBs (Pinecone), or AI Agents.
-    - 'database': Databases, Caches, Storage.
-    - 'queue': Message Queues, Event Buses.
-    - 'gateway': API Gateways, Load Balancers, CDNs.
-    
-    Example node descriptions:
-    - API Gateway: "Entry point for all client requests. Handles authentication, rate limiting, and request routing."
-    - PostgreSQL: "Primary relational database for persistent data storage. Configured with read replicas for scalability."
-    - Redis Cache: "In-memory cache layer for reducing database load and improving response times."
-    - Kafka Queue: "Distributed event streaming platform for async communication between services."
-    - Google Gemini: "Multimodal AI model for processing image and text inputs."
-    
-    Constraints:
-    - Services must connect to Databases via defined protocols.
-    - High traffic implies Load Balancers (Gateways).
-    - Caches should be placed before Databases for read-heavy loads.
-    - SELECT REAL WORLD TECHNOLOGIES for the "tech" field (e.g., "Next.js", "PostgreSQL", "Redis", "Kafka", "AWS", "Vercel").
-    - CRITICAL: ALL nodes MUST be connected to at least one other node. No orphaned nodes allowed!
-    - Every service must have at least one incoming or outgoing edge (e.g., Orchestration Service → Object Storage, or Object Storage → Orchestration Service).
-    
-    IMPORTANT: Output the complete JSON in the content field. Do not use markdown code blocks. Do not include the reasoning in the content. The content must start with "{" and contain the full architecture definition.`;
-  }
+  // Use enhanced prompt engineering with architecture detection
+  const systemPrompt = buildEnhancedSystemPrompt({
+    userInput: prompt,
+    architectureType: "unknown",
+    detectedIntent: "",
+    currentNodes,
+    currentEdges,
+    mode,
+    quickMode,
+  });
 
   console.log(
     `[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})${quickMode ? " [QUICK MODE]" : ""}`,
   );
 
-  return await client.chat.completions.create({
-    model: config.model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: prompt },
-    ],
-    stream: true,
-    // @ts-ignore - provider specific params
-    ...config.reasoningParam,
-    response_format: config.responseFormat,
-  });
+  // Use enhanced resilience with retry and circuit breaker
+  return await callAIWithResilience(
+    provider,
+    async () => {
+      return await client.chat.completions.create({
+        model: config.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt },
+        ],
+        stream: true,
+        ...(config.reasoningParam || {}),
+        response_format: config.responseFormat,
+      });
+    },
+    "Architecture Generation",
+  );
 }

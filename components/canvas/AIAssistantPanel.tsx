@@ -162,17 +162,25 @@ export function AIAssistantPanel({
     }
   }, [messages, isGenerating]);
 
+  // Track if we've processed the initial prompt to prevent double-processing
+  const hasProcessedInitialPrompt = useRef(false);
+
   // Auto-generate architecture when initialPrompt is provided (from dashboard)
   useEffect(() => {
-    // Only trigger if we have a prompt, haven't started generating, and have no messages yet
-    // We also check if we're already loading chats to avoid race conditions with chat creation
+    // Only trigger if we have a prompt, haven't started generating, have no messages yet,
+    // chats have finished loading, and we haven't already processed it
     if (
       initialPrompt &&
       !isGenerating &&
       messages.length === 0 &&
-      !isLoadingChats
+      !isLoadingChats &&
+      !hasProcessedInitialPrompt.current
     ) {
-      processMessage(initialPrompt);
+      hasProcessedInitialPrompt.current = true;
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        processMessage(initialPrompt);
+      }, 100);
     }
   }, [initialPrompt, isGenerating, messages.length, isLoadingChats]);
 
@@ -402,8 +410,10 @@ This architecture separates concerns across dedicated service layers, enabling i
     let chatId = currentChatId;
     if (!chatId) {
       const defaultChatResult = await getOrCreateDefaultChat(projectId);
-      if (defaultChatResult.error || !defaultChatResult.chat) {
-        toast.error("Failed to retrieve chat session");
+      if (!defaultChatResult.success) {
+        toast.error(
+          defaultChatResult.error || "Failed to retrieve chat session",
+        );
         setIsGenerating(false);
         return;
       }
@@ -413,20 +423,20 @@ This architecture separates concerns across dedicated service layers, enabling i
 
     await saveMessage(chatId, userMessage);
 
-    try {
-      // Create a placeholder message for AI
-      const aiMsgId = (Date.now() + 1).toString();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          role: "assistant",
-          content: "",
-          isThinking: true,
-          reasoning: "",
-        },
-      ]);
+    // Create a placeholder message for AI (outside try block so catch can access it)
+    const aiMsgId = (Date.now() + 1).toString();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: aiMsgId,
+        role: "assistant",
+        content: "",
+        isThinking: true,
+        reasoning: "",
+      },
+    ]);
 
+    try {
       let accumulatedContent = "";
       let accumulatedReasoning = "";
       let lastGeneratedData: any = null; // Capture generated data
@@ -445,7 +455,44 @@ This architecture separates concerns across dedicated service layers, enabling i
         }),
       });
 
-      if (!response.body) throw new Error("No response body");
+      // Check for error responses (validation, rate limit, etc.)
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        const errorMessage =
+          errorData.error || `Error ${response.status}: ${response.statusText}`;
+
+        // Show error in chat instead of throwing
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? { ...m, isThinking: false, content: `❌ ${errorMessage}` }
+              : m,
+          ),
+        );
+        toast.error(errorMessage);
+        setIsGenerating(false);
+        return; // Exit gracefully instead of throwing
+      }
+
+      if (!response.body) {
+        // Handle missing response body gracefully
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? {
+                  ...m,
+                  isThinking: false,
+                  content: "❌ No response from server",
+                }
+              : m,
+          ),
+        );
+        toast.error("No response from server");
+        setIsGenerating(false);
+        return;
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -542,8 +589,17 @@ This architecture separates concerns across dedicated service layers, enabling i
       await saveMessage(chatId, finalAiMessage);
     } catch (err: any) {
       console.error(err);
-      toast.error("Generation failed");
-      setMessages((prev) => prev.slice(0, -1)); // Remove the failed placeholder? Or show error state?
+      const errorMessage = err?.message || "Generation failed";
+      toast.error(errorMessage);
+
+      // Update the AI message to show the error instead of removing it
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMsgId
+            ? { ...m, isThinking: false, content: `❌ ${errorMessage}` }
+            : m,
+        ),
+      );
     } finally {
       setIsGenerating(false);
     }

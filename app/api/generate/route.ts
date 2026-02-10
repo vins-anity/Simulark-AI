@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { generateArchitectureStream } from "@/lib/ai-client";
-import { enrichNodesWithTech } from "@/lib/tech-normalizer";
-import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { validatePrompt } from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
+import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
 export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
 
@@ -61,6 +62,24 @@ export async function POST(req: NextRequest) {
         { error: "Prompt is required" },
         { status: 400 },
       );
+    }
+
+    // Validate prompt quality
+    const validation = validatePrompt(prompt);
+    if (!validation.isValid) {
+      return NextResponse.json(
+        {
+          error: validation.error,
+          suggestedPrompts: validation.suggestedPrompts,
+          type: "validation_error",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Log warning if prompt is just a greeting
+    if (validation.warning) {
+      logger.warn("Prompt validation warning", { warning: validation.warning });
     }
 
     logger.info("Starting generation", {

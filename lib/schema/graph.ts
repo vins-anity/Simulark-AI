@@ -5,8 +5,11 @@ import * as v from "valibot";
 export const NodeTypeSchema = v.picklist([
   "gateway",
   "service",
+  "frontend",
+  "backend",
   "database",
   "queue",
+  "ai",
 ]);
 
 export const ProviderSchema = v.picklist(["AWS", "GCP", "Azure", "Generic"]);

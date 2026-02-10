@@ -1,7 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
 
 // Types
 export interface Chat {
@@ -203,7 +203,7 @@ export async function addMessages(
 // Get or create default chat for a project
 export async function getOrCreateDefaultChat(
   projectId: string,
-): Promise<{ chat: Chat; error?: string }> {
+): Promise<{ success: true; chat: Chat } | { success: false; error: string }> {
   const supabase = await createClient();
 
   // Try to get the most recent chat
@@ -216,12 +216,12 @@ export async function getOrCreateDefaultChat(
 
   if (fetchError) {
     console.error("Error fetching default chat:", fetchError);
-    return { error: fetchError.message } as any;
+    return { success: false, error: fetchError.message };
   }
 
   // If a chat exists, return it
   if (existingChats && existingChats.length > 0) {
-    return { chat: existingChats[0] };
+    return { success: true, chat: existingChats[0] };
   }
 
   // Otherwise, create a new default chat
@@ -233,8 +233,12 @@ export async function getOrCreateDefaultChat(
 
   if (createError) {
     console.error("Error creating default chat:", createError);
-    return { error: createError.message } as any;
+    return { success: false, error: createError.message };
   }
 
-  return { chat: newChat };
+  if (!newChat) {
+    return { success: false, error: "Failed to create chat" };
+  }
+
+  return { success: true, chat: newChat };
 }

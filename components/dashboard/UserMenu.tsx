@@ -1,9 +1,13 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+import { createBrowserClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getAvatarUrl } from "@/lib/utils/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,11 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { createBrowserClient } from "@supabase/ssr";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import { getAvatarUrl } from "@/lib/utils/avatar";
 
 export function UserMenu() {
   const router = useRouter();
@@ -33,14 +33,31 @@ export function UserMenu() {
     });
   }, []);
 
-  const handleSignOut = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-    await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        console.error("Sign out error:", error);
+        return;
+      }
+
+      // Clear any local state
+      setUser(null);
+
+      // Force a hard navigation to clear all state
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
   };
 
   if (!user) return null;
@@ -129,7 +146,7 @@ export function UserMenu() {
 
         <div className="p-2">
           <DropdownMenuItem
-            onClick={handleSignOut}
+            onClick={(e) => handleSignOut(e as unknown as React.MouseEvent)}
             className="rounded-none focus:bg-red-500/10 focus:text-red-700 text-red-600 cursor-pointer data-[highlighted]:bg-red-500/10"
           >
             <div className="flex items-center py-1 px-2">

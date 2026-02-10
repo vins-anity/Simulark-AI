@@ -75,7 +75,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
+      // Sanitize search input - remove special characters that could cause injection
+      const sanitizedSearch = search.replace(/[%_]/g, "");
+
+      if (sanitizedSearch.length > 0) {
+        // Use ilike with wildcards safely
+        query = query.or(
+          `email.ilike.%${sanitizedSearch}%,full_name.ilike.%${sanitizedSearch}%`,
+        );
+      }
     }
 
     // Apply pagination

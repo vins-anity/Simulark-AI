@@ -1,15 +1,35 @@
 import dagre, { graphlib } from "dagre";
 
-self.onmessage = (event: MessageEvent) => {
+interface LayoutNode {
+  id: string;
+  type?: string;
+  position?: { x: number; y: number };
+  data?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+interface LayoutEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+  [key: string]: unknown;
+}
+
+self.onmessage = (
+  event: MessageEvent<{
+    nodes: LayoutNode[];
+    edges: LayoutEdge[];
+    options?: Record<string, unknown>;
+  }>,
+) => {
   const { nodes, edges, options } = event.data;
 
-  const {
-    direction = "TB",
-    nodeWidth = 350,
-    nodeHeight = 250,
-    rankSep = 150,
-    nodeSep = 150,
-  } = options || {};
+  const direction = String(options?.direction ?? "TB");
+  const nodeWidth = Number(options?.nodeWidth ?? 350);
+  const nodeHeight = Number(options?.nodeHeight ?? 250);
+  const rankSep = Number(options?.rankSep ?? 150);
+  const nodeSep = Number(options?.nodeSep ?? 150);
 
   try {
     // Use graphlib from imported module
@@ -51,7 +71,7 @@ self.onmessage = (event: MessageEvent) => {
 
     dagre.layout(g);
 
-    const positionedNodes = nodes.map((node: any) => {
+    const positionedNodes = nodes.map((node: LayoutNode) => {
       try {
         const nodeData = g.node(node.id);
         if (

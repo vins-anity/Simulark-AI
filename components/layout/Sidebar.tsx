@@ -1,32 +1,25 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+import { createBrowserClient } from "@supabase/ssr";
 import {
   BookOpen,
-  LayoutDashboard,
-  Settings,
-  Menu,
+  Box,
   ChevronLeft,
   ChevronRight,
-  Plus,
-  Box,
-  Layers,
   FileCode,
+  Layers,
+  LayoutDashboard,
+  Menu,
+  Plus,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-import { getPlanDetails } from "@/lib/subscription";
-import { useSidebar } from "./SidebarProvider";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,9 +28,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-
-import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getPlanDetails } from "@/lib/subscription";
+import { cn } from "@/lib/utils";
+import { useSidebar } from "./SidebarProvider";
 
 const navItems = [
   {
@@ -55,10 +54,35 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [plan, setPlan] = useState("free");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        console.error("Sign out error:", error);
+        return;
+      }
+
+      // Force a hard navigation to clear all state
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -333,7 +357,10 @@ export function Sidebar() {
                     Billing Records
                   </DropdownMenuItem>
                   <div className="h-px bg-brand-charcoal/10 my-1" />
-                  <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white px-3 py-2 text-red-500">
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white px-3 py-2 text-red-500"
+                  >
                     Terminate Session
                   </DropdownMenuItem>
                 </div>

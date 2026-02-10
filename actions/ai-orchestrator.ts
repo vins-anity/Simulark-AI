@@ -106,17 +106,15 @@ async function runGenerator(
 
       const json = JSON.parse(content);
       return json as ArchitectureGraph;
-    } catch (error: any) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       lastError = error;
       console.warn(`[Generator] Model ${model} failed:`, error.message);
 
       // If it's a 429, try the next model immediately
-      if (error.status === 429 || error.code === 429) {
-        continue;
+      const errorWithStatus = err as { status?: number; code?: number };
+      if (errorWithStatus.status === 429 || errorWithStatus.code === 429) {
       }
-
-      // For other errors, we might want to try the fallback too as it might be a model-specific error
-      continue;
     }
   }
 
@@ -275,7 +273,8 @@ export async function generateArchitecture(
       data: graphValidation.output,
       plan: architecturalPlan,
     };
-  } catch (error: any) {
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
     console.error("[Orchestrator] Error:", error);
 
     // Log failure
