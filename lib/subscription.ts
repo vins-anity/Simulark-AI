@@ -14,6 +14,7 @@ export const SUBSCRIPTION_PLANS = {
             'Public Exports (PDF, PNG, SVG, Mermaid, Agent Skills)',
             'GLM-4.7-Flash (10x Daily Limit)'
         ],
+        daily_limit: 10,
     },
     starter: {
         id: 'starter',
@@ -31,6 +32,7 @@ export const SUBSCRIPTION_PLANS = {
             'Advance node library',
             'Priority Email Support'
         ],
+        daily_limit: 50,
     },
     pro: {
         id: 'pro',
@@ -47,6 +49,7 @@ export const SUBSCRIPTION_PLANS = {
             'Claude Opus 4.5',
             'Code Generation/Export (coming soon)'
         ],
+        daily_limit: 1000, // Effectively unlimited
     },
 };
 

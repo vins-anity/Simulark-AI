@@ -13,10 +13,6 @@ export const env = createEnv({
     SUPABASE_SERVICE_ROLE_KEY: optional(string()),
 
 
-    // Upstash Redis
-    UPSTASH_REDIS_REST_URL: pipe(string(), minLength(1)),
-    UPSTASH_REDIS_REST_TOKEN: pipe(string(), minLength(1)),
-
     // Rate Limiting (defaults to 10 if not set or invalid)
     FREE_TIER_DAILY_LIMIT: pipe(optional(string(), "10"), transform((v: string) => Number(v) || 10)),
   },
@@ -30,8 +26,6 @@ export const env = createEnv({
     KIMI_BASE_URL: process.env.KIMI_BASE_URL,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     FREE_TIER_DAILY_LIMIT: process.env.FREE_TIER_DAILY_LIMIT,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

@@ -12,6 +12,8 @@ import { getAvatarUrl } from "@/lib/utils/avatar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+import { Check } from "lucide-react";
+
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -101,7 +103,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl space-y-12 font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
+        <div className="max-w-4xl space-y-12 font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal pb-24">
             {/* Header */}
             <div className="border-b border-brand-charcoal/10 pb-8">
                 <div className="flex items-center gap-2 mb-2">
@@ -211,6 +213,8 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </section>
+
+                {/* Subscription Plans Section Removed - Moved to UpgradeModal */}
 
                 <div className="flex justify-end pt-8 border-t border-brand-charcoal/10">
                     <Button

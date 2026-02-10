@@ -2,23 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateArchitectureStream } from "@/lib/ai-client";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 import { createClient } from "@/lib/supabase/server";
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-import { env } from "@/env";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
-
-// Rate limiter: counts all generations per user regardless of project
-// FREE_TIER_DAILY_LIMIT is configured in .env.local (default: 10)
-const ratelimit = new Ratelimit({
-    redis: new Redis({
-        url: env.UPSTASH_REDIS_REST_URL,
-        token: env.UPSTASH_REDIS_REST_TOKEN,
-    }),
-    limiter: Ratelimit.slidingWindow(env.FREE_TIER_DAILY_LIMIT, "1 d"),
-    analytics: true,
-});
 
 // Helper to add timeout to a promise
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -39,43 +26,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Parse body early to get model for rate limiting
+        // Parse body early
         const body = await req.json();
         const { prompt, model, mode, currentNodes, currentEdges, quickMode } = body;
 
-        // Rate limiting strategy
-        // Kimi: 5 per day
-        // Others (GLM/Default): 10 per day
-        const isKimi = model?.includes("moonshot") || model?.includes("kimi");
-        const limitCount = isKimi ? 5 : (env.FREE_TIER_DAILY_LIMIT || 10);
-        const limitKey = isKimi ? `${user.id}:kimi` : `${user.id}:default`;
+        // Rate Limiting Check (New DB-based logic)
+        const rateLimitResult = await checkRateLimit(user.id);
 
-        // Create a specific limiter for this request
-        const specificLimiter = new Ratelimit({
-            redis: new Redis({
-                url: env.UPSTASH_REDIS_REST_URL,
-                token: env.UPSTASH_REDIS_REST_TOKEN,
-            }),
-            limiter: Ratelimit.slidingWindow(limitCount, "1 d"),
-            analytics: true,
-            prefix: "@upstash/ratelimit",
-        });
-
-        const { success, limit, reset, remaining } = await specificLimiter.limit(limitKey);
-
-        if (!success) {
-            const resetDate = new Date(reset);
+        if (!rateLimitResult.allowed) {
             return NextResponse.json(
                 {
-                    error: `Daily limit reached for ${isKimi ? 'Kimi' : 'Standard'} model. Limit: ${limitCount}/day.`,
-                    resetAt: resetDate.toISOString(),
+                    error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
+                    resetAt: rateLimitResult.reset,
                 },
                 {
                     status: 429,
                     headers: {
-                        "X-RateLimit-Limit": limit.toString(),
-                        "X-RateLimit-Remaining": remaining.toString(),
-                        "X-RateLimit-Reset": reset.toString(),
+                        "X-RateLimit-Limit": rateLimitResult.limit.toString(),
+                        "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+                        "X-RateLimit-Reset": rateLimitResult.reset,
                     }
                 }
             );

@@ -41,7 +41,7 @@ import { NodeProperties } from "./nodes/NodeProperties";
 import { SimulationEdge } from "./edges/SimulationEdge";
 import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { applyLayoutAsync } from "@/lib/layout";
+import { applyLayout, applyLayoutAsync } from "@/lib/layout";
 import { generateMermaidCode } from "@/lib/utils";
 
 interface FlowEditorProps {
@@ -99,11 +99,31 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           const currentNodes = getNodes();
           const currentEdges = getEdges();
           const layoutDirection = direction === "DOWN" ? "TB" : "LR";
-          const { nodes: layoutNodes } = await applyLayoutAsync(currentNodes, currentEdges, { direction: layoutDirection });
-          setNodes(layoutNodes);
+
+          // Try async layout first, fallback to sync on error
+          try {
+            const { nodes: layoutNodes } = await applyLayoutAsync(currentNodes, currentEdges, { direction: layoutDirection });
+            setNodes(layoutNodes);
+          } catch (asyncError) {
+            console.warn("[FlowEditor] Async layout failed, using sync fallback:", asyncError);
+            const { nodes: syncNodes } = applyLayout(currentNodes, currentEdges, { direction: layoutDirection });
+            setNodes(syncNodes);
+          }
+
           setTimeout(() => fitView({ duration: 500 }), 100);
         } catch (error) {
           console.error("[FlowEditor] AutoLayout error:", error);
+          // Final fallback: try sync layout
+          try {
+            const currentNodes = getNodes();
+            const currentEdges = getEdges();
+            const layoutDirection = direction === "DOWN" ? "TB" : "LR";
+            const { nodes: fallbackNodes } = applyLayout(currentNodes, currentEdges, { direction: layoutDirection });
+            setNodes(fallbackNodes);
+            setTimeout(() => fitView({ duration: 500 }), 100);
+          } catch (fallbackError) {
+            console.error("[FlowEditor] All layout methods failed:", fallbackError);
+          }
         }
       },
       get nodes() { return getNodes(); },

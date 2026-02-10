@@ -3,6 +3,7 @@
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { UpgradeModal } from "@/components/marketing/UpgradeModal";
 
 export default function PricingPage() {
     return (
@@ -172,16 +173,36 @@ function PricingCard({
                 </ul>
 
                 <div className="pt-4 mt-auto">
-                    <Button
-                        className={`
-                            w-full h-12 rounded-none font-mono text-xs uppercase tracking-widest transition-all
-                            ${isPremium ? "bg-brand-charcoal text-white hover:bg-black" : ""}
-                            ${variant === "default" ? "bg-transparent border border-brand-charcoal hover:bg-brand-charcoal hover:text-white" : ""}
-                            ${isSpecial ? "bg-[#d97757] text-white hover:bg-white hover:text-[#d97757] border-none font-black shadow-lg shadow-black/20" : ""}
-                        `}
-                    >
-                        {btnText}
-                    </Button>
+                    {variant === "default" && price === "0" ? (
+                        <Button
+                            className={`
+                                w-full h-12 rounded-none font-mono text-xs uppercase tracking-widest transition-all
+                                bg-white border border-brand-charcoal hover:bg-brand-charcoal hover:text-white
+                            `}
+                        >
+                            {btnText}
+                        </Button>
+                    ) : (
+                        <UpgradeModal
+                            planName={name}
+                            description={desc}
+                            features={features}
+                            price={price === "0" ? "Free" : `$${price}${period === " one-time" ? "" : period}`}
+                            isSpecial={isSpecial}
+                            trigger={
+                                <Button
+                                    className={`
+                                        w-full h-12 rounded-none font-mono text-xs uppercase tracking-widest transition-all
+                                        ${isPremium ? "bg-brand-charcoal text-white hover:bg-black" : ""}
+                                        ${variant === "default" ? "bg-transparent border border-brand-charcoal hover:bg-brand-charcoal hover:text-white" : ""}
+                                        ${isSpecial ? "bg-[#d97757] text-white hover:bg-white hover:text-[#d97757] border-none font-black shadow-lg shadow-black/20" : ""}
+                                    `}
+                                >
+                                    {btnText}
+                                </Button>
+                            }
+                        />
+                    )}
                     <div className={`mt-3 text-center font-mono text-[8px] uppercase tracking-widest opacity-30 ${isSpecial ? "text-white" : ""}`}>
                         REF: {refCode}
                     </div>

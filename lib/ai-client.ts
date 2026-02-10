@@ -193,7 +193,9 @@ OUTPUT ONLY JSON (no markdown, no explanation):
   "edges": [{ "id": "string", "source": "string", "target": "string", "animated": boolean, "data": { "protocol": "http|https|graphql|websocket|queue|stream|database|cache|oauth|grpc" }}]
 }
 
-Use real tech IDs: nextjs, react, nodejs, postgres, redis, supabase, vercel, aws, gcp, openai, anthropic, kafka, rabbitmq, etc.`;
+Use real tech IDs: nextjs, react, bunjs/nodejs, postgres/supabase, redis/upstash, vercel/flyio/render/railway/cloudflare, edgefunctions/lambda/cloudfn, aws, gcp, openai, anthropic, kafka, rabbitmq, etc.
+ 
+ CRITICAL: ALL nodes MUST be connected to at least one other node. No orphaned nodes allowed!`;
     } else {
         // Full detailed prompt for quality generation
         systemPrompt = `You are a ${roleDescription}. ${focusArea}
@@ -280,6 +282,8 @@ Use real tech IDs: nextjs, react, nodejs, postgres, redis, supabase, vercel, aws
     - High traffic implies Load Balancers (Gateways).
     - Caches should be placed before Databases for read-heavy loads.
     - SELECT REAL WORLD TECHNOLOGIES for the "tech" field (e.g., "Next.js", "PostgreSQL", "Redis", "Kafka", "AWS", "Vercel").
+    - CRITICAL: ALL nodes MUST be connected to at least one other node. No orphaned nodes allowed!
+    - Every service must have at least one incoming or outgoing edge (e.g., Orchestration Service → Object Storage, or Object Storage → Orchestration Service).
     
     IMPORTANT: Output the complete JSON in the content field. Do not use markdown code blocks. Do not include the reasoning in the content. The content must start with "{" and contain the full architecture definition.`;
     }

@@ -156,8 +156,14 @@ export function applyLayoutAsync(
 
         worker.onerror = (error) => {
             worker.terminate();
-            console.error("Worker error:", error);
-            reject(error);
+            // Extract meaningful error message from worker event
+            const errorMessage = error instanceof Error ? error.message : 
+                typeof error === 'object' && error !== null ? JSON.stringify(error) : 
+                String(error);
+            console.error("Worker error:", errorMessage);
+            // Fallback to synchronous layout instead of rejecting
+            const syncResult = applyLayout(nodes, edges, options);
+            resolve(syncResult);
         };
 
         worker.postMessage({ nodes, edges, options });

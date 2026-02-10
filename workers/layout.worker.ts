@@ -1,4 +1,4 @@
-import dagre from "dagre";
+import dagre, { graphlib } from "dagre";
 
 self.onmessage = (event: MessageEvent) => {
   const { nodes, edges, options } = event.data;
@@ -12,7 +12,8 @@ self.onmessage = (event: MessageEvent) => {
   } = options || {};
 
   try {
-    const g = new dagre.graphlib.Graph({ multigraph: true });
+    // Use graphlib from imported module
+    const g = new graphlib.Graph({ multigraph: true });
     g.setGraph({
       rankdir: direction,
       nodesep: nodeSep,
@@ -69,8 +70,9 @@ self.onmessage = (event: MessageEvent) => {
     });
 
     self.postMessage({ nodes: positionedNodes, edges });
-  } catch (error) {
-    console.error("[Worker] Layout error:", error);
-    self.postMessage({ nodes, edges, error: String(error) });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[Worker] Layout error:", errorMessage);
+    self.postMessage({ nodes, edges, error: errorMessage });
   }
 };
