@@ -14,6 +14,8 @@ export type ArchitectureType =
   | "mixed"
   | "unknown";
 
+export type ComplexityLevel = "simple" | "medium" | "complex";
+
 export interface ArchitectureDetection {
   type: ArchitectureType;
   confidence: number; // 0-1
@@ -31,6 +33,114 @@ export interface PromptContext {
   quickMode: boolean;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
 }
+
+// Complexity indicators
+const COMPLEXITY_INDICATORS: Record<ComplexityLevel, string[]> = {
+  simple: [
+    "todo",
+    "blog",
+    "simple",
+    "basic",
+    "small",
+    "personal",
+    "portfolio",
+    "landing page",
+    "static",
+    "single page",
+    "crud",
+    "notes",
+    "bookmark",
+    "url shortener",
+  ],
+  medium: [
+    "e-commerce",
+    "saas",
+    "dashboard",
+    "crm",
+    "cms",
+    "marketplace",
+    "social",
+    "chat",
+    "messaging",
+    "analytics",
+    "booking",
+    "reservation",
+    "payment",
+  ],
+  complex: [
+    "microservices",
+    "enterprise",
+    "distributed",
+    "scalable",
+    "high availability",
+    "kubernetes",
+    "multi-tenant",
+    "platform",
+    "infrastructure",
+    "ai pipeline",
+    "data pipeline",
+  ],
+};
+
+// Mode-specific constraints
+const MODE_CONSTRAINTS: Record<
+  "default" | "startup" | "corporate",
+  {
+    maxComponents: number;
+    minComponents: number;
+    preferFullStack: boolean;
+    requireCDN: boolean;
+    requireLoadBalancer: boolean;
+    requireObservability: boolean;
+    costFocus: "low" | "balanced" | "high";
+    description: string;
+  }
+> = {
+  startup: {
+    maxComponents: 5,
+    minComponents: 3,
+    preferFullStack: true,
+    requireCDN: false,
+    requireLoadBalancer: false,
+    requireObservability: false,
+    costFocus: "low",
+    description: "Lean startup MVP - minimal infrastructure, rapid deployment",
+  },
+  default: {
+    maxComponents: 8,
+    minComponents: 4,
+    preferFullStack: false,
+    requireCDN: true,
+    requireLoadBalancer: false,
+    requireObservability: true,
+    costFocus: "balanced",
+    description: "Balanced architecture with good practices",
+  },
+  corporate: {
+    maxComponents: 12,
+    minComponents: 6,
+    preferFullStack: false,
+    requireCDN: true,
+    requireLoadBalancer: true,
+    requireObservability: true,
+    costFocus: "high",
+    description: "Enterprise-grade with redundancy and compliance",
+  },
+};
+
+// Framework compatibility rules
+const FRAMEWORK_GROUPS = {
+  fullstack: ["nextjs", "nuxt", "sveltekit", "remix", "blitz"],
+  backend: ["express", "fastify", "nestjs", "hono", "elysia", "koa"],
+  traditional: ["laravel", "django", "rails", "spring", "adonisjs"],
+  frontend: ["react", "vue", "angular", "svelte"],
+};
+
+const INCOMPATIBLE_PAIRS: Array<[string[], string[]]> = [
+  [FRAMEWORK_GROUPS.fullstack, FRAMEWORK_GROUPS.backend], // Next.js + Express
+  [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.backend], // Laravel + Express
+  [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.fullstack], // Laravel + Next.js
+];
 
 // Architecture detection patterns
 const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
@@ -99,19 +209,17 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
     "laravel",
     "spring boot",
     "express",
-    "fastapi",
+    "fastify",
   ],
   serverless: [
     "serverless",
     "lambda",
-    "cloud function",
-    "edge function",
-    "faas",
-    "event-driven",
-    "aws lambda",
-    "vercel",
     "cloudflare workers",
-    "deno deploy",
+    "vercel edge",
+    "netlify functions",
+    "faas",
+    "function as a service",
+    "edge computing",
   ],
   "data-pipeline": [
     "data pipeline",
@@ -119,15 +227,11 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
     "elt",
     "data warehouse",
     "data lake",
-    "analytics",
-    "bi",
-    "business intelligence",
-    "apache spark",
-    "hadoop",
-    "airflow",
-    "dbt",
-    "snowflake",
-    "bigquery",
+    "apache airflow",
+    "spark",
+    "kafka streaming",
+    "real-time analytics",
+    "batch processing",
   ],
   "mobile-app": [
     "mobile app",
@@ -137,8 +241,7 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
     "flutter",
     "swift",
     "kotlin",
-    "capacitor",
-    "ionic",
+    "cross-platform mobile",
     "pwa",
   ],
   "desktop-app": [
@@ -146,102 +249,86 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
     "electron",
     "tauri",
     "wails",
-    "qt",
-    "native app",
-    "windows",
-    "macos",
-    "linux",
+    "native desktop",
+    "windows app",
+    "macos app",
+    "linux app",
   ],
   "iot-system": [
     "iot",
     "internet of things",
-    "sensor",
-    "device",
     "mqtt",
-    "coap",
-    "edge computing",
+    "sensor",
+    "device management",
+    "edge device",
+    "embedded",
+    "hardware",
     "raspberry pi",
     "arduino",
-    "embedded",
   ],
   blockchain: [
     "blockchain",
-    "crypto",
-    "web3",
     "smart contract",
+    "web3",
     "defi",
     "nft",
     "ethereum",
+    "solana",
+    "polygon",
     "solidity",
-    "node",
-    "validator",
-    "consensus",
+    "cryptocurrency",
   ],
-  mixed: [],
+  mixed: ["hybrid", "mixed", "multiple systems", "complex ecosystem"],
   unknown: [],
 };
 
-// Probing questions for each architecture type
-const ARCHITECTURE_QUESTIONS: Record<ArchitectureType, string[]> = {
+// Follow-up questions by architecture type
+const FOLLOW_UP_QUESTIONS: Record<ArchitectureType, string[]> = {
   "web-app": [
-    "What type of web application is this? (e.g., e-commerce, dashboard, social media, CMS)",
-    "Do you need real-time features like chat or notifications?",
-    "What's your expected traffic volume? (low, medium, high)",
-    "Any specific frontend framework preference?",
+    "What's the expected traffic volume?",
+    "Do you need real-time features?",
+    "Any specific tech preferences?",
   ],
   "ai-pipeline": [
-    "What type of AI/ML workload? (e.g., text generation, image processing, recommendation)",
-    "Do you need real-time inference or batch processing?",
-    "What's your expected request volume?",
-    "Any specific model requirements? (e.g., LLM, vision, embedding)",
+    "What's the model size/complexity?",
+    "Batch or real-time inference?",
+    "GPU requirements?",
   ],
   microservices: [
-    "How many services do you expect to have?",
-    "What's your team's DevOps maturity? (beginner, intermediate, advanced)",
-    "Do you need service mesh or API gateway?",
-    "What's your data consistency requirements? (eventual, strong)",
+    "How many services approximately?",
+    "Synchronous or async communication?",
+    "Existing tech stack?",
   ],
   monolithic: [
-    "Is this a greenfield project or migrating from existing code?",
-    "What's your team size?",
-    "Any specific framework preference?",
-    "Do you anticipate needing to scale specific components independently in the future?",
+    "Team size?",
+    "Expected scale in 1 year?",
+    "Monolith-first or migration?",
   ],
   serverless: [
-    "What's your cold start tolerance?",
-    "Do you have long-running processes?",
-    "What's your budget preference? (pay-per-use vs fixed)",
-    "Any vendor lock-in concerns?",
+    "Cold start tolerance?",
+    "Expected request volume?",
+    "Stateful or stateless?",
   ],
   "data-pipeline": [
-    "What's your data volume? (GB, TB, PB per day)",
-    "What's your latency requirement? (real-time, near real-time, batch)",
-    "What's your data source? (databases, APIs, files, streams)",
-    "Do you need data transformation or just movement?",
+    "Data volume (GB/TB/PB)?",
+    "Batch or streaming?",
+    "Real-time requirements?",
   ],
   "mobile-app": [
-    "Is this native or cross-platform?",
-    "Do you need offline capabilities?",
-    "What's your backend requirement? (REST, GraphQL, real-time)",
-    "Any specific integrations? (payments, push notifications, maps)",
+    "Native or cross-platform?",
+    "Offline capabilities needed?",
+    "Push notifications?",
   ],
-  "desktop-app": [
-    "Which platforms? (Windows, macOS, Linux)",
-    "Do you need auto-updates?",
-    "Will it connect to a backend?",
-    "Any native OS integrations required?",
-  ],
+  "desktop-app": ["Which platforms?", "Auto-update needed?", "Local database?"],
   "iot-system": [
-    "How many devices?",
-    "What's the data frequency from devices?",
-    "Any edge computing requirements?",
-    "What's your connectivity scenario? (always online, intermittent)",
+    "Number of devices?",
+    "Data frequency?",
+    "Edge computing needs?",
   ],
   blockchain: [
-    "Public or private blockchain?",
-    "What's the consensus mechanism?",
-    "Do you need smart contracts?",
-    "What's your transaction volume expectation?",
+    "Public or private chain?",
+    "Smart contracts needed?",
+    "Expected TPS?",
   ],
   mixed: [
     "Can you clarify the primary use case?",
@@ -253,6 +340,109 @@ const ARCHITECTURE_QUESTIONS: Record<ArchitectureType, string[]> = {
     "What's the main problem you're solving?",
   ],
 };
+
+/**
+ * Detect architecture type from user input
+ */
+export function detectArchitectureType(input: string): ArchitectureDetection {
+  const normalizedInput = input.toLowerCase();
+  const scores: Record<ArchitectureType, number> = {
+    "web-app": 0,
+    "ai-pipeline": 0,
+    microservices: 0,
+    monolithic: 0,
+    serverless: 0,
+    "data-pipeline": 0,
+    "mobile-app": 0,
+    "desktop-app": 0,
+    "iot-system": 0,
+    blockchain: 0,
+    mixed: 0,
+    unknown: 0,
+  };
+  const matchedKeywords: Record<ArchitectureType, string[]> = {
+    "web-app": [],
+    "ai-pipeline": [],
+    microservices: [],
+    monolithic: [],
+    serverless: [],
+    "data-pipeline": [],
+    "mobile-app": [],
+    "desktop-app": [],
+    "iot-system": [],
+    blockchain: [],
+    mixed: [],
+    unknown: [],
+  };
+
+  // Score each architecture type
+  for (const [type, keywords] of Object.entries(ARCHITECTURE_PATTERNS)) {
+    for (const keyword of keywords) {
+      if (normalizedInput.includes(keyword.toLowerCase())) {
+        scores[type as ArchitectureType]++;
+        matchedKeywords[type as ArchitectureType].push(keyword);
+      }
+    }
+  }
+
+  // Find the highest scoring type
+  let maxScore = 0;
+  let detectedType: ArchitectureType = "unknown";
+  const highScoringTypes: ArchitectureType[] = [];
+
+  for (const [type, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      detectedType = type as ArchitectureType;
+      highScoringTypes.length = 0;
+      highScoringTypes.push(type as ArchitectureType);
+    } else if (score === maxScore && score > 0) {
+      highScoringTypes.push(type as ArchitectureType);
+    }
+  }
+
+  // Calculate confidence
+  const confidence = Math.min(maxScore / 3, 1);
+
+  // If multiple types have high scores, mark as mixed
+  if (highScoringTypes.length > 1 && maxScore >= 2) {
+    detectedType = "mixed";
+  }
+
+  return {
+    type: detectedType,
+    confidence,
+    detectedKeywords: matchedKeywords[detectedType],
+    suggestedQuestions: FOLLOW_UP_QUESTIONS[detectedType],
+  };
+}
+
+/**
+ * Detect complexity level from user input
+ */
+export function detectComplexity(input: string): ComplexityLevel {
+  const normalized = input.toLowerCase();
+
+  // Check for complex indicators
+  for (const indicator of COMPLEXITY_INDICATORS.complex) {
+    if (normalized.includes(indicator)) return "complex";
+  }
+
+  // Check for simple indicators
+  for (const indicator of COMPLEXITY_INDICATORS.simple) {
+    if (normalized.includes(indicator)) return "simple";
+  }
+
+  // Check for medium indicators
+  for (const indicator of COMPLEXITY_INDICATORS.medium) {
+    if (normalized.includes(indicator)) return "medium";
+  }
+
+  // Default based on length
+  if (normalized.length < 20) return "simple";
+  if (normalized.length > 60) return "medium";
+  return "medium";
+}
 
 /**
  * Validation result for prompt quality check
@@ -267,8 +457,8 @@ export interface PromptValidation {
 /**
  * Minimum requirements for a valid architecture prompt
  */
-const MIN_PROMPT_LENGTH = 10;
-const MIN_MEANINGFUL_WORDS = 3;
+const MIN_PROMPT_LENGTH = 5;
+const MIN_MEANINGFUL_WORDS = 2;
 
 /**
  * Validate if a prompt is meaningful enough to generate architecture
@@ -290,34 +480,14 @@ export function validatePrompt(input: string): PromptValidation {
     };
   }
 
-  // Check for meaningful words (not just gibberish)
-  const words = trimmed
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((w) => w.length > 2);
-  if (words.length < MIN_MEANINGFUL_WORDS) {
-    return {
-      isValid: false,
-      error:
-        "Please provide more descriptive details about what you want to build.",
-      suggestedPrompts: [
-        "I need a web application with user authentication and a database",
-        "Build an API gateway with load balancing and caching",
-        "Create a mobile app backend with real-time notifications",
-      ],
-    };
-  }
-
-  // Check for repetitive/gibberish patterns (like "wew", "aaaa", "test test")
-  const gibberishPattern = /^(\w)\1{2,}$/; // Matches "aaa", "bbbb", etc.
-  const wordsArray = trimmed.split(/\s+/);
-  const gibberishWords = wordsArray.filter((word) =>
-    gibberishPattern.test(word.toLowerCase()),
-  );
+  // Check for obvious gibberish only (like "aaaa", "bbbb", repetitive single characters)
+  const trimmedLower = trimmed.toLowerCase();
+  const obviousGibberish = /^(.)\1{4,}$/; // 5+ same characters: "aaaaa", "bbbbb"
+  const repetitivePattern = /^(\w{1,2}\s+){3,}$/; // 3+ very short words only
 
   if (
-    gibberishWords.length > 0 ||
-    /^(\w{1,3}\s*){2,}$/.test(trimmed.toLowerCase())
+    obviousGibberish.test(trimmedLower) ||
+    repetitivePattern.test(trimmedLower)
   ) {
     return {
       isValid: false,
@@ -332,20 +502,11 @@ export function validatePrompt(input: string): PromptValidation {
     };
   }
 
-  // Check if it's just a greeting or question without requirements
-  const greetings = [
-    "hi",
-    "hello",
-    "hey",
-    "help",
-    "what",
-    "how",
-    "can you",
-    "please",
-  ];
-  const lowerTrimmed = trimmed.toLowerCase();
+  // Check if it's just a greeting without requirements
+  const greetings = ["hi", "hello", "hey", "help"];
+  const words = trimmedLower.split(/\s+/).filter((w) => w.length > 0);
   const isJustGreeting =
-    greetings.some((g) => lowerTrimmed.startsWith(g)) && words.length < 5;
+    greetings.some((g) => trimmedLower.startsWith(g)) && words.length < 3;
 
   if (isJustGreeting) {
     return {
@@ -364,96 +525,108 @@ export function validatePrompt(input: string): PromptValidation {
 }
 
 /**
- * Detect architecture type from user input
+ * Get mode-specific component constraints
  */
-export function detectArchitectureType(input: string): ArchitectureDetection {
-  const lowerInput = input.toLowerCase();
-  const scores: Record<ArchitectureType, number> = {
-    "web-app": 0,
-    "ai-pipeline": 0,
-    microservices: 0,
-    monolithic: 0,
-    serverless: 0,
-    "data-pipeline": 0,
-    "mobile-app": 0,
-    "desktop-app": 0,
-    "iot-system": 0,
-    blockchain: 0,
-    mixed: 0,
-    unknown: 0,
+function getModeConstraints(mode: "default" | "startup" | "corporate"): string {
+  const constraints = MODE_CONSTRAINTS[mode];
+
+  let guidelines = `MODE: ${mode.toUpperCase()}
+${constraints.description}
+
+CONSTRAINTS:
+- Minimum components: ${constraints.minComponents}
+- Maximum components: ${constraints.maxComponents}`;
+
+  if (mode === "startup") {
+    guidelines += `
+- PREFER FULL-STACK FRAMEWORKS (Next.js, Laravel, Django, Rails, AdonisJS)
+- AVOID unnecessary infrastructure (skip CDN, Load Balancer for simple apps)
+- Focus on SPEED and COST (use managed services, avoid self-hosted)
+- Single database is fine (no need for separate cache layer for small apps)
+- Simple auth solution (Clerk, Supabase Auth, not self-hosted)`;
+  } else if (mode === "corporate") {
+    guidelines += `
+- REQUIRE full redundancy and failover
+- Include monitoring/observability (Datadog, New Relic, or Grafana)
+- Separate concerns (frontend/backend)
+- Include CDN and Load Balancer
+- Security-first approach (WAF, encryption at rest/transit)
+- Compliance considerations (GDPR, SOC2)`;
+  } else {
+    guidelines += `
+- Balance between simplicity and best practices
+- Use CDN for static assets
+- Include basic monitoring
+- Right-size infrastructure for expected scale`;
+  }
+
+  return guidelines;
+}
+
+/**
+ * Get framework compatibility rules
+ */
+function getFrameworkCompatibilityRules(): string {
+  return `FRAMEWORK COMPATIBILITY RULES (CRITICAL):
+
+INCOMPATIBLE COMBINATIONS - NEVER USE THESE TOGETHER:
+1. Full-stack frameworks + Backend frameworks:
+   - ❌ Next.js + Express (Next.js has API routes)
+   - ❌ Nuxt + Fastify (Nuxt has server API)
+   - ❌ SvelteKit + NestJS (SvelteKit handles backend)
+
+2. Traditional MVC + Modern frameworks:
+   - ❌ Laravel + Express (different ecosystems)
+   - ❌ Django + Fastify (use Django's built-in)
+   - ❌ Rails + Hono (Rails is full-stack)
+
+CORRECT APPROACHES:
+1. Full-stack single framework:
+   - ✅ Next.js (handles frontend + API)
+   - ✅ Laravel (handles frontend + backend)
+   - ✅ Django (handles frontend + backend)
+   - ✅ AdonisJS (handles frontend + backend)
+
+2. Frontend + Backend separation:
+   - ✅ React + Express
+   - ✅ Vue + Fastify
+   - ✅ React + Hono
+   - ✅ Svelte + Elysia
+
+3. API-only backend:
+   - ✅ Express (REST API)
+   - ✅ Fastify (high-performance API)
+   - ✅ Hono (lightweight, Bun-optimized)
+   - ✅ Elysia (Bun-optimized, type-safe)`;
+}
+
+/**
+ * Get complexity-based architecture guidelines
+ */
+function getComplexityGuidelines(complexity: ComplexityLevel): string {
+  const guidelines: Record<ComplexityLevel, string> = {
+    simple: `COMPLEXITY: SIMPLE (3-5 components max)
+- Minimal infrastructure
+- Single database sufficient
+- No message queues unless explicitly requested
+- Simple auth (managed service)
+- Skip CDN for truly simple apps (< 1000 users)`,
+    medium: `COMPLEXITY: MEDIUM (4-7 components)
+- Include CDN for static assets
+- Add Redis cache for performance
+- Include monitoring basics
+- Proper auth service separation
+- Add message queue if async processing needed`,
+    complex: `COMPLEXITY: COMPLEX (6-12 components)
+- Full microservices or highly scalable monolith
+- Multiple data stores (primary + cache + search)
+- Message queues for async processing
+- Load balancing and auto-scaling
+- Comprehensive observability
+- Security layers (WAF, encryption)`,
   };
-  const detectedKeywords: string[] = [];
 
-  // Score each architecture type
-  for (const [type, patterns] of Object.entries(ARCHITECTURE_PATTERNS)) {
-    if (type === "mixed" || type === "unknown") continue;
-
-    for (const pattern of patterns) {
-      if (lowerInput.includes(pattern.toLowerCase())) {
-        scores[type as ArchitectureType] += 1;
-        if (!detectedKeywords.includes(pattern)) {
-          detectedKeywords.push(pattern);
-        }
-      }
-    }
-  }
-
-  // Find the highest score
-  let maxScore = 0;
-  let detectedType: ArchitectureType = "unknown";
-
-  for (const [type, score] of Object.entries(scores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      detectedType = type as ArchitectureType;
-    }
-  }
-
-  // Calculate confidence
-  const confidence = maxScore > 0 ? Math.min(maxScore / 3, 1) : 0;
-
-  // Get suggested questions
-  let suggestedQuestions: string[] = [];
-  if (confidence < 0.7) {
-    // Low confidence - ask general questions
-    suggestedQuestions = [
-      ...ARCHITECTURE_QUESTIONS.unknown.slice(0, 2),
-      ...(detectedType !== "unknown"
-        ? ARCHITECTURE_QUESTIONS[detectedType].slice(0, 1)
-        : []),
-    ];
-  } else if (confidence < 0.9) {
-    // Medium confidence - ask specific questions
-    suggestedQuestions = ARCHITECTURE_QUESTIONS[detectedType].slice(0, 2);
-  }
-
-  // Check for mixed patterns
-  const highScoreTypes = Object.entries(scores)
-    .filter(([_, score]) => score >= 2)
-    .map(([type, _]) => type as ArchitectureType);
-
-  if (highScoreTypes.length > 1) {
-    detectedType = "mixed";
-    suggestedQuestions = [
-      "I detected multiple architecture patterns. Which one is your primary focus?",
-      ...highScoreTypes.map((t) => `- ${t.replace("-", " ")}`),
-      ...ARCHITECTURE_QUESTIONS.mixed,
-    ];
-  }
-
-  logger.debug("[ArchitectureDetector] Detection result:", {
-    input: input.slice(0, 100),
-    detectedType,
-    confidence,
-    keywords: detectedKeywords,
-  });
-
-  return {
-    type: detectedType,
-    confidence,
-    detectedKeywords,
-    suggestedQuestions,
-  };
+  return guidelines[complexity];
 }
 
 /**
@@ -461,427 +634,424 @@ export function detectArchitectureType(input: string): ArchitectureDetection {
  */
 function getArchitectureGuidelines(type: ArchitectureType): string {
   const guidelines: Record<ArchitectureType, string> = {
-    "web-app": `
-WEB APPLICATION ARCHITECTURE:
-- Use standard 3-tier architecture: Client → API → Database
-- Include CDN for static assets
-- Consider caching layer (Redis) for performance
-- Add load balancer for high traffic
-- Use JWT or session-based auth
-- Include monitoring and logging`,
-
-    "ai-pipeline": `
-AI/ML PIPELINE ARCHITECTURE:
-- Design for async processing with message queues
-- Include model versioning and A/B testing capability
-- Add vector database for embeddings if using RAG
-- Design GPU clusters or serverless inference endpoints
-- Include data preprocessing and post-processing stages
-- Add monitoring for model drift and performance`,
-
-    microservices: `
-MICROSERVICES ARCHITECTURE:
-- Use API Gateway as single entry point
-- Include service discovery and registry
-- Design event-driven communication (Kafka/RabbitMQ)
-- Add distributed tracing and logging
-- Include circuit breakers and retry logic
-- Design for independent deployment of services`,
-
-    monolithic: `
-MONOLITHIC ARCHITECTURE:
-- Keep it simple with MVC or layered architecture
-- Use modular design for future extraction
-- Include caching at multiple levels
-- Design for vertical scaling initially
-- Add background job processing
-- Include comprehensive logging`,
-
-    serverless: `
-SERVERLESS ARCHITECTURE:
-- Design for stateless functions
-- Use managed services (DB, cache, storage)
-- Include event triggers (S3, DynamoDB, Schedule)
-- Design for cold start optimization
-- Use step functions for workflows
-- Include retry and dead letter queues`,
-
-    "data-pipeline": `
-DATA PIPELINE ARCHITECTURE:
-- Design for scalability with distributed processing
-- Include data validation and quality checks
-- Add lineage tracking and metadata management
-- Design for idempotent operations
-- Include data partitioning strategy
-- Add monitoring for data freshness and quality`,
-
-    "mobile-app": `
-MOBILE APPLICATION ARCHITECTURE:
-- Design for offline-first capabilities
-- Include push notification service
-- Add analytics and crash reporting
-- Design for app store compliance
-- Include backend for frontend (BFF) pattern
-- Add CDN for media assets`,
-
-    "desktop-app": `
-DESKTOP APPLICATION ARCHITECTURE:
-- Design for auto-update mechanism
-- Include local database (SQLite/IndexedDB)
-- Add offline capabilities
-- Include OS-specific integrations
-- Design for security (code signing)
-- Add telemetry and analytics`,
-
-    "iot-system": `
-IOT SYSTEM ARCHITECTURE:
-- Design for device management and provisioning
-- Include MQTT or CoAP for messaging
-- Add edge computing capabilities
-- Design for data aggregation and filtering
-- Include OTA update mechanism
-- Add device authentication and security`,
-
-    blockchain: `
-BLOCKCHAIN ARCHITECTURE:
-- Design for node synchronization
-- Include wallet and key management
-- Add smart contract deployment pipeline
-- Design for consensus mechanism
-- Include blockchain explorer
-- Add layer 2 scaling if needed`,
-
-    mixed: `
-MIXED ARCHITECTURE:
-- Identify the primary component and optimize for it
-- Use clear boundaries between different patterns
-- Include appropriate communication mechanisms
-- Design for the most critical use case`,
-
-    unknown: `
-GENERAL ARCHITECTURE:
-- Start with simple monolithic design
-- Use standard patterns (REST API, relational DB)
-- Include basic security and monitoring
-- Design for future scalability`,
+    "web-app": `Web Application Architecture:
+- Layer 1: CDN (Cloudflare) → Load Balancer → Frontend (Next.js/React/Vue)
+- Layer 2: API Gateway → Auth Service → Business Logic (Express/Fastify)
+- Layer 3: Primary Database (PostgreSQL) → Cache (Redis) → Object Storage (S3)`,
+    "ai-pipeline": `AI/ML Pipeline Architecture:
+- Layer 1: API Gateway → Model Gateway → Rate Limiting
+- Layer 2: Inference Service (GPU) → Queue (Kafka/SQS) → Training Pipeline
+- Layer 3: Vector DB (Pinecone/pgvector) → Object Storage (S3) → Monitoring`,
+    microservices: `Microservices Architecture:
+- Layer 1: API Gateway (Kong/AWS) → Service Mesh (optional)
+- Layer 2: Service Discovery → Auth Service → Business Services
+- Layer 3: Message Bus (Kafka) → Event Store → Polyglot Persistence`,
+    monolithic: `Monolithic Architecture:
+- Layer 1: CDN → Load Balancer → Application Server
+- Layer 2: Monolithic App (Django/Rails/Laravel/Next.js)
+- Layer 3: Primary DB → Cache → Background Job Queue`,
+    serverless: `Serverless Architecture:
+- Layer 1: CDN → API Gateway → Authentication
+- Layer 2: Functions (Lambda/Cloudflare Workers/Vercel)
+- Layer 3: Managed DB (DynamoDB/PlanetScale) → Object Storage`,
+    "data-pipeline": `Data Pipeline Architecture:
+- Layer 1: Ingestion (Kafka/Kinesis/API) → Validation
+- Layer 2: Processing (Spark/dbt/Airflow) → Transform
+- Layer 3: Warehouse (Snowflake/BigQuery) → Analytics → Visualization`,
+    "mobile-app": `Mobile Application Architecture:
+- Layer 1: CDN → API Gateway → Push Notification Service
+- Layer 2: Backend API → Auth → Business Logic
+- Layer 3: Database → File Storage → Analytics`,
+    "desktop-app": `Desktop Application Architecture:
+- Layer 1: Auto-update Service → Analytics
+- Layer 2: Desktop App (Electron/Tauri) → Local State
+- Layer 3: Sync Service → Cloud Backup → Local DB (SQLite)`,
+    "iot-system": `IoT System Architecture:
+- Layer 1: Device Gateway (MQTT/CoAP) → Protocol Adapter
+- Layer 2: Device Management → Rules Engine → Edge Computing
+- Layer 3: Time-Series DB (InfluxDB) → Analytics → Dashboard`,
+    blockchain: `Blockchain Architecture:
+- Layer 1: Wallet Interface → DApp Frontend → Indexer
+- Layer 2: Smart Contracts → Node RPC (Infura/Alchemy)
+- Layer 3: Event Indexer (The Graph) → Off-chain Storage`,
+    mixed: `Mixed Architecture:
+Identify primary pattern and apply its guidelines. Use API Gateway to bridge different patterns if needed.`,
+    unknown: `General Architecture:
+Start with simple 3-tier: Frontend → API → Database. Add components based on scale requirements.`,
   };
 
-  return guidelines[type] || guidelines.unknown;
+  return guidelines[type];
 }
 
 /**
- * Build an enhanced system prompt based on detected architecture
+ * Get technology recommendations based on mode and complexity
  */
-export function buildEnhancedSystemPrompt(context: PromptContext): string {
-  const detection = detectArchitectureType(context.userInput);
-  const architectureGuidelines = getArchitectureGuidelines(detection.type);
-
-  let roleDescription = "Senior Fullstack Solutions Architect";
-  let focusArea =
-    "scalability, fault tolerance, cost-efficiency, and rapid delivery";
-
-  // Adjust based on mode
-  if (context.mode === "startup") {
-    roleDescription = "Lean Startup CTO";
-    focusArea = "MVP speed, minimal costs, and rapid iteration";
-  } else if (context.mode === "corporate") {
-    roleDescription = "Enterprise Architect";
-    focusArea = "high availability, compliance, security, and redundancy";
-  }
-
-  // Architecture-specific role adjustments
-  const architectureRoles: Record<ArchitectureType, string> = {
-    "web-app": "Fullstack Web Architect",
-    "ai-pipeline": "AI/ML Systems Architect",
-    microservices: "Distributed Systems Architect",
-    monolithic: "Application Architect",
-    serverless: "Cloud-Native Architect",
-    "data-pipeline": "Data Platform Architect",
-    "mobile-app": "Mobile Solutions Architect",
-    "desktop-app": "Desktop Application Architect",
-    "iot-system": "IoT Systems Architect",
-    blockchain: "Blockchain Solutions Architect",
-    mixed: "Solutions Architect",
-    unknown: "Fullstack Solutions Architect",
+function getTechRecommendations(
+  type: ArchitectureType,
+  mode: "default" | "startup" | "corporate",
+  complexity: ComplexityLevel,
+): string {
+  // Mode-specific tech preferences
+  const startupTechs: Record<ArchitectureType, string> = {
+    "web-app": `RECOMMENDED TECHNOLOGIES (Startup - Cost Optimized):
+- Full-stack: Next.js (Vercel), Laravel (Railway), Django (Render)
+- Database: PostgreSQL (managed), SQLite (very small apps)
+- Auth: Clerk, Supabase Auth, NextAuth.js
+- Hosting: Vercel, Railway, Render (free tiers available)
+- Storage: Cloudflare R2 (free egress), Supabase Storage`,
+    "ai-pipeline": `RECOMMENDED TECHNOLOGIES (Startup - Cost Optimized):
+- Models: OpenAI API, Anthropic Claude (pay per use)
+- Vector DB: Supabase pgvector (free tier), Pinecone (starter)
+- Queue: Upstash Redis, Cloudflare Queues
+- Hosting: Modal, Replicate (serverless GPU)`,
+    microservices: `RECOMMENDED TECHNOLOGIES (Startup - SIMPLIFY):
+⚠️ Consider monolith first! If microservices needed:
+- Orchestration: Railway, Render (managed containers)
+- Avoid Kubernetes (overkill for startups)
+- Use managed message queues (Upstash, Cloudflare)`,
+    monolithic: `RECOMMENDED TECHNOLOGIES (Startup - Perfect for MVPs):
+- Framework: Next.js, Laravel, Django, AdonisJS, Ruby on Rails
+- Database: PostgreSQL (managed)
+- Cache: Redis (Upstash free tier)
+- Hosting: Vercel, Railway, Render, Fly.io`,
+    serverless: `RECOMMENDED TECHNOLOGIES (Startup - Cost Optimized):
+- Functions: Vercel Functions, Cloudflare Workers, Netlify Functions
+- Database: PlanetScale (MySQL), Supabase (PostgreSQL)
+- Auth: Clerk, Auth0 (free tier)
+- Perfect for variable traffic`,
+    "data-pipeline": `RECOMMENDED TECHNOLOGIES (Startup - Managed Services):
+- Orchestration: Airflow (managed), Prefect Cloud (free tier)
+- Processing: Python + Pandas (small data), DuckDB
+- Warehouse: BigQuery (sandbox), Snowflake (trial)
+- Avoid self-hosting complex infrastructure`,
+    "mobile-app": `RECOMMENDED TECHNOLOGIES (Startup - Fast to Market):
+- Cross-platform: React Native (Expo), Flutter
+- Backend: Firebase, Supabase (backend-as-a-service)
+- Push: Firebase Cloud Messaging (free)
+- Avoid building backend from scratch initially`,
+    "desktop-app": `RECOMMENDED TECHNOLOGIES (Startup - Lightweight):
+- Framework: Tauri (Rust, small bundle), Wails (Go)
+- Avoid Electron (large bundle size)
+- Updates: Tauri built-in updater
+- Local DB: SQLite, libSQL (Turso)`,
+    "iot-system": `RECOMMENDED TECHNOLOGIES (Startup - Managed IoT):
+- Gateway: AWS IoT Core (pay per message), EMQX Cloud
+- Protocol: MQTT (lightweight)
+- Database: InfluxDB Cloud (time-series)
+- Avoid self-hosting MQTT brokers initially`,
+    blockchain: `RECOMMENDED TECHNOLOGIES (Startup - Web3):
+- Network: Polygon (cheap), Base, Arbitrum
+- Smart Contracts: Solidity, Hardhat
+- RPC: Alchemy (free tier), Infura
+- Indexing: The Graph (subgraphs)`,
+    mixed: `RECOMMENDED TECHNOLOGIES (Startup):
+- Focus on ONE primary stack
+- Use managed services over self-hosted
+- Prefer full-stack frameworks to reduce complexity`,
+    unknown: `RECOMMENDED TECHNOLOGIES (Startup):
+- Safest choice: Next.js + PostgreSQL + Vercel
+- Alternative: Laravel + MySQL + Railway
+- Both have generous free tiers and scale well`,
   };
 
-  const specificRole = architectureRoles[detection.type] || roleDescription;
-
-  // Build context about existing architecture
-  const contextPrompt =
-    context.currentNodes && context.currentNodes.length > 0
-      ? `\n\nCURRENT ARCHITECTURE STATE:\nThe user already has an existing diagram with ${context.currentNodes.length} nodes.\nExisting Nodes: ${JSON.stringify(context.currentNodes.map((n: any) => ({ id: n.id, type: n.type, label: n.data?.label })))}\n\nYour task is to MODIFY or IMPROVE this architecture based on the user's prompt. Maintain context of existing components.`
-      : "";
-
-  // Quick mode prompt
-  if (context.quickMode) {
-    return `You are a ${specificRole}. Generate a JSON architecture for: "${context.userInput}"
-
-DETECTED ARCHITECTURE: ${detection.type.replace("-", " ")} (confidence: ${Math.round(detection.confidence * 100)}%)
-
-${architectureGuidelines}
-
-${contextPrompt}
-
-OUTPUT ONLY JSON (no markdown, no explanation):
-{
-  "nodes": [{ "id": "string", "type": "gateway|service|frontend|backend|database|queue|ai", "position": {"x": number, "y": number}, "data": { "label": "string", "description": "brief purpose", "tech": "nextjs|react|nodejs|postgres|redis|supabase|vercel|etc", "serviceType": "same as type" }}],
-  "edges": [{ "id": "string", "source": "string", "target": "string", "animated": boolean, "data": { "protocol": "http|https|graphql|websocket|queue|stream|database|cache|oauth|grpc" }}]
-}
-
-ALL nodes MUST be connected. No orphaned nodes!`;
-  }
-
-  // Full detailed prompt
-  return `You are a ${specificRole} specializing in ${detection.type.replace("-", " ")} architectures. ${focusArea}.
-
-ARCHITECTURE DETECTION:
-Detected Type: ${detection.type.replace("-", " ")}
-Confidence: ${Math.round(detection.confidence * 100)}%
-Matched Keywords: ${detection.detectedKeywords.join(", ") || "None"}
-
-${architectureGuidelines}
-
-${contextPrompt}
-
-INTELLIGENT TECH SELECTION:
-Based on the detected architecture type "${detection.type}", choose the most appropriate technologies:
-
-${getTechRecommendations(detection.type)}
-
-CRITICAL INSTRUCTIONS:
-1. LAYERING PATTERN (Top to Bottom, Left to Right):
-   - Layer 1 (Top/Left): ENTRY - Load Balancers, API Gateways, CDN, Frontend Clients, External APIs
-   - Layer 2 (Middle): APP - Core Services, Auth, Business Logic, Workers, AI Agents, Background Jobs
-   - Layer 3 (Bottom/Right): DATA - Databases, Caches, Object Storage, Message Queues, External Services
-
-2. Position nodes with appropriate spacing (x: 0-800, y: 0-600)
-   - Gateway/Frontend at top (y: 50-150)
-   - Services in middle (y: 200-350)
-   - Databases at bottom (y: 400-500)
-   - Left-to-right flow for related components
-
-3. THINKING vs CONTENT:
-   - Use reasoning/thinking for your analysis (NOT in final JSON)
-   - OUTPUT ONLY THE FINAL JSON in the content field
-   - NO markdown code blocks, NO explanations in content
-
-4. NODE REQUIREMENTS:
-   - Every node MUST have: id, type, position, data (with label, description, tech, serviceType)
-   - Use REAL technology IDs from the ecosystem
-   - Include meaningful descriptions explaining what each component does
-   - Set appropriate serviceType matching the node's purpose
-
-5. EDGE REQUIREMENTS:
-   - Every service must connect to at least one database or external service
-   - Gateways connect to services
-   - Services connect to databases, caches, or queues
-   - Use appropriate protocol for each connection type
-   - ALL nodes MUST be connected. No orphaned nodes allowed!
-
-6. COMPLETENESS:
-   - Include ALL necessary components for a production system
-   - Don't forget: Monitoring, Logging, Auth, CDN, Load Balancer (for production)
-   - For ${detection.type}: ${getRequiredComponents(detection.type)}
-
-JSON Schema:
-{
-  "nodes": [{ 
-    "id": "unique-string", 
-    "type": "gateway" | "service" | "frontend" | "backend" | "database" | "queue" | "ai", 
-    "position": { "x": number, "y": number }, 
-    "data": { 
-      "label": "Human Readable Name", 
-      "description": "Detailed explanation of what this component does and why it's needed",
-      "tech": "exact-tech-id-from-ecosystem",
-      "serviceType": "gateway" | "service" | "frontend" | "backend" | "database" | "queue" | "ai"
-    } 
-  }],
-  "edges": [{ 
-    "id": "source-target", 
-    "source": "source-node-id", 
-    "target": "target-node-id", 
-    "animated": boolean, 
-    "data": { 
-      "protocol": "http" | "https" | "graphql" | "websocket" | "queue" | "stream" | "database" | "cache" | "oauth" | "grpc" 
-    } 
-  }]
-}
-
-Output the complete JSON architecture in the content field. Start with "{" and end with "}". No markdown, no code blocks.`;
-}
-
-/**
- * Get technology recommendations based on architecture type
- */
-function getTechRecommendations(type: ArchitectureType): string {
-  const recommendations: Record<ArchitectureType, string> = {
-    "web-app": `- Frontend: Next.js/React (SSR/SSG), Vue, or Angular
-- Backend: Node.js/Express, Python/FastAPI, Go, or Java/Spring
-- Database: PostgreSQL (primary), Redis (cache), MongoDB (if NoSQL needed)
-- Hosting: Vercel, AWS, or Google Cloud
+  const defaultTechs: Record<ArchitectureType, string> = {
+    "web-app": `RECOMMENDED TECHNOLOGIES:
+- Frontend: Next.js, React, Vue, Angular
+- Backend: Node.js/Express, Python/FastAPI, Go
+- Database: PostgreSQL (primary), Redis (cache)
+- Hosting: AWS, Vercel, Google Cloud
 - CDN: Cloudflare or AWS CloudFront`,
-
-    "ai-pipeline": `- API Gateway: Kong, AWS API Gateway, or custom
-- AI/ML: OpenAI, Anthropic, or self-hosted models
-- Vector DB: Pinecone, Weaviate, or pgvector
-- Message Queue: Kafka, RabbitMQ, or AWS SQS
+    "ai-pipeline": `RECOMMENDED TECHNOLOGIES:
+- API Gateway: Kong, AWS API Gateway
+- AI/ML: OpenAI, Anthropic, self-hosted models
+- Vector DB: Pinecone, Weaviate, pgvector
+- Message Queue: Kafka, RabbitMQ, AWS SQS
 - Compute: Kubernetes (GPU nodes) or serverless
 - Storage: S3 for models and data`,
-
-    microservices: `- API Gateway: Kong, Ambassador, or AWS API Gateway
+    microservices: `RECOMMENDED TECHNOLOGIES:
+- API Gateway: Kong, Ambassador, AWS API Gateway
 - Service Mesh: Istio or Linkerd (optional)
 - Container Orchestration: Kubernetes
 - Message Bus: Kafka, NATS, or RabbitMQ
 - Service Discovery: Consul, etcd, or Kubernetes DNS
 - Monitoring: Prometheus + Grafana + Jaeger`,
-
-    monolithic: `- Framework: Next.js, Django, Rails, Laravel, or Spring Boot
+    monolithic: `RECOMMENDED TECHNOLOGIES:
+- Framework: Next.js, Django, Rails, Laravel, Spring Boot
 - Database: PostgreSQL or MySQL
 - Cache: Redis
-- Background Jobs: Bull, Celery, or Sidekiq
+- Background Jobs: Bull, Celery, Sidekiq
 - Hosting: Traditional VPS or PaaS (Heroku, Railway)`,
-
-    serverless: `- Functions: AWS Lambda, Vercel Functions, or Cloudflare Workers
+    serverless: `RECOMMENDED TECHNOLOGIES:
+- Functions: AWS Lambda, Vercel Functions, Cloudflare Workers
 - API: API Gateway or Function URLs
-- Database: DynamoDB, PlanetScale, or Supabase
+- Database: DynamoDB, PlanetScale, Supabase
 - Storage: S3 or R2
-- Auth: Auth0, Clerk, or Cognito`,
-
-    "data-pipeline": `- Orchestration: Apache Airflow, Prefect, or Dagster
-- Processing: Spark, dbt, or custom Python
-- Warehouse: Snowflake, BigQuery, or Redshift
+- Auth: Auth0, Clerk, Cognito`,
+    "data-pipeline": `RECOMMENDED TECHNOLOGIES:
+- Orchestration: Apache Airflow, Prefect, Dagster
+- Processing: Spark, dbt, custom Python
+- Warehouse: Snowflake, BigQuery, Redshift
 - Lake: S3 + Delta Lake or Iceberg
-- Streaming: Kafka, Kinesis, or Pub/Sub`,
-
-    "mobile-app": `- Cross-platform: React Native, Flutter, or Ionic
+- Streaming: Kafka, Kinesis, Pub/Sub`,
+    "mobile-app": `RECOMMENDED TECHNOLOGIES:
+- Cross-platform: React Native, Flutter, Ionic
 - Native: Swift (iOS), Kotlin (Android)
-- Backend: Firebase, Supabase, or custom API
+- Backend: Firebase, Supabase, custom API
 - Push: Firebase Cloud Messaging, OneSignal
 - Storage: Firebase Storage, S3`,
-
-    "desktop-app": `- Framework: Electron, Tauri, or Wails
-- State: Redux, Zustand, or Vuex
-- Storage: SQLite, IndexedDB, or local files
-- Updates: Electron-updater or custom solution
-- Build: Electron Builder or Tauri CLI`,
-
-    "iot-system": `- Protocol: MQTT (Mosquitto, EMQX) or CoAP
+    "desktop-app": `RECOMMENDED TECHNOLOGIES:
+- Framework: Electron, Tauri, Wails
+- State: Redux, Zustand, Vuex
+- Storage: SQLite, IndexedDB, local files
+- Updates: Electron-updater, Tauri built-in
+- Build: Electron Builder, Tauri CLI`,
+    "iot-system": `RECOMMENDED TECHNOLOGIES:
+- Protocol: MQTT (Mosquitto, EMQX) or CoAP
 - Gateway: AWS IoT Core, Azure IoT Hub
-- Edge: AWS Greengrass or custom
+- Edge: AWS Greengrass, custom
 - Database: InfluxDB (time-series), PostgreSQL
-- Analytics: AWS IoT Analytics or custom pipeline`,
-
-    blockchain: `- Network: Ethereum, Polygon, or Solana
-- Smart Contracts: Solidity or Rust
-- Node: Geth, Parity, or managed (Infura, Alchemy)
+- Analytics: AWS IoT Analytics, custom pipeline`,
+    blockchain: `RECOMMENDED TECHNOLOGIES:
+- Network: Ethereum, Polygon, Solana
+- Smart Contracts: Solidity, Rust
+- Node: Geth, Parity, managed (Infura, Alchemy)
 - Wallet: MetaMask, WalletConnect
 - Indexing: The Graph`,
-
-    mixed: `- Identify primary component and use its stack
+    mixed: `RECOMMENDED TECHNOLOGIES:
+- Identify primary component and use its stack
 - Use API Gateway to bridge different patterns
-- Consider event-driven communication between patterns`,
-
-    unknown: `- Frontend: Next.js or React
+- Consider event-driven communication`,
+    unknown: `RECOMMENDED TECHNOLOGIES:
+- Frontend: Next.js or React
 - Backend: Node.js/Express or Python/FastAPI
 - Database: PostgreSQL
 - Hosting: Vercel or Railway`,
   };
 
-  return recommendations[type] || recommendations.unknown;
-}
-
-/**
- * Get required components for each architecture type
- */
-function getRequiredComponents(type: ArchitectureType): string {
-  const components: Record<ArchitectureType, string> = {
-    "web-app":
-      "Include CDN, Load Balancer, API Gateway, Auth service, Application servers, Database, Cache",
-    "ai-pipeline":
-      "Include API Gateway, Model serving infrastructure, Vector DB, Message Queue, Object Storage",
-    microservices:
-      "Include API Gateway, Service Discovery, Message Bus, Distributed Tracing, Centralized Logging",
-    monolithic:
-      "Include Load Balancer, Application server, Database, Cache, Background Job processor",
-    serverless:
-      "Include API Gateway, Functions, Event triggers, Managed Database, Object Storage",
-    "data-pipeline":
-      "Include Data sources, Extract/Transform/Load services, Data Warehouse, Orchestration, Monitoring",
-    "mobile-app":
-      "Include Mobile clients, Backend API, Push notification service, Analytics, CDN for assets",
-    "desktop-app":
-      "Include Desktop client, Auto-update service, Local storage, Telemetry, Backend API (optional)",
-    "iot-system":
-      "Include Devices, MQTT Broker, Edge Gateway, Data processing, Time-series Database, Dashboard",
-    blockchain:
-      "Include Blockchain nodes, Smart contracts, Wallet integration, Indexing service, Frontend",
-    mixed:
-      "Include clear boundaries and appropriate integrations between patterns",
-    unknown: "Include basic web architecture components",
+  const corporateTechs: Record<ArchitectureType, string> = {
+    "web-app": `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Frontend: Next.js (enterprise features), Angular
+- Backend: Java/Spring, .NET, Node.js/NestJS
+- Database: PostgreSQL (HA), Oracle, SQL Server
+- Cache: Redis Cluster, Memcached
+- CDN: AWS CloudFront, Akamai
+- WAF: AWS WAF, Cloudflare Enterprise
+- Monitoring: Datadog, New Relic, Dynatrace`,
+    "ai-pipeline": `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Models: Self-hosted (security), Azure OpenAI
+- Vector DB: Pinecone Enterprise, Weaviate
+- Queue: Confluent Kafka, AWS MSK
+- GPU: AWS SageMaker, Azure ML
+- Security: VPC, encryption at rest/transit
+- Compliance: SOC2, GDPR tooling`,
+    microservices: `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Platform: Kubernetes (EKS, AKS, GKE)
+- Service Mesh: Istio, Linkerd
+- API Gateway: Kong Enterprise, AWS API Gateway
+- Observability: Datadog, Splunk, ELK
+- Security: Vault, cert-manager
+- GitOps: ArgoCD, Flux`,
+    monolithic: `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Framework: Spring Boot, .NET Core, Django
+- Database: PostgreSQL (patroni), Oracle RAC
+- Cache: Redis Sentinel/Cluster
+- Message Queue: RabbitMQ, ActiveMQ
+- Monitoring: APM tools, custom dashboards
+- DR: Multi-region, automated backups`,
+    serverless: `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Platform: AWS Lambda, Azure Functions
+- API: API Gateway with WAF
+- Database: DynamoDB (global tables), Aurora Serverless
+- Security: IAM, KMS, Secrets Manager
+- Compliance: CloudTrail, Config
+- Monitoring: X-Ray, CloudWatch`,
+    "data-pipeline": `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Orchestration: Airflow (MWAA), Prefect Enterprise
+- Processing: Spark (EMR), Databricks
+- Warehouse: Snowflake Enterprise, BigQuery
+- Governance: Collibra, Alation
+- Security: Column-level encryption, row-level security
+- Lineage: Apache Atlas, DataHub`,
+    "mobile-app": `RECOMMENDED TECHNOLOGIES (Enterprise):
+- MDM: MobileIron, VMware Workspace ONE
+- Security: Certificate pinning, app attestation
+- Backend: Enterprise API Gateway
+- Analytics: Segment, Amplitude
+- Push: OneSignal Enterprise, Braze
+- Testing: Firebase Test Lab, AWS Device Farm`,
+    "desktop-app": `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Framework: Electron (signed), WPF, Cocoa
+- Security: Code signing, sandboxing
+- Updates: Enterprise auto-updater
+- SSO: SAML, OIDC integration
+- Analytics: Pendo, Amplitude
+- Support: Intercom, Zendesk integration`,
+    "iot-system": `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Platform: AWS IoT Core, Azure IoT Hub
+- Security: Device certificates, JIT provisioning
+- Edge: AWS Greengrass, Azure IoT Edge
+- Database: InfluxDB Enterprise, TimescaleDB
+- Analytics: AWS IoT Analytics, Azure Stream Analytics
+- Device Management: AWS IoT Device Management`,
+    blockchain: `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Platform: Hyperledger Fabric, R3 Corda
+- Network: Private/consortium chains
+- Security: HSM, multi-sig wallets
+- Integration: Enterprise middleware
+- Compliance: Transaction monitoring
+- Governance: On-chain voting mechanisms`,
+    mixed: `RECOMMENDED TECHNOLOGIES (Enterprise):
+- API Gateway: Kong Enterprise, Apigee
+- Integration: MuleSoft, Boomi
+- Security: OAuth2, OIDC, mutual TLS
+- Monitoring: Datadog, Splunk
+- Compliance: Automated audit trails`,
+    unknown: `RECOMMENDED TECHNOLOGIES (Enterprise):
+- Platform: Kubernetes (EKS/AKS/GKE)
+- Database: PostgreSQL Enterprise, Oracle
+- Security: WAF, DDoS protection
+- Monitoring: Datadog, New Relic
+- Compliance: SOC2, ISO 27001 tooling`,
   };
 
-  return components[type] || components.unknown;
+  if (mode === "startup") return startupTechs[type];
+  if (mode === "corporate") return corporateTechs[type];
+  return defaultTechs[type];
 }
 
 /**
- * Check if we need to ask clarifying questions
+ * Build an optimized system prompt based on context
  */
-export function shouldAskQuestions(detection: ArchitectureDetection): boolean {
-  return detection.confidence < 0.7 || detection.type === "mixed";
+export function buildEnhancedSystemPrompt(context: PromptContext): string {
+  const detection = detectArchitectureType(context.userInput);
+  const complexity = detectComplexity(context.userInput);
+  const modeConstraints = MODE_CONSTRAINTS[context.mode];
+
+  // Skip complexity-based component limits for now
+  const componentGuidelines = `COMPONENT GUIDELINES:
+${getModeConstraints(context.mode)}
+${getComplexityGuidelines(complexity)}
+
+${getFrameworkCompatibilityRules()}`;
+
+  const techRecommendations = getTechRecommendations(
+    detection.type,
+    context.mode,
+    complexity,
+  );
+
+  const architectureGuidelines = getArchitectureGuidelines(detection.type);
+
+  // Quick mode: shorter prompt
+  if (context.quickMode) {
+    return `You are a Solutions Architect. Generate a JSON architecture for: "${context.userInput}"
+
+ARCHITECTURE TYPE: ${detection.type}
+MODE: ${context.mode}
+COMPLEXITY: ${complexity}
+
+${componentGuidelines}
+
+${techRecommendations}
+
+REQUIRED JSON FORMAT:
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "frontend|backend|database|gateway|cache|queue|ai|storage",
+      "position": { "x": 100, "y": 100 },
+      "data": {
+        "label": "Component Name",
+        "description": "Brief description",
+        "tech": "technology-name",
+        "serviceType": "type"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "node-1",
+      "target": "node-2",
+      "animated": true,
+      "data": { "protocol": "HTTPS" }
+    }
+  ]
 }
 
-/**
- * Generate follow-up questions based on detection and conversation history
- */
-export function generateFollowUpQuestions(
-  detection: ArchitectureDetection,
-  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>,
-): string[] {
-  // Start with architecture-specific questions
-  let questions = [...detection.suggestedQuestions];
-
-  // If we have conversation history, avoid repeating questions
-  if (conversationHistory && conversationHistory.length > 0) {
-    const askedQuestions = conversationHistory
-      .filter((m) => m.role === "assistant")
-      .map((m) => m.content.toLowerCase());
-
-    questions = questions.filter(
-      (q) => !askedQuestions.some((asked) => asked.includes(q.toLowerCase())),
-    );
+RULES:
+1. Use ${modeConstraints.minComponents}-${modeConstraints.maxComponents} components
+2. Never mix incompatible frameworks (Next.js + Express)
+3. Use real technology names from the recommendations
+4. Position: Gateways top (y:50), Services middle (y:150-250), Data bottom (y:350-450)
+5. Return valid JSON only, no markdown`;
   }
 
-  // Limit to 2-3 most important questions
-  return questions.slice(0, 3);
+  // Full prompt
+  return `You are an expert Solutions Architect specializing in ${detection.type.replace("-", " ")} design.
+
+USER REQUEST: "${context.userInput}"
+
+DETECTED ARCHITECTURE: ${detection.type}
+CONFIDENCE: ${Math.round(detection.confidence * 100)}%
+
+${componentGuidelines}
+
+${architectureGuidelines}
+
+${techRecommendations}
+
+TECHNOLOGY ECOSYSTEM:
+Use these exact technology IDs when possible:
+- Full-stack: nextjs, nuxt, sveltekit, laravel, django, rails, adonisjs
+- Frontend: react, vue, angular, svelte
+- Backend: express, fastify, nestjs, hono, elysia
+- Database: postgresql, mysql, mongodb, redis, sqlite
+- Cloud: aws, vercel, railway, render, cloudflare
+
+POSITIONING GUIDELINES:
+- Layer 1 (Entry): y: 50-150 (CDN, Load Balancer, API Gateway, Frontend)
+- Layer 2 (Application): y: 200-350 (Services, Auth, Workers, AI)
+- Layer 3 (Data): y: 400-500 (Databases, Cache, Storage, Queues)
+- Spread horizontally: x spacing 200-300px
+
+CRITICAL RULES:
+1. Never exceed ${modeConstraints.maxComponents} components
+2. Never use less than ${modeConstraints.minComponents} components
+3. Never mix full-stack frameworks with separate backend frameworks
+4. Match complexity to request (simple apps don't need CDN/load balancer)
+5. Prefer managed services in startup mode
+6. Include monitoring only if complexity warrants it
+
+OUTPUT FORMAT:
+Return a JSON object with:
+{
+  "nodes": [array of node objects],
+  "edges": [array of edge objects]
 }
 
-/**
- * Create a probing prompt when we need more information
- */
-export function createProbingPrompt(
-  detection: ArchitectureDetection,
-  userInput: string,
-): string {
-  const questions = detection.suggestedQuestions;
-
-  if (questions.length === 0) {
-    return "";
+Node structure:
+{
+  "id": "unique-id",
+  "type": "frontend|backend|database|gateway|cache|queue|ai|storage",
+  "position": { "x": number, "y": number },
+  "data": {
+    "label": "Display Name",
+    "description": "Brief purpose",
+    "tech": "technology-id-from-ecosystem",
+    "serviceType": "same-as-type"
   }
-
-  return `I want to help you design the best architecture for your needs. I detected this might be a **${detection.type.replace("-", " ")}** system, but I need a bit more clarity.
-
-${questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}
-
-Feel free to answer any or all of these, or just tell me more about what you're building!
-
-Your original request: "${userInput}"`;
 }
 
-export default {
-  detectArchitectureType,
-  buildEnhancedSystemPrompt,
-  shouldAskQuestions,
-  generateFollowUpQuestions,
-  createProbingPrompt,
-};
+Edge structure:
+{
+  "id": "edge-unique",
+  "source": "source-node-id",
+  "target": "target-node-id",
+  "animated": boolean,
+  "data": { "protocol": "HTTPS|HTTP|WebSocket|gRPC|TCP" }
+}
+
+Generate the complete JSON architecture now.`;
+}

@@ -39,13 +39,13 @@ export const SUBSCRIPTION_PLANS = {
       "Standard Node Library",
       "Community Support",
       "Public Exports (PDF, PNG, SVG, Mermaid, Agent Skills)",
-      "GLM-4.7-Flash (10x Daily Limit)",
+      "GLM-4.7-Flash (30x Daily Limit)",
     ],
-    daily_limit: 10,
+    daily_limit: 30,
     rateLimits: {
       burstLimit: 5,
       burstWindow: 10,
-      dailyLimit: 10,
+      dailyLimit: 30,
     } as RateLimitConfig,
     tierFeatures: {
       maxProjects: 3,

@@ -1,6 +1,10 @@
 import OpenAI from "openai";
 import { callAIWithResilience } from "./ai-resilience";
-import { buildEnhancedSystemPrompt } from "./prompt-engineering";
+import {
+  buildEnhancedSystemPrompt,
+  detectArchitectureType,
+  detectComplexity,
+} from "./prompt-engineering";
 
 export type AIProvider =
   | "zhipu"
@@ -205,16 +209,44 @@ async function callModelStream(
 ) {
   const { client, config } = createAIClient(provider);
 
+  // Detect architecture type and complexity for optimized prompting
+  const detection = detectArchitectureType(prompt);
+  const complexity = detectComplexity(prompt);
+
+  // For simple prompts in startup mode, disable reasoning to speed up generation
+  const shouldDisableReasoning =
+    quickMode || (complexity === "simple" && mode === "startup");
+
   // Use enhanced prompt engineering with architecture detection
   const systemPrompt = buildEnhancedSystemPrompt({
     userInput: prompt,
-    architectureType: "unknown",
-    detectedIntent: "",
+    architectureType: detection.type,
+    detectedIntent: `Architecture: ${detection.type}, Complexity: ${complexity}, Keywords: ${detection.detectedKeywords.join(", ")}`,
     currentNodes,
     currentEdges,
     mode,
-    quickMode,
+    quickMode: shouldDisableReasoning,
   });
+
+  // Determine reasoning level based on mode and complexity
+  let reasoningConfig = {};
+  if (config.reasoningParam) {
+    if (mode === "startup") {
+      // Startup/MVP: Disable thinking for speed
+      reasoningConfig = { thinking: { type: "disabled" } };
+      console.log(`[AI Client] Reasoning: DISABLED (Startup/MVP mode)`);
+    } else if (mode === "default" || complexity === "simple") {
+      // Default or simple: Reduced thinking
+      reasoningConfig = { thinking: { type: "low" } };
+      console.log(
+        `[AI Client] Reasoning: LOW (Default mode or simple architecture)`,
+      );
+    } else {
+      // Enterprise or complex: Full thinking enabled
+      reasoningConfig = config.reasoningParam;
+      console.log(`[AI Client] Reasoning: ENABLED (Enterprise/Complex mode)`);
+    }
+  }
 
   console.log(
     `[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})${quickMode ? " [QUICK MODE]" : ""}`,
@@ -231,7 +263,7 @@ async function callModelStream(
           { role: "user", content: prompt },
         ],
         stream: true,
-        ...(config.reasoningParam || {}),
+        ...reasoningConfig,
         response_format: config.responseFormat,
       });
     },

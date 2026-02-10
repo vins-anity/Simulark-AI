@@ -18,10 +18,10 @@ if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
     token: env.UPSTASH_REDIS_REST_TOKEN,
   });
 
-  // AI Generation: Relaxed limits for better UX (30 per minute)
+  // AI Generation: Conservative limits to avoid upstream rate limits (Zhipu ~20/min)
   aiRatelimit = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(30, "1 m"),
+    limiter: Ratelimit.slidingWindow(15, "1 m"),
     analytics: true,
     prefix: "@upstash/ratelimit-ai",
   });
@@ -34,10 +34,10 @@ if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
     prefix: "@upstash/ratelimit-api",
   });
 
-  // Auth-sensitive operations
+  // Auth-sensitive operations: 20 per minute (allows page load + multiple login attempts)
   authRatelimit = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(5, "1 m"),
+    limiter: Ratelimit.slidingWindow(20, "1 m"),
     analytics: true,
     prefix: "@upstash/ratelimit-auth",
   });

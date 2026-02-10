@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { getPlanDetails } from "@/lib/subscription";
+import { createClient } from "@/lib/supabase/server";
 
 export async function checkRateLimit(userId: string) {
   const supabase = await createClient(); // Use server client
@@ -19,8 +19,8 @@ export async function checkRateLimit(userId: string) {
   const tier = userData?.subscription_tier || "free";
   const plan = getPlanDetails(tier);
 
-  // Safety check: if plan doesn't have a limit defined, default to 10 (Free)
-  const dailyLimit = plan.daily_limit ?? 10;
+  // Safety check: if plan doesn't have a limit defined, default to 30 (Free)
+  const dailyLimit = plan.daily_limit ?? 30;
 
   // 2. Get User's Current Usage for Today
   const today = new Date().toISOString().split("T")[0];

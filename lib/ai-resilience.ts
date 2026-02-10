@@ -63,6 +63,27 @@ function isRetryableError(error: unknown): boolean {
 }
 
 /**
+ * Check if error is a rate limit error (429)
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (
+      message.includes("429") ||
+      message.includes("rate limit") ||
+      message.includes("速率限制")
+    ) {
+      return true;
+    }
+    const statusCode = (error as any).status;
+    if (statusCode === 429) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Execute a function with retry logic
  */
 export async function withRetry<T>(
@@ -84,6 +105,14 @@ export async function withRetry<T>(
       return result;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry rate limit errors - let the caller handle fallback
+      if (isRateLimitError(error)) {
+        logger.warn(
+          `[Retry] ${operationName} hit rate limit. Not retrying - should fallback to alternative provider.`,
+        );
+        throw error;
+      }
 
       if (!isRetryableError(error)) {
         logger.warn(

@@ -114,11 +114,11 @@ export async function POST(req: NextRequest) {
           const iterator = stream[Symbol.asyncIterator]();
 
           while (true) {
-            // Add 60 second timeout for each chunk (reasoning mode can be slow)
+            // Add 120 second timeout for each chunk (Zhipu can be slow on complex generations)
             const { done, value: chunk } = await withTimeout(
               iterator.next(),
-              60000,
-              `Timeout waiting for chunk ${chunkCount + 1} after 60 seconds`,
+              120000,
+              `Timeout waiting for chunk ${chunkCount + 1} after 120 seconds`,
             );
 
             if (done) break;
