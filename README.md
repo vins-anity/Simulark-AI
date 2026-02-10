@@ -193,10 +193,9 @@ Response:
 
 | Plan | Price | Features |
 |------|-------|----------|
-| **Sandbox** (Free) | $0 | Up to 3 Projects, Standard Node Library |
-| **Sketch** (Starter) | $29/mo | Unlimited Projects, Chaos Engineering, Export to Terraform |
-| **Blueprint** (Pro) | $100/mo | Team Workspaces, SSO, Global Component Sync |
-| **Launch** (Business) | Contact | Dedicated SLAs, On-premise, White-labeling |
+| **Doodle** (Free) | $0 | 3 Projects, Standard Nodes, GLM-4.7-Flash (10/day), Public Exports |
+| **Sketch** (Starter) | $5/mo | Unlimited, Chaos Mode, Auto-Layouts, Kimi/Gemini/Minimax |
+| **Blueprint** (Lifetime) | $10 | Forever Access, Commercial Rights, Priority Queue, Private Mode, Claude Opus 4.5 |
 
 ---
 

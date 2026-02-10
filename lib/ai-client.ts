@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export type AIProvider = "zhipu" | "openrouter" | "kimi";
+export type AIProvider = "zhipu" | "openrouter" | "kimi" | "google" | "minimax" | "anthropic";
 
 import { env } from "@/lib/env";
 
@@ -27,13 +27,28 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
         model: "kimi-k2.5", // User requested Kimi 2.5
         // Kimi doesn't support specific reasoning params like Zhipu/OpenRouter yet, or uses standard OpenAI
         // Use JSON mode for reliability
-        responseFormat: { type: "json_object" },
+        // responseFormat: { type: "json_object" },
     },
     openrouter: {
         baseURL: "https://openrouter.ai/api/v1",
         apiKey: env.OPENROUTER_API_KEY,
         model: "tngtech/deepseek-r1t2-chimera:free", // Fallback
         reasoningParam: { reasoning: { enabled: true } },
+    },
+    google: {
+        baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
+        apiKey: env.OPENROUTER_API_KEY,
+        model: "google/gemini-3-pro-preview",
+    },
+    minimax: {
+        baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
+        apiKey: env.OPENROUTER_API_KEY,
+        model: "minimax/minimax-m2.1",
+    },
+    anthropic: {
+        baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
+        apiKey: env.OPENROUTER_API_KEY,
+        model: "anthropic/claude-3-opus",
     },
 };
 
@@ -74,6 +89,12 @@ export async function generateArchitectureStream(
             return await callModelStream("openrouter", prompt, mode, currentNodes, currentEdges, quickMode);
         } else if (modelId === "kimi-k2.5" || modelId?.includes("moonshot") || modelId?.includes("kimi")) {
             return await callModelStream("kimi", prompt, mode, currentNodes, currentEdges, quickMode);
+        } else if (modelId?.includes("gemini")) {
+            return await callModelStream("google", prompt, mode, currentNodes, currentEdges, quickMode);
+        } else if (modelId?.includes("minimax")) {
+            return await callModelStream("minimax", prompt, mode, currentNodes, currentEdges, quickMode);
+        } else if (modelId?.includes("claude")) {
+            return await callModelStream("anthropic", prompt, mode, currentNodes, currentEdges, quickMode);
         }
     }
 
