@@ -48,7 +48,10 @@ export function Sidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [plan, setPlan] = useState("free");
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -71,6 +74,18 @@ export function Sidebar() {
   }, []);
 
   const planDetails = getPlanDetails(plan);
+
+  if (!mounted) {
+    return (
+      <aside className={cn(
+        "h-full bg-[#faf9f5] border-r border-brand-charcoal/10 transition-all duration-300 ease-in-out flex flex-col shrink-0 relative font-sans w-72"
+      )}>
+        <div className="flex items-center justify-center h-full">
+          {/* Optional skeleton or just empty until mounted to prevent mismatch */}
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className={cn(

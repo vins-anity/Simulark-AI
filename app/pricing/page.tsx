@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const plans = [
     {
-        name: "Sandbox",
+        name: "Scriptkiddie",
         price: "0",
         desc: "For experimental prototyping.",
         features: ["3 Projects", "Basic Nodes", "Community Support", "Public Exports"],

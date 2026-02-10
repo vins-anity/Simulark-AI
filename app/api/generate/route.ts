@@ -39,13 +39,35 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Rate limiting (10 generations per day for free tier)
-        const { success, limit, reset, remaining } = await ratelimit.limit(user.id);
+        // Parse body early to get model for rate limiting
+        const body = await req.json();
+        const { prompt, model, mode, currentNodes, currentEdges, quickMode } = body;
+
+        // Rate limiting strategy
+        // Kimi: 5 per day
+        // Others (GLM/Default): 10 per day
+        const isKimi = model?.includes("moonshot") || model?.includes("kimi");
+        const limitCount = isKimi ? 5 : (env.FREE_TIER_DAILY_LIMIT || 10);
+        const limitKey = isKimi ? `${user.id}:kimi` : `${user.id}:default`;
+
+        // Create a specific limiter for this request
+        const specificLimiter = new Ratelimit({
+            redis: new Redis({
+                url: env.UPSTASH_REDIS_REST_URL,
+                token: env.UPSTASH_REDIS_REST_TOKEN,
+            }),
+            limiter: Ratelimit.slidingWindow(limitCount, "1 d"),
+            analytics: true,
+            prefix: "@upstash/ratelimit",
+        });
+
+        const { success, limit, reset, remaining } = await specificLimiter.limit(limitKey);
+
         if (!success) {
             const resetDate = new Date(reset);
             return NextResponse.json(
                 {
-                    error: "Daily limit reached. Free tier users have 10 generations per day.",
+                    error: `Daily limit reached for ${isKimi ? 'Kimi' : 'Standard'} model. Limit: ${limitCount}/day.`,
                     resetAt: resetDate.toISOString(),
                 },
                 {
@@ -58,8 +80,6 @@ export async function POST(req: NextRequest) {
                 }
             );
         }
-
-        const { prompt, model, mode, currentNodes, currentEdges, quickMode } = await req.json();
 
         if (!prompt) {
             return NextResponse.json({ error: "Prompt is required" }, { status: 400 });

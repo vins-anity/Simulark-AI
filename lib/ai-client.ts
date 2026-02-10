@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export type AIProvider = "zhipu" | "openrouter";
+export type AIProvider = "zhipu" | "openrouter" | "kimi";
 
 import { env } from "@/lib/env";
 
@@ -8,7 +8,8 @@ interface ProviderConfig {
     baseURL: string;
     apiKey: string | undefined;
     model: string;
-    reasoningParam: Record<string, unknown>;
+    reasoningParam?: Record<string, unknown>; // Optional now
+    responseFormat?: { type: "json_object" }; // Expanded to support JSON mode
 }
 
 const PROVIDERS: Record<AIProvider, ProviderConfig> = {
@@ -19,10 +20,19 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
         // IMPORTANT: Keep thinking enabled but system prompt handles JSON in content
         reasoningParam: { thinking: { type: "enabled" } },
     },
+    kimi: {
+        baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1", // Updated to .ai as per K2.5 docs, but support override
+
+        apiKey: env.KIMI_API_KEY,
+        model: "kimi-k2.5", // User requested Kimi 2.5
+        // Kimi doesn't support specific reasoning params like Zhipu/OpenRouter yet, or uses standard OpenAI
+        // Use JSON mode for reliability
+        responseFormat: { type: "json_object" },
+    },
     openrouter: {
         baseURL: "https://openrouter.ai/api/v1",
         apiKey: env.OPENROUTER_API_KEY,
-        model: "arcee-ai/trinity-large-preview:free", // Fallback
+        model: "tngtech/deepseek-r1t2-chimera:free", // Fallback
         reasoningParam: { reasoning: { enabled: true } },
     },
 };
@@ -60,8 +70,10 @@ export async function generateArchitectureStream(
         // Map modelId to provider
         if (modelId === "glm-4.7-flash") {
             return await callModelStream("zhipu", prompt, mode, currentNodes, currentEdges, quickMode);
-        } else if (modelId === "arcee-ai") {
+        } else if (modelId === "deepseek-ai") {
             return await callModelStream("openrouter", prompt, mode, currentNodes, currentEdges, quickMode);
+        } else if (modelId === "kimi-k2.5" || modelId?.includes("moonshot") || modelId?.includes("kimi")) {
+            return await callModelStream("kimi", prompt, mode, currentNodes, currentEdges, quickMode);
         }
     }
 
@@ -261,7 +273,8 @@ Use real tech IDs: nextjs, react, nodejs, postgres, redis, supabase, vercel, aws
         ],
         stream: true,
         // @ts-ignore - provider specific params
-        ...config.reasoningParam
+        ...config.reasoningParam,
+        response_format: config.responseFormat,
     });
 }
 

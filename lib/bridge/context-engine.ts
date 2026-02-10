@@ -30,7 +30,7 @@ ${graph.edges.map((e) => `- ${e.source} -> ${e.target} [${e.data?.protocol || "h
 }
 
 export function generateCursorRules(graph: ArchitectureGraph): string {
-  const techStack = "Next.js 15, Supabase, Tailwind v4, React Flow";
+  const techStack = "Next.js 16, Supabase, Tailwind v4, React Flow";
   const dbNodes = graph.nodes
     .filter((n) => n.data.serviceType === "database")
     .map((n) => n.data.label)

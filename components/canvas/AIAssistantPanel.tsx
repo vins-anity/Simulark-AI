@@ -105,7 +105,7 @@ export function AIAssistantPanel({
   // Settings / Preferences
   const [cloudProvider, setCloudProvider] = useState("Generic");
   const [model, setModelState] = useState(
-    (initialMetadata?.model as string) || "glm-4.7-flash"
+    (initialMetadata?.model as string) || "kimi-k2.5"
   );
   const [quickMode, setQuickMode] = useState(false); // Fast generation with lean prompt
 
@@ -149,16 +149,12 @@ export function AIAssistantPanel({
 
   // Auto-generate architecture when initialPrompt is provided (from dashboard)
   useEffect(() => {
-    if (initialPrompt && !isGenerating && messages.length === 0) {
-      // Set the input value and trigger generation
-      setInputValue(initialPrompt);
-      // Trigger submit programmatically
-      const form = document.getElementById('ai-prompt-form');
-      if (form) {
-        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      }
+    // Only trigger if we have a prompt, haven't started generating, and have no messages yet
+    // We also check if we're already loading chats to avoid race conditions with chat creation
+    if (initialPrompt && !isGenerating && messages.length === 0 && !isLoadingChats) {
+      processMessage(initialPrompt);
     }
-  }, [initialPrompt, isGenerating, messages.length]);
+  }, [initialPrompt, isGenerating, messages.length, isLoadingChats]);
 
   const loadUserPreferences = async () => {
     const supabase = createBrowserClient(
@@ -336,14 +332,13 @@ This architecture separates concerns across dedicated service layers, enabling i
 `;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isGenerating) return;
+  const processMessage = async (content: string) => {
+    if (!content.trim() || isGenerating) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: inputValue,
+      content: content,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -351,14 +346,18 @@ This architecture separates concerns across dedicated service layers, enabling i
     setIsGenerating(true);
 
     // Save user message to database
-    const defaultChatResult = await getOrCreateDefaultChat(projectId);
-    if (defaultChatResult.error || !defaultChatResult.chat) {
-      toast.error("Failed to retrieve chat session");
-      setIsGenerating(false);
-      return;
+    let chatId = currentChatId;
+    if (!chatId) {
+      const defaultChatResult = await getOrCreateDefaultChat(projectId);
+      if (defaultChatResult.error || !defaultChatResult.chat) {
+        toast.error("Failed to retrieve chat session");
+        setIsGenerating(false);
+        return;
+      }
+      chatId = defaultChatResult.chat.id;
+      setCurrentChatId(chatId);
     }
-    const chatId = defaultChatResult.chat.id;
-    setCurrentChatId(chatId);
+
     await saveMessage(chatId, userMessage);
 
     try {
@@ -434,8 +433,6 @@ This architecture separates concerns across dedicated service layers, enabling i
         }
       }
 
-      // Final buffer flush logic... (same as before)
-
       // Construct Final Message
       let finalContent = accumulatedContent;
 
@@ -465,11 +462,17 @@ This architecture separates concerns across dedicated service layers, enabling i
       await saveMessage(chatId, finalAiMessage);
 
     } catch (err: any) {
-      // ... error handling
       console.error(err);
+      toast.error("Generation failed");
+      setMessages(prev => prev.slice(0, -1)); // Remove the failed placeholder? Or show error state?
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await processMessage(inputValue);
   };
 
   const currentChat = chats.find(c => c.id === currentChatId);
@@ -642,8 +645,9 @@ This architecture separates concerns across dedicated service layers, enabling i
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-brand-charcoal/20 shadow-xl">
+                    <SelectItem value="kimi-k2.5" className="text-xs font-mono">Kimi k2.5 (Free)</SelectItem>
                     <SelectItem value="glm-4.7-flash" className="text-xs font-mono">GLM-4.7-Flash (Free)</SelectItem>
-                    <SelectItem value="arcee-ai" className="text-xs font-mono">Arcee-AI (Free)</SelectItem>
+                    <SelectItem value="deepseek-ai" className="text-xs font-mono">Deepseek (Free)</SelectItem>
                     <SelectItem value="gemini-3.0-pro" className="text-xs font-mono opacity-50 cursor-not-allowed">
                       Gemini-3.0-Pro 🔒
                     </SelectItem>

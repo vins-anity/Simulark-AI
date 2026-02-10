@@ -5,10 +5,13 @@ export const env = createEnv({
   server: {
     // AI Providers
     ZHIPU_API_KEY: pipe(string(), minLength(1)),
+    KIMI_API_KEY: optional(string()), // Optional to not break dev if missing immediately
+    KIMI_BASE_URL: optional(string()), // Support for .cn endpoint
     OPENROUTER_API_KEY: optional(string()),
 
     // Supabase
     SUPABASE_SERVICE_ROLE_KEY: optional(string()),
+
 
     // Upstash Redis
     UPSTASH_REDIS_REST_URL: pipe(string(), minLength(1)),
@@ -23,6 +26,8 @@ export const env = createEnv({
   },
   runtimeEnv: {
     ZHIPU_API_KEY: process.env.ZHIPU_API_KEY,
+    KIMI_API_KEY: process.env.KIMI_API_KEY,
+    KIMI_BASE_URL: process.env.KIMI_BASE_URL,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,

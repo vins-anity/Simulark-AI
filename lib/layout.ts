@@ -44,7 +44,7 @@ export function applyLayout(
             ranksep: rankSep,
         });
 
-        // IMPORTANT: This is required for Dagre to initialize edge objects
+        // IMPORTANT: This is required for Dagre to initialize edge objectsl
         // It prevents the "Cannot set properties of undefined (setting 'points')" error
         g.setDefaultEdgeLabel(() => ({}));
 
