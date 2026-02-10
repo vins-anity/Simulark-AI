@@ -1,9 +1,28 @@
 "use client";
 
-import { Box, Filter, Plus, Search, ArrowRight, Wand2, Terminal, Cpu, Layout, Activity, ChevronLeft, ChevronRight, Copy, Sparkles } from "lucide-react";
+import {
+  Box,
+  Filter,
+  Plus,
+  Search,
+  ArrowRight,
+  Wand2,
+  Terminal,
+  Cpu,
+  Layout,
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getUserProjects, createProject, createProjectFromTemplate } from "@/actions/projects";
+import {
+  getUserProjects,
+  createProject,
+  createProjectFromTemplate,
+} from "@/actions/projects";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import type { Project } from "@/lib/schema/graph";
 import { Button } from "@/components/ui/button";
@@ -23,11 +42,13 @@ const PROMPT_EXAMPLES = [
   "Event-driven architecture for a fintech platform using EventBridge",
   "Decentralized storage system with IPFS and Ethereum integration",
   "Scalable video streaming backend with transcoding workers",
-  "AI-powered supply chain optimizer with forecasting models"
+  "AI-powered supply chain optimizer with forecasting models",
 ];
 
 export default function DashboardPage() {
-  const [projects, setProjects] = useState<(Project & { updated_at?: string })[] | null>(null);
+  const [projects, setProjects] = useState<
+    (Project & { updated_at?: string })[] | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [prompt, setPrompt] = useState("");
@@ -67,7 +88,8 @@ export default function DashboardPage() {
   };
 
   const handleRandomPrompt = () => {
-    const randomPrompt = PROMPT_EXAMPLES[Math.floor(Math.random() * PROMPT_EXAMPLES.length)];
+    const randomPrompt =
+      PROMPT_EXAMPLES[Math.floor(Math.random() * PROMPT_EXAMPLES.length)];
     setPrompt(randomPrompt);
   };
 
@@ -80,7 +102,10 @@ export default function DashboardPage() {
     try {
       const result = await createProject(prompt.trim());
       if (result.success && result.data) {
-        sessionStorage.setItem(`initial-prompt-${result.data.id}`, prompt.trim());
+        sessionStorage.setItem(
+          `initial-prompt-${result.data.id}`,
+          prompt.trim(),
+        );
         router.push(`/projects/${result.data.id}`);
       } else {
         toast.error(result.error || "Failed to create project");
@@ -109,7 +134,6 @@ export default function DashboardPage() {
     }
   };
 
-
   const totalPages = Math.ceil(totalProjects / ITEMS_PER_PAGE);
 
   return (
@@ -117,7 +141,6 @@ export default function DashboardPage() {
       {/* Mission Control - Centered & Independent */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-0 pb-32 pointer-events-none">
         <div className="pointer-events-auto flex flex-col items-center space-y-8 w-full max-w-4xl px-4">
-
           {/* Header Text */}
           <div className="text-center space-y-4 w-full">
             <div className="flex items-center justify-center gap-4">
@@ -149,7 +172,10 @@ export default function DashboardPage() {
               <div className="pl-4 text-brand-charcoal/30 font-mono">
                 <Terminal className="w-5 h-5" />
               </div>
-              <form onSubmit={handleExecute} className="w-full flex items-center">
+              <form
+                onSubmit={handleExecute}
+                className="w-full flex items-center"
+              >
                 <input
                   type="text"
                   value={prompt}
@@ -200,14 +226,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
-
       {/* Active Operations (Projects) - Docked Bottom */}
       <div className="absolute bottom-0 inset-x-0 z-10 bg-gradient-to-t from-[#faf9f5] via-[#faf9f5] to-transparent pt-12 pb-6 px-6">
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="flex items-center justify-between px-2 border-b border-brand-charcoal/5 pb-2">
             <div className="flex items-center gap-2">
               <Layout className="w-3.5 h-3.5 text-brand-orange" />
-              <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-brand-charcoal">Active Operations</h2>
+              <h2 className="text-xs font-mono font-bold uppercase tracking-widest text-brand-charcoal">
+                Active Operations
+              </h2>
               <span className="px-1.5 py-0.5 bg-brand-charcoal/5 rounded-full text-[9px] font-mono text-brand-charcoal/60">
                 {totalProjects}
               </span>
@@ -243,14 +270,15 @@ export default function DashboardPage() {
 
           {error ? (
             <div className="p-4 text-center border border-red-200 bg-red-50/50 rounded-md">
-              <p className="text-red-500 font-mono text-xs">
-                [ERROR]: {error}
-              </p>
+              <p className="text-red-500 font-mono text-xs">[ERROR]: {error}</p>
             </div>
           ) : loading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 border border-brand-charcoal/5 bg-white animate-pulse rounded-md" />
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-32 border border-brand-charcoal/5 bg-white animate-pulse rounded-md"
+                />
               ))}
             </div>
           ) : !projects || projects.length === 0 ? (

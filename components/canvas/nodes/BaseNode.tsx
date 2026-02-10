@@ -4,7 +4,15 @@ import { Handle, type NodeProps, Position, useReactFlow } from "@xyflow/react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useSimulationStore } from "@/lib/store";
-import { Skull, ZapOff, Activity, Cpu, Database, Server, Component } from "lucide-react";
+import {
+  Skull,
+  ZapOff,
+  Activity,
+  Cpu,
+  Database,
+  Server,
+  Component,
+} from "lucide-react";
 import { Icon } from "@iconify/react";
 import { useState, useRef, useEffect } from "react";
 import { NodeContextMenu } from "./NodeContextMenu";
@@ -36,13 +44,17 @@ export function BaseNode({
   label,
   type,
 }: BaseNodeProps) {
-  const { viewMode, chaosMode, nodeStatus, toggleNodeStatus } = useSimulationStore();
+  const { viewMode, chaosMode, nodeStatus, toggleNodeStatus } =
+    useSimulationStore();
   const { setNodes, getNodes } = useReactFlow();
   const nodeLabel = (data?.label as string) || label || "Node";
   const nodeLogo = (data?.logo as string) || null;
   const nodeTechLabel = (data?.techLabel as string) || null;
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editedLabel, setEditedLabel] = useState(nodeLabel);
   const isKilled = nodeStatus[id] === "killed";
@@ -95,8 +107,10 @@ export function BaseNode({
   const handleSaveLabel = () => {
     setNodes((nodes) =>
       nodes.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, label: editedLabel } } : node
-      )
+        node.id === id
+          ? { ...node, data: { ...node.data, label: editedLabel } }
+          : node,
+      ),
     );
     setIsEditingLabel(false);
   };
@@ -131,8 +145,16 @@ export function BaseNode({
   // ============================================
   return (
     <>
-      <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={20}>
-        <NodeProperties id={id} data={data} type={(data?.serviceType as string) || type} />
+      <NodeToolbar
+        position={Position.Bottom}
+        isVisible={selected && isPropertiesOpen}
+        offset={20}
+      >
+        <NodeProperties
+          id={id}
+          data={data}
+          type={(data?.serviceType as string) || type}
+        />
       </NodeToolbar>
       <div
         onPointerDown={handlePointerDown}
@@ -143,15 +165,25 @@ export function BaseNode({
           "w-72 h-auto rounded-lg overflow-hidden bg-white",
           "border border-brand-charcoal/10 shadow-sm",
           !isKilled && "hover:border-brand-orange/40 hover:shadow-md",
-          !isKilled && selected && "ring-2 ring-brand-orange/20 border-brand-orange shadow-brand-orange/10",
+          !isKilled &&
+            selected &&
+            "ring-2 ring-brand-orange/20 border-brand-orange shadow-brand-orange/10",
           chaosMode && !isKilled && "cursor-crosshair hover:bg-red-500/10",
           isKilled && "bg-red-50 border-red-200 grayscale opacity-80",
-          className
+          className,
         )}
       >
         {/* Handles for edges - Transparent but functional */}
-        <Handle type="target" position={Position.Top} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
-        <Handle type="source" position={Position.Bottom} className="opacity-0 w-full h-4 border-0 !bg-transparent z-50" />
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="opacity-0 w-full h-4 border-0 !bg-transparent z-50"
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="opacity-0 w-full h-4 border-0 !bg-transparent z-50"
+        />
 
         {/* Top Resize Handle Visual */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
@@ -202,7 +234,10 @@ export function BaseNode({
 
               {/* Node Type Badge - Below Title */}
               <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-[10px] font-mono uppercase tracking-wider bg-brand-charcoal/5 text-brand-charcoal/60 w-fit">
-                {(data?.serviceType as string) || (data?.tier as string) || type || "SERVICE"}
+                {(data?.serviceType as string) ||
+                  (data?.tier as string) ||
+                  type ||
+                  "SERVICE"}
               </span>
             </div>
           </div>

@@ -35,24 +35,31 @@ function WorkstationHeader({
   onToggleTerminal,
   onExport,
   onExportSkill,
-  onAutolayout // Renamed from onAutofix
+  onAutolayout, // Renamed from onAutofix
 }: {
-  project: Project | null,
-  saving: boolean,
-  isTerminalOpen?: boolean,
-  onToggleTerminal?: () => void,
-  onExport: (format: 'mermaid' | 'png' | 'pdf' | 'svg') => void,
-  onExportSkill: () => void,
-  onAutolayout: (direction: "DOWN" | "RIGHT") => void
+  project: Project | null;
+  saving: boolean;
+  isTerminalOpen?: boolean;
+  onToggleTerminal?: () => void;
+  onExport: (format: "mermaid" | "png" | "pdf" | "svg") => void;
+  onExportSkill: () => void;
+  onAutolayout: (direction: "DOWN" | "RIGHT") => void;
 }) {
   const { chaosMode, setChaosMode } = useSimulationStore();
-  if (!project) return <div className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5]" />;
+  if (!project)
+    return (
+      <div className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5]" />
+    );
 
   return (
     <header className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5] flex items-center justify-between px-4 shrink-0 z-20 relative">
       <div className="flex items-center gap-4">
         {/* Navigation */}
-        <Link href="/dashboard" className="text-brand-charcoal/40 hover:text-brand-charcoal transition-colors p-1" title="Back to Dashboard">
+        <Link
+          href="/dashboard"
+          className="text-brand-charcoal/40 hover:text-brand-charcoal transition-colors p-1"
+          title="Back to Dashboard"
+        >
           <Icon icon="lucide:arrow-left" className="w-4 h-4" />
         </Link>
         <div className="h-4 w-px bg-brand-charcoal/10" />
@@ -60,8 +67,13 @@ function WorkstationHeader({
         {/* Project Identity */}
         <div className="flex items-center gap-2 mr-4">
           <Icon icon="lucide:box" className="w-4 h-4 text-brand-orange" />
-          <span className="font-poppins font-bold text-sm text-brand-charcoal tracking-tight">{project.name}</span>
-          <Badge variant="outline" className="hidden lg:flex rounded-none border-brand-charcoal/20 text-[9px] h-5 px-1 font-mono uppercase tracking-widest text-brand-charcoal/60 bg-transparent">
+          <span className="font-poppins font-bold text-sm text-brand-charcoal tracking-tight">
+            {project.name}
+          </span>
+          <Badge
+            variant="outline"
+            className="hidden lg:flex rounded-none border-brand-charcoal/20 text-[9px] h-5 px-1 font-mono uppercase tracking-widest text-brand-charcoal/60 bg-transparent"
+          >
             Draft
           </Badge>
         </div>
@@ -71,27 +83,53 @@ function WorkstationHeader({
           {/* File Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
+              >
                 File
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
-              <DropdownMenuItem onClick={() => { }} className="cursor-not-allowed opacity-50">
+            <DropdownMenuContent
+              align="start"
+              className="w-48 font-mono text-xs"
+            >
+              <DropdownMenuItem
+                onClick={() => {}}
+                className="cursor-not-allowed opacity-50"
+              >
                 New Project...
               </DropdownMenuItem>
               <div className="h-px bg-slate-100 my-1" />
-              <DropdownMenuItem onClick={onExportSkill} className="cursor-pointer">
-                <Icon icon="lucide:file-code" className="w-3.5 h-3.5 mr-2 text-brand-orange" /> Export as Skill
+              <DropdownMenuItem
+                onClick={onExportSkill}
+                className="cursor-pointer"
+              >
+                <Icon
+                  icon="lucide:file-code"
+                  className="w-3.5 h-3.5 mr-2 text-brand-orange"
+                />{" "}
+                Export as Skill
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExport('mermaid')} className="cursor-pointer">
-                <Icon icon="lucide:download" className="w-3.5 h-3.5 mr-2" /> Export Mermaid
+              <DropdownMenuItem
+                onClick={() => onExport("mermaid")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:download" className="w-3.5 h-3.5 mr-2" />{" "}
+                Export Mermaid
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExport('png')} className="cursor-pointer">
-                <Icon icon="lucide:image" className="w-3.5 h-3.5 mr-2" /> Export Image (PNG)
+              <DropdownMenuItem
+                onClick={() => onExport("png")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:image" className="w-3.5 h-3.5 mr-2" /> Export
+                Image (PNG)
               </DropdownMenuItem>
               <div className="h-px bg-slate-100 my-1" />
               <DropdownMenuItem className="cursor-pointer font-bold text-brand-orange">
-                <Icon icon="lucide:save" className="w-3.5 h-3.5 mr-2" /> Save Version
+                <Icon icon="lucide:save" className="w-3.5 h-3.5 mr-2" /> Save
+                Version
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -99,16 +137,34 @@ function WorkstationHeader({
           {/* View Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
+              >
                 View
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
-              <DropdownMenuItem onClick={onToggleTerminal} className="cursor-pointer">
-                <Icon icon={isTerminalOpen ? "lucide:check" : "lucide:terminal-square"} className="w-3.5 h-3.5 mr-2" />
+            <DropdownMenuContent
+              align="start"
+              className="w-48 font-mono text-xs"
+            >
+              <DropdownMenuItem
+                onClick={onToggleTerminal}
+                className="cursor-pointer"
+              >
+                <Icon
+                  icon={
+                    isTerminalOpen ? "lucide:check" : "lucide:terminal-square"
+                  }
+                  className="w-3.5 h-3.5 mr-2"
+                />
                 Terminal Panel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { }} className="cursor-not-allowed opacity-50">
+              <DropdownMenuItem
+                onClick={() => {}}
+                className="cursor-not-allowed opacity-50"
+              >
                 Toggle Grid
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -117,16 +173,31 @@ function WorkstationHeader({
           {/* Layout Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
+              >
                 Layout
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
-              <DropdownMenuItem onClick={() => onAutolayout('DOWN')} className="cursor-pointer">
-                <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" /> Auto-Layout (Vertical)
+            <DropdownMenuContent
+              align="start"
+              className="w-48 font-mono text-xs"
+            >
+              <DropdownMenuItem
+                onClick={() => onAutolayout("DOWN")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" />{" "}
+                Auto-Layout (Vertical)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onAutolayout('RIGHT')} className="cursor-pointer">
-                <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" /> Auto-Layout (Horizontal)
+              <DropdownMenuItem
+                onClick={() => onAutolayout("RIGHT")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" />{" "}
+                Auto-Layout (Horizontal)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -134,13 +205,29 @@ function WorkstationHeader({
           {/* Simulation Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
+              >
                 Simulation
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48 font-mono text-xs">
-              <DropdownMenuItem onClick={() => setChaosMode(!chaosMode)} className="cursor-pointer">
-                <Icon icon={chaosMode ? "lucide:check" : "lucide:zap"} className={cn("w-3.5 h-3.5 mr-2", chaosMode && "text-red-500")} />
+            <DropdownMenuContent
+              align="start"
+              className="w-48 font-mono text-xs"
+            >
+              <DropdownMenuItem
+                onClick={() => setChaosMode(!chaosMode)}
+                className="cursor-pointer"
+              >
+                <Icon
+                  icon={chaosMode ? "lucide:check" : "lucide:zap"}
+                  className={cn(
+                    "w-3.5 h-3.5 mr-2",
+                    chaosMode && "text-red-500",
+                  )}
+                />
                 Chaos Mode {chaosMode ? "(Active)" : ""}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -151,7 +238,12 @@ function WorkstationHeader({
       <div className="flex items-center gap-4">
         <div className="hidden lg:flex items-center gap-2 mr-2 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
           <div className="flex items-center gap-1.5 px-2 py-1 bg-brand-charcoal/5 rounded-sm">
-            <span className={cn("w-1.5 h-1.5 rounded-full", saving ? "bg-amber-400 animate-pulse" : "bg-green-400")} />
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                saving ? "bg-amber-400 animate-pulse" : "bg-green-400",
+              )}
+            />
             {saving ? "SAVING..." : "SYSTEM ONLINE"}
           </div>
           <span>Lat: 12ms</span>
@@ -192,10 +284,14 @@ function ToolRail() {
           { icon: "lucide:hand", label: "Pan" },
           { icon: "lucide:crop", label: "Slice" },
         ].map((tool, i) => (
-          <button key={i} className={cn(
-            "w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal",
-            i === 0 && "bg-brand-charcoal/10 text-brand-charcoal"
-          )} title={tool.label}>
+          <button
+            key={i}
+            className={cn(
+              "w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal",
+              i === 0 && "bg-brand-charcoal/10 text-brand-charcoal",
+            )}
+            title={tool.label}
+          >
             <Icon icon={tool.icon} className="w-4 h-4" />
           </button>
         ))}
@@ -209,19 +305,26 @@ function ToolRail() {
           { icon: "lucide:type", label: "Text" },
           { icon: "lucide:image", label: "Image" },
         ].map((tool, i) => (
-          <button key={i} className="w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal" title={tool.label}>
+          <button
+            key={i}
+            className="w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal"
+            title={tool.label}
+          >
             <Icon icon={tool.icon} className="w-4 h-4" />
           </button>
         ))}
       </div>
 
       <div className="mt-auto flex flex-col gap-2">
-        <button className="w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal" title="Settings">
+        <button
+          className="w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal"
+          title="Settings"
+        >
           <Icon icon="lucide:settings-2" className="w-4 h-4" />
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 interface ProjectPageProps {
@@ -230,7 +333,9 @@ interface ProjectPageProps {
   }>;
 }
 
-export default function ProjectPage({ params: paramsPromise }: ProjectPageProps) {
+export default function ProjectPage({
+  params: paramsPromise,
+}: ProjectPageProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string | null>(null);
@@ -277,7 +382,7 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
     flowEditorRef.current?.autoLayout(direction);
   };
 
-  const handleExport = (format: 'mermaid' | 'png' | 'pdf' | 'svg') => {
+  const handleExport = (format: "mermaid" | "png" | "pdf" | "svg") => {
     flowEditorRef.current?.exportGraph(format);
   };
 
@@ -289,10 +394,10 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
       const nodes = flowEditorRef.current.nodes;
       const edges = flowEditorRef.current.edges;
 
-      const response = await fetch('/api/export-skill', {
-        method: 'POST',
+      const response = await fetch("/api/export-skill", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           projectName: project.name,
@@ -303,32 +408,36 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate skill');
+        throw new Error("Failed to generate skill");
       }
 
       // Download the ZIP file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `${project.name.toLowerCase().replace(/\s+/g, '-')}-skill.zip`;
+      a.download = `${project.name.toLowerCase().replace(/\s+/g, "-")}-skill.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error exporting skill:', error);
-      alert('Failed to export skill. Please try again.');
+      console.error("Error exporting skill:", error);
+      alert("Failed to export skill. Please try again.");
     }
   };
-
 
   if (loading) {
     return (
       <div className="h-screen w-screen bg-[#faf9f5] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Icon icon="lucide:loader-2" className="w-8 h-8 animate-spin text-brand-charcoal/20" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40">Initializing Workstation...</span>
+          <Icon
+            icon="lucide:loader-2"
+            className="w-8 h-8 animate-spin text-brand-charcoal/20"
+          />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40">
+            Initializing Workstation...
+          </span>
         </div>
       </div>
     );
@@ -367,9 +476,15 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
 
             {/* Overlay Canvas Controls */}
             <div className="absolute bottom-6 left-6 p-1 bg-white border border-brand-charcoal/10 shadow-sm flex items-center gap-1 rounded-sm z-10">
-              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"><Icon icon="lucide:minus" className="w-4 h-4" /></button>
-              <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">100%</span>
-              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"><Icon icon="lucide:plus" className="w-4 h-4" /></button>
+              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60">
+                <Icon icon="lucide:minus" className="w-4 h-4" />
+              </button>
+              <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">
+                100%
+              </span>
+              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60">
+                <Icon icon="lucide:plus" className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -377,7 +492,9 @@ export default function ProjectPage({ params: paramsPromise }: ProjectPageProps)
           <div
             className={cn(
               "bg-white border-l border-brand-charcoal/10 flex flex-col transition-all duration-300 ease-in-out absolute right-0 top-0 bottom-0 shadow-xl z-20",
-              isTerminalOpen ? "w-[400px] translate-x-0" : "w-[400px] translate-x-full"
+              isTerminalOpen
+                ? "w-[400px] translate-x-0"
+                : "w-[400px] translate-x-full",
             )}
           >
             <AIAssistantPanel

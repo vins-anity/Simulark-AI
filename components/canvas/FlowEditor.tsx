@@ -102,11 +102,22 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
 
           // Try async layout first, fallback to sync on error
           try {
-            const { nodes: layoutNodes } = await applyLayoutAsync(currentNodes, currentEdges, { direction: layoutDirection });
+            const { nodes: layoutNodes } = await applyLayoutAsync(
+              currentNodes,
+              currentEdges,
+              { direction: layoutDirection },
+            );
             setNodes(layoutNodes);
           } catch (asyncError) {
-            console.warn("[FlowEditor] Async layout failed, using sync fallback:", asyncError);
-            const { nodes: syncNodes } = applyLayout(currentNodes, currentEdges, { direction: layoutDirection });
+            console.warn(
+              "[FlowEditor] Async layout failed, using sync fallback:",
+              asyncError,
+            );
+            const { nodes: syncNodes } = applyLayout(
+              currentNodes,
+              currentEdges,
+              { direction: layoutDirection },
+            );
             setNodes(syncNodes);
           }
 
@@ -118,58 +129,78 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
             const currentNodes = getNodes();
             const currentEdges = getEdges();
             const layoutDirection = direction === "DOWN" ? "TB" : "LR";
-            const { nodes: fallbackNodes } = applyLayout(currentNodes, currentEdges, { direction: layoutDirection });
+            const { nodes: fallbackNodes } = applyLayout(
+              currentNodes,
+              currentEdges,
+              { direction: layoutDirection },
+            );
             setNodes(fallbackNodes);
             setTimeout(() => fitView({ duration: 500 }), 100);
           } catch (fallbackError) {
-            console.error("[FlowEditor] All layout methods failed:", fallbackError);
+            console.error(
+              "[FlowEditor] All layout methods failed:",
+              fallbackError,
+            );
           }
         }
       },
-      get nodes() { return getNodes(); },
-      get edges() { return getEdges(); },
-      exportGraph: async (format: 'mermaid' | 'png' | 'pdf' | 'svg') => {
-        if (format === 'mermaid') {
+      get nodes() {
+        return getNodes();
+      },
+      get edges() {
+        return getEdges();
+      },
+      exportGraph: async (format: "mermaid" | "png" | "pdf" | "svg") => {
+        if (format === "mermaid") {
           const mermaidCode = generateMermaidCode(getNodes(), getEdges());
           navigator.clipboard.writeText(mermaidCode);
-          toast.success('Mermaid code copied to clipboard!');
+          toast.success("Mermaid code copied to clipboard!");
         } else {
-          const element = document.querySelector('.react-flow') as HTMLElement;
+          const element = document.querySelector(".react-flow") as HTMLElement;
           if (!element) return;
 
           const { toPng, toSvg } = await import("html-to-image");
 
           switch (format) {
-            case 'png': {
-              const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: '#ffffff' });
-              const link = document.createElement('a');
+            case "png": {
+              const dataUrl = await toPng(element, {
+                cacheBust: true,
+                backgroundColor: "#ffffff",
+              });
+              const link = document.createElement("a");
               link.download = `architecture-${Date.now()}.png`;
               link.href = dataUrl;
               link.click();
               break;
             }
-            case 'svg': {
-              const dataUrl = await toSvg(element, { cacheBust: true, backgroundColor: '#ffffff' });
-              const link = document.createElement('a');
+            case "svg": {
+              const dataUrl = await toSvg(element, {
+                cacheBust: true,
+                backgroundColor: "#ffffff",
+              });
+              const link = document.createElement("a");
               link.download = `architecture-${Date.now()}.svg`;
               link.href = dataUrl;
               link.click();
               break;
             }
-            case 'pdf': {
+            case "pdf": {
               const { jsPDF } = await import("jspdf");
-              const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: '#ffffff' });
-              const pdf = new jsPDF({ orientation: 'landscape' });
+              const dataUrl = await toPng(element, {
+                cacheBust: true,
+                backgroundColor: "#ffffff",
+              });
+              const pdf = new jsPDF({ orientation: "landscape" });
               const imgProps = pdf.getImageProperties(dataUrl);
               const pdfWidth = pdf.internal.pageSize.getWidth();
               const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-              pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+              pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
               pdf.save(`architecture-${Date.now()}.pdf`);
               break;
             }
           }
         }
-      }
+      },
     }));
 
     const nodeTypes = useMemo(
@@ -187,13 +218,16 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         storage: StorageNode,
         ai: AINode,
       }),
-      []
+      [],
     );
 
-    const edgeTypes = useMemo(() => ({
-      default: SimulationEdge,
-      simulation: SimulationEdge
-    }), []);
+    const edgeTypes = useMemo(
+      () => ({
+        default: SimulationEdge,
+        simulation: SimulationEdge,
+      }),
+      [],
+    );
 
     const augmentedEdges = useMemo(() => {
       const fanIn = new Map<string, number>();
@@ -204,7 +238,11 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       return edges.map((edge) => {
         const sourceFanIn = fanIn.get(edge.source) || 0;
         if (sourceFanIn > 2) {
-          return { ...edge, data: { ...edge.data, congestion: true }, animated: true };
+          return {
+            ...edge,
+            data: { ...edge.data, congestion: true },
+            animated: true,
+          };
         }
         return edge;
       });
@@ -217,13 +255,19 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       [setEdges],
     );
 
-    const selectedNodes = useMemo(() =>
-      nodes.filter((n): n is any & { selected: true } => n.selected === true),
-      [nodes]
+    const selectedNodes = useMemo(
+      () =>
+        nodes.filter((n): n is any & { selected: true } => n.selected === true),
+      [nodes],
     );
 
     return (
-      <div className={cn("h-full w-full relative group transition-colors duration-500 font-sans", chaosMode && "bg-black/90")}>
+      <div
+        className={cn(
+          "h-full w-full relative group transition-colors duration-500 font-sans",
+          chaosMode && "bg-black/90",
+        )}
+      >
         <ReactFlow
           nodes={nodes}
           edges={augmentedEdges}
@@ -246,13 +290,18 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           {chaosMode && (
             <Panel position="bottom-center" className="mb-8">
               <div className="bg-red-950/90 text-red-100 px-6 py-2 border-t-2 border-red-500 text-xs font-mono uppercase tracking-widest shadow-2xl flex items-center gap-3">
-                <AlertTriangle size={14} className="text-red-500 animate-bounce" />
-                <span>Failure Simulation Active // Click nodes to inject faults</span>
+                <AlertTriangle
+                  size={14}
+                  className="text-red-500 animate-bounce"
+                />
+                <span>
+                  Failure Simulation Active // Click nodes to inject faults
+                </span>
               </div>
             </Panel>
           )}
 
-          {selectedNodes.map(node => (
+          {selectedNodes.map((node) => (
             <Panel key={node.id} position="top-right" className="mr-4 mt-16">
               <NodeProperties id={node.id} data={node.data} type={node.type} />
             </Panel>
@@ -268,17 +317,19 @@ FlowEditorInner.displayName = "FlowEditorInner";
 export interface FlowEditorRef {
   updateGraph: (data: { nodes: any[]; edges: any[] }) => void;
   autoLayout: (direction?: "DOWN" | "RIGHT") => Promise<void>;
-  exportGraph: (format: 'mermaid' | 'png' | 'pdf' | 'svg') => Promise<void>;
+  exportGraph: (format: "mermaid" | "png" | "pdf" | "svg") => Promise<void>;
   nodes: any[];
   edges: any[];
 }
 
-export const FlowEditor = forwardRef<FlowEditorRef, FlowEditorProps>((props, ref) => {
-  return (
-    <ReactFlowProvider>
-      <FlowEditorInner {...props} ref={ref} />
-    </ReactFlowProvider>
-  );
-});
+export const FlowEditor = forwardRef<FlowEditorRef, FlowEditorProps>(
+  (props, ref) => {
+    return (
+      <ReactFlowProvider>
+        <FlowEditorInner {...props} ref={ref} />
+      </ReactFlowProvider>
+    );
+  },
+);
 
 FlowEditor.displayName = "FlowEditor";

@@ -1,34 +1,45 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+import { createBrowserClient } from "@supabase/ssr";
 import {
-  Send,
   Bot,
-  User,
-  Loader2,
-  Minimize2,
-  Maximize2,
-  Trash2,
-  Plus,
-  MessageSquare,
-  MoreVertical,
-  Edit2,
-  X,
+  Building2,
   ChevronDown,
   ChevronRight,
-  Rocket,
-  Building2,
-  Terminal,
-  Zap,
-  WandSparkles,
   Download,
+  Edit2,
+  Link as LinkIcon,
+  Loader2,
+  Lock,
+  Maximize2,
+  MessageSquare,
+  Minimize2,
+  MoreVertical,
+  Paperclip,
+  Plus,
+  Rocket,
+  Send,
+  Terminal,
+  Trash2,
+  User,
+  WandSparkles,
+  X,
+  Zap,
 } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
-import { cn } from "@/lib/utils";
-import { ThinkingPanel } from "./ThinkingPanel";
-import { LoadingState } from "./LoadingState";
-import { createBrowserClient } from "@supabase/ssr";
-import { Icon } from "@iconify/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
+import {
+  addMessage,
+  addMessages as addMessagesAction,
+  createChat as createChatAction,
+  deleteChat as deleteChatAction,
+  getChatWithMessages,
+  getOrCreateDefaultChat,
+  getProjectChats,
+  updateChatTitle as updateChatTitleAction,
+} from "@/actions/chats";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,9 +55,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Paperclip, Link as LinkIcon, Lock } from "lucide-react";
-import { getProjectChats, createChat as createChatAction, updateChatTitle as updateChatTitleAction, deleteChat as deleteChatAction, addMessage, addMessages as addMessagesAction, getChatWithMessages, getOrCreateDefaultChat } from "@/actions/chats";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { LoadingState } from "./LoadingState";
+import { ThinkingPanel } from "./ThinkingPanel";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -98,14 +109,16 @@ export function AIAssistantPanel({
   const [editingTitle, setEditingTitle] = useState("");
 
   // Load initial settings or default
-  const [chatMode, setChatModeState] = useState<"default" | "startup" | "corporate">(
-    (initialMetadata?.mode as "default" | "startup" | "corporate") || "default"
+  const [chatMode, setChatModeState] = useState<
+    "default" | "startup" | "corporate"
+  >(
+    (initialMetadata?.mode as "default" | "startup" | "corporate") || "default",
   );
 
   // Settings / Preferences
   const [cloudProvider, setCloudProvider] = useState("Generic");
   const [model, setModelState] = useState(
-    (initialMetadata?.model as string) || "kimi-k2.5"
+    (initialMetadata?.model as string) || "glm-4.7-flash",
   );
   const [quickMode, setQuickMode] = useState(false); // Fast generation with lean prompt
 
@@ -121,7 +134,9 @@ export function AIAssistantPanel({
   const setModel = (newModel: string) => {
     setModelState(newModel);
     import("@/actions/projects").then(({ saveProject }) => {
-      saveProject(projectId, { metadata: { ...initialMetadata, mode: chatMode, model: newModel } });
+      saveProject(projectId, {
+        metadata: { ...initialMetadata, mode: chatMode, model: newModel },
+      });
     });
   };
 
@@ -151,7 +166,12 @@ export function AIAssistantPanel({
   useEffect(() => {
     // Only trigger if we have a prompt, haven't started generating, and have no messages yet
     // We also check if we're already loading chats to avoid race conditions with chat creation
-    if (initialPrompt && !isGenerating && messages.length === 0 && !isLoadingChats) {
+    if (
+      initialPrompt &&
+      !isGenerating &&
+      messages.length === 0 &&
+      !isLoadingChats
+    ) {
       processMessage(initialPrompt);
     }
   }, [initialPrompt, isGenerating, messages.length, isLoadingChats]);
@@ -159,14 +179,16 @@ export function AIAssistantPanel({
   const loadUserPreferences = async () => {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       const { data } = await supabase
-        .from('users')
-        .select('preferences')
-        .eq('user_id', user.id)
+        .from("users")
+        .select("preferences")
+        .eq("user_id", user.id)
         .single();
       if (data?.preferences?.cloudProvider) {
         setCloudProvider(data.preferences.cloudProvider);
@@ -216,7 +238,10 @@ export function AIAssistantPanel({
     }
   };
 
-  const createNewChat = async (title: string = `Terminal ${chats.length + 1} `, select: boolean = true) => {
+  const createNewChat = async (
+    title: string = `Terminal ${chats.length + 1} `,
+    select: boolean = true,
+  ) => {
     try {
       const { chat, error } = await createChatAction(projectId, title);
       if (error || !chat) {
@@ -224,7 +249,7 @@ export function AIAssistantPanel({
         return;
       }
 
-      setChats(prev => [chat, ...prev]);
+      setChats((prev) => [chat, ...prev]);
       if (select) {
         setCurrentChatId(chat.id);
         setMessages([]);
@@ -243,9 +268,9 @@ export function AIAssistantPanel({
         return;
       }
 
-      setChats(prev => prev.filter(c => c.id !== chatId));
+      setChats((prev) => prev.filter((c) => c.id !== chatId));
       if (currentChatId === chatId) {
-        const remaining = chats.filter(c => c.id !== chatId);
+        const remaining = chats.filter((c) => c.id !== chatId);
         if (remaining.length > 0) {
           setCurrentChatId(remaining[0].id);
         } else {
@@ -264,9 +289,9 @@ export function AIAssistantPanel({
         toast.error("Failed to rename terminal");
         return;
       }
-      setChats(prev => prev.map(c =>
-        c.id === chatId ? { ...c, title: newTitle } : c
-      ));
+      setChats((prev) =>
+        prev.map((c) => (c.id === chatId ? { ...c, title: newTitle } : c)),
+      );
     } catch (error) {
       console.error("Error updating chat title:", error);
     }
@@ -275,52 +300,80 @@ export function AIAssistantPanel({
 
   const saveMessage = async (chatId: string, message: Message) => {
     try {
-      await addMessage(chatId, message.role, message.content, message.reasoning);
+      await addMessage(
+        chatId,
+        message.role,
+        message.content,
+        message.reasoning,
+      );
     } catch (error) {
       console.error("Error saving message:", error);
     }
   };
 
-
-
-
-
-
-
-
-
   // Helper to generate structured summary (professional, archimyst.com style)
-  const generateArchitectureSummary = (data: { nodes: any[], edges: any[] }) => {
+  const generateArchitectureSummary = (data: {
+    nodes: any[];
+    edges: any[];
+  }) => {
     const nodeCount = data.nodes.length;
     const edgeCount = data.edges.length;
 
     // Group by service type
-    const services = data.nodes.filter(n => n.type === 'service' || n.data?.serviceType === 'service');
-    const dbs = data.nodes.filter(n => n.type === 'database');
-    const queues = data.nodes.filter(n => n.type === 'queue');
-    const others = data.nodes.filter(n => !['service', 'database', 'queue'].includes(n.type || ''));
+    const services = data.nodes.filter(
+      (n) => n.type === "service" || n.data?.serviceType === "service",
+    );
+    const dbs = data.nodes.filter((n) => n.type === "database");
+    const queues = data.nodes.filter((n) => n.type === "queue");
+    const others = data.nodes.filter(
+      (n) => !["service", "database", "queue"].includes(n.type || ""),
+    );
 
     // Extract techs
-    const techs = Array.from(new Set(data.nodes.map(n => n.data?.tech).filter(Boolean)));
+    const techs = Array.from(
+      new Set(data.nodes.map((n) => n.data?.tech).filter(Boolean)),
+    );
 
     // Build component summary
     const componentLines: string[] = [];
-    if (services.length) componentLines.push(`**Services**: ${services.map(n => n.data?.label || n.id).join(', ')}`);
-    if (dbs.length) componentLines.push(`**Data Layer**: ${dbs.map(n => n.data?.label || n.id).join(', ')}`);
-    if (queues.length) componentLines.push(`**Messaging**: ${queues.map(n => n.data?.label || n.id).join(', ')}`);
-    if (others.length) componentLines.push(`**Infrastructure**: ${others.map(n => n.data?.label || n.id).join(', ')}`);
+    if (services.length)
+      componentLines.push(
+        `**Services**: ${services.map((n) => n.data?.label || n.id).join(", ")}`,
+      );
+    if (dbs.length)
+      componentLines.push(
+        `**Data Layer**: ${dbs.map((n) => n.data?.label || n.id).join(", ")}`,
+      );
+    if (queues.length)
+      componentLines.push(
+        `**Messaging**: ${queues.map((n) => n.data?.label || n.id).join(", ")}`,
+      );
+    if (others.length)
+      componentLines.push(
+        `**Infrastructure**: ${others.map((n) => n.data?.label || n.id).join(", ")}`,
+      );
 
     return `### Architecture Blueprint Generated
 
 **System Overview**: ${nodeCount}-node architecture with ${edgeCount} connections.
 
-${componentLines.length > 0 ? componentLines.join('\n\n') : ''}
+${componentLines.length > 0 ? componentLines.join("\n\n") : ""}
 
 | Component Type | Count | Technologies |
 | :--- | :--- | :--- |
-| Services | ${services.length} | ${techs.slice(0, 3).join(', ') || '-'} |
-| Databases | ${dbs.length} | ${dbs.map(n => n.data?.tech).filter(Boolean).join(', ') || '-'} |
-| Queues | ${queues.length} | ${queues.map(n => n.data?.tech).filter(Boolean).join(', ') || '-'} |
+| Services | ${services.length} | ${techs.slice(0, 3).join(", ") || "-"} |
+| Databases | ${dbs.length} | ${
+      dbs
+        .map((n) => n.data?.tech)
+        .filter(Boolean)
+        .join(", ") || "-"
+    } |
+| Queues | ${queues.length} | ${
+      queues
+        .map((n) => n.data?.tech)
+        .filter(Boolean)
+        .join(", ") || "-"
+    } |
 | Others | ${others.length} | - |
 
 This architecture separates concerns across dedicated service layers, enabling independent scaling and simplified maintenance. The data flow follows a clear request-response pattern through the load balancer.
@@ -365,7 +418,13 @@ This architecture separates concerns across dedicated service layers, enabling i
       const aiMsgId = (Date.now() + 1).toString();
       setMessages((prev) => [
         ...prev,
-        { id: aiMsgId, role: "assistant", content: "", isThinking: true, reasoning: "" },
+        {
+          id: aiMsgId,
+          role: "assistant",
+          content: "",
+          isThinking: true,
+          reasoning: "",
+        },
       ]);
 
       let accumulatedContent = "";
@@ -409,20 +468,32 @@ This architecture separates concerns across dedicated service layers, enabling i
             const json = JSON.parse(trimmedLine);
             if (json.type === "reasoning" && json.data) {
               accumulatedReasoning += json.data;
-              setMessages(prev => prev.map(m =>
-                m.id === aiMsgId ? { ...m, reasoning: accumulatedReasoning } : m
-              ));
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === aiMsgId
+                    ? { ...m, reasoning: accumulatedReasoning }
+                    : m,
+                ),
+              );
             } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
               // Show placeholder if content looks like JSON code
-              const isJsonLike = accumulatedContent.trim().startsWith('{') || accumulatedContent.trim().startsWith('```');
-              setMessages(prev => prev.map(m =>
-                m.id === aiMsgId ? {
-                  ...m,
-                  isThinking: false,
-                  content: isJsonLike ? "__LOADING__" : accumulatedContent
-                } : m
-              ));
+              const isJsonLike =
+                accumulatedContent.trim().startsWith("{") ||
+                accumulatedContent.trim().startsWith("```");
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === aiMsgId
+                    ? {
+                        ...m,
+                        isThinking: false,
+                        content: isJsonLike
+                          ? "__LOADING__"
+                          : accumulatedContent,
+                      }
+                    : m,
+                ),
+              );
             } else if (json.type === "result" && json.data) {
               lastGeneratedData = json.data; // Capture data
               onGenerationSuccess(json.data);
@@ -439,10 +510,15 @@ This architecture separates concerns across dedicated service layers, enabling i
       // If we have generated data, prioritize the structured summary logic
       if (lastGeneratedData) {
         finalContent = generateArchitectureSummary(lastGeneratedData);
-      } else if (accumulatedContent.includes('"nodes"') || accumulatedContent.trim().startsWith('{') || accumulatedContent.trim().startsWith('```')) {
+      } else if (
+        accumulatedContent.includes('"nodes"') ||
+        accumulatedContent.trim().startsWith("{") ||
+        accumulatedContent.trim().startsWith("```")
+      ) {
         // Fallback if result type missing but content has JSON/Code
         // This prevents showing the raw verbose JSON
-        finalContent = "I've drafted the architecture. Check the canvas for details.";
+        finalContent =
+          "I've drafted the architecture. Check the canvas for details.";
       } else if (!accumulatedContent) {
         finalContent = "I couldn't generate a response.";
       }
@@ -455,16 +531,19 @@ This architecture separates concerns across dedicated service layers, enabling i
       };
 
       // Update local state to remove thinking flag and set final content
-      setMessages(prev => prev.map(m =>
-        m.id === aiMsgId ? { ...m, isThinking: false, content: finalAiMessage.content } : m
-      ));
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMsgId
+            ? { ...m, isThinking: false, content: finalAiMessage.content }
+            : m,
+        ),
+      );
 
       await saveMessage(chatId, finalAiMessage);
-
     } catch (err: any) {
       console.error(err);
       toast.error("Generation failed");
-      setMessages(prev => prev.slice(0, -1)); // Remove the failed placeholder? Or show error state?
+      setMessages((prev) => prev.slice(0, -1)); // Remove the failed placeholder? Or show error state?
     } finally {
       setIsGenerating(false);
     }
@@ -475,7 +554,7 @@ This architecture separates concerns across dedicated service layers, enabling i
     await processMessage(inputValue);
   };
 
-  const currentChat = chats.find(c => c.id === currentChatId);
+  const currentChat = chats.find((c) => c.id === currentChatId);
 
   return (
     <div className="flex flex-col h-full bg-white font-sans text-sm">
@@ -483,7 +562,9 @@ This architecture separates concerns across dedicated service layers, enabling i
       <div className="h-10 flex items-center justify-between px-3 border-b border-brand-charcoal/10 bg-[#faf9f5]">
         <div className="flex items-center gap-2">
           <Terminal className="w-3.5 h-3.5 text-brand-orange" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">System Terminal</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">
+            System Terminal
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {/* Autofix and Share buttons moved to top header */}
@@ -491,7 +572,14 @@ This architecture separates concerns across dedicated service layers, enabling i
 
           {/* Status Indicator */}
           <div className="flex items-center gap-1">
-            <span className={cn("w-1.5 h-1.5 rounded-full block", isGenerating ? "bg-green-500 animate-pulse" : "bg-brand-charcoal/20")} />
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full block",
+                isGenerating
+                  ? "bg-green-500 animate-pulse"
+                  : "bg-brand-charcoal/20",
+              )}
+            />
             <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/40">
               {isGenerating ? "PROCESSING" : "IDLE"}
             </span>
@@ -500,28 +588,39 @@ This architecture separates concerns across dedicated service layers, enabling i
       </div>
 
       {/* Chat List Select ... (unchanged) */}
-      <div className="border-b border-brand-charcoal/5 px-3 py-2 bg-white flex items-center justify-between group cursor-pointer hover:bg-brand-charcoal/5" onClick={() => setShowChatList(!showChatList)}>
+      <div
+        className="border-b border-brand-charcoal/5 px-3 py-2 bg-white flex items-center justify-between group cursor-pointer hover:bg-brand-charcoal/5"
+        onClick={() => setShowChatList(!showChatList)}
+      >
         <div className="flex items-center gap-2 overflow-hidden">
           <MessageSquare className="w-3.5 h-3.5 text-brand-charcoal/40" />
           <span className="font-mono text-xs font-medium text-brand-charcoal truncate">
             {currentChat?.title || "Select Terminal..."}
           </span>
         </div>
-        <ChevronDown className={cn("w-3 h-3 text-brand-charcoal/40 transition-transform", showChatList && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "w-3 h-3 text-brand-charcoal/40 transition-transform",
+            showChatList && "rotate-180",
+          )}
+        />
       </div>
 
       {showChatList && (
         // ... (keep chat list logic)
         <div className="border-b border-brand-charcoal/10 bg-white max-h-48 overflow-y-auto shadow-inner">
           {isLoadingChats ? (
-            <div className="p-3 text-[10px] font-mono text-brand-charcoal/40">Loading channels...</div>
+            <div className="p-3 text-[10px] font-mono text-brand-charcoal/40">
+              Loading channels...
+            </div>
           ) : (
-            chats.map(chat => (
+            chats.map((chat) => (
               <div
                 key={chat.id}
                 className={cn(
                   "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white transition-colors group/item",
-                  currentChatId === chat.id && "bg-white border-l-2 border-brand-orange"
+                  currentChatId === chat.id &&
+                    "bg-white border-l-2 border-brand-orange",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -529,26 +628,43 @@ This architecture separates concerns across dedicated service layers, enabling i
                   setShowChatList(false);
                 }}
               >
-                <span className="font-mono text-xs text-brand-charcoal/70 truncate">{chat.title}</span>
+                <span className="font-mono text-xs text-brand-charcoal/70 truncate">
+                  {chat.title}
+                </span>
                 <div className="opacity-0 group-hover/item:opacity-100 flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }} className="hover:text-red-500 text-brand-charcoal/40"><Trash2 className="w-3 h-3" /></button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteChat(chat.id);
+                    }}
+                    className="hover:text-red-500 text-brand-charcoal/40"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             ))
           )}
           <div
             className="p-2 flex items-center justify-center border-t border-brand-charcoal/5 cursor-pointer hover:bg-white text-brand-charcoal/50 hover:text-brand-orange transition-colors"
-            onClick={() => { createNewChat("New Channel"); setShowChatList(false); }}
+            onClick={() => {
+              createNewChat("New Channel");
+              setShowChatList(false);
+            }}
           >
             <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
-              <Icon icon="lucide:plus" className="w-3 h-3" /> Initialize New Channel
+              <Icon icon="lucide:plus" className="w-3 h-3" /> Initialize New
+              Channel
             </span>
           </div>
         </div>
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-brand-charcoal/10 scrollbar-track-transparent" ref={messagesEndRef}>
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-brand-charcoal/10 scrollbar-track-transparent"
+        ref={messagesEndRef}
+      >
         {/* ... (keep existing message mapping) */}
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4">
@@ -556,8 +672,12 @@ This architecture separates concerns across dedicated service layers, enabling i
               <Terminal className="w-6 h-6 text-brand-charcoal" />
             </div>
             <div className="max-w-[200px]">
-              <p className="font-mono text-xs text-brand-charcoal mb-1">TERMINAL READY</p>
-              <p className="font-serif italic text-xs text-brand-charcoal/70">Describe your architectural requirements to begin generation.</p>
+              <p className="font-mono text-xs text-brand-charcoal mb-1">
+                TERMINAL READY
+              </p>
+              <p className="font-serif italic text-xs text-brand-charcoal/70">
+                Describe your architectural requirements to begin generation.
+              </p>
             </div>
           </div>
         ) : (
@@ -566,7 +686,7 @@ This architecture separates concerns across dedicated service layers, enabling i
               key={message.id}
               className={cn(
                 "flex flex-col gap-1 max-w-[95%]",
-                message.role === "user" ? "ml-auto items-end" : "items-start"
+                message.role === "user" ? "ml-auto items-end" : "items-start",
               )}
             >
               <span className="font-mono text-[9px] uppercase text-brand-charcoal/40 mb-0.5">
@@ -586,7 +706,7 @@ This architecture separates concerns across dedicated service layers, enabling i
                     "rounded-tr-xl rounded-bl-xl rounded-br-xl p-3 text-sm shadow-sm border",
                     message.role === "user"
                       ? "bg-brand-charcoal text-white rounded-tl-xl rounded-tr-none border-brand-charcoal"
-                      : "bg-white text-brand-charcoal border-brand-charcoal/10"
+                      : "bg-white text-brand-charcoal border-brand-charcoal/10",
                   )}
                 >
                   {message.role === "assistant" ? (
@@ -598,8 +718,11 @@ This architecture separates concerns across dedicated service layers, enabling i
                       </div>
                     )
                   ) : (
-                    <div className="whitespace-pre-wrap font-sans">{message.content}</div>
-                  )}    </div>
+                    <div className="whitespace-pre-wrap font-sans">
+                      {message.content}
+                    </div>
+                  )}{" "}
+                </div>
               )}
             </div>
           ))
@@ -634,21 +757,47 @@ This architecture separates concerns across dedicated service layers, enabling i
             <div className="flex items-center gap-4">
               {/* Model Selector */}
               <div className="">
-                <Select value={model} onValueChange={(val) => {
-                  if (val === "gemini-3.0-pro") {
-                    toast("Upgrade to Pro", { description: "Gemini 3.0 Pro is available on the Pro plan." });
-                    return;
-                  }
-                  setModel(val);
-                }}>
+                <Select
+                  value={model}
+                  onValueChange={(val) => {
+                    if (val === "gemini-3.0-pro") {
+                      toast("Upgrade to Pro", {
+                        description:
+                          "Gemini 3.0 Pro is available on the Pro plan.",
+                      });
+                      return;
+                    }
+                    setModel(val);
+                  }}
+                >
                   <SelectTrigger className="h-6 w-[130px] border-none bg-transparent text-[10px] uppercase font-mono tracking-wider focus:ring-0 px-0 gap-1 text-brand-charcoal/70 hover:text-brand-charcoal">
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-brand-charcoal/20 shadow-xl">
-                    <SelectItem value="kimi-k2.5" className="text-xs font-mono">Kimi k2.5 (Free)</SelectItem>
-                    <SelectItem value="glm-4.7-flash" className="text-xs font-mono">GLM-4.7-Flash (Free)</SelectItem>
-                    <SelectItem value="deepseek-ai" className="text-xs font-mono">Deepseek (Free)</SelectItem>
-                    <SelectItem value="gemini-3.0-pro" className="text-xs font-mono opacity-50 cursor-not-allowed">
+                    <SelectItem
+                      value="glm-4.7-flash"
+                      className="text-xs font-mono"
+                    >
+                      GLM-4.7-Flash (Free)
+                    </SelectItem>
+                    <SelectItem
+                      value="deepseek-ai"
+                      className="text-xs font-mono"
+                    >
+                      Deepseek (Free)
+                    </SelectItem>
+                    <SelectItem
+                      value="kimi-k2.5"
+                      className="text-xs font-mono opacity-50 cursor-not-allowed"
+                      disabled
+                    >
+                      <span className="line-through">Kimi k2.5</span> 🔒
+                    </SelectItem>
+                    <SelectItem
+                      value="gemini-3.0-pro"
+                      className="text-xs font-mono opacity-50 cursor-not-allowed"
+                      disabled
+                    >
                       Gemini-3.0-Pro 🔒
                     </SelectItem>
                   </SelectContent>
@@ -670,11 +819,17 @@ This architecture separates concerns across dedicated service layers, enabling i
                     ) : chatMode === "corporate" ? (
                       <Building2 className="w-3.5 h-3.5 text-brand-blue" />
                     ) : (
-                      <Icon icon="lucide:layout-template" className="w-3.5 h-3.5" />
+                      <Icon
+                        icon="lucide:layout-template"
+                        className="w-3.5 h-3.5"
+                      />
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40 bg-white border border-brand-charcoal/20 shadow-xl p-1">
+                <DropdownMenuContent
+                  align="start"
+                  className="w-40 bg-white border border-brand-charcoal/20 shadow-xl p-1"
+                >
                   <div className="px-2 py-1.5 text-[9px] uppercase tracking-widest text-brand-charcoal/40 font-mono">
                     Output Mode
                   </div>
@@ -682,17 +837,21 @@ This architecture separates concerns across dedicated service layers, enabling i
                     onClick={() => setChatMode("default")}
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "default" && "bg-brand-charcoal/5"
+                      chatMode === "default" && "bg-brand-charcoal/5",
                     )}
                   >
-                    <Icon icon="lucide:layout-template" className="w-3.5 h-3.5" />
+                    <Icon
+                      icon="lucide:layout-template"
+                      className="w-3.5 h-3.5"
+                    />
                     Default
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setChatMode("startup")}
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "startup" && "bg-brand-orange/5 text-brand-orange"
+                      chatMode === "startup" &&
+                        "bg-brand-orange/5 text-brand-orange",
                     )}
                   >
                     <Rocket className="w-3.5 h-3.5" />
@@ -702,7 +861,8 @@ This architecture separates concerns across dedicated service layers, enabling i
                     onClick={() => setChatMode("corporate")}
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "corporate" && "bg-brand-blue/5 text-brand-blue"
+                      chatMode === "corporate" &&
+                        "bg-brand-blue/5 text-brand-blue",
                     )}
                   >
                     <Building2 className="w-3.5 h-3.5" />
@@ -720,10 +880,14 @@ This architecture separates concerns across dedicated service layers, enabling i
                   "h-6 px-2 text-xs rounded-full flex items-center gap-1 transition-all",
                   quickMode
                     ? "bg-amber-500 text-white hover:bg-amber-600"
-                    : "text-brand-charcoal/60 hover:text-amber-500"
+                    : "text-brand-charcoal/60 hover:text-amber-500",
                 )}
                 onClick={() => setQuickMode(!quickMode)}
-                title={quickMode ? "Quick Mode ON - Faster generation" : "Enable Quick Mode for faster drafts"}
+                title={
+                  quickMode
+                    ? "Quick Mode ON - Faster generation"
+                    : "Enable Quick Mode for faster drafts"
+                }
               >
                 <Zap className="w-3 h-3" />
                 {quickMode && <span>Quick</span>}
@@ -767,7 +931,7 @@ This architecture separates concerns across dedicated service layers, enabling i
                   "h-7 w-7 rounded-sm transition-all",
                   inputValue.trim()
                     ? "bg-brand-orange text-white hover:bg-brand-orange/90"
-                    : "bg-brand-charcoal/10 text-brand-charcoal/40"
+                    : "bg-brand-charcoal/10 text-brand-charcoal/40",
                 )}
               >
                 {isGenerating ? (
@@ -780,7 +944,9 @@ This architecture separates concerns across dedicated service layers, enabling i
           </div>
         </form>
         <div className="flex justify-between items-center mt-2 px-1">
-          <span className="text-[9px] font-mono text-brand-charcoal/30">v1.3.0</span>
+          <span className="text-[9px] font-mono text-brand-charcoal/30">
+            v1.3.0
+          </span>
         </div>
       </div>
     </div>

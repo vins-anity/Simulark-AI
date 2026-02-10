@@ -1,175 +1,251 @@
 import OpenAI from "openai";
 
-export type AIProvider = "zhipu" | "openrouter" | "kimi" | "google" | "minimax" | "anthropic";
+export type AIProvider =
+  | "zhipu"
+  | "openrouter"
+  | "kimi"
+  | "google"
+  | "minimax"
+  | "anthropic";
 
 import { env } from "@/lib/env";
 
 interface ProviderConfig {
-    baseURL: string;
-    apiKey: string | undefined;
-    model: string;
-    reasoningParam?: Record<string, unknown>; // Optional now
-    responseFormat?: { type: "json_object" }; // Expanded to support JSON mode
+  baseURL: string;
+  apiKey: string | undefined;
+  model: string;
+  reasoningParam?: Record<string, unknown>; // Optional now
+  responseFormat?: { type: "json_object" }; // Expanded to support JSON mode
 }
 
 const PROVIDERS: Record<AIProvider, ProviderConfig> = {
-    zhipu: {
-        baseURL: "https://open.bigmodel.cn/api/paas/v4",
-        apiKey: env.ZHIPU_API_KEY,
-        model: "glm-4.7-flash", // Using Flash as per doc
-        // IMPORTANT: Keep thinking enabled but system prompt handles JSON in content
-        reasoningParam: { thinking: { type: "enabled" } },
-    },
-    kimi: {
-        baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1", // Updated to .ai as per K2.5 docs, but support override
+  zhipu: {
+    baseURL: "https://open.bigmodel.cn/api/paas/v4",
+    apiKey: env.ZHIPU_API_KEY,
+    model: "glm-4.7-flash", // Using Flash as per doc
+    // IMPORTANT: Keep thinking enabled but system prompt handles JSON in content
+    reasoningParam: { thinking: { type: "enabled" } },
+  },
+  kimi: {
+    baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1", // Updated to .ai as per K2.5 docs, but support override
 
-        apiKey: env.KIMI_API_KEY,
-        model: "kimi-k2.5", // User requested Kimi 2.5
-        // Kimi doesn't support specific reasoning params like Zhipu/OpenRouter yet, or uses standard OpenAI
-        // Use JSON mode for reliability
-        // responseFormat: { type: "json_object" },
-    },
-    openrouter: {
-        baseURL: "https://openrouter.ai/api/v1",
-        apiKey: env.OPENROUTER_API_KEY,
-        model: "tngtech/deepseek-r1t2-chimera:free", // Fallback
-        reasoningParam: { reasoning: { enabled: true } },
-    },
-    google: {
-        baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
-        apiKey: env.OPENROUTER_API_KEY,
-        model: "google/gemini-3-pro-preview",
-    },
-    minimax: {
-        baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
-        apiKey: env.OPENROUTER_API_KEY,
-        model: "minimax/minimax-m2.1",
-    },
-    anthropic: {
-        baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
-        apiKey: env.OPENROUTER_API_KEY,
-        model: "anthropic/claude-3-opus",
-    },
+    apiKey: env.KIMI_API_KEY,
+    model: "kimi-k2.5", // User requested Kimi 2.5
+    // Kimi doesn't support specific reasoning params like Zhipu/OpenRouter yet, or uses standard OpenAI
+    // Use JSON mode for reliability
+    // responseFormat: { type: "json_object" },
+  },
+  openrouter: {
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: env.OPENROUTER_API_KEY,
+    model: "tngtech/deepseek-r1t2-chimera:free", // Fallback
+    reasoningParam: { reasoning: { enabled: true } },
+  },
+  google: {
+    baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
+    apiKey: env.OPENROUTER_API_KEY,
+    model: "google/gemini-3-pro-preview",
+  },
+  minimax: {
+    baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
+    apiKey: env.OPENROUTER_API_KEY,
+    model: "minimax/minimax-m2.1",
+  },
+  anthropic: {
+    baseURL: "https://openrouter.ai/api/v1", // Using OpenRouter for unified billing/access
+    apiKey: env.OPENROUTER_API_KEY,
+    model: "anthropic/claude-3-opus",
+  },
 };
 
 export function createAIClient(provider: AIProvider = "zhipu") {
-    const config = PROVIDERS[provider];
+  const config = PROVIDERS[provider];
 
-    if (!config.apiKey) {
-        console.warn(`[AI Client] Missing API key for provider: ${provider}`);
-    }
+  if (!config.apiKey) {
+    console.warn(`[AI Client] Missing API key for provider: ${provider}`);
+  }
 
-    const client = new OpenAI({
-        baseURL: config.baseURL,
-        apiKey: config.apiKey,
-        timeout: 30 * 1000, // 30 seconds timeout
-        defaultHeaders: {
-            "HTTP-Referer": "https://simulark.app",
-            "X-Title": "Simulark",
-        }
-    });
+  const client = new OpenAI({
+    baseURL: config.baseURL,
+    apiKey: config.apiKey,
+    timeout: 30 * 1000, // 30 seconds timeout
+    defaultHeaders: {
+      "HTTP-Referer": "https://simulark.app",
+      "X-Title": "Simulark",
+    },
+  });
 
-    return { client, config };
+  return { client, config };
 }
 
 export async function generateArchitectureStream(
-    prompt: string,
-    modelId?: string,
-    mode: "default" | "startup" | "corporate" = "default",
-    currentNodes: any[] = [],
-    currentEdges: any[] = [],
-    quickMode: boolean = false
+  prompt: string,
+  modelId?: string,
+  mode: "default" | "startup" | "corporate" = "default",
+  currentNodes: any[] = [],
+  currentEdges: any[] = [],
+  quickMode: boolean = false,
 ) {
-    if (modelId) {
-        console.log(`[AI Client] Generating with selected model: ${modelId} in mode: ${mode}${quickMode ? " (QUICK)" : ""}`);
-        // Map modelId to provider
-        if (modelId === "glm-4.7-flash") {
-            return await callModelStream("zhipu", prompt, mode, currentNodes, currentEdges, quickMode);
-        } else if (modelId === "deepseek-ai") {
-            return await callModelStream("openrouter", prompt, mode, currentNodes, currentEdges, quickMode);
-        } else if (modelId === "kimi-k2.5" || modelId?.includes("moonshot") || modelId?.includes("kimi")) {
-            return await callModelStream("kimi", prompt, mode, currentNodes, currentEdges, quickMode);
-        } else if (modelId?.includes("gemini")) {
-            return await callModelStream("google", prompt, mode, currentNodes, currentEdges, quickMode);
-        } else if (modelId?.includes("minimax")) {
-            return await callModelStream("minimax", prompt, mode, currentNodes, currentEdges, quickMode);
-        } else if (modelId?.includes("claude")) {
-            return await callModelStream("anthropic", prompt, mode, currentNodes, currentEdges, quickMode);
-        }
+  if (modelId) {
+    console.log(
+      `[AI Client] Generating with selected model: ${modelId} in mode: ${mode}${quickMode ? " (QUICK)" : ""}`,
+    );
+    // Map modelId to provider
+    if (modelId === "glm-4.7-flash") {
+      return await callModelStream(
+        "zhipu",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+    } else if (modelId === "deepseek-ai") {
+      return await callModelStream(
+        "openrouter",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+    } else if (
+      modelId === "kimi-k2.5" ||
+      modelId?.includes("moonshot") ||
+      modelId?.includes("kimi")
+    ) {
+      return await callModelStream(
+        "kimi",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+    } else if (modelId?.includes("gemini")) {
+      return await callModelStream(
+        "google",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+    } else if (modelId?.includes("minimax")) {
+      return await callModelStream(
+        "minimax",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+    } else if (modelId?.includes("claude")) {
+      return await callModelStream(
+        "anthropic",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
     }
+  }
 
-    // Default fallback logic
-    // 1. Try Primary (Zhipu)
+  // Default fallback logic
+  // 1. Try Primary (Zhipu)
+  try {
+    console.log(
+      `[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Mode: ${mode}${quickMode ? " (QUICK)" : ""}. Prompt length: ${prompt.length}`,
+    );
+    const stream = await callModelStream(
+      "zhipu",
+      prompt,
+      mode,
+      currentNodes,
+      currentEdges,
+      quickMode,
+    );
+    console.log("[AI Client] Zhipu stream established successfully.");
+    return stream;
+  } catch (error: any) {
+    console.warn(
+      `[AI Client] Zhipu failed (Error: ${error.message}). Switching to OpenRouter fallback...`,
+    );
+    // 2. Fallback (OpenRouter)
     try {
-        console.log(`[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Mode: ${mode}${quickMode ? " (QUICK)" : ""}. Prompt length: ${prompt.length}`);
-        const stream = await callModelStream("zhipu", prompt, mode, currentNodes, currentEdges, quickMode);
-        console.log("[AI Client] Zhipu stream established successfully.");
-        return stream;
-    } catch (error: any) {
-        console.warn(`[AI Client] Zhipu failed (Error: ${error.message}). Switching to OpenRouter fallback...`);
-        // 2. Fallback (OpenRouter)
-        try {
-            const stream = await callModelStream("openrouter", prompt, mode, currentNodes, currentEdges, quickMode);
-            console.log("[AI Client] OpenRouter stream established successfully.");
-            return stream;
-        } catch (fbError: any) {
-            console.error(`[AI Client] OpenRouter fallback also failed: ${fbError.message}`);
-            throw fbError;
-        }
+      const stream = await callModelStream(
+        "openrouter",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+      console.log("[AI Client] OpenRouter stream established successfully.");
+      return stream;
+    } catch (fbError: any) {
+      console.error(
+        `[AI Client] OpenRouter fallback also failed: ${fbError.message}`,
+      );
+      throw fbError;
     }
+  }
 }
 
 async function callModelStream(
-    provider: AIProvider,
-    prompt: string,
-    mode: "default" | "startup" | "corporate" = "default",
-    currentNodes: any[] = [],
-    currentEdges: any[] = [],
-    quickMode: boolean = false
+  provider: AIProvider,
+  prompt: string,
+  mode: "default" | "startup" | "corporate" = "default",
+  currentNodes: any[] = [],
+  currentEdges: any[] = [],
+  quickMode: boolean = false,
 ) {
-    const { client, config } = createAIClient(provider);
+  const { client, config } = createAIClient(provider);
 
-    let roleDescription = "Senior Fullstack Solutions Architect";
-    let focusArea = "scalability, fault tolerance, cost-efficiency, and rapid delivery";
-    let archetypeInstructions = "";
+  let roleDescription = "Senior Fullstack Solutions Architect";
+  let focusArea =
+    "scalability, fault tolerance, cost-efficiency, and rapid delivery";
+  let archetypeInstructions = "";
 
-    // Project Archetype Logic (Smart Node Selection)
-    if (mode === "startup") {
-        roleDescription = "Lean Startup CTO";
-        focusArea = "MVP speed, minimal costs, and rapid iteration.";
-        archetypeInstructions = `
+  // Project Archetype Logic (Smart Node Selection)
+  if (mode === "startup") {
+    roleDescription = "Lean Startup CTO";
+    focusArea = "MVP speed, minimal costs, and rapid iteration.";
+    archetypeInstructions = `
         STRATEGY: STARTUP / LEAN
         - Prefer managed services and high-level abstractions (Next.js, Supabase, Vercel, Clerk, Stripe).
         - Avoid complex infrastructure like Kubernetes or self-hosted Kafka unless critical.
         - Focus on "Time to Market" and developer productivity.
         - Use modern, developer-friendly tech that minimizes maintenance.
         `;
-    } else if (mode === "corporate") {
-        roleDescription = "Enterprise Architect";
-        focusArea = "high availability, compliance, security, and redundancy.";
-        archetypeInstructions = `
+  } else if (mode === "corporate") {
+    roleDescription = "Enterprise Architect";
+    focusArea = "high availability, compliance, security, and redundancy.";
+    archetypeInstructions = `
         STRATEGY: ENTERPRISE / CORPORATE
         - Prioritize robustness, high availability, and security.
         - Use established enterprise patterns (Microservices, gRPC, Event-driven with Kafka, SQL with Read Replicas).
         - Consider compliance requirements and formal infrastructure (AWS/GCP/Azure, Kubernetes, IAM, dedicated VPCS).
         - Detail data isolation and high-throughput reliability.
         `;
-    } else {
-        // Standard / Default mode
-        roleDescription = "Senior Fullstack Solutions Architect";
-        focusArea = "best-in-class performance, scalability, and modern standards.";
-        archetypeInstructions = `
+  } else {
+    // Standard / Default mode
+    roleDescription = "Senior Fullstack Solutions Architect";
+    focusArea = "best-in-class performance, scalability, and modern standards.";
+    archetypeInstructions = `
         STRATEGY: MODERN FULLSTACK
         - Generate a balanced end-to-end stack using the most reliable modern tools.
         - Use "Best of Breed" technologies (e.g. Next.js + FastAPI + Postgres).
         `;
-    }
+  }
 
-    const contextPrompt = currentNodes.length > 0
-        ? `\n\nCURRENT ARCHITECTURE STATE:
+  const contextPrompt =
+    currentNodes.length > 0
+      ? `\n\nCURRENT ARCHITECTURE STATE:
 The user already has an existing diagram. 
-Existing Nodes: ${JSON.stringify(currentNodes.map(n => ({ id: n.id, type: n.type, label: n.data?.label, tech: n.data?.tech })))}
-Existing Edges: ${JSON.stringify(currentEdges.map(e => ({ id: e.id, source: e.source, target: e.target })))}
+Existing Nodes: ${JSON.stringify(currentNodes.map((n) => ({ id: n.id, type: n.type, label: n.data?.label, tech: n.data?.tech })))}
+Existing Edges: ${JSON.stringify(currentEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })))}
 
 Your task is to MODIFY or IMPROVE this architecture based on the user's prompt. 
 - You MUST maintain the context of existing components.
@@ -177,13 +253,13 @@ Your task is to MODIFY or IMPROVE this architecture based on the user's prompt.
 - If the user asks to "add" something, include existing nodes plus new ones.
 - If the user asks to "improve" or "simplify", rewrite the JSON accordingly.
 - Ensure node IDs remain consistent if they refer to the same component.`
-        : '';
+      : "";
 
-    // QUICK MODE: Use a condensed prompt for faster generation
-    let systemPrompt: string;
+  // QUICK MODE: Use a condensed prompt for faster generation
+  let systemPrompt: string;
 
-    if (quickMode) {
-        systemPrompt = `You are a ${roleDescription}. Generate a JSON architecture for: "${prompt}"
+  if (quickMode) {
+    systemPrompt = `You are a ${roleDescription}. Generate a JSON architecture for: "${prompt}"
 ${archetypeInstructions}
 ${contextPrompt}
 
@@ -196,9 +272,9 @@ OUTPUT ONLY JSON (no markdown, no explanation):
 Use real tech IDs: nextjs, react, bunjs/nodejs, postgres/supabase, redis/upstash, vercel/flyio/render/railway/cloudflare, edgefunctions/lambda/cloudfn, aws, gcp, openai, anthropic, kafka, rabbitmq, etc.
  
  CRITICAL: ALL nodes MUST be connected to at least one other node. No orphaned nodes allowed!`;
-    } else {
-        // Full detailed prompt for quality generation
-        systemPrompt = `You are a ${roleDescription}. ${focusArea}
+  } else {
+    // Full detailed prompt for quality generation
+    systemPrompt = `You are a ${roleDescription}. ${focusArea}
     Analyze the user's request and generate a detailed Fullstack Architecture.
     
     ${archetypeInstructions}
@@ -286,20 +362,21 @@ Use real tech IDs: nextjs, react, bunjs/nodejs, postgres/supabase, redis/upstash
     - Every service must have at least one incoming or outgoing edge (e.g., Orchestration Service → Object Storage, or Object Storage → Orchestration Service).
     
     IMPORTANT: Output the complete JSON in the content field. Do not use markdown code blocks. Do not include the reasoning in the content. The content must start with "{" and contain the full architecture definition.`;
-    }
+  }
 
-    console.log(`[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})${quickMode ? " [QUICK MODE]" : ""}`);
+  console.log(
+    `[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})${quickMode ? " [QUICK MODE]" : ""}`,
+  );
 
-    return await client.chat.completions.create({
-        model: config.model,
-        messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt }
-        ],
-        stream: true,
-        // @ts-ignore - provider specific params
-        ...config.reasoningParam,
-        response_format: config.responseFormat,
-    });
+  return await client.chat.completions.create({
+    model: config.model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt },
+    ],
+    stream: true,
+    // @ts-ignore - provider specific params
+    ...config.reasoningParam,
+    response_format: config.responseFormat,
+  });
 }
-

@@ -48,7 +48,7 @@ export async function createProject(
 // --- Save Project (with Versioning) ---
 export async function saveProject(
   projectId: string,
-  graph: Partial<ArchitectureGraph> & { metadata?: Record<string, any> }
+  graph: Partial<ArchitectureGraph> & { metadata?: Record<string, any> },
 ) {
   const supabase = await createClient();
   const {
@@ -134,7 +134,9 @@ export async function getProject(projectId: string) {
 // --- Get User Projects ---
 export async function getUserProjects(page = 1, limit = 9) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { success: false, error: "Unauthorized" };
@@ -166,7 +168,10 @@ export async function getUserProjects(page = 1, limit = 9) {
 }
 
 // --- Create Project from Template ---
-export async function createProjectFromTemplate(templateId: string, name: string) {
+export async function createProjectFromTemplate(
+  templateId: string,
+  name: string,
+) {
   const supabase = await createClient();
   const {
     data: { user },

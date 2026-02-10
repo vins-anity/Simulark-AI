@@ -121,7 +121,10 @@ async function runGenerator(
   }
 
   // If all models fail, return safe fallback
-  console.error("[Generator] All models failed, returning safe fallback. Last error:", lastError);
+  console.error(
+    "[Generator] All models failed, returning safe fallback. Last error:",
+    lastError,
+  );
   return {
     nodes: [
       {

@@ -44,7 +44,11 @@ export async function proxy(request: NextRequest) {
 
     if (!success) {
       return NextResponse.json(
-        { error: "Too Many Requests", message: "AI generation rate limit exceeded. Please wait before trying again." },
+        {
+          error: "Too Many Requests",
+          message:
+            "AI generation rate limit exceeded. Please wait before trying again.",
+        },
         {
           status: 429,
           headers: {
@@ -53,18 +57,26 @@ export async function proxy(request: NextRequest) {
             "X-RateLimit-Reset": reset.toString(),
             "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString(),
           },
-        }
+        },
       );
     }
   }
 
   // 2. Rate Limiting for Auth-sensitive operations
-  if (pathname.startsWith("/api/auth") || pathname.includes("/signin") || pathname.includes("/signup")) {
+  if (
+    pathname.startsWith("/api/auth") ||
+    pathname.includes("/signin") ||
+    pathname.includes("/signup")
+  ) {
     const { success, limit, reset, remaining } = await authRatelimit.limit(ip);
 
     if (!success) {
       return NextResponse.json(
-        { error: "Too Many Requests", message: "Authentication rate limit exceeded. Please try again later." },
+        {
+          error: "Too Many Requests",
+          message:
+            "Authentication rate limit exceeded. Please try again later.",
+        },
         {
           status: 429,
           headers: {
@@ -72,18 +84,25 @@ export async function proxy(request: NextRequest) {
             "X-RateLimit-Remaining": remaining.toString(),
             "X-RateLimit-Reset": reset.toString(),
           },
-        }
+        },
       );
     }
   }
 
   // 3. Rate Limiting for other API routes
-  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/_next") && !pathname.startsWith("/api/webhook")) {
+  if (
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/_next") &&
+    !pathname.startsWith("/api/webhook")
+  ) {
     const { success, limit, reset, remaining } = await apiRatelimit.limit(ip);
 
     if (!success) {
       return NextResponse.json(
-        { error: "Too Many Requests", message: "API rate limit exceeded. Please try again later." },
+        {
+          error: "Too Many Requests",
+          message: "API rate limit exceeded. Please try again later.",
+        },
         {
           status: 429,
           headers: {
@@ -91,7 +110,7 @@ export async function proxy(request: NextRequest) {
             "X-RateLimit-Remaining": remaining.toString(),
             "X-RateLimit-Reset": reset.toString(),
           },
-        }
+        },
       );
     }
   }

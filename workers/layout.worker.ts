@@ -54,7 +54,11 @@ self.onmessage = (event: MessageEvent) => {
     const positionedNodes = nodes.map((node: any) => {
       try {
         const nodeData = g.node(node.id);
-        if (nodeData && typeof nodeData.x === "number" && typeof nodeData.y === "number") {
+        if (
+          nodeData &&
+          typeof nodeData.x === "number" &&
+          typeof nodeData.y === "number"
+        ) {
           return {
             ...node,
             position: {

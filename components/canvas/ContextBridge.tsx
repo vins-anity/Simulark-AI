@@ -11,7 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Share2, FileCode, Link as LinkIcon, Download } from "lucide-react";
 import { toast } from "sonner";
-import { generateCursorRules, generateMermaid } from "@/lib/bridge/context-generator";
+import {
+  generateCursorRules,
+  generateMermaid,
+} from "@/lib/bridge/context-generator";
 import { useNodes, useEdges } from "@xyflow/react";
 import { JSX } from "react";
 import { Icon } from "@iconify/react";
@@ -53,23 +56,37 @@ export function ContextBridge({ projectId }: ContextBridgeProps): JSX.Element {
           <span>Export</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 rounded-none border border-brand-charcoal bg-white shadow-xl" align="end">
-        <DropdownMenuLabel className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-[#faf9f5]">Export Protocol</DropdownMenuLabel>
+      <DropdownMenuContent
+        className="w-56 rounded-none border border-brand-charcoal bg-white shadow-xl"
+        align="end"
+      >
+        <DropdownMenuLabel className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-[#faf9f5]">
+          Export Protocol
+        </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-brand-charcoal/10" />
 
-        <DropdownMenuItem onClick={handleCopyCursorRules} className="focus:bg-brand-charcoal focus:text-white cursor-pointer rounded-none font-mono text-xs">
+        <DropdownMenuItem
+          onClick={handleCopyCursorRules}
+          className="focus:bg-brand-charcoal focus:text-white cursor-pointer rounded-none font-mono text-xs"
+        >
           <FileCode size={14} className="mr-2" />
           <span>.cursorrules</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleCopyMermaid} className="focus:bg-brand-charcoal focus:text-white cursor-pointer rounded-none font-mono text-xs">
+        <DropdownMenuItem
+          onClick={handleCopyMermaid}
+          className="focus:bg-brand-charcoal focus:text-white cursor-pointer rounded-none font-mono text-xs"
+        >
           <Download size={14} className="mr-2" />
           <span>Mermaid.js</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="bg-brand-charcoal/10" />
 
-        <DropdownMenuItem onClick={handleCopyLiveURL} className="focus:bg-brand-charcoal focus:text-white cursor-pointer rounded-none font-mono text-xs">
+        <DropdownMenuItem
+          onClick={handleCopyLiveURL}
+          className="focus:bg-brand-charcoal focus:text-white cursor-pointer rounded-none font-mono text-xs"
+        >
           <LinkIcon size={14} className="mr-2" />
           <span>Live Context Link</span>
         </DropdownMenuItem>

@@ -3,50 +3,50 @@ import { env } from "@/env";
 import { Redis } from "@upstash/redis";
 
 export async function GET() {
-    const health: {
-        status: string;
-        timestamp: string;
-        version: string;
-        services: {
-            supabase: { status: string; url?: string | null; error?: string };
-            redis: { status: string; latency?: number; error?: string };
-        };
-    } = {
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-        version: process.env.npm_package_version || "1.0.0",
-        services: {
-            supabase: { status: "unknown" },
-            redis: { status: "unknown" },
-        },
+  const health: {
+    status: string;
+    timestamp: string;
+    version: string;
+    services: {
+      supabase: { status: string; url?: string | null; error?: string };
+      redis: { status: string; latency?: number; error?: string };
     };
+  } = {
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || "1.0.0",
+    services: {
+      supabase: { status: "unknown" },
+      redis: { status: "unknown" },
+    },
+  };
 
-    // Check Supabase
-    try {
-        health.services.supabase = {
-            status: env.NEXT_PUBLIC_SUPABASE_URL ? "configured" : "missing",
-            url: env.NEXT_PUBLIC_SUPABASE_URL ? "***" : null,
-        };
-    } catch (error) {
-        health.services.supabase = { status: "error", error: String(error) };
-        health.status = "degraded";
-    }
+  // Check Supabase
+  try {
+    health.services.supabase = {
+      status: env.NEXT_PUBLIC_SUPABASE_URL ? "configured" : "missing",
+      url: env.NEXT_PUBLIC_SUPABASE_URL ? "***" : null,
+    };
+  } catch (error) {
+    health.services.supabase = { status: "error", error: String(error) };
+    health.status = "degraded";
+  }
 
-    // Check Redis
-    try {
-        const redisClient = new Redis({
-            url: env.UPSTASH_REDIS_REST_URL,
-            token: env.UPSTASH_REDIS_REST_TOKEN,
-        });
-        const start = Date.now();
-        await redisClient.ping();
-        const latency = Date.now() - start;
-        health.services.redis = { status: "healthy", latency };
-    } catch (error) {
-        health.services.redis = { status: "error", error: String(error) };
-        health.status = "degraded";
-    }
+  // Check Redis
+  try {
+    const redisClient = new Redis({
+      url: env.UPSTASH_REDIS_REST_URL,
+      token: env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    const start = Date.now();
+    await redisClient.ping();
+    const latency = Date.now() - start;
+    health.services.redis = { status: "healthy", latency };
+  } catch (error) {
+    health.services.redis = { status: "error", error: String(error) };
+    health.status = "degraded";
+  }
 
-    const statusCode = health.status === "healthy" ? 200 : 503;
-    return NextResponse.json(health, { status: statusCode });
+  const statusCode = health.status === "healthy" ? 200 : 503;
+  return NextResponse.json(health, { status: statusCode });
 }
