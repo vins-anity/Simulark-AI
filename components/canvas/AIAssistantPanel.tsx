@@ -441,17 +441,25 @@ This architecture separates concerns across dedicated service layers, enabling i
       let accumulatedReasoning = "";
       let lastGeneratedData: any = null; // Capture generated data
 
-      const response = await fetch("/api/generate", {
+      // NEW: Include conversation history for context-aware AI
+      const conversationMessages = [...messages, userMessage].map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        parts: [{ type: "text" as const, text: m.content }],
+      }));
+
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: userMessage.content,
+          messages: conversationMessages, // Full conversation history!
+          chatId,
           projectId,
-          mode: chatMode, // Pass the selected mode
-          model: model, // Pass selected model
-          currentNodes: getCurrentNodes(), // Call the getter
-          currentEdges: getCurrentEdges(), // Call the getter
-          quickMode: quickMode, // Enable fast generation with lean prompt
+          mode: chatMode,
+          model: model,
+          currentNodes: getCurrentNodes(),
+          currentEdges: getCurrentEdges(),
         }),
       });
 
@@ -513,6 +521,70 @@ This architecture separates concerns across dedicated service layers, enabling i
 
           try {
             const json = JSON.parse(trimmedLine);
+
+            // Handle Vercel AI SDK UIMessage format
+            // Format: { type: "assistant", parts: [{ type: "text", text: "..." }] }
+            if (json.type === "assistant" && json.parts) {
+              for (const part of json.parts) {
+                if (part.type === "text" && part.text) {
+                  accumulatedContent += part.text;
+
+                  // Check if content contains architecture JSON
+                  const isJsonLike =
+                    accumulatedContent.trim().startsWith("{") ||
+                    accumulatedContent.trim().startsWith("```") ||
+                    accumulatedContent.includes('"nodes"');
+
+                  // Try to extract and apply architecture if complete JSON found
+                  if (
+                    accumulatedContent.includes('"nodes"') &&
+                    accumulatedContent.includes('"edges"')
+                  ) {
+                    try {
+                      const jsonMatch = accumulatedContent.match(/\{[\s\S]*\}/);
+                      if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        if (
+                          parsed.nodes &&
+                          parsed.edges &&
+                          !lastGeneratedData
+                        ) {
+                          lastGeneratedData = parsed;
+                          onGenerationSuccess(parsed);
+                        }
+                      }
+                    } catch (e) {
+                      // JSON not complete yet
+                    }
+                  }
+
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === aiMsgId
+                        ? {
+                            ...m,
+                            isThinking: false,
+                            content: isJsonLike
+                              ? "__LOADING__"
+                              : accumulatedContent,
+                          }
+                        : m,
+                    ),
+                  );
+                } else if (part.type === "reasoning" && part.text) {
+                  accumulatedReasoning += part.text;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === aiMsgId
+                        ? { ...m, reasoning: accumulatedReasoning }
+                        : m,
+                    ),
+                  );
+                }
+              }
+            }
+
+            // Handle legacy format for backward compatibility
             if (json.type === "reasoning" && json.data) {
               accumulatedReasoning += json.data;
               setMessages((prev) =>
@@ -524,7 +596,6 @@ This architecture separates concerns across dedicated service layers, enabling i
               );
             } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
-              // Show placeholder if content looks like JSON code
               const isJsonLike =
                 accumulatedContent.trim().startsWith("{") ||
                 accumulatedContent.trim().startsWith("```");
@@ -542,11 +613,11 @@ This architecture separates concerns across dedicated service layers, enabling i
                 ),
               );
             } else if (json.type === "result" && json.data) {
-              lastGeneratedData = json.data; // Capture data
+              lastGeneratedData = json.data;
               onGenerationSuccess(json.data);
             }
           } catch (e) {
-            console.debug("Skipping incomplete JSON line");
+            console.debug("Skipping incomplete JSON line", e);
           }
         }
       }

@@ -927,6 +927,26 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
   const complexity = detectComplexity(context.userInput);
   const modeConstraints = MODE_CONSTRAINTS[context.mode];
 
+  // Build conversation context analysis
+  let conversationContext = "";
+  if (context.conversationHistory && context.conversationHistory.length > 0) {
+    const history = context.conversationHistory.slice(-10); // Last 10 messages
+    const previousRequests = history
+      .filter((m) => m.role === "user")
+      .map((m) => m.content.substring(0, 150));
+
+    if (previousRequests.length > 0) {
+      conversationContext = `
+CONVERSATION CONTEXT:
+This is a continuing conversation. Previous requests:
+${previousRequests.map((req, i) => `${i + 1}. "${req}"`).join("\n")}
+
+Current request: "${context.userInput}"
+
+INSTRUCTION: Build upon or modify the previous architecture based on this conversation flow. If the user is changing direction (e.g., from "todo app" to "Netflix"), acknowledge the pivot and adapt the architecture accordingly.`;
+    }
+  }
+
   // Skip complexity-based component limits for now
   const componentGuidelines = `COMPONENT GUIDELINES:
 ${getModeConstraints(context.mode)}
@@ -945,6 +965,7 @@ ${getFrameworkCompatibilityRules()}`;
   // Quick mode: shorter prompt
   if (context.quickMode) {
     return `You are a Solutions Architect. Generate a JSON architecture for: "${context.userInput}"
+${conversationContext}
 
 ARCHITECTURE TYPE: ${detection.type}
 MODE: ${context.mode}
@@ -992,6 +1013,7 @@ RULES:
   return `You are an expert Solutions Architect specializing in ${detection.type.replace("-", " ")} design.
 
 USER REQUEST: "${context.userInput}"
+${conversationContext}
 
 DETECTED ARCHITECTURE: ${detection.type}
 CONFIDENCE: ${Math.round(detection.confidence * 100)}%
