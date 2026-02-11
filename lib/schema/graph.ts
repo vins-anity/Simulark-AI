@@ -10,6 +10,16 @@ export const NodeTypeSchema = v.picklist([
   "database",
   "queue",
   "ai",
+  "auth",
+  "payment",
+  "automation",
+  "messaging",
+  "search",
+  "monitoring",
+  "cicd",
+  "security",
+  "vector-db",
+  "ai-model",
 ]);
 
 export const ProviderSchema = v.picklist(["AWS", "GCP", "Azure", "Generic"]);

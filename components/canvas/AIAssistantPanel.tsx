@@ -55,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "./LoadingState";
 import { ThinkingPanel } from "./ThinkingPanel";
@@ -108,11 +109,9 @@ export function AIAssistantPanel({
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
-  // Load initial settings or default
-  const [chatMode, setChatModeState] = useState<
-    "default" | "startup" | "corporate"
-  >(
-    (initialMetadata?.mode as "default" | "startup" | "corporate") || "default",
+  // Load initial settings or default (renamed from "default" to "corporate")
+  const [chatMode, setChatModeState] = useState<ArchitectureMode>(
+    (initialMetadata?.mode as ArchitectureMode) || "corporate",
   );
 
   // Settings / Preferences
@@ -123,7 +122,7 @@ export function AIAssistantPanel({
   const [quickMode, setQuickMode] = useState(false); // Fast generation with lean prompt
 
   // Wrappers to persist on change
-  const setChatMode = (mode: "default" | "startup" | "corporate") => {
+  const setChatMode = (mode: ArchitectureMode) => {
     setChatModeState(mode);
     // Save to metadata (we only save metadata here, not nodes/edges)
     import("@/actions/projects").then(({ saveProject }) => {
@@ -961,17 +960,17 @@ This architecture separates concerns across dedicated service layers, enabling i
                     Output Mode
                   </div>
                   <DropdownMenuItem
-                    onClick={() => setChatMode("default")}
+                    onClick={() => setChatMode("corporate")}
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "default" && "bg-brand-charcoal/5",
+                      chatMode === "corporate" && "bg-brand-charcoal/5",
                     )}
                   >
                     <Icon
                       icon="lucide:layout-template"
                       className="w-3.5 h-3.5"
                     />
-                    Default
+                    Corporate (Default)
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setChatMode("startup")}

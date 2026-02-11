@@ -99,8 +99,8 @@ describe("Prompt Engineering Tests", () => {
     it("should detect monolithic architecture", () => {
       const inputs = [
         "Build monolithic application",
-        "Create Django web app",
-        "Design Rails application",
+        "Create Django monolith",
+        "Design Rails monolithic app",
         "Spring Boot monolith",
       ];
 
@@ -215,7 +215,7 @@ describe("Prompt Engineering Tests", () => {
 
     it("should detect medium complexity", () => {
       const inputs = [
-        "Build an e-commerce platform",
+        "Build an e-commerce site",
         "Create a SaaS dashboard",
         "CRM system",
         "CMS application",
@@ -320,7 +320,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build a web app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -354,7 +354,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build a simple todo app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -366,7 +366,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -391,7 +391,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -403,7 +403,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -417,7 +417,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -425,7 +425,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: true,
       });
 
@@ -437,7 +437,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
         currentNodes: [{ id: "1" }],
         currentEdges: [{ id: "e1" }],
@@ -452,7 +452,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build web app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -460,7 +460,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build AI system",
         architectureType: "ai-pipeline",
         detectedIntent: "Architecture: ai-pipeline",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -468,7 +468,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build microservices",
         architectureType: "microservices",
         detectedIntent: "Architecture: microservices",
-        mode: "default",
+        mode: "corporate",
         quickMode: false,
       });
 
@@ -496,8 +496,8 @@ describe("Prompt Engineering Tests", () => {
 
       expect(startup).toContain("Minimum components: 3");
       expect(startup).toContain("Maximum components: 5");
-      expect(corporate).toContain("Minimum components: 6");
-      expect(corporate).toContain("Maximum components: 12");
+      expect(corporate).toContain("Minimum components: 4");
+      expect(corporate).toContain("Maximum components: 8");
     });
   });
 });

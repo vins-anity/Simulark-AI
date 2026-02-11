@@ -25,24 +25,32 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { AlertTriangle } from "lucide-react";
-import { saveProject } from "@/actions/projects";
 import { toast } from "sonner";
-import { DatabaseNode } from "./nodes/DatabaseNode";
-import { GatewayNode } from "./nodes/GatewayNode";
-import { ServiceNode } from "./nodes/ServiceNode";
-import { QueueNode } from "./nodes/QueueNode";
-import { LoadbalancerNode } from "./nodes/LoadbalancerNode";
-import { CacheNode } from "./nodes/CacheNode";
-import { ClientNode } from "./nodes/ClientNode";
-import { FunctionNode } from "./nodes/FunctionNode";
-import { StorageNode } from "./nodes/StorageNode";
-import { AINode } from "./nodes/AINode";
-import { NodeProperties } from "./nodes/NodeProperties";
-import { SimulationEdge } from "./edges/SimulationEdge";
-import { useSimulationStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { saveProject } from "@/actions/projects";
 import { applyLayout, applyLayoutAsync } from "@/lib/layout";
-import { generateMermaidCode } from "@/lib/utils";
+import { useSimulationStore } from "@/lib/store";
+import { cn, generateMermaidCode } from "@/lib/utils";
+import { SimulationEdge } from "./edges/SimulationEdge";
+import { AIModelNode } from "./nodes/AIModelNode";
+import { AINode } from "./nodes/AINode";
+import { AuthNode } from "./nodes/AuthNode";
+import { AutomationNode } from "./nodes/AutomationNode";
+import { CacheNode } from "./nodes/CacheNode";
+import { CICDNode } from "./nodes/CICDNode";
+import { ClientNode } from "./nodes/ClientNode";
+import { DatabaseNode } from "./nodes/DatabaseNode";
+import { FunctionNode } from "./nodes/FunctionNode";
+import { GatewayNode } from "./nodes/GatewayNode";
+import { LoadbalancerNode } from "./nodes/LoadbalancerNode";
+import { MessagingNode } from "./nodes/MessagingNode";
+import { MonitoringNode } from "./nodes/MonitoringNode";
+import { NodeProperties } from "./nodes/NodeProperties";
+import { PaymentNode } from "./nodes/PaymentNode";
+import { QueueNode } from "./nodes/QueueNode";
+import { SecurityNode } from "./nodes/SecurityNode";
+import { ServiceNode } from "./nodes/ServiceNode";
+import { StorageNode } from "./nodes/StorageNode";
+import { VectorDBNode } from "./nodes/VectorDBNode";
 
 interface FlowEditorProps {
   initialNodes?: any[];
@@ -217,6 +225,15 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         function: FunctionNode,
         storage: StorageNode,
         ai: AINode,
+        "ai-model": AIModelNode,
+        auth: AuthNode,
+        "vector-db": VectorDBNode,
+        payment: PaymentNode,
+        automation: AutomationNode,
+        messaging: MessagingNode,
+        monitoring: MonitoringNode,
+        cicd: CICDNode,
+        security: SecurityNode,
       }),
       [],
     );

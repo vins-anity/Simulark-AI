@@ -29,7 +29,7 @@ export interface PromptContext {
   detectedIntent: string;
   currentNodes?: unknown[];
   currentEdges?: unknown[];
-  mode: "default" | "startup" | "corporate";
+  mode: ArchitectureMode;
   quickMode: boolean;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
 }
@@ -83,8 +83,10 @@ const COMPLEXITY_INDICATORS: Record<ComplexityLevel, string[]> = {
 };
 
 // Mode-specific constraints
+export type ArchitectureMode = "startup" | "corporate" | "enterprise";
+
 const MODE_CONSTRAINTS: Record<
-  "default" | "startup" | "corporate",
+  ArchitectureMode,
   {
     maxComponents: number;
     minComponents: number;
@@ -94,6 +96,7 @@ const MODE_CONSTRAINTS: Record<
     requireObservability: boolean;
     costFocus: "low" | "balanced" | "high";
     description: string;
+    focus: string;
   }
 > = {
   startup: {
@@ -104,9 +107,11 @@ const MODE_CONSTRAINTS: Record<
     requireLoadBalancer: false,
     requireObservability: false,
     costFocus: "low",
-    description: "Lean startup MVP - minimal infrastructure, rapid deployment",
+    description:
+      "Startup MVP - Ship fast, validate ideas, minimize costs. Use managed services with free tiers.",
+    focus: "Speed to market, cost optimization, rapid iteration",
   },
-  default: {
+  corporate: {
     maxComponents: 8,
     minComponents: 4,
     preferFullStack: false,
@@ -114,17 +119,21 @@ const MODE_CONSTRAINTS: Record<
     requireLoadBalancer: false,
     requireObservability: true,
     costFocus: "balanced",
-    description: "Balanced architecture with good practices",
+    description:
+      "Corporate (Default) - Production-ready, maintainable, scalable. Industry best practices with proper monitoring.",
+    focus: "Production reliability, team scalability, maintainability",
   },
-  corporate: {
-    maxComponents: 12,
+  enterprise: {
+    maxComponents: 15,
     minComponents: 6,
     preferFullStack: false,
     requireCDN: true,
     requireLoadBalancer: true,
     requireObservability: true,
     costFocus: "high",
-    description: "Enterprise-grade with redundancy and compliance",
+    description:
+      "Enterprise - Multi-region, compliant, resilient architecture. Full observability, security, and governance.",
+    focus: "Global scale, compliance (SOC2/GDPR), high availability",
   },
 };
 
@@ -149,7 +158,6 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
     "website",
     "web application",
     "frontend",
-    "backend",
     "fullstack",
     "nextjs",
     "react",
@@ -177,7 +185,8 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
     "inference",
     "model serving",
     "training",
-    "pipeline",
+    "ai pipeline",
+    "ml pipeline",
     "gpu",
     "tensorflow",
     "pytorch",
@@ -235,8 +244,8 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
   ],
   "mobile-app": [
     "mobile app",
-    "ios",
-    "android",
+    "ios app",
+    "android app",
     "react native",
     "flutter",
     "swift",
@@ -246,6 +255,7 @@ const ARCHITECTURE_PATTERNS: Record<ArchitectureType, string[]> = {
   ],
   "desktop-app": [
     "desktop app",
+    "desktop software",
     "electron",
     "tauri",
     "wails",
@@ -379,7 +389,9 @@ export function detectArchitectureType(input: string): ArchitectureDetection {
   for (const [type, keywords] of Object.entries(ARCHITECTURE_PATTERNS)) {
     for (const keyword of keywords) {
       if (normalizedInput.includes(keyword.toLowerCase())) {
-        scores[type as ArchitectureType]++;
+        // Give 2 points for multi-word phrases, 1 point for single words
+        const points = keyword.includes(" ") ? 2 : 1;
+        scores[type as ArchitectureType] += points;
         matchedKeywords[type as ArchitectureType].push(keyword);
       }
     }
@@ -527,7 +539,7 @@ export function validatePrompt(input: string): PromptValidation {
 /**
  * Get mode-specific component constraints
  */
-function getModeConstraints(mode: "default" | "startup" | "corporate"): string {
+function getModeConstraints(mode: ArchitectureMode): string {
   const constraints = MODE_CONSTRAINTS[mode];
 
   let guidelines = `MODE: ${mode.toUpperCase()}
@@ -688,7 +700,7 @@ Start with simple 3-tier: Frontend → API → Database. Add components based on
  */
 function getTechRecommendations(
   type: ArchitectureType,
-  mode: "default" | "startup" | "corporate",
+  mode: ArchitectureMode,
   complexity: ComplexityLevel,
 ): string {
   // Mode-specific tech preferences

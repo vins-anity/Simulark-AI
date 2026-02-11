@@ -6,6 +6,7 @@ import { createZhipu } from "zhipu-ai-provider";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
+  type ArchitectureMode,
   buildEnhancedSystemPrompt,
   detectArchitectureType,
   detectComplexity,
@@ -194,7 +195,7 @@ export async function POST(req: NextRequest) {
       detectedIntent: `Architecture: ${detection.type}, Complexity: ${complexity}`,
       currentNodes,
       currentEdges,
-      mode: mode as "default" | "startup" | "corporate",
+      mode: (mode || "corporate") as ArchitectureMode,
       quickMode: false,
       conversationHistory,
     });

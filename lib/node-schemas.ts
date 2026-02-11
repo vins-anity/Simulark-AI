@@ -18,8 +18,8 @@ export const FunctionSchema = v.object({
     "go1.x",
     "java17",
   ]),
-  memory: v.number(),
-  timeout: v.number(),
+  memory: v.pipe(v.number(), v.minValue(0)),
+  timeout: v.pipe(v.number(), v.minValue(1)),
   handler: v.string(),
 });
 
@@ -27,20 +27,20 @@ export const DatabaseSchema = v.object({
   ...BaseSchema.entries,
   engine: v.string(),
   version: v.string(),
-  storage_gb: v.number(),
+  storage_gb: v.pipe(v.number(), v.minValue(1)),
   instance_type: v.string(),
 });
 
 export const QueueSchema = v.object({
   ...BaseSchema.entries,
-  visibility_timeout: v.number(),
-  retention_seconds: v.number(),
+  visibility_timeout: v.pipe(v.number(), v.minValue(0)),
+  retention_seconds: v.pipe(v.number(), v.minValue(1)),
   fifo: v.boolean(),
 });
 
 export const ServiceSchema = v.object({
   ...BaseSchema.entries,
-  replicas: v.number(),
+  replicas: v.pipe(v.number(), v.minValue(1)),
   cpu: v.string(),
   memory: v.string(),
   image: v.optional(v.string()),
@@ -56,8 +56,8 @@ export const StorageSchema = v.object({
 export const AISchema = v.object({
   ...BaseSchema.entries,
   model: v.string(),
-  context_window: v.number(),
-  temperature: v.number(),
+  context_window: v.pipe(v.number(), v.minValue(1)),
+  temperature: v.pipe(v.number(), v.minValue(0), v.maxValue(2)),
 });
 
 export const ClientSchema = v.object({

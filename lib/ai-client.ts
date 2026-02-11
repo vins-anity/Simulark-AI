@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { callAIWithResilience } from "./ai-resilience";
 import {
+  type ArchitectureMode,
   buildEnhancedSystemPrompt,
   detectArchitectureType,
   detectComplexity,
@@ -67,13 +68,17 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
 export function createAIClient(provider: AIProvider = "zhipu") {
   const config = PROVIDERS[provider];
 
+  // Use a dummy key for testing when real key is missing
+  // This allows tests to verify config without the client throwing
+  const apiKey = config.apiKey || "dummy-key-for-testing";
+
   if (!config.apiKey) {
     console.warn(`[AI Client] Missing API key for provider: ${provider}`);
   }
 
   const client = new OpenAI({
     baseURL: config.baseURL,
-    apiKey: config.apiKey,
+    apiKey,
     timeout: 30 * 1000, // 30 seconds timeout
     defaultHeaders: {
       "HTTP-Referer": "https://simulark.app",
@@ -87,7 +92,7 @@ export function createAIClient(provider: AIProvider = "zhipu") {
 export async function generateArchitectureStream(
   prompt: string,
   modelId?: string,
-  mode: "default" | "startup" | "corporate" = "default",
+  mode: ArchitectureMode = "corporate",
   currentNodes: any[] = [],
   currentEdges: any[] = [],
   quickMode: boolean = false,
@@ -202,7 +207,7 @@ export async function generateArchitectureStream(
 async function callModelStream(
   provider: AIProvider,
   prompt: string,
-  mode: "default" | "startup" | "corporate" = "default",
+  mode: ArchitectureMode = "corporate",
   currentNodes: any[] = [],
   currentEdges: any[] = [],
   quickMode: boolean = false,
@@ -235,11 +240,11 @@ async function callModelStream(
       // Startup/MVP: Disable thinking for speed
       reasoningConfig = { thinking: { type: "disabled" } };
       console.log(`[AI Client] Reasoning: DISABLED (Startup/MVP mode)`);
-    } else if (mode === "default" || complexity === "simple") {
-      // Default or simple: Reduced thinking
+    } else if (mode === "corporate" || complexity === "simple") {
+      // Corporate or simple: Reduced thinking
       reasoningConfig = { thinking: { type: "low" } };
       console.log(
-        `[AI Client] Reasoning: LOW (Default mode or simple architecture)`,
+        `[AI Client] Reasoning: LOW (Corporate mode or simple architecture)`,
       );
     } else {
       // Enterprise or complex: Full thinking enabled

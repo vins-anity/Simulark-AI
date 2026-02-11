@@ -3,12 +3,26 @@ import { TECH_ECOSYSTEM } from "./tech-ecosystem";
 export const TYPE_ICONS: Record<string, string> = {
   gateway: "lucide:network",
   service: "lucide:server",
+  frontend: "lucide:layout",
+  backend: "lucide:server-cog",
   database: "lucide:database",
   queue: "lucide:layers",
   storage: "lucide:hard-drive",
   function: "lucide:zap",
   client: "lucide:monitor",
   ai: "lucide:bot",
+  "ai-model": "lucide:brain",
+  auth: "lucide:shield",
+  payment: "lucide:credit-card",
+  automation: "lucide:workflow",
+  messaging: "lucide:message-square",
+  search: "lucide:search",
+  monitoring: "lucide:activity",
+  cicd: "lucide:git-branch",
+  security: "lucide:shield-check",
+  "vector-db": "lucide:layers",
+  loadbalancer: "lucide:arrow-left-right",
+  cache: "lucide:database",
 };
 
 /**
