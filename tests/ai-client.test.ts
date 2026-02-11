@@ -42,7 +42,7 @@ describe("AI Client Tests", () => {
     it("should have correct openrouter configuration", () => {
       const { config } = createAIClient("openrouter");
       expect(config.baseURL).toBe("https://openrouter.ai/api/v1");
-      expect(config.model).toBe("tngtech/deepseek-r1t2-chimera:free");
+      expect(config.model).toBe("z-ai/glm-4.5-air:free");
       expect(config.reasoningParam).toEqual({
         reasoning: { enabled: true },
       });
@@ -92,9 +92,9 @@ describe("AI Client Tests", () => {
       expect(config.model).toBe("glm-4.7-flash");
     });
 
-    it("should map deepseek models to openrouter provider", () => {
+    it("should map glm models to openrouter provider", () => {
       const { config } = createAIClient("openrouter");
-      expect(config.model).toContain("deepseek");
+      expect(config.model).toContain("glm");
     });
 
     it("should map kimi-k2.5 to kimi provider", () => {

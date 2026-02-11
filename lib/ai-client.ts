@@ -45,7 +45,7 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
   openrouter: {
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: env.OPENROUTER_API_KEY,
-    model: "tngtech/deepseek-r1t2-chimera:free", // Fallback
+    model: "z-ai/glm-4.5-air:free", // Free GLM model from Z.AI via OpenRouter
     reasoningParam: { reasoning: { enabled: true } },
   },
   google: {
@@ -112,6 +112,16 @@ export async function generateArchitectureStream(
         quickMode,
       );
     } else if (modelId === "deepseek-ai") {
+      return await callModelStream(
+        "openrouter",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+        quickMode,
+      );
+    } else if (modelId?.includes("glm-4.5-air")) {
+      // New GLM 4.5 Air model from Z.AI via OpenRouter (free)
       return await callModelStream(
         "openrouter",
         prompt,

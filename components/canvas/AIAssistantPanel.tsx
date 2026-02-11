@@ -510,6 +510,10 @@ This architecture separates concerns across dedicated service layers, enabling i
       const decoder = new TextDecoder();
       let buffer = "";
 
+      // Collect nodes and edges from tool results
+      const generatedNodes: any[] = [];
+      const generatedEdges: any[] = [];
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -910,6 +914,12 @@ This architecture separates concerns across dedicated service layers, enabling i
                       className="text-xs font-mono"
                     >
                       GLM-4.7-Flash (Free)
+                    </SelectItem>
+                    <SelectItem
+                      value="z-ai/glm-4.5-air:free"
+                      className="text-xs font-mono"
+                    >
+                      GLM-4.5-Air (Free)
                     </SelectItem>
                     <SelectItem
                       value="deepseek-ai"

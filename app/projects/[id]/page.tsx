@@ -376,7 +376,20 @@ export default function ProjectPage({
         ...data,
         nodes: enrichNodesWithTech(data.nodes),
       };
-      flowEditorRef.current.updateGraph(enrichedData);
+
+      // Apply auto-layout to organize the architecture
+      const layout = await import("@/lib/layout");
+      const layoutResult = layout.applyLayout(
+        enrichedData.nodes,
+        enrichedData.edges,
+        { algorithm: "arch-pattern" },
+      );
+
+      flowEditorRef.current.updateGraph({
+        ...enrichedData,
+        nodes: layoutResult.nodes,
+        edges: layoutResult.edges,
+      });
     }
     // Persist to database
     if (id && data.nodes && data.edges) {

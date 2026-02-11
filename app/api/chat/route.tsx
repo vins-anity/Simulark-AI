@@ -1,9 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, streamText, tool, type UIMessage } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
 import { createZhipu } from "zhipu-ai-provider";
+import { diagramTools, getToolsForOperation } from "@/lib/diagram-tools";
 import { env } from "@/lib/env";
+import { detectOperation, type OperationType } from "@/lib/intent-detector";
 import { logger } from "@/lib/logger";
 import {
   type ArchitectureMode,
@@ -41,8 +43,13 @@ function getProvider(modelId?: string): {
   model: string;
 } {
   // Map modelId to provider
-  if (modelId?.includes("glm")) {
+  // GLM models from Zhipu (bigmodel.cn) - starts with glm-
+  if (modelId?.startsWith("glm-")) {
     return { provider: "zhipu", model: modelId };
+  }
+  // GLM models from OpenRouter (Z.AI) - starts with z-ai/
+  if (modelId?.startsWith("z-ai/")) {
+    return { provider: "openrouter", model: modelId };
   }
   if (modelId?.includes("kimi") || modelId?.includes("moonshot")) {
     return { provider: "kimi", model: modelId };
@@ -188,7 +195,11 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Build system prompt with full context
+    // Detect operation type for dynamic modifications
+    const operationType = detectOperation(lastMessageContent, currentNodes);
+    logger.info("Detected operation type", { operationType });
+
+    // Build system prompt with full context including operation type
     const systemPrompt = buildEnhancedSystemPrompt({
       userInput: lastMessageContent,
       architectureType: detection.type,
@@ -198,6 +209,7 @@ export async function POST(req: NextRequest) {
       mode: (mode || "corporate") as ArchitectureMode,
       quickMode: false,
       conversationHistory,
+      operationType,
     });
 
     // Get provider and model

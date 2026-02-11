@@ -1,4 +1,11 @@
 import { logger } from "@/lib/logger";
+import {
+  detectOperation,
+  getComponentCountAdjustment,
+  getOperationInstructions,
+  type OperationType,
+  shouldRelaxConstraints,
+} from "./intent-detector";
 
 export type ArchitectureType =
   | "web-app"
@@ -32,6 +39,7 @@ export interface PromptContext {
   mode: ArchitectureMode;
   quickMode: boolean;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
+  operationType?: OperationType; // Type of operation (create/modify/simplify/remove/extend)
 }
 
 // Complexity indicators
@@ -939,6 +947,41 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
   const complexity = detectComplexity(context.userInput);
   const modeConstraints = MODE_CONSTRAINTS[context.mode];
 
+  // Detect operation type
+  const operationType =
+    context.operationType ||
+    detectOperation(context.userInput, context.currentNodes || []);
+  const operationInstructions = getOperationInstructions(operationType);
+  const shouldRelax = shouldRelaxConstraints(operationType);
+  const countAdjustment = getComponentCountAdjustment(operationType);
+
+  // Build current architecture context
+  let currentArchitectureContext = "";
+  if (context.currentNodes && context.currentNodes.length > 0) {
+    const nodeCount = context.currentNodes.length;
+    const edgeCount = context.currentEdges?.length || 0;
+
+    currentArchitectureContext = `
+CURRENT ARCHITECTURE STATE:
+You are MODIFYING an existing architecture with ${nodeCount} components and ${edgeCount} connections.
+
+Existing Components:
+${context.currentNodes
+  .map(
+    (n: any) =>
+      `- ${n.data?.label || n.id} (${n.type}): ${n.data?.description || "No description"}`,
+  )
+  .join("\n")}
+
+IMPORTANT: ${operationInstructions}
+
+PRESERVATION RULES:
+1. Keep existing node IDs where possible
+2. Only modify components explicitly mentioned in the request
+3. Maintain connections unless they involve removed components
+4. Preserve the overall architecture pattern unless changing it entirely`;
+  }
+
   // Build conversation context analysis
   let conversationContext = "";
   if (context.conversationHistory && context.conversationHistory.length > 0) {
@@ -959,6 +1002,16 @@ INSTRUCTION: Build upon or modify the previous architecture based on this conver
     }
   }
 
+  // Adjust component constraints for operations like simplify/remove
+  const adjustedMin = Math.max(
+    1,
+    modeConstraints.minComponents + countAdjustment.minAdjustment,
+  );
+  const adjustedMax = Math.max(
+    adjustedMin,
+    modeConstraints.maxComponents + countAdjustment.maxAdjustment,
+  );
+
   // Skip complexity-based component limits for now
   const componentGuidelines = `COMPONENT GUIDELINES:
 ${getModeConstraints(context.mode)}
@@ -976,9 +1029,11 @@ ${getFrameworkCompatibilityRules()}`;
 
   // Quick mode: shorter prompt
   if (context.quickMode) {
-    return `You are a Solutions Architect. Generate a JSON architecture for: "${context.userInput}"
+    return `You are a Solutions Architect. ${context.currentNodes && context.currentNodes.length > 0 ? "MODIFY the existing" : "Generate a new"} architecture for: "${context.userInput}"
+${currentArchitectureContext}
 ${conversationContext}
 
+OPERATION: ${operationType.toUpperCase()}
 ARCHITECTURE TYPE: ${detection.type}
 MODE: ${context.mode}
 COMPLEXITY: ${complexity}
@@ -1014,7 +1069,7 @@ REQUIRED JSON FORMAT:
 }
 
 RULES:
-1. Use ${modeConstraints.minComponents}-${modeConstraints.maxComponents} components
+1. Use ${adjustedMin}-${adjustedMax} components${shouldRelax ? " (relaxed for simplification)" : ""}
 2. Never mix incompatible frameworks (Next.js + Express)
 3. Use real technology names from the recommendations
 4. Position: Gateways top (y:50), Services middle (y:150-250), Data bottom (y:350-450)
@@ -1025,8 +1080,10 @@ RULES:
   return `You are an expert Solutions Architect specializing in ${detection.type.replace("-", " ")} design.
 
 USER REQUEST: "${context.userInput}"
+${currentArchitectureContext}
 ${conversationContext}
 
+OPERATION TYPE: ${operationType.toUpperCase()}
 DETECTED ARCHITECTURE: ${detection.type}
 CONFIDENCE: ${Math.round(detection.confidence * 100)}%
 
@@ -1059,41 +1116,58 @@ POSITIONING GUIDELINES:
 - Spread horizontally: x spacing 200-300px
 
 CRITICAL RULES:
-1. Never exceed ${modeConstraints.maxComponents} components
-2. Never use less than ${modeConstraints.minComponents} components
+1. Never exceed ${adjustedMax} components
+2. Never use less than ${adjustedMin} components${shouldRelax ? " (relaxed for " + operationType + ")" : ""}
 3. Never mix full-stack frameworks with separate backend frameworks
 4. Match complexity to request (simple apps don't need CDN/load balancer)
 5. Prefer managed services in startup mode
 6. Include monitoring only if complexity warrants it
+7. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
 
-OUTPUT FORMAT:
-Return a JSON object with:
+OUTPUT FORMAT - CRITICAL:
+You MUST return a complete JSON object with BOTH nodes AND edges arrays. Without edges, the architecture is incomplete and unusable.
+
+REQUIRED JSON STRUCTURE:
 {
-  "nodes": [array of node objects],
-  "edges": [array of edge objects]
+  "nodes": [
+    {
+      "id": "unique-id",
+      "type": "frontend|backend|database|gateway|cache|queue|ai|storage",
+      "position": { "x": number, "y": number },
+      "data": {
+        "label": "Display Name",
+        "description": "Brief purpose",
+        "tech": "technology-id-from-ecosystem",
+        "serviceType": "same-as-type"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-unique-id",
+      "source": "source-node-id",
+      "target": "target-node-id",
+      "animated": true,
+      "data": { "protocol": "https" }
+    }
+  ]
 }
 
-Node structure:
-{
-  "id": "unique-id",
-  "type": "frontend|backend|database|gateway|cache|queue|ai|storage",
-  "position": { "x": number, "y": number },
-  "data": {
-    "label": "Display Name",
-    "description": "Brief purpose",
-    "tech": "technology-id-from-ecosystem",
-    "serviceType": "same-as-type"
-  }
-}
+CONNECTION REQUIREMENTS - VERY IMPORTANT:
+1. EVERY node (except the entry point) MUST have at least ONE incoming edge
+2. Create edges showing data flow: Load Balancer → Frontend → Backend → Database
+3. Use "animated": true on all edges to show active connections
+4. Protocol options: "https", "http", "websocket", "grpc", "database", "cache", "queue"
+5. Example edge: { "id": "edge-1", "source": "gateway-1", "target": "frontend-1", "animated": true, "data": { "protocol": "https" } }
 
-Edge structure:
-{
-  "id": "edge-unique",
-  "source": "source-node-id",
-  "target": "target-node-id",
-  "animated": boolean,
-  "data": { "protocol": "HTTPS|HTTP|WebSocket|gRPC|TCP" }
-}
+CRITICAL RULES:
+1. Never exceed ${adjustedMax} components
+2. Never use less than ${adjustedMin} components${shouldRelax ? " (relaxed for " + operationType + ")" : ""}
+3. Never mix full-stack frameworks with separate backend frameworks
+4. Match complexity to request (simple apps don't need CDN/load balancer)
+5. Prefer managed services in startup mode
+6. Include monitoring only if complexity warrants it
+7. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
 
 Generate the complete JSON architecture now.`;
 }
