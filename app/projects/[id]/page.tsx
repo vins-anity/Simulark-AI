@@ -1,30 +1,31 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+import { Activity } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { getProject, saveProject } from "@/actions/projects";
+import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
-import { notFound } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { type Project } from "@/lib/schema/graph";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@iconify/react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import type { Project } from "@/lib/schema/graph";
 import { useSimulationStore } from "@/lib/store";
-import { Activity } from "lucide-react";
+import { enrichNodesWithTech } from "@/lib/tech-normalizer";
+import { cn } from "@/lib/utils";
 
 // Workstation Components
 // Workstation Components
@@ -370,7 +371,12 @@ export default function ProjectPage({
 
   const handleGenerationSuccess = async (data: any) => {
     if (flowEditorRef.current) {
-      flowEditorRef.current.updateGraph(data);
+      // Enrich nodes with technology info for proper icon rendering
+      const enrichedData = {
+        ...data,
+        nodes: enrichNodesWithTech(data.nodes),
+      };
+      flowEditorRef.current.updateGraph(enrichedData);
     }
     // Persist to database
     if (id && data.nodes && data.edges) {

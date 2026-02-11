@@ -164,6 +164,11 @@ export function AIAssistantPanel({
   // Track if we've processed the initial prompt to prevent double-processing
   const hasProcessedInitialPrompt = useRef(false);
 
+  // Reset the ref when projectId changes (handles navigation from dashboard)
+  useEffect(() => {
+    hasProcessedInitialPrompt.current = false;
+  }, [projectId]);
+
   // Auto-generate architecture when initialPrompt is provided (from dashboard)
   useEffect(() => {
     // Only trigger if we have a prompt, haven't started generating, have no messages yet,
@@ -181,7 +186,7 @@ export function AIAssistantPanel({
         processMessage(initialPrompt);
       }, 100);
     }
-  }, [initialPrompt, isGenerating, messages.length, isLoadingChats]);
+  }, [initialPrompt, isGenerating, messages.length, isLoadingChats, projectId]);
 
   const loadUserPreferences = async () => {
     const supabase = createBrowserClient(

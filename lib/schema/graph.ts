@@ -30,6 +30,7 @@ export const ValidationStatusSchema = v.picklist(["valid", "warning", "error"]);
 
 export const NodeDataSchema = v.object({
   label: v.string(),
+  tech: v.optional(v.string()), // Technology ID for icon rendering (e.g., "nextjs", "postgres", "redis")
   serviceType: NodeTypeSchema,
   validationStatus: v.optional(ValidationStatusSchema, "valid"),
   costEstimate: v.optional(v.number(), 0),

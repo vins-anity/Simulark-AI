@@ -1043,6 +1043,14 @@ Use these exact technology IDs when possible:
 - Backend: express, fastify, nestjs, hono, elysia
 - Database: postgresql, mysql, mongodb, redis, sqlite
 - Cloud: aws, vercel, railway, render, cloudflare
+- AI/ML: openai, anthropic, pinecone, weaviate
+- Auth: clerk, auth0, firebase-auth
+- Cache: redis, memcached
+- Queue: rabbitmq, kafka, sqs
+- Storage: s3, cloudflare-r2
+- Monitoring: datadog, newrelic, grafana
+
+IMPORTANT: Always include the "tech" field with the specific technology ID (e.g., "tech": "nextjs" or "tech": "postgresql"). This enables proper icon rendering.
 
 POSITIONING GUIDELINES:
 - Layer 1 (Entry): y: 50-150 (CDN, Load Balancer, API Gateway, Frontend)
