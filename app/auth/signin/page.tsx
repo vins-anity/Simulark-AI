@@ -1,10 +1,8 @@
-"use client";
+export const dynamic = "force-dynamic";
+
+("use client");
 
 import { Icon } from "@iconify/react";
-import { createBrowserClient } from "@supabase/ssr";
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { useState } from "react";
 
 // Technical background grid component
 function TechnicalBackground() {

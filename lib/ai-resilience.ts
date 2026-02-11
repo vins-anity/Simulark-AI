@@ -25,7 +25,7 @@ function sleep(ms: number): Promise<void> {
 /**
  * Calculate exponential backoff delay
  */
-function calculateDelay(
+export function calculateDelay(
   attempt: number,
   config: RetryConfig = DEFAULT_RETRY_CONFIG,
 ): number {
@@ -36,7 +36,7 @@ function calculateDelay(
 /**
  * Check if error is retryable
  */
-function isRetryableError(error: unknown): boolean {
+export function isRetryableError(error: unknown): boolean {
   if (error instanceof Error) {
     // Retry on network errors, timeouts, rate limits (429), and server errors (5xx)
     const message = error.message.toLowerCase();
@@ -65,7 +65,7 @@ function isRetryableError(error: unknown): boolean {
 /**
  * Check if error is a rate limit error (429)
  */
-function isRateLimitError(error: unknown): boolean {
+export function isRateLimitError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     if (

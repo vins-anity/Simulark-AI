@@ -44,4 +44,6 @@ next-env.d.ts
 .windsurf
 .kilocodemodes
 
+.kilocode
+.kilocode/
 

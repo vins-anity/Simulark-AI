@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // React Compiler for performance
+  // Turbopack configuration for Next.js 16
+  turbopack: {},
+
   reactCompiler: true,
 
   // Enable experimental features for better performance
