@@ -7,74 +7,82 @@ const capabilities = [
   {
     id: "CAP-01",
     category: "VISUALIZATION",
-    title: "Interactive Diagrams",
+    title: "Interactive Canvas",
     description:
-      "Drag, drop, connect. Real-time collaborative canvas with version control.",
+      "Drag, drop, and connect architecture components on an infinite canvas with snap-to-grid precision.",
     icon: "lucide:git-fork",
-    specs: ["React Flow", "Multiplayer", "History"],
+    status: "LIVE",
+    specs: ["React Flow", "Multi-select", "Undo/Redo"],
   },
   {
     id: "CAP-02",
     category: "AI_CORE",
     title: "Natural Language",
     description:
-      "Describe your system. AI translates intent into architectural diagrams.",
+      "Describe your system in plain English. AI generates the architecture diagram automatically.",
     icon: "lucide:message-square-code",
-    specs: ["GPT-4o", "Claude", "Local LLMs"],
+    status: "LIVE",
+    specs: ["GLM-4.7", "DeepSeek V3", "Streaming"],
   },
   {
     id: "CAP-03",
     category: "EXPORT",
-    title: "Code Generation",
+    title: "Multi-Format Export",
     description:
-      "Compile diagrams to Terraform, Kubernetes, Docker Compose, and more.",
-    icon: "lucide:terminal-square",
-    specs: ["HCL", "YAML", "JSON"],
+      "Export diagrams as SVG, PNG, PDF, or Mermaid for documentation and presentations.",
+    icon: "lucide:file-output",
+    status: "LIVE",
+    specs: ["SVG", "PNG", "PDF", "Mermaid"],
   },
   {
     id: "CAP-04",
-    category: "COLLABORATION",
-    title: "Team Workspaces",
+    category: "INTEGRATION",
+    title: "IDE Context Export",
     description:
-      "Shared projects with role-based access and real-time synchronization.",
-    icon: "lucide:users",
-    specs: ["RBAC", "Comments", "Audit log"],
+      "Export architecture as agent skills for Cursor, Claude Code, and other AI IDEs.",
+    icon: "lucide:plug",
+    status: "BETA",
+    specs: ["Cursor", "Claude Code", "Windsurf"],
   },
   {
     id: "CAP-05",
-    category: "INTEGRATION",
-    title: "IDE Context",
+    category: "ANALYSIS",
+    title: "Auto Layout",
     description:
-      "Export architectural context directly to Cursor, Claude Code, Windsurf.",
-    icon: "lucide:plug",
-    specs: ["MCP Protocol", "Skills", "Prompts"],
+      "Automatically organize your architecture with sophisticated layout algorithms.",
+    icon: "lucide:layout",
+    status: "BETA",
+    specs: ["ELK.js", "Hierarchical", "Radial"],
   },
   {
     id: "CAP-06",
-    category: "ANALYSIS",
-    title: "Cost Estimation",
+    category: "TESTING",
+    title: "Chaos Mode",
     description:
-      "Real-time infrastructure cost analysis across AWS, GCP, Azure.",
-    icon: "lucide:calculator",
-    specs: ["AWS", "GCP", "Azure"],
+      "Simulate failures and test resilience of your architecture design.",
+    icon: "lucide:flame",
+    status: "COMING_SOON",
+    specs: ["Stress Test", "Failure Sim", "Resilience"],
   },
   {
     id: "CAP-07",
-    category: "VALIDATION",
-    title: "Architecture Review",
+    category: "EXPORT",
+    title: "Terraform Export",
     description:
-      "AI-powered best practice checks and security recommendations.",
-    icon: "lucide:shield-check",
-    specs: ["Security", "Performance", "Cost"],
+      "Generate Infrastructure-as-Code from your visual diagrams automatically.",
+    icon: "lucide:terminal-square",
+    status: "COMING_SOON",
+    specs: ["Terraform", "HCL", "Multi-provider"],
   },
   {
     id: "CAP-08",
-    category: "DOCUMENTATION",
-    title: "Auto-Documentation",
+    category: "COLLABORATION",
+    title: "Team Workspaces",
     description:
-      "Generate technical documentation from your architecture diagrams.",
-    icon: "lucide:file-text",
-    specs: ["Markdown", "OpenAPI", "ADR"],
+      "Real-time collaboration with comments, version history, and shared projects.",
+    icon: "lucide:users",
+    status: "COMING_SOON",
+    specs: ["Real-time", "Comments", "History"],
   },
 ];
 
@@ -85,6 +93,10 @@ function CapabilityCard({
   capability: (typeof capabilities)[0];
   index: number;
 }) {
+  const isLive = capability.status === "LIVE";
+  const isBeta = capability.status === "BETA";
+  const isComingSoon = capability.status === "COMING_SOON";
+
   return (
     <motion.div
       className="relative group"
@@ -93,7 +105,13 @@ function CapabilityCard({
       viewport={{ once: true }}
       transition={{ delay: index * 0.05 }}
     >
-      <div className="h-full p-6 border border-brand-charcoal/10 bg-white group-hover:border-brand-orange/40 transition-all duration-300 relative">
+      <div
+        className={`h-full p-6 border bg-white group-hover:border-brand-orange/40 transition-all duration-300 relative ${
+          isComingSoon
+            ? "border-brand-charcoal/5 opacity-75"
+            : "border-brand-charcoal/10"
+        }`}
+      >
         {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-brand-charcoal/20 group-hover:border-brand-orange/40 transition-colors" />
         <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-brand-charcoal/20 group-hover:border-brand-orange/40 transition-colors" />
@@ -107,16 +125,41 @@ function CapabilityCard({
           </span>
         </div>
 
+        {/* Status Badge */}
+        <div className="absolute top-4 right-4">
+          <span
+            className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${
+              isLive
+                ? "bg-brand-green/10 text-brand-green"
+                : isBeta
+                  ? "bg-brand-orange/10 text-brand-orange"
+                  : "bg-brand-charcoal/5 text-brand-charcoal/40"
+            }`}
+          >
+            {isComingSoon ? "SOON" : capability.status}
+          </span>
+        </div>
+
         {/* Category */}
         <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-brand-orange block mb-4">
           // {capability.category}
         </span>
 
         {/* Icon */}
-        <div className="w-10 h-10 border border-brand-charcoal/10 flex items-center justify-center mb-4 group-hover:border-brand-orange/30 transition-colors">
+        <div
+          className={`w-10 h-10 border flex items-center justify-center mb-4 transition-colors ${
+            isComingSoon
+              ? "border-brand-charcoal/5 bg-brand-charcoal/5"
+              : "border-brand-charcoal/10 group-hover:border-brand-orange/30"
+          }`}
+        >
           <Icon
             icon={capability.icon}
-            className="w-5 h-5 text-brand-charcoal/60 group-hover:text-brand-orange transition-colors"
+            className={`w-5 h-5 ${
+              isComingSoon
+                ? "text-brand-charcoal/20"
+                : "text-brand-charcoal/60 group-hover:text-brand-orange"
+            } transition-colors`}
           />
         </div>
 
@@ -124,7 +167,11 @@ function CapabilityCard({
         <h3 className="font-mono text-sm font-bold text-brand-charcoal uppercase tracking-wide mb-2">
           {capability.title}
         </h3>
-        <p className="text-brand-charcoal/60 font-lora text-sm leading-relaxed mb-4">
+        <p
+          className={`font-lora text-sm leading-relaxed mb-4 ${
+            isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
+          }`}
+        >
           {capability.description}
         </p>
 
@@ -133,7 +180,11 @@ function CapabilityCard({
           {capability.specs.map((spec) => (
             <span
               key={spec}
-              className="px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider bg-brand-charcoal/5 text-brand-charcoal/50"
+              className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider ${
+                isComingSoon
+                  ? "bg-brand-charcoal/5 text-brand-charcoal/30"
+                  : "bg-brand-charcoal/5 text-brand-charcoal/50"
+              }`}
             >
               {spec}
             </span>
@@ -177,7 +228,7 @@ export function CapabilitiesGrid() {
             </span>
           </h2>
           <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-xl mx-auto">
-            Full-stack architecture design and deployment platform
+            Current and upcoming features for architecture design
           </p>
         </motion.div>
 
@@ -192,29 +243,30 @@ export function CapabilitiesGrid() {
           ))}
         </div>
 
-        {/* Bottom Metrics */}
+        {/* Legend */}
         <motion.div
-          className="mt-16 pt-12 border-t border-brand-charcoal/10"
+          className="mt-12 flex flex-wrap justify-center gap-6"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <div className="flex flex-wrap justify-center gap-12">
-            {[
-              { label: "EXPORT_FORMATS", value: "12+" },
-              { label: "CLOUD_PROVIDERS", value: "3" },
-              { label: "ARCH_PATTERNS", value: "50+" },
-              { label: "AI_MODELS", value: "8" },
-            ].map((stat, index) => (
-              <div key={stat.label} className="text-center">
-                <span className="font-poppins text-3xl font-bold text-brand-charcoal block">
-                  {stat.value}
-                </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40">
-                  {stat.label}
-                </span>
-              </div>
-            ))}
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-brand-green rounded-full" />
+            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+              Live
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-brand-orange rounded-full" />
+            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+              Beta
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-brand-charcoal/20 rounded-full" />
+            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+              Coming Soon
+            </span>
           </div>
         </motion.div>
       </div>

@@ -9,6 +9,9 @@ import {
   Copy,
   Loader2,
   Terminal,
+  Signal,
+  Wifi,
+  Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -33,6 +36,7 @@ import {
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "./LoadingState";
+import { StreamingMessage } from "./StreamingMessage";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -62,6 +66,109 @@ interface Chat {
   updated_at: string;
 }
 
+// Signal strength indicator based on streaming progress
+function SignalStrengthIndicator({
+  isGenerating,
+  streamProgress,
+}: {
+  isGenerating: boolean;
+  streamProgress: number;
+}) {
+  const bars = [
+    { width: "20%", delay: 0 },
+    { width: "40%", delay: 0.1 },
+    { width: "60%", delay: 0.2 },
+    { width: "80%", delay: 0.3 },
+    { width: "100%", delay: 0.4 },
+  ];
+
+  const activeBars = Math.ceil((streamProgress / 100) * 5);
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="flex items-end gap-0.5 h-3">
+        {bars.map((bar, i) => (
+          <motion.div
+            key={i}
+            className={cn(
+              "w-0.5 rounded-sm",
+              isGenerating
+                ? i < activeBars
+                  ? "bg-brand-orange"
+                  : "bg-brand-charcoal/10"
+                : "bg-brand-charcoal/10",
+            )}
+            initial={{ height: 2 }}
+            animate={{
+              height: isGenerating && i < activeBars ? [2, 8, 4, 10, 6][i] : 2,
+              opacity: isGenerating && i < activeBars ? 1 : 0.3,
+            }}
+            transition={{
+              duration: 0.5,
+              repeat: isGenerating ? Infinity : 0,
+              repeatType: "reverse",
+              delay: bar.delay,
+            }}
+          />
+        ))}
+      </div>
+      <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40">
+        {isGenerating ? `${streamProgress.toFixed(0)}%` : "READY"}
+      </span>
+    </div>
+  );
+}
+
+// Processing steps indicator
+function ProcessingSteps({ isGenerating }: { isGenerating: boolean }) {
+  const steps = ["ANALYZING", "PLANNING", "GENERATING", "VALIDATING"];
+
+  const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      setCurrentStep(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % steps.length);
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [isGenerating]);
+
+  if (!isGenerating) return null;
+
+  return (
+    <div className="flex items-center gap-2 overflow-hidden">
+      <motion.div
+        className="flex items-center gap-1"
+        animate={{ x: [0, -20] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      >
+        {steps.map((step, i) => (
+          <div key={step} className="flex items-center gap-1 shrink-0">
+            <span
+              className={cn(
+                "font-mono text-[8px] uppercase tracking-wider transition-colors",
+                i === currentStep
+                  ? "text-brand-orange font-bold"
+                  : "text-brand-charcoal/30",
+              )}
+            >
+              {step}
+            </span>
+            {i < steps.length - 1 && (
+              <span className="text-brand-charcoal/20">→</span>
+            )}
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 export function AIAssistantPanel({
   onGenerationSuccess,
   projectId,
@@ -76,6 +183,7 @@ export function AIAssistantPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [streamProgress, setStreamProgress] = useState(0);
   const [showChatList, setShowChatList] = useState(false);
   const [_isThinkingOpen, _setIsThinkingOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -460,6 +568,15 @@ export function AIAssistantPanel({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsGenerating(true);
+    setStreamProgress(0);
+
+    // Progress simulation
+    const progressInterval = setInterval(() => {
+      setStreamProgress((prev) => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 15;
+      });
+    }, 500);
 
     // Save user message to database
     let chatId = currentChatId;
@@ -470,6 +587,7 @@ export function AIAssistantPanel({
           defaultChatResult.error || "Failed to retrieve chat session",
         );
         setIsGenerating(false);
+        clearInterval(progressInterval);
         return;
       }
       chatId = defaultChatResult.chat.id;
@@ -537,6 +655,8 @@ export function AIAssistantPanel({
         );
         toast.error(errorMessage);
         setIsGenerating(false);
+        clearInterval(progressInterval);
+        setStreamProgress(0);
         return; // Exit gracefully instead of throwing
       }
 
@@ -555,6 +675,8 @@ export function AIAssistantPanel({
         );
         toast.error("No response from server");
         setIsGenerating(false);
+        clearInterval(progressInterval);
+        setStreamProgress(0);
         return;
       }
 
@@ -611,6 +733,7 @@ export function AIAssistantPanel({
                         ) {
                           lastGeneratedData = parsed;
                           onGenerationSuccess(parsed);
+                          setStreamProgress(100);
                         }
                       }
                     } catch (e) {
@@ -675,6 +798,7 @@ export function AIAssistantPanel({
             } else if (json.type === "result" && json.data) {
               lastGeneratedData = json.data;
               onGenerationSuccess(json.data);
+              setStreamProgress(100);
             }
           } catch (e) {
             console.debug("Skipping incomplete JSON line", e);
@@ -733,6 +857,8 @@ export function AIAssistantPanel({
       );
     } finally {
       setIsGenerating(false);
+      clearInterval(progressInterval);
+      setStreamProgress(0);
     }
   };
 
@@ -833,9 +959,9 @@ export function AIAssistantPanel({
         </AnimatePresence>
       </div>
 
-      {/* Messages Area */}
+      {/* Messages Area - Fixed horizontal overflow */}
       <div
-        className="flex-1 overflow-y-auto p-3 space-y-4 bg-white"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4 bg-white"
         ref={messagesEndRef}
       >
         {messages.length === 0 ? (
@@ -858,7 +984,7 @@ export function AIAssistantPanel({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
               className={cn(
-                "flex flex-col gap-1.5 max-w-[98%]",
+                "flex flex-col gap-1.5",
                 message.role === "user" ? "ml-auto items-end" : "items-start",
               )}
             >
@@ -882,11 +1008,11 @@ export function AIAssistantPanel({
                 )}
               </div>
 
-              {/* Message Content */}
+              {/* Message Content - Fixed overflow */}
               {message.content && (
                 <div
                   className={cn(
-                    "relative group",
+                    "relative group max-w-full",
                     message.role === "user"
                       ? "bg-brand-charcoal text-white"
                       : "bg-neutral-50 text-brand-charcoal border border-brand-charcoal/10",
@@ -898,10 +1024,11 @@ export function AIAssistantPanel({
                 >
                   {/* Copy button for assistant messages */}
                   {message.role === "assistant" &&
+                    message.content &&
                     message.content !== "__LOADING__" && (
                       <button
                         onClick={() => copyToClipboard(message.content)}
-                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/10 rounded"
+                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/10 rounded z-10"
                         title="Copy to clipboard"
                       >
                         <Copy className="w-3 h-3 text-brand-charcoal/40" />
@@ -910,24 +1037,27 @@ export function AIAssistantPanel({
 
                   {message.role === "assistant" ? (
                     message.content === "__LOADING__" ? (
-                      <LoadingState />
+                      <StreamingMessage
+                        isGenerating={isGenerating}
+                        reasoning={message.reasoning}
+                      />
                     ) : (
                       <div
                         className="prose prose-sm max-w-none font-mono text-[10px] leading-relaxed
-                        prose-p:my-1.5 prose-p:text-brand-charcoal/90
+                        prose-p:my-1.5 prose-p:text-brand-charcoal/90 prose-p:overflow-wrap-break-word prose-p:word-break-break-word
                         prose-headings:font-black prose-headings:uppercase prose-headings:tracking-[0.08em] prose-headings:text-brand-charcoal prose-headings:mt-3 prose-headings:mb-2
                         prose-h1:text-sm prose-h2:text-xs prose-h3:text-[11px]
                         prose-strong:text-brand-orange prose-strong:font-bold
                         prose-ul:my-1.5 prose-ul:space-y-0.5
                         prose-li:my-0 prose-li:text-brand-charcoal/80
-                        prose-code:text-[9px] prose-code:bg-brand-charcoal/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                        prose-pre:bg-brand-charcoal prose-pre:text-white prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2"
+                        prose-code:text-[9px] prose-code:bg-brand-charcoal/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:break-all
+                        prose-pre:bg-brand-charcoal prose-pre:text-white prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2 prose-pre:overflow-x-auto"
                       >
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     )
                   ) : (
-                    <div className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed uppercase tracking-wide">
+                    <div className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed uppercase tracking-wide break-all">
                       {message.content}
                     </div>
                   )}
@@ -945,16 +1075,16 @@ export function AIAssistantPanel({
           className="relative flex flex-col gap-1.5 border border-brand-charcoal/20 p-2 bg-white shadow-sm"
         >
           {/* Top Row: Controls & Model */}
-          <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 pb-1.5 overflow-x-auto scrollbar-hide">
             {/* Mode Selector */}
-            <div className="flex gap-1">
+            <div className="flex gap-1 shrink-0">
               {(["default", "startup", "corporate"] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setChatMode(mode)}
                   className={cn(
-                    "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm",
+                    "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm whitespace-nowrap",
                     chatMode === mode
                       ? "bg-brand-charcoal text-white font-black"
                       : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5",
@@ -967,7 +1097,7 @@ export function AIAssistantPanel({
 
             {/* Model Selector */}
             <Select value={model} onValueChange={setModel}>
-              <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 bg-neutral-50 font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal transition-colors gap-2 hover:bg-white hover:border-brand-charcoal/40 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none">
+              <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 bg-neutral-50 font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal transition-colors gap-2 hover:bg-white hover:border-brand-charcoal/40 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-none border-2 border-brand-charcoal font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)]">
@@ -1032,18 +1162,19 @@ export function AIAssistantPanel({
           </div>
         </form>
 
-        {/* Status bar */}
-        <div className="flex items-center justify-between mt-1.5 px-1">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                isGenerating ? "bg-brand-orange animate-pulse" : "bg-green-500",
-              )}
+        {/* Enhanced Status bar with Signal Strength */}
+        <div className="flex items-center justify-between mt-2 px-1">
+          <div className="flex items-center gap-3">
+            <SignalStrengthIndicator
+              isGenerating={isGenerating}
+              streamProgress={streamProgress}
             />
-            <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40">
-              {isGenerating ? "PROCESSING..." : "READY"}
-            </span>
+            {isGenerating && (
+              <>
+                <div className="h-3 w-px bg-brand-charcoal/10" />
+                <ProcessingSteps isGenerating={isGenerating} />
+              </>
+            )}
           </div>
           <span className="font-mono text-[8px] text-brand-charcoal/30 uppercase">
             {inputValue.length} chars
