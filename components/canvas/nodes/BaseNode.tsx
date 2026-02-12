@@ -171,81 +171,80 @@ export function BaseNode({
         className={cn(
           "relative flex flex-col transition-all duration-300 ease-out group",
           "w-72 h-auto rounded-none overflow-hidden",
-          "border",
-          // Normal state - multi-layer shadows
+          "border-2 border-brand-charcoal bg-white",
+          // Normal state - hard brutalist shadow
           !chaosMode &&
             !isKilled &&
-            "bg-bg-secondary border-border-primary node-shadow-layered hover:node-shadow-hover",
+            "shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] hover:translate-x-[2px] hover:translate-y-[2px]",
           !chaosMode &&
             !isKilled &&
             selected &&
-            "node-shadow-selected border-brand-orange",
+            "border-brand-orange shadow-[3px_3px_0px_0px_#FF5733]",
           // Chaos mode - active
           chaosMode &&
             !isKilled &&
             !isDegraded &&
-            "cursor-crosshair bg-bg-secondary border-border-primary hover:border-red-500/50",
+            "cursor-crosshair border-brand-charcoal hover:border-red-500",
           // Killed state
           isKilled &&
-            "bg-red-950/30 border-red-500/50 grayscale opacity-75 cursor-not-allowed shadow-red-900/50",
+            "bg-neutral-100 border-neutral-400 grayscale opacity-75 cursor-not-allowed shadow-none",
           // Degraded state
-          isDegraded && "bg-brand-orange/10 border-brand-orange/40",
+          isDegraded && "border-brand-orange/60",
           // Recovering state
           isRecovering &&
-            "bg-brand-green/10 border-brand-green/40 animate-pulse",
+            "border-brand-green/60 animate-pulse",
           className,
         )}
       >
-        {/* Handles for edges - Transparent but functional */}
+        {/* Handles for edges - Technical Crosshairs */}
         <Handle
           type="target"
           position={Position.Top}
-          className="opacity-0 w-full h-4 border-0 !bg-transparent z-50"
+          className="w-3 h-3 border-2 border-brand-charcoal bg-white rounded-none !top-[-6px] z-50"
         />
         <Handle
           type="source"
           position={Position.Bottom}
-          className="opacity-0 w-full h-4 border-0 !bg-transparent z-50"
+          className="w-3 h-3 border-2 border-brand-charcoal bg-white rounded-none !bottom-[-6px] z-50"
         />
 
-        {/* Top Resize Handle Visual */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
+        {/* Technical Header Band */}
+        <div className="h-2 border-b-2 border-brand-charcoal bg-brand-charcoal/80 flex items-center justify-between px-3">
+           <div className="flex gap-1">
+            <div className="w-1.5 h-1.5 bg-white/20" />
+            <div className="w-1.5 h-1.5 bg-white/20" />
+          </div>
+          <span className="font-mono text-[9px] text-white/40 uppercase tracking-[0.2em]">
+            SYSTEM_NODE // ARCH_{id.slice(0,4)}
+          </span>
+        </div>
 
         {/* Chaos Mode Status Indicators */}
         {isKilled && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-red-500 text-white text-[10px] font-mono uppercase tracking-wider rounded-sm animate-pulse z-20">
+          <div className="absolute top-8 right-2 flex items-center gap-1.5 px-2 py-1 bg-red-600 text-white text-[9px] font-mono font-bold uppercase tracking-wider rounded-none z-20 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Skull className="w-3 h-3" />
-            FAILED
-          </div>
-        )}
-        {isDegraded && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-brand-orange text-white text-[10px] font-mono uppercase tracking-wider rounded-sm z-20">
-            <Activity className="w-3 h-3" />
-            DEGRADED
-          </div>
-        )}
-        {isRecovering && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-brand-green text-white text-[10px] font-mono uppercase tracking-wider rounded-sm z-20">
-            <ZapOff className="w-3 h-3" />
-            RECOVERING
+            CRITICAL_FAILURE
           </div>
         )}
 
-        <div className="p-4 flex flex-col gap-3">
+        <div className="p-4 flex flex-col gap-4">
           {/* Header: Icon + Title + Tech */}
           <div className="flex items-start gap-4">
-            {/* Icon Container */}
-            <div className="shrink-0 w-10 h-10 rounded-lg bg-white border border-brand-charcoal/5 shadow-sm flex items-center justify-center text-brand-orange">
+            {/* Icon Container - Technical Monochromatic */}
+            <div className="shrink-0 w-12 h-12 border-2 border-brand-charcoal bg-white flex items-center justify-center grayscale group-hover:grayscale-0 transition-all">
               {nodeLogo ? (
-                <Icon icon={nodeLogo} className="w-6 h-6 text-brand-charcoal" />
+                <Icon icon={nodeLogo} className="w-7 h-7 text-brand-charcoal" />
               ) : (
-                icon || <Component size={20} />
+                icon || <Component size={24} className="text-brand-charcoal" />
               )}
             </div>
 
             {/* Title & Metadata */}
-            <div className="flex flex-col min-w-0 flex-1 relative">
-              <div className="flex justify-between items-start w-full">
+            <div className="flex flex-col min-w-0 flex-1">
+              <div className="flex flex-col gap-0.5">
+                 <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
+                  {nodeTechLabel || (data?.tech as string) || "GENERIC_SRV"}
+                </span>
                 {isEditingLabel ? (
                   <input
                     type="text"
@@ -256,46 +255,53 @@ export function BaseNode({
                       if (e.key === "Enter") handleSaveLabel();
                       if (e.key === "Escape") setIsEditingLabel(false);
                     }}
-                    className="font-poppins font-bold text-sm text-brand-charcoal leading-tight bg-white border border-brand-orange rounded px-1 focus:outline-none focus:ring-1 focus:ring-brand-orange w-[70%]"
+                    className="font-poppins font-black text-base text-brand-charcoal leading-tight bg-white border-b-2 border-brand-orange focus:outline-none w-full uppercase"
                     autoFocus
                   />
                 ) : (
                   <h3
-                    className="font-poppins font-bold text-sm text-brand-charcoal leading-snug cursor-text truncate pr-2 max-w-[70%]"
+                    className="font-poppins font-black text-base text-brand-charcoal leading-none cursor-text truncate uppercase tracking-tighter"
                     onDoubleClick={handleEditLabel}
                     title={nodeLabel}
                   >
                     {nodeLabel}
                   </h3>
                 )}
-
-                {/* Service Name (Tech) - Top Right */}
-                <div className="text-[10px] text-brand-charcoal/50 font-medium font-mono uppercase tracking-wider truncate max-w-[30%] text-right">
-                  {nodeTechLabel || (data?.tech as string) || "Service"}
-                </div>
               </div>
+            </div>
+          </div>
 
-              {/* Node Type Badge - Below Title */}
-              <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-[10px] font-mono uppercase tracking-wider bg-brand-charcoal/5 text-brand-charcoal/60 w-fit">
-                {(data?.serviceType as string) ||
-                  (data?.tier as string) ||
-                  type ||
-                  "SERVICE"}
+          {/* Technical Data Fields */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-brand-charcoal/10 pt-4 px-1 font-mono">
+             <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] opacity-40 uppercase">Class</span>
+              <span className="text-[10px] font-bold uppercase truncate">
+                {(data?.serviceType as string) || type || "SERVICE"}
+              </span>
+            </div>
+             <div className="flex flex-col gap-0.5 text-right">
+              <span className="text-[8px] opacity-40 uppercase">Status</span>
+              <span className={cn(
+                "text-[10px] font-bold uppercase",
+                isKilled ? "text-red-500" : "text-brand-green"
+              )}>
+                {isKilled ? "OFFLINE" : "STABLE"}
               </span>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="h-px w-full bg-brand-charcoal/5" />
-
-          {/* Description */}
-          <div className="text-[11px] text-brand-charcoal/60 leading-relaxed font-sans line-clamp-3">
-            {(data?.description as string) || "Core infrastructure component."}
+          {/* Infrastructure Metrics (Mock Readout) */}
+          <div className="bg-neutral-50 border border-brand-charcoal/5 p-2 font-mono text-[9px] flex items-center justify-between opacity-60">
+             <div className="flex items-center gap-2">
+                <Cpu className="w-3 h-3" />
+                <span>LOAD: {isKilled ? "0.00" : "1.42"}%</span>
+             </div>
+             <span>0x{id.slice(-4).toUpperCase()}</span>
           </div>
         </div>
 
-        {/* Bottom Resize Handle Visual */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
+        {/* Decorative HUD Corner */}
+        <div className="absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-brand-charcoal opacity-20 group-hover:opacity-100 transition-opacity" />
       </div>
 
       {contextMenu && (

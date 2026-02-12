@@ -778,3 +778,232 @@ a.inline,
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   TERMINAL / CHAT INTERFACE ENHANCEMENTS
+   ============================================ */
+
+/* Custom scrollbar for chat messages */
+.messages-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.messages-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--brand-charcoal);
+  opacity: 0.2;
+  border-radius: 2px;
+}
+
+.messages-scrollbar::-webkit-scrollbar-thumb:hover {
+  opacity: 0.4;
+}
+
+/* Terminal cursor blink effect */
+@keyframes terminal-cursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.terminal-cursor::after {
+  content: "_";
+  animation: terminal-cursor 1s infinite;
+  color: var(--brand-orange);
+}
+
+/* Status indicator pulse */
+@keyframes status-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(120, 140, 93, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 0 4px rgba(120, 140, 93, 0);
+  }
+}
+
+.status-online {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Terminal scanline effect overlay */
+.terminal-scanlines::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Message entry animation */
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: message-enter 0.25s ease-out forwards;
+}
+
+/* Terminal bracket decorations */
+.terminal-bracket {
+  position: relative;
+}
+
+.terminal-bracket::before {
+  content: "[";
+  color: var(--brand-charcoal);
+  opacity: 0.3;
+}
+
+.terminal-bracket::after {
+  content: "]";
+  color: var(--brand-charcoal);
+  opacity: 0.3;
+}
+
+/* Prose enhancements for markdown content */
+.prose-terminal h1,
+.prose-terminal h2,
+.prose-terminal h3 {
+  position: relative;
+  padding-left: 0.75rem;
+}
+
+.prose-terminal h1::before,
+.prose-terminal h2::before,
+.prose-terminal h3::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--brand-orange);
+  font-size: 0.6em;
+  top: 0.3em;
+}
+
+.prose-terminal strong {
+  color: var(--brand-orange);
+  font-weight: 700;
+}
+
+.prose-terminal code {
+  background: rgba(20, 20, 19, 0.08);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+.prose-terminal pre {
+  background: var(--brand-charcoal);
+  color: var(--brand-sand-light);
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.prose-terminal pre::before {
+  content: "";
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 8px;
+  height: 8px;
+  background: var(--brand-orange);
+  opacity: 0.5;
+  border-radius: 50%;
+}
+
+.prose-terminal blockquote {
+  border-left: 2px solid var(--brand-orange);
+  padding-left: 1rem;
+  margin-left: 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.prose-terminal table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.prose-terminal th,
+.prose-terminal td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.prose-terminal th {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85em;
+  color: var(--brand-orange);
+  background: rgba(217, 119, 87, 0.05);
+}
+
+.prose-terminal tr:hover td {
+  background: rgba(20, 20, 19, 0.02);
+}
+
+/* Mode selector active state glow */
+.mode-active {
+  box-shadow: 0 0 0 1px var(--brand-charcoal);
+}
+
+/* Input focus ring animation */
+@keyframes input-focus {
+  from {
+    box-shadow: 0 0 0 0 rgba(217, 119, 87, 0.4);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, 0);
+  }
+}
+
+.input-focus-animate:focus {
+  animation: input-focus 0.4s ease-out;
+}
+
+/* Transmit button hover effect */
+.tx-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.tx-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.tx-button:hover::before {
+  left: 100%;
+}

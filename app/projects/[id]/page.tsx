@@ -157,7 +157,7 @@ export default function ProjectPage({
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#faf9f5] font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
+    <div className="flex flex-col h-screen w-full max-w-full overflow-hidden bg-[#faf9f5] font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
       <WorkstationHeader
         project={project}
         saving={false}
@@ -170,8 +170,12 @@ export default function ProjectPage({
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex h-full relative">
           {/* Canvas Area */}
-          <div className="flex-1 relative bg-[#e5e5e5]">
-            <div className="absolute inset-0 pattern-dots pattern-brand-charcoal/5 pattern-bg-transparent pattern-size-4 pattern-opacity-100" />
+          <div className="flex-1 relative bg-[#f5f5f5]">
+             {/* Architectural Blueprint Background */}
+             <div className="absolute inset-0 opacity-[0.012] pointer-events-none" 
+                  style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+             <div className="absolute inset-0 opacity-[0.008] pointer-events-none" 
+                  style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
 
             <FlowEditor
               ref={flowEditorRef}
@@ -181,42 +185,42 @@ export default function ProjectPage({
               onViewportChange={(viewport) => setZoom(viewport.zoom)}
             />
 
+         
             {/* Floating Panel Toggle - Shows when panel is closed */}
             {!isTerminalOpen && (
               <button
                 type="button"
                 onClick={() => setIsTerminalOpen(true)}
-                className="absolute right-4 top-4 z-30 flex items-center gap-2 px-3 py-2 bg-bg-secondary border border-border-primary shadow-lg hover:shadow-xl transition-all hover:bg-bg-tertiary group"
+                className="absolute right-6 top-6 z-30 flex items-center justify-center w-12 h-12 bg-white border-2 border-brand-charcoal shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all group"
                 title="Open Agentic Chat"
               >
                 <Icon
                   icon="lucide:message-square"
-                  className="w-4 h-4 text-brand-orange"
+                  className="w-6 h-6 text-brand-charcoal"
                 />
-                <span className="font-mono text-[10px] uppercase tracking-wider text-text-secondary group-hover:text-text-primary">
-                  Chat
-                </span>
               </button>
             )}
 
-            {/* Overlay Canvas Controls */}
-            <div className="absolute bottom-6 left-6 p-1 bg-white border border-brand-charcoal/10 shadow-sm flex items-center gap-1 rounded-sm z-10">
+            {/* Overlay HUD Zoom Controls */}
+            <div className="absolute bottom-6 left-6 p-0.5 bg-white border border-brand-charcoal/20 flex items-center gap-0 z-10">
               <button
                 type="button"
                 onClick={() => flowEditorRef.current?.zoomOut()}
-                className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"
+                className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 transition-colors text-brand-charcoal/40 hover:text-brand-charcoal"
               >
-                <Icon icon="lucide:minus" className="w-4 h-4" />
+                <Icon icon="lucide:minus" className="w-3.5 h-3.5" />
               </button>
-              <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">
+              <div className="h-4 w-px bg-brand-charcoal/10 mx-1" />
+              <span className="font-mono text-[9px] w-12 text-center font-bold text-brand-charcoal/40">
                 {Math.round(zoom * 100)}%
               </span>
+              <div className="h-4 w-px bg-brand-charcoal/10 mx-1" />
               <button
                 type="button"
                 onClick={() => flowEditorRef.current?.zoomIn()}
-                className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"
+                className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 transition-colors text-brand-charcoal/40 hover:text-brand-charcoal"
               >
-                <Icon icon="lucide:plus" className="w-4 h-4" />
+                <Icon icon="lucide:plus" className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -226,8 +230,8 @@ export default function ProjectPage({
             className={cn(
               "bg-white border-l border-brand-charcoal/10 flex flex-col transition-all duration-300 ease-in-out absolute right-0 top-0 bottom-0 shadow-xl z-20",
               isTerminalOpen
-                ? "w-full md:w-[400px] translate-x-0"
-                : "w-full md:w-[400px] translate-x-full",
+                ? "w-full md:w-[420px] translate-x-0"
+                : "w-full md:w-[420px] translate-x-full",
             )}
           >
             <AIAssistantPanel

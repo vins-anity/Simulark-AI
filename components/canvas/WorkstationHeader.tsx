@@ -124,270 +124,175 @@ export function WorkstationHeader({
   }
 
   return (
-    <header className="h-14 border-b border-border-primary bg-bg-primary/95 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-20 relative">
+    <header className="h-14 border-b border-brand-charcoal/20 bg-white flex items-center justify-between px-6 shrink-0 z-20 relative">
       {/* Left Section - Navigation & Identity */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {/* Back Navigation */}
         <Link
           href="/dashboard"
-          className="flex items-center justify-center w-9 h-9 text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-all rounded-none"
+          className="flex items-center justify-center w-8 h-8 border border-brand-charcoal/20 text-brand-charcoal hover:bg-brand-charcoal hover:text-white transition-all active:translate-x-0.5 active:translate-y-0.5"
           title="[ ESC ] Return to Dashboard"
         >
           <ChevronLeft className="w-4 h-4" />
         </Link>
 
-        <div className="h-6 w-px bg-border-primary" />
-
-        {/* Project Identity - Minimal */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2">
-            <Icon icon="lucide:box" className="w-4 h-4 text-brand-orange" />
-
+        {/* Project Identity */}
+        <div className="flex flex-col ml-2">
+          <span className="font-mono text-[8px] text-brand-charcoal/20 uppercase tracking-[0.3em] mb-0.5">
+            PROJECT_STATION // ARCH_DRAFT
+          </span>
+          <div className="flex items-center gap-3">
             {isEditingName ? (
-              <Input
+              <input
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 onBlur={handleNameSave}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="h-7 w-[200px] text-sm px-2 py-1 font-poppins font-semibold text-text-primary bg-bg-secondary border-brand-orange/50 focus-visible:ring-0 focus-visible:border-brand-orange"
+                className="h-6 w-[200px] text-base font-poppins font-bold uppercase text-brand-charcoal bg-white border-b border-brand-orange focus:outline-none"
               />
             ) : (
-              <span
+              <h2
                 onClick={() => setIsEditingName(true)}
-                className="font-poppins font-semibold text-sm text-text-primary tracking-tight cursor-text hover:text-brand-orange transition-colors truncate max-w-[300px]"
-                title="Click to rename"
+                className="font-poppins font-bold text-base text-brand-charcoal uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors"
               >
                 {project.name}
-              </span>
+              </h2>
             )}
+            <div className="px-1.5 py-0.5 border border-brand-charcoal/10 bg-brand-charcoal/5 text-brand-charcoal/40 font-mono text-[8px] uppercase tracking-widest font-bold">
+              v1.0.D
+            </div>
           </div>
-          <Badge
-            variant="outline"
-            className="rounded-none border-border-primary text-[9px] h-5 px-1.5 font-mono uppercase tracking-widest text-text-muted bg-transparent"
-          >
-            DRAFT
-          </Badge>
         </div>
 
-        <div className="h-6 w-px bg-border-primary mx-2" />
+        <div className="h-10 w-px bg-brand-charcoal/10 mx-4" />
 
-        {/* HUD Menu Bar - Technical/Minimal */}
-        <nav className="flex items-center gap-0.5">
-          {/* File Operations */}
+        <div className="h-10 w-px bg-brand-charcoal/10 mx-4" />
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Layout Algorithm Controls moved here */}
+        <div className="flex items-center gap-1 mr-2 scale-[0.9] origin-right">
+          <Button
+            variant="ghost"
+            onClick={handleLayoutRotate}
+            disabled={isLayoutAnimating}
+            className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all gap-2"
+          >
+            <motion.div
+              animate={{ rotate: isLayoutAnimating ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LayoutIcon className="w-3.5 h-3.5 opacity-40" />
+            </motion.div>
+            <span>{currentLayout.label}</span>
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 px-3 text-[11px] font-mono uppercase tracking-wider text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-none"
+                className="h-8 w-6 border border-brand-charcoal/10 rounded-none p-0 flex items-center justify-center text-brand-charcoal/40"
               >
-                / File
+                <ChevronDown className="w-3.5 h-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              align="start"
-              className="w-52 font-mono text-xs rounded-none border-border-primary shadow-xl"
+              align="end"
+              className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0"
             >
-              <div className="px-3 py-2 text-[9px] uppercase tracking-widest text-text-muted border-b border-border-secondary">
-                {"// EXPORT_OPS"}
+              <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
+                LAYOUT_ALGOS
               </div>
 
-              <DropdownMenuItem
-                onClick={onExportSkill}
-                className="cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5"
-              >
-                <FileCode className="w-3.5 h-3.5 mr-2.5 text-brand-orange" />
-                <span>Export Skill</span>
-                <span className="ml-auto text-[9px] text-text-muted">.zip</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="bg-border-secondary" />
-
-              <DropdownMenuItem
-                onClick={() => onExport("mermaid")}
-                className="cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5"
-              >
-                <Download className="w-3.5 h-3.5 mr-2.5" />
-                <span>Mermaid Diagram</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                onClick={() => onExport("png")}
-                className="cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5"
-              >
-                <ImageIcon className="w-3.5 h-3.5 mr-2.5" />
-                <span>PNG Image</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                onClick={() => onExport("pdf")}
-                className="cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5"
-              >
-                <FileDown className="w-3.5 h-3.5 mr-2.5" />
-                <span>PDF Document</span>
-              </DropdownMenuItem>
+              {LAYOUT_ALGORITHMS.map((algo, index) => {
+                const AlgoIcon = algo.icon;
+                return (
+                  <DropdownMenuItem
+                    key={algo.id}
+                    onClick={() => {
+                      onLayoutAlgorithm(algo.id);
+                      setCurrentLayoutIndex(index);
+                    }}
+                    className={cn(
+                      "cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 flex justify-between",
+                      currentLayoutIndex === index && "bg-neutral-50 border-l-4 border-brand-orange",
+                    )}
+                  >
+                    <span className="flex items-center">
+                      <AlgoIcon className="w-4 h-4 mr-3" />
+                      {algo.label.toUpperCase()}
+                    </span>
+                    {currentLayoutIndex === index && (
+                      <div className="w-2 h-2 bg-brand-orange" />
+                    )}
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
 
-          {/* Layout - Primary Action */}
-          <div className="flex items-center">
+        {/* Chaos Toggle moved here */}
+        <Button
+          variant="ghost"
+          onClick={() => setChaosMode(!chaosMode)}
+          className={cn(
+            "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
+            chaosMode
+              ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
+              : "bg-white border-brand-charcoal/10 text-brand-charcoal/40 hover:bg-brand-charcoal hover:text-white"
+          )}
+        >
+          <Zap className={cn("w-3.5 h-3.5", chaosMode && "fill-current animate-pulse")} />
+          <span>{chaosMode ? "CHAOS_MODE:ON" : "SYSTEM_SIM"}</span>
+        </Button>
+
+        {/* File Operations moved here */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="sm"
-              onClick={handleLayoutRotate}
-              disabled={isLayoutAnimating}
-              className="h-8 px-3 text-[11px] font-mono uppercase tracking-wider text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-none gap-2"
-              title="[ L ] Cycle Layout Algorithm"
+              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 hover:bg-brand-charcoal hover:text-white transition-all"
             >
-              <motion.div
-                animate={{ rotate: isLayoutAnimating ? 180 : 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <LayoutIcon className="w-3.5 h-3.5" />
-              </motion.div>
-              <span className="hidden sm:inline">{currentLayout.label}</span>
+              [ ARCHIVE ]
             </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-7 text-text-muted hover:text-text-primary hover:bg-bg-tertiary rounded-none"
-                >
-                  <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                className="w-48 font-mono text-xs rounded-none border-border-primary shadow-xl"
-              >
-                <div className="px-3 py-2 text-[9px] uppercase tracking-widest text-text-muted border-b border-border-secondary">
-                  {"// LAYOUT_ALGOS"}
-                </div>
-
-                {LAYOUT_ALGORITHMS.map((algo, index) => {
-                  const AlgoIcon = algo.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={algo.id}
-                      onClick={() => {
-                        onLayoutAlgorithm(algo.id);
-                        setCurrentLayoutIndex(index);
-                      }}
-                      className={cn(
-                        "cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5 justify-between",
-                        currentLayoutIndex === index && "bg-bg-tertiary",
-                      )}
-                    >
-                      <span className="flex items-center">
-                        <AlgoIcon className="w-3.5 h-3.5 mr-2.5" />
-                        {algo.label}
-                      </span>
-                      {currentLayoutIndex === index && (
-                        <span className="text-brand-orange text-[10px]">●</span>
-                      )}
-                    </DropdownMenuItem>
-                  );
-                })}
-
-                <DropdownMenuSeparator className="bg-border-secondary" />
-
-                <div className="px-3 py-2 text-[9px] uppercase tracking-widest text-text-muted border-b border-border-secondary">
-                  {"// DIRECTION"}
-                </div>
-
-                <DropdownMenuItem
-                  onClick={() => onAutolayout("DOWN")}
-                  className="cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5"
-                >
-                  <ArrowDown className="w-3.5 h-3.5 mr-2.5" />
-                  Vertical (TB)
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => onAutolayout("RIGHT")}
-                  className="cursor-pointer rounded-none hover:bg-bg-tertiary focus:bg-bg-tertiary py-2.5"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 mr-2.5" />
-                  Horizontal (LR)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Chaos Mode - Direct Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setChaosMode(!chaosMode)}
-            className={cn(
-              "h-8 px-3 text-[11px] font-mono uppercase tracking-wider rounded-none gap-2 transition-all",
-              chaosMode
-                ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
-                : "text-text-secondary hover:text-text-primary hover:bg-bg-tertiary",
-            )}
-            title="[ C ] Toggle Chaos Engineering"
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0"
           >
-            <AnimatePresence mode="wait">
-              {chaosMode ? (
-                <motion.div
-                  key="active"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: 180 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="inactive"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <span className="hidden sm:inline">
-              {chaosMode ? "CHAOS" : "SIM"}
-            </span>
-          </Button>
-        </nav>
-      </div>
+            <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
+              OPERATIONS_LOG
+            </div>
 
-      {/* Right Section - System Status */}
-      <div className="flex items-center gap-3">
-        {/* System Status HUD */}
-        <div className="hidden md:flex items-center gap-3 text-[10px] font-mono uppercase tracking-widest">
-          {/* Connection Status */}
-          <div
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 border rounded-none",
-              saving
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-600"
-                : "bg-brand-green/10 border-brand-green/30 text-brand-green",
-            )}
-          >
-            <span
-              className={cn(
-                "w-1.5 h-1.5 rounded-full animate-pulse",
-                saving ? "bg-amber-500" : "bg-brand-green",
-              )}
-            />
-            <span>{saving ? "SYNC" : "ONLINE"}</span>
-          </div>
+            <DropdownMenuItem
+              onClick={onExportSkill}
+              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 border-b border-neutral-100"
+            >
+              <FileCode className="w-4 h-4 mr-3 text-brand-orange" />
+              <span>EXPORT_SKILL_ZIP</span>
+            </DropdownMenuItem>
 
-          {/* Latency Indicator */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 border border-border-primary text-text-muted">
-            <span>LAT:</span>
-            <span className="text-text-secondary">12ms</span>
-          </div>
-        </div>
+            <DropdownMenuSeparator className="m-0 h-px bg-brand-charcoal/10" />
+
+            <DropdownMenuItem
+              onClick={() => onExport("mermaid")}
+              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+            >
+              <Download className="w-4 h-4 mr-3" />
+              <span>MERMAID_SCHEMATIC</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => onExport("png")}
+              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+            >
+              <ImageIcon className="w-4 h-4 mr-3" />
+              <span>RASTER_IMAGE_PNG</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

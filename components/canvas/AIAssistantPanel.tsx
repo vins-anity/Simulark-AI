@@ -1,39 +1,20 @@
 "use client";
 
-import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
-  Building2,
   ChevronDown,
   ChevronRight,
-  Download,
-  Edit2,
-  Link as LinkIcon,
+  Copy,
   Loader2,
-  Lock,
-  Maximize2,
-  MessageSquare,
-  Minimize2,
-  MoreVertical,
-  Paperclip,
-  Plus,
-  Rocket,
-  Send,
   Terminal,
-  Trash2,
-  User,
-  WandSparkles,
-  X,
-  Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import {
   addMessage,
-  addMessages as addMessagesAction,
   createChat as createChatAction,
   deleteChat as deleteChatAction,
   getChatWithMessages,
@@ -42,13 +23,6 @@ import {
   updateChatTitle as updateChatTitleAction,
 } from "@/actions/chats";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -59,7 +33,6 @@ import {
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "./LoadingState";
-import { ThinkingPanel } from "./ThinkingPanel";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -104,15 +77,15 @@ export function AIAssistantPanel({
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showChatList, setShowChatList] = useState(false);
-  const [isThinkingOpen, setIsThinkingOpen] = useState(true);
+  const [_isThinkingOpen, _setIsThinkingOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat state
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
-  const [editingChatId, setEditingChatId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState("");
+  const [_editingChatId, _setEditingChatId] = useState<string | null>(null);
+  const [_editingTitle, _setEditingTitle] = useState("");
 
   // Load initial settings or default mode
   const [chatMode, setChatModeState] = useState<ArchitectureMode>(
@@ -137,6 +110,16 @@ export function AIAssistantPanel({
     architectureTypes: [],
     customInstructions: "",
   });
+
+  // Copy message content
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
 
   // Wrappers to persist on change
   const setChatMode = (mode: ArchitectureMode) => {
@@ -358,7 +341,7 @@ export function AIAssistantPanel({
     } catch (error) {
       console.error("Error updating chat title:", error);
     }
-    setEditingChatId(null);
+    _setEditingChatId(null);
   };
 
   const saveMessage = async (chatId: string, message: Message) => {
@@ -761,127 +744,73 @@ export function AIAssistantPanel({
   const currentChat = chats.find((c) => c.id === currentChatId);
 
   return (
-    <div className="flex flex-col h-full bg-bg-secondary font-sans text-sm overflow-hidden">
-      {/* Terminal Header - Minimal HUD Style */}
-      <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 border-b border-border-primary bg-bg-secondary">
+    <div className="flex flex-col h-full bg-white font-sans text-sm overflow-hidden border-l border-brand-charcoal/10">
+      {/* Terminal Header - Technical HUD */}
+      <div className="h-11 flex-shrink-0 flex items-center justify-between px-3 border-b border-brand-charcoal/10 bg-gradient-to-r from-white to-neutral-50/50">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 bg-brand-orange/10 flex items-center justify-center rounded-sm">
-            <Terminal className="w-3.5 h-3.5 text-brand-orange" />
+          <div className="w-7 h-7 bg-brand-charcoal flex items-center justify-center shadow-sm">
+            <Terminal className="w-3.5 h-3.5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
-              Agentic Chat
+            <span className="font-mono text-[10px] font-black uppercase tracking-[0.12em] text-brand-charcoal">
+              OPERATOR
             </span>
-            <span className="font-mono text-[9px] text-text-muted">
-              {isGenerating ? "PROCESSING..." : "READY"}
+            <span className="font-mono text-[8px] text-brand-charcoal/40 uppercase tracking-wider">
+              v2.4.1
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Status Dot */}
-          <div className="flex items-center gap-1.5 mr-3">
-            <span
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                isGenerating ? "bg-brand-green animate-pulse" : "bg-text-muted",
-              )}
-            />
-          </div>
-
-          {/* Toggle Button */}
           {onToggle && (
             <button
               type="button"
               onClick={onToggle}
-              className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors rounded-sm"
-              title="Toggle Panel"
+              className="w-7 h-7 flex items-center justify-center border border-brand-charcoal/15 hover:bg-brand-charcoal hover:text-white text-brand-charcoal/50 transition-all duration-200"
+              title="Close Panel"
             >
-              <Icon icon="lucide:panel-right-close" className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Chat List Select */}
-      <div className="flex-shrink-0 border-b border-border-secondary bg-bg-secondary">
+      {/* Chat Channel Selector */}
+      <div className="flex-shrink-0 bg-neutral-50/80 px-3 py-2 border-b border-brand-charcoal/10">
         <button
           type="button"
           onClick={() => setShowChatList(!showChatList)}
-          className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-bg-tertiary transition-colors"
+          className="w-full flex items-center justify-between group"
         >
-          <div className="flex items-center gap-2 overflow-hidden">
-            <MessageSquare className="w-3.5 h-3.5 text-text-muted shrink-0" />
-            <span className="font-mono text-xs font-medium text-text-primary truncate">
-              {currentChat?.title || "Select Terminal..."}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[9px] text-brand-charcoal/50 uppercase tracking-wider">Channel:</span>
+            <span className="font-mono text-[11px] font-black uppercase tracking-wider text-brand-charcoal group-hover:text-brand-orange transition-colors truncate max-w-[180px]">
+              {currentChat?.title || "UNSET"}
             </span>
           </div>
-          <ChevronDown
-            className={cn(
-              "w-3.5 h-3.5 text-text-muted transition-transform duration-200 shrink-0",
-              showChatList && "rotate-180",
-            )}
-          />
+          <ChevronDown className={cn("w-4 h-4 text-brand-charcoal/40 transition-transform duration-200", showChatList && "rotate-180")} />
         </button>
 
-        <AnimatePresence initial={false}>
+        <AnimatePresence>
           {showChatList && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }} 
+              animate={{ height: "auto", opacity: 1 }} 
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
               className="overflow-hidden"
             >
-              <div className="border-t border-border-secondary bg-bg-secondary max-h-48 overflow-y-auto">
-                {isLoadingChats ? (
-                  <div className="p-3 text-[10px] font-mono text-text-muted">
-                    Loading channels...
-                  </div>
-                ) : (
-                  chats.map((chat) => (
-                    <button
-                      type="button"
-                      key={chat.id}
-                      onClick={() => {
-                        setCurrentChatId(chat.id);
-                        setShowChatList(false);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 hover:bg-bg-tertiary transition-colors",
-                        currentChatId === chat.id &&
-                          "bg-bg-tertiary border-l-2 border-brand-orange",
-                      )}
-                    >
-                      <span className="font-mono text-xs text-text-secondary truncate text-left">
-                        {chat.title}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteChat(chat.id);
-                        }}
-                        className="p-1 text-text-muted hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </button>
-                  ))
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    createNewChat("New Channel");
-                    setShowChatList(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 text-text-muted hover:text-brand-orange transition-colors border-t border-border-secondary"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span className="font-mono text-[10px] uppercase tracking-wider">
-                    Initialize New Channel
-                  </span>
-                </button>
+              <div className="pt-2 pb-1 space-y-0.5 border-t border-brand-charcoal/10 mt-2">
+                {chats.map(chat => (
+                  <button key={chat.id} onClick={() => { setCurrentChatId(chat.id); setShowChatList(false); }}
+                    className={cn(
+                      "w-full text-left font-mono text-[10px] uppercase py-1.5 px-2 hover:bg-brand-orange/10 transition-all rounded-sm",
+                      currentChatId === chat.id ? "text-brand-orange font-black bg-brand-orange/5" : "text-brand-charcoal/60"
+                    )}
+                  >
+                    <span className="inline-block w-3">{currentChatId === chat.id ? ">" : " "}</span>
+                    {chat.title}
+                  </button>
+                ))}
               </div>
             </motion.div>
           )}
@@ -890,259 +819,190 @@ export function AIAssistantPanel({
 
       {/* Messages Area */}
       <div
-        className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 scrollbar-thin scrollbar-thumb-brand-charcoal/10 scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto p-3 space-y-4 bg-white"
         ref={messagesEndRef}
       >
-        {/* Empty State */}
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4">
-            <div className="w-12 h-12 rounded-none border border-dashed border-brand-charcoal flex items-center justify-center">
-              <Terminal className="w-6 h-6 text-brand-charcoal" />
-            </div>
-            <div className="max-w-[200px]">
-              <p className="font-mono text-xs text-text-primary mb-1">
-                TERMINAL READY
-              </p>
-              <p className="font-serif italic text-xs text-text-muted">
-                Describe your architectural requirements to begin generation.
-              </p>
-            </div>
+          <div className="h-full flex flex-col items-center justify-center opacity-25 text-center">
+             <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal mb-5 flex items-center justify-center animate-pulse">
+                <Bot className="w-10 h-10" />
+             </div>
+             <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed">
+               Waiting for operator input
+             </p>
+             <p className="font-mono text-[9px] text-brand-charcoal/60 mt-1">
+               [ STANDBY_MODE ]
+             </p>
           </div>
         ) : (
           messages.map((message) => (
-            <div
+            <motion.div
               key={message.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
               className={cn(
-                "flex flex-col gap-1 max-w-[95%]",
+                "flex flex-col gap-1.5 max-w-[98%]",
                 message.role === "user" ? "ml-auto items-end" : "items-start",
               )}
             >
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/40 mb-0.5">
-                {message.role === "user" ? "OPERATOR" : "SYSTEM"}
-              </span>
+              {/* Message Header */}
+              <div className="flex items-center gap-2 px-0.5">
+                {message.role === "assistant" && (
+                  <div className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
+                )}
+                <span className={cn(
+                  "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
+                  message.role === "user" ? "text-brand-charcoal/50" : "text-brand-orange"
+                )}>
+                  {message.role === "user" ? "[ OPERATOR ]" : "[ SYSTEM ]"}
+                </span>
+                {message.role === "user" && (
+                  <div className="w-1.5 h-1.5 bg-brand-charcoal/30" />
+                )}
+              </div>
 
-              {message.reasoning && (
-                <ThinkingPanel
-                  reasoning={message.reasoning}
-                  isThinking={!!message.isThinking}
-                />
-              )}
-
+              {/* Message Content */}
               {message.content && (
                 <div
                   className={cn(
-                    "rounded-tr-xl rounded-bl-xl rounded-br-xl p-3 text-sm shadow-sm border",
+                    "relative group",
                     message.role === "user"
-                      ? "bg-brand-charcoal text-white rounded-tl-xl rounded-tr-none border-brand-charcoal"
-                      : "bg-white text-brand-charcoal border-brand-charcoal/10",
+                      ? "bg-brand-charcoal text-white"
+                      : "bg-neutral-50 text-brand-charcoal border border-brand-charcoal/10",
+                    "px-3 py-2.5 shadow-sm",
+                    message.role === "user"
+                      ? "rounded-tl-xl rounded-bl-xl rounded-br-xl"
+                      : "rounded-tr-xl rounded-br-xl rounded-bl-xl"
                   )}
                 >
+                  {/* Copy button for assistant messages */}
+                  {message.role === "assistant" && message.content !== "__LOADING__" && (
+                    <button
+                      onClick={() => copyToClipboard(message.content)}
+                      className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/10 rounded"
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="w-3 h-3 text-brand-charcoal/40" />
+                    </button>
+                  )}
+
                   {message.role === "assistant" ? (
                     message.content === "__LOADING__" ? (
                       <LoadingState />
                     ) : (
-                      <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-brand-charcoal/5 prose-pre:text-brand-charcoal prose-code:text-brand-orange text-[13px]">
+                      <div className="prose prose-sm max-w-none font-mono text-[10px] leading-relaxed
+                        prose-p:my-1.5 prose-p:text-brand-charcoal/90
+                        prose-headings:font-black prose-headings:uppercase prose-headings:tracking-[0.08em] prose-headings:text-brand-charcoal prose-headings:mt-3 prose-headings:mb-2
+                        prose-h1:text-sm prose-h2:text-xs prose-h3:text-[11px]
+                        prose-strong:text-brand-orange prose-strong:font-bold
+                        prose-ul:my-1.5 prose-ul:space-y-0.5
+                        prose-li:my-0 prose-li:text-brand-charcoal/80
+                        prose-code:text-[9px] prose-code:bg-brand-charcoal/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                        prose-pre:bg-brand-charcoal prose-pre:text-white prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2">
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     )
                   ) : (
-                    <div className="whitespace-pre-wrap font-sans">
+                    <div className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed uppercase tracking-wide">
                       {message.content}
                     </div>
-                  )}{" "}
+                  )}
                 </div>
               )}
-            </div>
+            </motion.div>
           ))
         )}
       </div>
 
       {/* Input Area */}
-      <div className="flex-shrink-0 p-3 bg-bg-secondary border-t border-border-primary">
+      <div className="p-2.5 bg-gradient-to-t from-neutral-50 to-white border-t border-brand-charcoal/10">
         <form
-          id="ai-prompt-form"
           onSubmit={handleSubmit}
-          className="relative flex flex-col gap-2 bg-bg-primary border border-border-primary focus-within:border-brand-orange transition-colors rounded-sm"
+          className="relative flex flex-col gap-1.5 border border-brand-charcoal/20 p-2 bg-white shadow-sm"
         >
-          {/* Main Text Area */}
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-            placeholder="Enter architectural requirements..."
-            className="w-full bg-transparent text-xs font-mono text-text-primary placeholder:text-text-muted/50 focus:outline-none min-h-[44px] resize-none p-2"
-            rows={2}
-          />
+          {/* Top Row: Controls & Model */}
+          <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 pb-1.5">
+             {/* Mode Selector */}
+             <div className="flex gap-1">
+               {(["default", "startup", "corporate"] as const).map((mode) => (
+                 <button
+                   key={mode}
+                   type="button"
+                   onClick={() => setChatMode(mode)}
+                   className={cn(
+                     "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm",
+                     chatMode === mode
+                       ? "bg-brand-charcoal text-white font-black"
+                       : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5"
+                   )}
+                 >
+                   {mode === "corporate" ? "ENT" : mode}
+                 </button>
+               ))}
+             </div>
 
-          {/* Bottom Toolbar */}
-          <div className="flex items-center justify-between px-2 pb-1">
-            {/* Left: Model Selector */}
-            <div className="flex items-center gap-2">
-              <Select
-                value={model}
-                onValueChange={(val) => {
-                  if (val === "gemini-3.0-pro") {
-                    toast("Upgrade to Pro", {
-                      description:
-                        "Gemini 3.0 Pro is available on the Pro plan.",
-                    });
-                    return;
-                  }
-                  setModel(val);
-                }}
-              >
-                <SelectTrigger className="h-7 w-[130px] border-none bg-transparent text-[10px] uppercase font-mono tracking-wider focus:ring-0 px-0 gap-1 text-text-secondary hover:text-text-primary">
-                  <SelectValue placeholder="Select Model" />
-                </SelectTrigger>
-                <SelectContent className="bg-bg-secondary border border-border-primary shadow-xl">
-                  <SelectItem
-                    value="glm-4.7-flash"
-                    className="text-xs font-mono"
-                  >
-                    GLM-4.7-Flash (Free)
-                  </SelectItem>
-                  <SelectItem
-                    value="z-ai/glm-4.5-air:free"
-                    className="text-xs font-mono"
-                  >
-                    GLM-4.5-Air (Free)
-                  </SelectItem>
-                  <SelectItem value="deepseek-ai" className="text-xs font-mono">
-                    Deepseek (Free)
-                  </SelectItem>
-                  <SelectItem
-                    value="kimi-k2.5"
-                    className="text-xs font-mono opacity-50 cursor-not-allowed"
-                    disabled
-                  >
-                    <span className="line-through">Kimi k2.5</span> 🔒
-                  </SelectItem>
-                  <SelectItem
-                    value="gemini-3.0-pro"
-                    className="text-xs font-mono opacity-50 cursor-not-allowed"
-                    disabled
-                  >
-                    Gemini-3.0-Pro 🔒
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+             {/* Model Selector */}
+             <Select value={model} onValueChange={setModel}>
+               <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 bg-neutral-50 font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal transition-colors gap-2 hover:bg-white hover:border-brand-charcoal/40 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none">
+                 <SelectValue />
+               </SelectTrigger>
+               <SelectContent className="rounded-none border-2 border-brand-charcoal font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)]">
+                 <SelectItem value="glm-4.5-air" className="text-[10px] uppercase">GLM_4.5_AIR</SelectItem>
+                 <SelectItem value="glm-4.7-flash" className="text-[10px] uppercase">GLM_4.7_FLASH</SelectItem>
+                 <SelectItem value="deepseek-ai" className="text-[10px] uppercase">DEEPSEEK_V3</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
 
-              <div className="w-px h-4 bg-border-secondary" />
-
-              {/* Mode Toggle */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="p-1.5 text-text-muted hover:text-brand-orange transition-colors rounded-sm"
-                  >
-                    {chatMode === "startup" ? (
-                      <Rocket className="w-3.5 h-3.5 text-brand-orange" />
-                    ) : chatMode === "corporate" ? (
-                      <Building2 className="w-3.5 h-3.5 text-brand-blue" />
-                    ) : (
-                      <Icon icon="lucide:scale" className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  className="w-44 bg-bg-secondary border border-border-primary shadow-xl p-1"
+          {/* Input & Action Row */}
+          <div className="relative flex gap-2">
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
+              placeholder="[ ENTER CMD ]"
+              className="flex-1 bg-transparent border-none p-1.5 font-mono text-[11px] uppercase tracking-wider placeholder:text-brand-charcoal/25 focus:outline-none focus:ring-0 min-h-[36px] max-h-[140px] resize-none leading-relaxed"
+              rows={1}
+            />
+            
+            <div className="flex flex-col justify-end">
+               <button
+                  type="submit"
+                  disabled={!inputValue.trim() || isGenerating}
+                  className={cn(
+                    "h-8 px-3 flex items-center justify-center font-mono font-black uppercase text-[9px] tracking-[0.12em] transition-all duration-200",
+                    "border-2 border-brand-charcoal bg-brand-charcoal text-white",
+                    "hover:bg-brand-orange hover:border-brand-orange hover:shadow-md",
+                    "active:scale-95",
+                    "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100",
+                  )}
+                  title="TRANSMIT"
                 >
-                  <div className="px-2 py-1.5 text-[9px] uppercase tracking-widest text-text-muted font-mono border-b border-border-secondary">
-                    Output Mode
-                  </div>
-                  <DropdownMenuItem
-                    onClick={() => setChatMode("default")}
-                    className={cn(
-                      "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "default" && "bg-bg-tertiary",
-                    )}
-                  >
-                    <Icon icon="lucide:scale" className="w-3.5 h-3.5" />
-                    Default (Balanced)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setChatMode("startup")}
-                    className={cn(
-                      "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "startup" &&
-                        "bg-brand-orange/10 text-brand-orange",
-                    )}
-                  >
-                    <Rocket className="w-3.5 h-3.5" />
-                    Startup (MVP)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setChatMode("corporate")}
-                    className={cn(
-                      "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "corporate" &&
-                        "bg-brand-blue/10 text-brand-blue",
-                    )}
-                  >
-                    <Building2 className="w-3.5 h-3.5" />
-                    Enterprise
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Attachment Buttons */}
-              <button
-                type="button"
-                onClick={() => toast("Upload feature coming soon")}
-                className="p-1.5 text-text-muted hover:text-brand-orange transition-colors rounded-sm"
-                title="Attach File"
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => toast("URL extraction coming soon")}
-                className="p-1.5 text-text-muted hover:text-brand-orange transition-colors rounded-sm"
-                title="Add URL Configuration"
-              >
-                <LinkIcon className="w-3.5 h-3.5" />
-              </button>
-
-              <div className="w-px h-4 bg-border-secondary mx-1" />
-
-              {/* Send Button */}
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isGenerating}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-sm transition-all",
-                  inputValue.trim()
-                    ? "bg-brand-orange text-text-inverse hover:bg-brand-orange/90"
-                    : "bg-bg-tertiary text-text-muted cursor-not-allowed",
-                )}
-              >
-                {isGenerating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : "SEND"}
+                </button>
             </div>
           </div>
         </form>
+        
+        {/* Status bar */}
+        <div className="flex items-center justify-between mt-1.5 px-1">
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              isGenerating ? "bg-brand-orange animate-pulse" : "bg-green-500"
+            )} />
+            <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40">
+              {isGenerating ? "PROCESSING..." : "READY"}
+            </span>
+          </div>
+          <span className="font-mono text-[8px] text-brand-charcoal/30 uppercase">
+            {inputValue.length} chars
+          </span>
+        </div>
       </div>
 
-      {/* Empty State / Version */}
-      <div className="flex-shrink-0 px-4 py-2 flex justify-between items-center border-t border-border-secondary">
-        <span className="text-[9px] font-mono text-text-muted uppercase tracking-wider">
-          v1.3.0
-        </span>
-      </div>
+
     </div>
   );
 }
