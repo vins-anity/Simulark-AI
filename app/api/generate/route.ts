@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     // Parse body early
     const body = await req.json();
-    const { prompt, model, mode, currentNodes, currentEdges, quickMode } = body;
+    const { prompt, model, mode, currentNodes, currentEdges } = body;
 
     // Rate Limiting Check (New DB-based logic)
     const rateLimitResult = await checkRateLimit(user.id);
@@ -108,32 +108,31 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Check for cached response (only for non-quick mode, which is more expensive)
-    if (!quickMode) {
-      const cachedResult = await getCachedResponse<{
-        nodes: Array<Record<string, unknown> & { data?: Record<string, unknown> }>;
-        edges: unknown[];
-      }>({
-        prompt,
-        model,
-        mode,
-        userId: user.id,
-      });
+    // Check for cached response
+    const cachedResult = await getCachedResponse<{
+      nodes: Array<
+        Record<string, unknown> & { data?: Record<string, unknown> }
+      >;
+      edges: unknown[];
+    }>({
+      prompt,
+      model,
+      mode,
+      userId: user.id,
+    });
 
-      if (cachedResult) {
-        userLogger.info("Returning cached architecture result");
-        const enrichedNodes = enrichNodesWithTech(cachedResult.nodes);
-        return NextResponse.json({
-          type: "cached",
-          data: { ...cachedResult, nodes: enrichedNodes },
-        });
-      }
+    if (cachedResult) {
+      userLogger.info("Returning cached architecture result");
+      const enrichedNodes = enrichNodesWithTech(cachedResult.nodes);
+      return NextResponse.json({
+        type: "cached",
+        data: { ...cachedResult, nodes: enrichedNodes },
+      });
     }
 
     userLogger.info("Starting generation", {
       model: model || "auto",
       mode: mode || "default",
-      quickMode,
       promptLength: prompt.length,
     });
     const stream = await generateArchitectureStream(
@@ -142,7 +141,6 @@ export async function POST(req: NextRequest) {
       mode,
       currentNodes,
       currentEdges,
-      quickMode || false,
     );
 
     // Create a robust stream that separates reasoning from content

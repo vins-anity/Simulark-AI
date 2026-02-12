@@ -118,9 +118,9 @@ describe("RequestDeduplicator", () => {
   describe("maxCacheSize", () => {
     it("should respect max cache size", async () => {
       const smallDeduplic = new RequestDeduplicator(1000, 2);
-      const requestFn = vi.fn().mockImplementation((key) =>
-        Promise.resolve({ data: key }),
-      );
+      const requestFn = vi
+        .fn()
+        .mockImplementation((key) => Promise.resolve({ data: key }));
 
       await smallDeduplic.execute("key1", requestFn);
       await smallDeduplic.execute("key2", requestFn);

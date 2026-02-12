@@ -24,14 +24,20 @@ import {
 } from "react";
 import "@xyflow/react/dist/style.css";
 
-import { AlertTriangle, Undo2, Redo2 } from "lucide-react";
+import { Redo2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveProject } from "@/actions/projects";
+import { Button } from "@/components/ui/button";
 import { useGraphHistory } from "@/lib/history-store";
 import { useCanvasShortcuts } from "@/lib/keyboard-shortcuts";
-import { applyLayout, applyLayoutAsync, type LayoutAlgorithm } from "@/lib/layout";
+import {
+  applyLayout,
+  applyLayoutAsync,
+  type LayoutAlgorithm,
+} from "@/lib/layout";
 import { useSimulationStore } from "@/lib/store";
 import { cn, generateMermaidCode } from "@/lib/utils";
+import { ChaosModePanel } from "./ChaosModePanel";
 import { SimulationEdge } from "./edges/SimulationEdge";
 import { AIModelNode } from "./nodes/AIModelNode";
 import { AINode } from "./nodes/AINode";
@@ -54,7 +60,6 @@ import { ShapeNode } from "./nodes/ShapeNode";
 import { StorageNode } from "./nodes/StorageNode";
 import { TextNode } from "./nodes/TextNode";
 import { VectorDBNode } from "./nodes/VectorDBNode";
-import { Button } from "@/components/ui/button";
 
 interface FlowEditorProps {
   initialNodes?: any[];
@@ -64,7 +69,10 @@ interface FlowEditorProps {
 }
 
 const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
-  ({ initialNodes = [], initialEdges = [], projectId, onViewportChange }, ref) => {
+  (
+    { initialNodes = [], initialEdges = [], projectId, onViewportChange },
+    ref,
+  ) => {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const { fitView, getNodes, getEdges, zoomIn, zoomOut } = useReactFlow();
@@ -288,16 +296,17 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           const currentNodes = getNodes();
           const currentEdges = getEdges();
 
-          const { nodes: layoutNodes } = applyLayout(currentNodes, currentEdges, {
-            algorithm,
-          });
+          const { nodes: layoutNodes } = applyLayout(
+            currentNodes,
+            currentEdges,
+            {
+              algorithm,
+            },
+          );
           setNodes(layoutNodes);
           setTimeout(() => fitView({ duration: 500 }), 100);
         } catch (error) {
-          console.error(
-            "[FlowEditor] AutoLayout with algorithm error:",
-            error,
-          );
+          console.error("[FlowEditor] AutoLayout with algorithm error:", error);
         }
       },
       get nodes() {
@@ -525,31 +534,32 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           fitView
-          className="drafting-grid"
-          // Enable connection from all nodes
+          className="drafting-grid-enhanced"
           onNodeClick={(_e, node) => {
             // Optionally select node on click
           }}
         >
+          {/* Enhanced Background with drafting texture */}
           <Background
-            gap={24}
-            size={1.5}
-            color={chaosMode ? "#330000" : "#d4d4d8"}
-            className="transition-colors duration-500 opacity-60"
+            id="dots"
+            gap={20}
+            size={1}
+            color={chaosMode ? "#330000" : "var(--canvas-dot)"}
+            className="transition-colors duration-500"
           />
 
-          {/* Undo/Redo Toolbar */}
+          {/* Undo/Redo Toolbar - Modern HUD Style */}
           <Panel position="top-left" className="ml-4 mt-4">
-            <div className="flex items-center gap-1 bg-white/90 dark:bg-zinc-900/90 rounded-lg shadow-md p-1">
+            <div className="flex items-center gap-0.5 bg-bg-secondary/90 backdrop-blur-sm border border-border-primary p-1 shadow-lg">
               <button
                 type="button"
                 onClick={handleUndo}
                 disabled={!canUndo()}
                 className={cn(
-                  "p-2 rounded-md transition-colors",
+                  "p-2.5 transition-all duration-200 hover:bg-bg-tertiary",
                   canUndo()
-                    ? "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                    : "text-zinc-300 dark:text-zinc-600 cursor-not-allowed",
+                    ? "text-text-secondary hover:text-text-primary"
+                    : "text-text-muted cursor-not-allowed",
                 )}
                 title="Undo (⌘Z)"
               >
@@ -560,10 +570,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
                 onClick={handleRedo}
                 disabled={!canRedo()}
                 className={cn(
-                  "p-2 rounded-md transition-colors",
+                  "p-2.5 transition-all duration-200 hover:bg-bg-tertiary",
                   canRedo()
-                    ? "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                    : "text-zinc-300 dark:text-zinc-600 cursor-not-allowed",
+                    ? "text-text-secondary hover:text-text-primary"
+                    : "text-text-muted cursor-not-allowed",
                 )}
                 title="Redo (⌘⇧Z)"
               >
@@ -571,21 +581,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               </button>
             </div>
           </Panel>
-
-          {chaosMode && (
-            <Panel position="bottom-center" className="mb-8">
-              <div className="bg-red-950/90 text-red-100 px-6 py-2 border-t-2 border-red-500 text-xs font-mono uppercase tracking-widest shadow-2xl flex items-center gap-3">
-                <AlertTriangle
-                  size={14}
-                  className="text-red-500 animate-bounce"
-                />
-                <span>
-                  Failure Simulation Active // Click nodes to inject faults
-                </span>
-              </div>
-            </Panel>
-          )}
         </ReactFlow>
+
+        {/* Chaos Mode Panel */}
+        <ChaosModePanel />
       </div>
     );
   },

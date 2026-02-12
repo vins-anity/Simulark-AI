@@ -183,7 +183,7 @@ function BrutalistButton({ provider, onClick, loading }: BrutalistButtonProps) {
     <button
       onClick={onClick}
       disabled={loading}
-      className="group relative w-full flex items-center justify-between px-6 py-4 bg-white border-2 border-brand-charcoal hover:bg-brand-charcoal hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="group relative w-full flex items-center justify-between px-6 py-4 bg-white border-2 border-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 border border-current flex items-center justify-center">

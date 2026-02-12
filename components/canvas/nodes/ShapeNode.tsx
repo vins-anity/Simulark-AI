@@ -5,7 +5,12 @@ import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { NodeToolbar } from "@xyflow/react";
 
-export type ShapeType = "shape-rect" | "shape-circle" | "shape-diamond" | "shape-parallelogram" | "shape-hexagon";
+export type ShapeType =
+  | "shape-rect"
+  | "shape-circle"
+  | "shape-diamond"
+  | "shape-parallelogram"
+  | "shape-hexagon";
 
 interface ShapeNodeData {
   label?: string;
@@ -47,7 +52,12 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
   const shapeType = (data?.shapeType as ShapeType) || "shape-rect";
   const color = (data?.color as string) || "#e5e5e5";
   const isResizing = useRef(false);
-  const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const resizeStartRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, direction: string) => {
@@ -115,7 +125,9 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
     setLabel(newLabel);
     setNodes((nodes) =>
       nodes.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, label: newLabel } } : node,
+        node.id === id
+          ? { ...node, data: { ...node.data, label: newLabel } }
+          : node,
       ),
     );
   };
@@ -125,11 +137,23 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
 
     switch (shapeType) {
       case "shape-circle":
-        return cn(baseStyles, "rounded-full", selected && "ring-2 ring-brand-orange ring-offset-1");
+        return cn(
+          baseStyles,
+          "rounded-full",
+          selected && "ring-2 ring-brand-orange ring-offset-1",
+        );
       case "shape-diamond":
-        return cn(baseStyles, "rotate-45", selected && "ring-2 ring-brand-orange ring-offset-1");
+        return cn(
+          baseStyles,
+          "rotate-45",
+          selected && "ring-2 ring-brand-orange ring-offset-1",
+        );
       case "shape-parallelogram":
-        return cn(baseStyles, "skew-x-12", selected && "ring-2 ring-brand-orange ring-offset-1");
+        return cn(
+          baseStyles,
+          "skew-x-12",
+          selected && "ring-2 ring-brand-orange ring-offset-1",
+        );
       case "shape-hexagon":
         return cn(
           baseStyles,
@@ -138,20 +162,30 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
         );
       case "shape-rect":
       default:
-        return cn(baseStyles, "rounded-lg", selected && "ring-2 ring-brand-orange ring-offset-1");
+        return cn(
+          baseStyles,
+          "rounded-lg",
+          selected && "ring-2 ring-brand-orange ring-offset-1",
+        );
     }
   };
 
   return (
     <>
-      <NodeToolbar position={Position.Bottom} isVisible={selected && isPropertiesOpen} offset={10}>
+      <NodeToolbar
+        position={Position.Bottom}
+        isVisible={selected && isPropertiesOpen}
+        offset={10}
+      >
         <div className="bg-white border border-brand-charcoal/20 shadow-lg rounded-lg p-3 min-w-48 z-50">
           <div className="text-[9px] uppercase tracking-widest text-brand-charcoal/50 font-mono mb-2">
             Shape Properties
           </div>
           <div className="space-y-2">
             <div>
-              <label className="text-[10px] font-mono text-brand-charcoal/60">Label</label>
+              <label className="text-[10px] font-mono text-brand-charcoal/60">
+                Label
+              </label>
               <input
                 type="text"
                 value={label}
@@ -160,7 +194,9 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
               />
             </div>
             <div>
-              <label className="text-[10px] font-mono text-brand-charcoal/60">Color</label>
+              <label className="text-[10px] font-mono text-brand-charcoal/60">
+                Color
+              </label>
               <div className="flex gap-2">
                 <input
                   type="color"
@@ -168,7 +204,12 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
                   onChange={(e) =>
                     setNodes((nodes) =>
                       nodes.map((node) =>
-                        node.id === id ? { ...node, data: { ...node.data, color: e.target.value } } : node,
+                        node.id === id
+                          ? {
+                              ...node,
+                              data: { ...node.data, color: e.target.value },
+                            }
+                          : node,
                       ),
                     )
                   }
@@ -184,7 +225,9 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
             </div>
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="text-[10px] font-mono text-brand-charcoal/60">W</label>
+                <label className="text-[10px] font-mono text-brand-charcoal/60">
+                  W
+                </label>
                 <input
                   type="number"
                   value={Math.round(dimensions.width)}
@@ -192,14 +235,20 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
                     const val = Math.max(40, Number(e.target.value));
                     setDimensions((prev) => ({ ...prev, width: val }));
                     setNodes((nodes) =>
-                      nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, width: val } } : node)),
+                      nodes.map((node) =>
+                        node.id === id
+                          ? { ...node, data: { ...node.data, width: val } }
+                          : node,
+                      ),
                     );
                   }}
                   className="w-full h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm focus:outline-none focus:border-brand-orange"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-[10px] font-mono text-brand-charcoal/60">H</label>
+                <label className="text-[10px] font-mono text-brand-charcoal/60">
+                  H
+                </label>
                 <input
                   type="number"
                   value={Math.round(dimensions.height)}
@@ -207,7 +256,11 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
                     const val = Math.max(30, Number(e.target.value));
                     setDimensions((prev) => ({ ...prev, height: val }));
                     setNodes((nodes) =>
-                      nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, height: val } } : node)),
+                      nodes.map((node) =>
+                        node.id === id
+                          ? { ...node, data: { ...node.data, height: val } }
+                          : node,
+                      ),
                     );
                   }}
                   className="w-full h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm focus:outline-none focus:border-brand-orange"
@@ -222,7 +275,10 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
         onClick={() => selected && setIsPropertiesOpen(true)}
         className={cn("relative", getShapeStyles())}
         style={{
-          width: shapeType === "shape-diamond" ? dimensions.height : dimensions.width,
+          width:
+            shapeType === "shape-diamond"
+              ? dimensions.height
+              : dimensions.width,
           height: dimensions.height,
           backgroundColor: color,
           border: `2px solid ${selected ? "#f97316" : "#a3a3a3"}`,
@@ -231,16 +287,28 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
         {/* Resize handles - only visible when selected and not circle */}
         {selected && shapeType !== "shape-circle" && (
           <>
-            <div onMouseDown={(e) => handleMouseDown(e, "nw")} className="absolute -top-1.5 -left-1.5">
+            <div
+              onMouseDown={(e) => handleMouseDown(e, "nw")}
+              className="absolute -top-1.5 -left-1.5"
+            >
               <ResizeHandle position="nw" />
             </div>
-            <div onMouseDown={(e) => handleMouseDown(e, "ne")} className="absolute -top-1.5 -right-1.5">
+            <div
+              onMouseDown={(e) => handleMouseDown(e, "ne")}
+              className="absolute -top-1.5 -right-1.5"
+            >
               <ResizeHandle position="ne" />
             </div>
-            <div onMouseDown={(e) => handleMouseDown(e, "sw")} className="absolute -bottom-1.5 -left-1.5">
+            <div
+              onMouseDown={(e) => handleMouseDown(e, "sw")}
+              className="absolute -bottom-1.5 -left-1.5"
+            >
               <ResizeHandle position="sw" />
             </div>
-            <div onMouseDown={(e) => handleMouseDown(e, "se")} className="absolute -bottom-1.5 -right-1.5">
+            <div
+              onMouseDown={(e) => handleMouseDown(e, "se")}
+              className="absolute -bottom-1.5 -right-1.5"
+            >
               <ResizeHandle position="se" />
             </div>
           </>

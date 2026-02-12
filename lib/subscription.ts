@@ -70,9 +70,9 @@ export const SUBSCRIPTION_PLANS = {
     features: [
       "Unlimited Projects",
       "Advanced Chaos Engineering & Stress Testing",
-      "Sophisticated Auto-Layouts (Elkjs/Radial)",
+      "Sophisticated Auto-Layouts",
       "Smarter Algorithms (Kimi k2.5, Gemini 3.0, Minimax)",
-      "Quick Mode",
+
       "Enterprise Mode (Corporate Archetype)",
       "Advance node library",
       "Priority Email Support",

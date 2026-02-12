@@ -3,20 +3,21 @@
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  EdgeProps,
+  type EdgeProps,
   getSmoothStepPath,
   useReactFlow,
 } from "@xyflow/react";
-import { useSimulationStore } from "@/lib/store";
-import { useState } from "react";
 import { Pencil } from "lucide-react";
-import { ConnectionLabelDialog } from "./ConnectionLabelDialog";
+import { useState } from "react";
 import {
+  CONNECTOR_COLORS,
+  getAnimationDuration,
   getProtocolConfig,
   getProtocolLabel,
-  getAnimationDuration,
-  CONNECTOR_COLORS,
 } from "@/lib/schema/connectors";
+import { useSimulationStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+import { ConnectionLabelDialog } from "./ConnectionLabelDialog";
 
 export function SimulationEdge({
   id,
@@ -78,9 +79,29 @@ export function SimulationEdge({
 
   return (
     <>
+      {/* Glow effect layer */}
+      {!isBlocked && (
+        <BaseEdge
+          path={edgePath}
+          style={{
+            ...style,
+            strokeWidth:
+              ((protocolConfig.style as any)?.strokeWidth || 1.5) + 4,
+            stroke: isCongested ? CONNECTOR_COLORS.error : baseColor,
+            strokeOpacity: 0.1,
+            filter: "blur(2px)",
+          }}
+        />
+      )}
+
+      {/* Main edge */}
       <BaseEdge
         path={edgePath}
         markerEnd={markerEnd}
+        className={cn(
+          "react-flow__edge-path",
+          !isBlocked && "transition-all duration-200",
+        )}
         style={{
           ...style,
           strokeWidth: (protocolConfig.style as any)?.strokeWidth || 1.5,

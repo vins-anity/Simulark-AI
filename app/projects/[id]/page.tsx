@@ -4,304 +4,16 @@ import { Icon } from "@iconify/react";
 import { Activity } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { getProject, saveProject } from "@/actions/projects";
 import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import type { Project } from "@/lib/schema/graph";
+import { WorkstationHeader } from "@/components/canvas/WorkstationHeader";
 import type { LayoutAlgorithm } from "@/lib/layout";
+import type { Project } from "@/lib/schema/graph";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
-import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-
-// Workstation Components
-// Workstation Components
-function WorkstationHeader({
-  project,
-  saving,
-  isTerminalOpen,
-  onToggleTerminal,
-  onExport,
-  onExportSkill,
-  onAutolayout,
-  onLayoutAlgorithm,
-}: {
-  project: Project | null;
-  saving: boolean;
-  isTerminalOpen?: boolean;
-  onToggleTerminal?: () => void;
-  onExport: (format: "mermaid" | "png" | "pdf" | "svg") => void;
-  onExportSkill: () => void;
-  onAutolayout: (direction: "DOWN" | "RIGHT") => void;
-  onLayoutAlgorithm: (algorithm: LayoutAlgorithm) => void;
-}) {
-  const { chaosMode, setChaosMode } = useSimulationStore();
-  if (!project)
-    return (
-      <div className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5]" />
-    );
-
-  return (
-    <header className="h-14 border-b border-brand-charcoal/10 bg-[#faf9f5] flex items-center justify-between px-4 shrink-0 z-20 relative">
-      <div className="flex items-center gap-4">
-        {/* Navigation */}
-        <Link
-          href="/dashboard"
-          className="text-brand-charcoal/40 hover:text-brand-charcoal transition-colors p-1"
-          title="Back to Dashboard"
-        >
-          <Icon icon="lucide:arrow-left" className="w-4 h-4" />
-        </Link>
-        <div className="h-4 w-px bg-brand-charcoal/10" />
-
-        {/* Project Identity */}
-        <div className="flex items-center gap-2 mr-4">
-          <Icon icon="lucide:box" className="w-4 h-4 text-brand-orange" />
-          <span className="font-poppins font-bold text-sm text-brand-charcoal tracking-tight">
-            {project.name}
-          </span>
-          <Badge
-            variant="outline"
-            className="hidden lg:flex rounded-none border-brand-charcoal/20 text-[9px] h-5 px-1 font-mono uppercase tracking-widest text-brand-charcoal/60 bg-transparent"
-          >
-            Draft
-          </Badge>
-        </div>
-
-        {/* Main Menu Bar */}
-        <div className="flex items-center gap-1">
-          {/* File Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
-              >
-                File
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="w-48 font-mono text-xs"
-            >
-              <DropdownMenuItem
-                onClick={() => {}}
-                className="cursor-not-allowed opacity-50"
-              >
-                New Project...
-              </DropdownMenuItem>
-              <div className="h-px bg-slate-100 my-1" />
-              <DropdownMenuItem
-                onClick={onExportSkill}
-                className="cursor-pointer"
-              >
-                <Icon
-                  icon="lucide:file-code"
-                  className="w-3.5 h-3.5 mr-2 text-brand-orange"
-                />{" "}
-                Export as Skill
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onExport("mermaid")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:download" className="w-3.5 h-3.5 mr-2" />{" "}
-                Export Mermaid
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onExport("png")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:image" className="w-3.5 h-3.5 mr-2" /> Export
-                Image (PNG)
-              </DropdownMenuItem>
-              <div className="h-px bg-slate-100 my-1" />
-              <DropdownMenuItem className="cursor-pointer font-bold text-brand-orange">
-                <Icon icon="lucide:save" className="w-3.5 h-3.5 mr-2" /> Save
-                Version
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* View Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
-              >
-                View
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="w-48 font-mono text-xs"
-            >
-              <DropdownMenuItem
-                onClick={onToggleTerminal}
-                className="cursor-pointer"
-              >
-                <Icon
-                  icon={
-                    isTerminalOpen ? "lucide:check" : "lucide:terminal-square"
-                  }
-                  className="w-3.5 h-3.5 mr-2"
-                />
-                Terminal Panel
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {}}
-                className="cursor-not-allowed opacity-50"
-              >
-                Toggle Grid
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Layout Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
-              >
-                <Icon icon="lucide:layers" className="w-3.5 h-3.5 mr-1.5" />
-                Layout
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="w-56 font-mono text-xs"
-            >
-              <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-brand-charcoal/50">
-                Direction
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => onAutolayout("DOWN")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" />
-                Vertical (TB)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onAutolayout("RIGHT")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" />
-                Horizontal (LR)
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-brand-charcoal/50">
-                Algorithms
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => onLayoutAlgorithm("arch-pattern")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:git-branch" className="w-3.5 h-3.5 mr-2 text-brand-orange" />
-                Architecture Pattern
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onLayoutAlgorithm("dagre-hierarchy")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:list" className="w-3.5 h-3.5 mr-2" />
-                Hierarchical (Dagre)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onLayoutAlgorithm("radial")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:circle" className="w-3.5 h-3.5 mr-2" />
-                Radial Layout
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onLayoutAlgorithm("force")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:move" className="w-3.5 h-3.5 mr-2" />
-                Force-Directed
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onLayoutAlgorithm("grid")}
-                className="cursor-pointer"
-              >
-                <Icon icon="lucide:grid" className="w-3.5 h-3.5 mr-2" />
-                Grid Layout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Simulation Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
-              >
-                Simulation
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="w-48 font-mono text-xs"
-            >
-              <DropdownMenuItem
-                onClick={() => setChaosMode(!chaosMode)}
-                className="cursor-pointer"
-              >
-                <Icon
-                  icon={chaosMode ? "lucide:check" : "lucide:zap"}
-                  className={cn(
-                    "w-3.5 h-3.5 mr-2",
-                    chaosMode && "text-red-500",
-                  )}
-                />
-                Chaos Mode {chaosMode ? "(Active)" : ""}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="hidden lg:flex items-center gap-2 mr-2 text-[10px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-brand-charcoal/5 rounded-sm">
-            <span
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                saving ? "bg-amber-400 animate-pulse" : "bg-green-400",
-              )}
-            />
-            {saving ? "SAVING..." : "SYSTEM ONLINE"}
-          </div>
-          <span>Lat: 12ms</span>
-        </div>
-      </div>
-    </header>
-  );
-}
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -449,8 +161,6 @@ export default function ProjectPage({
       <WorkstationHeader
         project={project}
         saving={false}
-        isTerminalOpen={isTerminalOpen}
-        onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
         onExport={handleExport}
         onExportSkill={handleExportSkill}
         onAutolayout={handleAutolayout}
@@ -458,7 +168,6 @@ export default function ProjectPage({
       />
 
       <div className="flex-1 flex overflow-hidden relative">
-
         <div className="flex-1 flex h-full relative">
           {/* Canvas Area */}
           <div className="flex-1 relative bg-[#e5e5e5]">
@@ -472,9 +181,28 @@ export default function ProjectPage({
               onViewportChange={(viewport) => setZoom(viewport.zoom)}
             />
 
+            {/* Floating Panel Toggle - Shows when panel is closed */}
+            {!isTerminalOpen && (
+              <button
+                type="button"
+                onClick={() => setIsTerminalOpen(true)}
+                className="absolute right-4 top-4 z-30 flex items-center gap-2 px-3 py-2 bg-bg-secondary border border-border-primary shadow-lg hover:shadow-xl transition-all hover:bg-bg-tertiary group"
+                title="Open Agentic Chat"
+              >
+                <Icon
+                  icon="lucide:message-square"
+                  className="w-4 h-4 text-brand-orange"
+                />
+                <span className="font-mono text-[10px] uppercase tracking-wider text-text-secondary group-hover:text-text-primary">
+                  Chat
+                </span>
+              </button>
+            )}
+
             {/* Overlay Canvas Controls */}
             <div className="absolute bottom-6 left-6 p-1 bg-white border border-brand-charcoal/10 shadow-sm flex items-center gap-1 rounded-sm z-10">
-              <button 
+              <button
+                type="button"
                 onClick={() => flowEditorRef.current?.zoomOut()}
                 className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"
               >
@@ -483,7 +211,8 @@ export default function ProjectPage({
               <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">
                 {Math.round(zoom * 100)}%
               </span>
-              <button 
+              <button
+                type="button"
                 onClick={() => flowEditorRef.current?.zoomIn()}
                 className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"
               >
@@ -497,8 +226,8 @@ export default function ProjectPage({
             className={cn(
               "bg-white border-l border-brand-charcoal/10 flex flex-col transition-all duration-300 ease-in-out absolute right-0 top-0 bottom-0 shadow-xl z-20",
               isTerminalOpen
-                ? "w-[400px] translate-x-0"
-                : "w-[400px] translate-x-full",
+                ? "w-full md:w-[400px] translate-x-0"
+                : "w-full md:w-[400px] translate-x-full",
             )}
           >
             <AIAssistantPanel
@@ -509,6 +238,8 @@ export default function ProjectPage({
               getCurrentEdges={() => flowEditorRef.current?.edges || []}
               initialPrompt={initialPrompt || undefined}
               initialMetadata={project.metadata}
+              isOpen={isTerminalOpen}
+              onToggle={() => setIsTerminalOpen(!isTerminalOpen)}
             />
           </div>
         </div>
@@ -516,4 +247,3 @@ export default function ProjectPage({
     </div>
   );
 }
-

@@ -2828,6 +2828,186 @@ export const TECH_ECOSYSTEM: TechItem[] = [
     category: "gcp",
     defaultType: "automation",
   },
+  // ==================== 2026 ECOSYSTEM ADDITIONS ====================
+  // Frontend Meta-Frameworks
+  {
+    id: "solid-start",
+    label: "SolidStart",
+    icon: "logos:solidjs-icon",
+    category: "frontend",
+    defaultType: "frontend",
+  },
+  {
+    id: "tanstack-start",
+    label: "TanStack Start",
+    icon: "simple-icons:react", // Fallback or find specific
+    category: "frontend",
+    defaultType: "frontend",
+  },
+  {
+    id: "react-router",
+    label: "React Router v7",
+    icon: "logos:react-router",
+    category: "frontend",
+    defaultType: "frontend",
+  },
+  {
+    id: "million",
+    label: "Million.js",
+    icon: "logos:million",
+    category: "frontend",
+    defaultType: "frontend",
+  },
+
+  // Backend Runtimes & Frameworks
+  {
+    id: "workerd",
+    label: "workerd (Cloudflare)",
+    icon: "logos:cloudflare-workers-icon",
+    category: "backend",
+    defaultType: "backend",
+  },
+  {
+    id: "nitro",
+    label: "Nitro",
+    icon: "logos:nitro-icon",
+    category: "backend",
+    defaultType: "backend",
+  },
+  {
+    id: "hattip",
+    label: "Hattip",
+    icon: "carbon:http", // Generic HTTP icon
+    category: "backend",
+    defaultType: "backend",
+  },
+
+  // Database & Data
+  {
+    id: "neon",
+    label: "Neon",
+    icon: "logos:neon-icon",
+    category: "database",
+    defaultType: "database",
+  },
+  {
+    id: "convex",
+    label: "Convex",
+    icon: "logos:convex-icon",
+    category: "database",
+    defaultType: "database",
+  },
+  {
+    id: "upstash",
+    label: "Upstash",
+    icon: "logos:upstash-icon",
+    category: "database",
+    defaultType: "database",
+  },
+  {
+    id: "val-town",
+    label: "Val Town",
+    icon: "carbon:function",
+    category: "backend",
+    defaultType: "function",
+  },
+
+  // AI & Agents
+  {
+    id: "langgraph",
+    label: "LangGraph",
+    icon: "simple-icons:langchain",
+    category: "ai",
+    defaultType: "ai",
+  },
+  {
+    id: "crewai",
+    label: "CrewAI",
+    icon: "fluent-emoji-high-contrast:robot", // Fallback
+    category: "ai",
+    defaultType: "ai",
+  },
+  {
+    id: "pydantic-ai",
+    label: "PydanticAI",
+    icon: "simple-icons:pydantic",
+    category: "ai",
+    defaultType: "ai",
+  },
+  {
+    id: "openai-o1",
+    label: "OpenAI o1",
+    icon: "logos:openai-icon",
+    category: "ai",
+    defaultType: "ai-model",
+  },
+  {
+    id: "gemini-pro",
+    label: "Gemini 1.5 Pro",
+    icon: "logos:google-gemini",
+    category: "ai",
+    defaultType: "ai-model",
+  },
+  {
+    id: "deepseek-v3",
+    label: "DeepSeek v3",
+    icon: "arcticons:deepseek", // Check generic support
+    category: "ai",
+    defaultType: "ai-model",
+  },
+  {
+    id: "unstructured",
+    label: "Unstructured.io",
+    icon: "lucide:file-text",
+    category: "ai",
+    defaultType: "service",
+  },
+
+  // Real-time
+  {
+    id: "partykit",
+    label: "PartyKit",
+    icon: "lucide:party-popper",
+    category: "backend",
+    defaultType: "server",
+  },
+  {
+    id: "liveblocks",
+    label: "Liveblocks",
+    icon: "logos:liveblocks-icon",
+    category: "tooling",
+    defaultType: "service",
+  },
+
+  // Platform & DevOps
+  {
+    id: "backstage",
+    label: "Backstage",
+    icon: "logos:backstage-icon",
+    category: "devops",
+    defaultType: "idp",
+  },
+  {
+    id: "port",
+    label: "GetPort",
+    icon: "simple-icons:port",
+    category: "devops",
+    defaultType: "idp",
+  },
+  {
+    id: "opentofu",
+    label: "OpenTofu",
+    icon: "logos:opentofu",
+    category: "devops",
+    defaultType: "service",
+  },
+  {
+    id: "dagger",
+    label: "Dagger",
+    icon: "logos:dagger-icon",
+    category: "devops",
+    defaultType: "cicd",
+  },
 ];
 
 // Helper function to get tech by ID

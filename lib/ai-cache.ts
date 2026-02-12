@@ -51,7 +51,12 @@ function generateCacheKey(params: {
   mode?: string;
   userId?: string;
 }): string {
-  const { prompt, model = "default", mode = "default", userId = "anonymous" } = params;
+  const {
+    prompt,
+    model = "default",
+    mode = "default",
+    userId = "anonymous",
+  } = params;
 
   // Create a deterministic hash of the prompt
   const promptHash = hashString(prompt);

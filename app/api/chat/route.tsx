@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
       currentNodes,
       currentEdges,
       mode: (mode || "default") as ArchitectureMode,
-      quickMode: false,
+
       conversationHistory,
       operationType,
       userPreferences,

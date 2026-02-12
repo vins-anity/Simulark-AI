@@ -95,11 +95,10 @@ export async function generateArchitectureStream(
   mode: ArchitectureMode = "corporate",
   currentNodes: any[] = [],
   currentEdges: any[] = [],
-  quickMode: boolean = false,
 ) {
   if (modelId) {
     console.log(
-      `[AI Client] Generating with selected model: ${modelId} in mode: ${mode}${quickMode ? " (QUICK)" : ""}`,
+      `[AI Client] Generating with selected model: ${modelId} in mode: ${mode}`,
     );
     // Map modelId to provider
     if (modelId === "glm-4.7-flash") {
@@ -109,7 +108,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     } else if (modelId === "deepseek-ai") {
       return await callModelStream(
@@ -118,7 +116,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     } else if (modelId?.includes("glm-4.5-air")) {
       // New GLM 4.5 Air model from Z.AI via OpenRouter (free)
@@ -128,7 +125,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     } else if (
       modelId === "kimi-k2.5" ||
@@ -141,7 +137,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     } else if (modelId?.includes("gemini")) {
       return await callModelStream(
@@ -150,7 +145,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     } else if (modelId?.includes("minimax")) {
       return await callModelStream(
@@ -159,7 +153,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     } else if (modelId?.includes("claude")) {
       return await callModelStream(
@@ -168,7 +161,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
     }
   }
@@ -177,7 +169,7 @@ export async function generateArchitectureStream(
   // 1. Try Primary (Zhipu)
   try {
     console.log(
-      `[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Mode: ${mode}${quickMode ? " (QUICK)" : ""}. Prompt length: ${prompt.length}`,
+      `[AI Client] Starting generation. Primary: Zhipu GLM-4.7 Flash. Mode: ${mode}. Prompt length: ${prompt.length}`,
     );
     const stream = await callModelStream(
       "zhipu",
@@ -185,7 +177,6 @@ export async function generateArchitectureStream(
       mode,
       currentNodes,
       currentEdges,
-      quickMode,
     );
     console.log("[AI Client] Zhipu stream established successfully.");
     return stream;
@@ -201,7 +192,6 @@ export async function generateArchitectureStream(
         mode,
         currentNodes,
         currentEdges,
-        quickMode,
       );
       console.log("[AI Client] OpenRouter stream established successfully.");
       return stream;
@@ -220,7 +210,6 @@ async function callModelStream(
   mode: ArchitectureMode = "corporate",
   currentNodes: any[] = [],
   currentEdges: any[] = [],
-  quickMode: boolean = false,
 ) {
   const { client, config } = createAIClient(provider);
 
@@ -229,8 +218,7 @@ async function callModelStream(
   const complexity = detectComplexity(prompt);
 
   // For simple prompts in startup mode, disable reasoning to speed up generation
-  const shouldDisableReasoning =
-    quickMode || (complexity === "simple" && mode === "startup");
+  const shouldDisableReasoning = complexity === "simple" && mode === "startup";
 
   // Use enhanced prompt engineering with architecture detection
   const systemPrompt = buildEnhancedSystemPrompt({
@@ -240,7 +228,6 @@ async function callModelStream(
     currentNodes,
     currentEdges,
     mode,
-    quickMode: shouldDisableReasoning,
   });
 
   // Determine reasoning level based on mode and complexity
@@ -264,7 +251,7 @@ async function callModelStream(
   }
 
   console.log(
-    `[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})${quickMode ? " [QUICK MODE]" : ""}`,
+    `[AI Client] Calling OpenAI API via provider: ${provider} (Model: ${config.model})`,
   );
 
   // Use enhanced resilience with retry and circuit breaker

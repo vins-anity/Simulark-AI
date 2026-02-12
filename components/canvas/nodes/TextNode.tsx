@@ -61,7 +61,9 @@ export function TextNode({ id, selected, data }: NodeProps) {
   const updateProperty = (key: string, value: unknown) => {
     setNodes((nodes) =>
       nodes.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, [key]: value } } : node,
+        node.id === id
+          ? { ...node, data: { ...node.data, [key]: value } }
+          : node,
       ),
     );
   };
@@ -85,7 +87,9 @@ export function TextNode({ id, selected, data }: NodeProps) {
               <input
                 type="number"
                 value={fontSize}
-                onChange={(e) => updateProperty("fontSize", Number(e.target.value))}
+                onChange={(e) =>
+                  updateProperty("fontSize", Number(e.target.value))
+                }
                 className="w-full h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm focus:outline-none focus:border-brand-orange"
               />
             </div>
@@ -107,7 +111,10 @@ export function TextNode({ id, selected, data }: NodeProps) {
               <select
                 value={fontWeight}
                 onChange={(e) =>
-                  updateProperty("fontWeight", e.target.value as "normal" | "bold")
+                  updateProperty(
+                    "fontWeight",
+                    e.target.value as "normal" | "bold",
+                  )
                 }
                 className="w-full h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm focus:outline-none focus:border-brand-orange"
               >
@@ -122,7 +129,10 @@ export function TextNode({ id, selected, data }: NodeProps) {
               <select
                 value={textAlign}
                 onChange={(e) =>
-                  updateProperty("textAlign", e.target.value as "left" | "center" | "right")
+                  updateProperty(
+                    "textAlign",
+                    e.target.value as "left" | "center" | "right",
+                  )
                 }
                 className="w-full h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm focus:outline-none focus:border-brand-orange"
               >

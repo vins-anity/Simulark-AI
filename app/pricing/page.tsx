@@ -75,9 +75,9 @@ export default function PricingPage() {
               features={[
                 "Unlimited Projects",
                 "Advanced Chaos Engineering & Stress Testing",
-                "Sophisticated Auto-Layouts (Elkjs/Radial)",
+                "Sophisticated Auto-Layouts",
                 "Kimi-k2.5, Gemini 3.0 Flash/Pro, Minimax",
-                "Quick Mode & Enterprise Mode",
+                "Enterprise Mode",
                 "Advance node library",
                 "Priority Email Support",
               ]}
@@ -247,7 +247,7 @@ function PricingCard({
             <Button
               className={`
                                 w-full h-12 rounded-none font-mono text-xs uppercase tracking-widest transition-all
-                                bg-white border border-brand-charcoal hover:bg-brand-charcoal hover:text-white
+                                bg-white border border-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-white
                             `}
             >
               {btnText}
@@ -268,7 +268,7 @@ function PricingCard({
                   className={`
                                         w-full h-12 rounded-none font-mono text-xs uppercase tracking-widest transition-all
                                         ${isPremium ? "bg-brand-charcoal text-white hover:bg-black" : ""}
-                                        ${variant === "default" ? "bg-transparent border border-brand-charcoal hover:bg-brand-charcoal hover:text-white" : ""}
+                                        ${variant === "default" ? "bg-transparent border border-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-white" : ""}
                                         ${isSpecial ? "bg-[#d97757] text-white hover:bg-white hover:text-[#d97757] border-none font-black shadow-lg shadow-black/20" : ""}
                                     `}
                 >

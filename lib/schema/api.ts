@@ -40,7 +40,6 @@ export const SendMessageSchema = v.object({
       v.literal("corporate"),
     ]),
   ),
-  quickMode: v.optional(v.boolean()),
 });
 
 // AI Generation schema
@@ -54,7 +53,7 @@ export const GenerateRequestSchema = v.object({
       v.literal("corporate"),
     ]),
   ),
-  quickMode: v.optional(v.boolean()),
+
   currentNodes: v.optional(v.array(v.any())),
   currentEdges: v.optional(v.array(v.any())),
 });

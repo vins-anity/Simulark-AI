@@ -17,7 +17,20 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   // Optional: Persist state
   useEffect(() => {
     const stored = localStorage.getItem("sidebar-collapsed");
-    if (stored === "true") setIsCollapsed(true);
+    if (stored === "true") {
+      setIsCollapsed(true);
+    } else if (window.innerWidth < 768) {
+      setIsCollapsed(true);
+    }
+
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsCollapsed(true);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const toggleSidebar = () => {

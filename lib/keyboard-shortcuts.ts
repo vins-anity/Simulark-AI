@@ -71,8 +71,7 @@ export function useKeyboardShortcuts(
       if (isInputElementFocused()) {
         // Allow save shortcut even when in inputs
         const isSaveShortcut =
-          (event.ctrlKey || event.metaKey) &&
-          event.key.toLowerCase() === "s";
+          (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s";
         if (!isSaveShortcut) {
           return;
         }

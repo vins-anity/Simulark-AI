@@ -63,13 +63,13 @@ export function UserMenu() {
   if (!user) return null;
 
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 rounded-none hover:bg-transparent p-0"
+          className="relative h-10 w-10 rounded-none hover:bg-transparent p-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100 transition-none"
         >
-          <Avatar className="h-10 w-10 rounded-none border border-brand-charcoal">
+          <Avatar className="h-10 w-10 rounded-none border border-brand-charcoal will-change-transform">
             <AvatarImage
               src={
                 user.user_metadata?.avatar_url ||
@@ -87,7 +87,6 @@ export function UserMenu() {
       <DropdownMenuContent
         className="w-64 bg-[#faf9f5] border border-brand-charcoal rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-0"
         align="end"
-        forceMount
       >
         <DropdownMenuLabel className="font-normal p-4 border-b border-brand-charcoal/10 bg-brand-charcoal/5">
           <div className="flex flex-col space-y-1">

@@ -6,7 +6,7 @@ const companies = [
   { name: "Claude Code", icon: "/icons/claude-color.svg", id: "01" },
   { name: "Cursor", icon: "/icons/cursor.svg", id: "02" },
   { name: "Windsurf", icon: "/icons/windsurf.svg", id: "03" },
-  { name: "OpenAI", icon: "/icons/openai.svg", id: "04" },
+  { name: "Codex", icon: "/icons/openai.svg", id: "04" },
   { name: "DeepSeek", icon: "/icons/deepseek-color.svg", id: "05" },
   { name: "Antigravity", icon: "/icons/gemini-color.svg", id: "06" },
   { name: "Z.AI", icon: "/icons/zai.svg", id: "07" },

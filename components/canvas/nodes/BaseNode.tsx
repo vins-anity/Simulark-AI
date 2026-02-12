@@ -1,24 +1,29 @@
 "use client";
 
-import { Handle, type NodeProps, Position, useReactFlow } from "@xyflow/react";
-import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { useSimulationStore } from "@/lib/store";
+import { Icon } from "@iconify/react";
 import {
-  Skull,
-  ZapOff,
+  Handle,
+  type NodeProps,
+  NodeToolbar,
+  Position,
+  useReactFlow,
+} from "@xyflow/react";
+import { clsx } from "clsx";
+import {
   Activity,
+  Component,
   Cpu,
   Database,
   Server,
-  Component,
+  Skull,
+  ZapOff,
 } from "lucide-react";
-import { Icon } from "@iconify/react";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { twMerge } from "tailwind-merge";
+import { useSimulationStore } from "@/lib/store";
 import { NodeContextMenu } from "./NodeContextMenu";
 import { NodeProperties } from "./NodeProperties";
-import { toast } from "sonner";
-import { NodeToolbar } from "@xyflow/react";
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -59,6 +64,8 @@ export function BaseNode({
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editedLabel, setEditedLabel] = useState(nodeLabel);
   const isKilled = nodeStatus[id] === "killed";
+  const isDegraded = nodeStatus[id] === "degraded";
+  const isRecovering = nodeStatus[id] === "recovering";
 
   // Click vs Drag detection
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
@@ -163,14 +170,29 @@ export function BaseNode({
         onContextMenu={handleContextMenu}
         className={cn(
           "relative flex flex-col transition-all duration-300 ease-out group",
-          "w-72 h-auto rounded-lg overflow-hidden bg-white",
-          "border border-brand-charcoal/10 shadow-sm",
-          !isKilled && "hover:border-brand-orange/40 hover:shadow-md",
-          !isKilled &&
+          "w-72 h-auto rounded-none overflow-hidden",
+          "border",
+          // Normal state - multi-layer shadows
+          !chaosMode &&
+            !isKilled &&
+            "bg-bg-secondary border-border-primary node-shadow-layered hover:node-shadow-hover",
+          !chaosMode &&
+            !isKilled &&
             selected &&
-            "ring-2 ring-brand-orange/20 border-brand-orange shadow-brand-orange/10",
-          chaosMode && !isKilled && "cursor-crosshair hover:bg-red-500/10",
-          isKilled && "bg-red-50 border-red-200 grayscale opacity-80",
+            "node-shadow-selected border-brand-orange",
+          // Chaos mode - active
+          chaosMode &&
+            !isKilled &&
+            !isDegraded &&
+            "cursor-crosshair bg-bg-secondary border-border-primary hover:border-red-500/50",
+          // Killed state
+          isKilled &&
+            "bg-red-950/30 border-red-500/50 grayscale opacity-75 cursor-not-allowed shadow-red-900/50",
+          // Degraded state
+          isDegraded && "bg-brand-orange/10 border-brand-orange/40",
+          // Recovering state
+          isRecovering &&
+            "bg-brand-green/10 border-brand-green/40 animate-pulse",
           className,
         )}
       >
@@ -188,6 +210,26 @@ export function BaseNode({
 
         {/* Top Resize Handle Visual */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[3px] w-1.5 h-1.5 rounded-full bg-brand-charcoal/20 z-10" />
+
+        {/* Chaos Mode Status Indicators */}
+        {isKilled && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-red-500 text-white text-[10px] font-mono uppercase tracking-wider rounded-sm animate-pulse z-20">
+            <Skull className="w-3 h-3" />
+            FAILED
+          </div>
+        )}
+        {isDegraded && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-brand-orange text-white text-[10px] font-mono uppercase tracking-wider rounded-sm z-20">
+            <Activity className="w-3 h-3" />
+            DEGRADED
+          </div>
+        )}
+        {isRecovering && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-brand-green text-white text-[10px] font-mono uppercase tracking-wider rounded-sm z-20">
+            <ZapOff className="w-3 h-3" />
+            RECOVERING
+          </div>
+        )}
 
         <div className="p-4 flex flex-col gap-3">
           {/* Header: Icon + Title + Tech */}

@@ -45,6 +45,37 @@ export async function createProject(
   return { success: true, data };
 }
 
+// --- Update Project Name ---
+export async function updateProjectName(projectId: string, name: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update({
+      name,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", projectId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Update Project Name Error:", error);
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/dashboard");
+  return { success: true, data };
+}
+
 // --- Save Project (with Versioning) ---
 export async function saveProject(
   projectId: string,

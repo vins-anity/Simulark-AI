@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Lora, Poppins } from "next/font/google";
+import { Geist_Mono, Lora, Poppins } from "next/font/google";
 import "./globals.css";
 import { BrandProvider } from "@/components/ui/brand-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -12,6 +13,12 @@ const poppins = Poppins({
 
 const lora = Lora({
   variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -32,12 +39,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://simulark-ai.vercel.app"),
   openGraph: {
     title: "Simulark",
-    description: "Intelligent Backend Architecture Design & Visual Simulation Platform",
+    description:
+      "Intelligent Backend Architecture Design & Visual Simulation Platform",
     url: "https://simulark-ai.vercel.app",
     siteName: "Simulark",
     images: [
       {
-        url: "/web-app-manifest-512x512.png", // Fallback to largest icon
+        url: "/web-app-manifest-512x512.png",
         width: 512,
         height: 512,
         alt: "Simulark Preview",
@@ -49,8 +57,9 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Simulark",
-    description: "Intelligent Backend Architecture Design & Visual Simulation Platform",
-    images: ["/web-app-manifest-512x512.png"], // Fallback to largest icon
+    description:
+      "Intelligent Backend Architecture Design & Visual Simulation Platform",
+    images: ["/web-app-manifest-512x512.png"],
   },
 };
 
@@ -62,24 +71,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} ${lora.variable} antialiased bg-[#faf9f5] text-[#141413]`}
-        style={
-          {
-            "--brand-dark": "#141413",
-            "--brand-light": "#faf9f5",
-            "--brand-gray-mid": "#b0aea5",
-            "--brand-gray-light": "#e8e6dc",
-            "--brand-orange": "#d97757",
-            "--brand-blue": "#6a9bcc",
-            "--brand-green": "#788c5d",
-          } as React.CSSProperties
-        }
+        className={`${poppins.variable} ${lora.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarProvider>
-          <BrandProvider>{children}</BrandProvider>
-        </SidebarProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            <BrandProvider>{children}</BrandProvider>
+          </SidebarProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>

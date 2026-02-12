@@ -6,6 +6,7 @@ import {
   type OperationType,
   shouldRelaxConstraints,
 } from "./intent-detector";
+import { TECH_KNOWLEDGE_BASE } from "./tech-knowledge";
 
 const logger = createLogger("prompt-engineering");
 
@@ -39,7 +40,7 @@ export interface PromptContext {
   currentNodes?: unknown[];
   currentEdges?: unknown[];
   mode: ArchitectureMode;
-  quickMode: boolean;
+
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
   operationType?: OperationType; // Type of operation (create/modify/simplify/remove/extend)
   userPreferences?: {
@@ -107,7 +108,7 @@ const COMPLEXITY_INDICATORS: Record<ComplexityLevel, string[]> = {
 // Mode-specific constraints
 export type ArchitectureMode = "default" | "startup" | "corporate";
 
-const MODE_CONSTRAINTS: Record<
+export const MODE_CONSTRAINTS: Record<
   ArchitectureMode,
   {
     maxComponents: number;
@@ -957,34 +958,64 @@ function getTechRecommendations(
  * Build an optimized system prompt based on context
  */
 export function buildEnhancedSystemPrompt(context: PromptContext): string {
-  const detection = detectArchitectureType(context.userInput);
-  const complexity = detectComplexity(context.userInput);
-  const modeConstraints = MODE_CONSTRAINTS[context.mode];
+  const {
+    userInput,
+    architectureType,
+    detectedIntent,
+    currentNodes,
+    currentEdges,
+    mode,
+    conversationHistory,
+    operationType,
+    userPreferences,
+  } = context;
 
-  // Detect operation type
-  const operationType =
-    context.operationType ||
-    detectOperation(context.userInput, context.currentNodes || []);
-  const operationInstructions = getOperationInstructions(operationType);
-  const shouldRelax = shouldRelaxConstraints(operationType);
-  const countAdjustment = getComponentCountAdjustment(operationType);
+  // Detect complexity if not provided
+  const complexity = detectComplexity(userInput);
+  const detection = detectArchitectureType(userInput);
 
-  // Build current architecture context
+  // Get constraints
+  const modeConstraints = MODE_CONSTRAINTS[mode];
+  const countAdjustment = getComponentCountAdjustment(
+    operationType || "create",
+  );
+  const shouldRelax = shouldRelaxConstraints(operationType || "create");
+
+  // Format existing nodes for context
   let currentArchitectureContext = "";
-  if (context.currentNodes && context.currentNodes.length > 0) {
-    const nodeCount = context.currentNodes.length;
-    const edgeCount = context.currentEdges?.length || 0;
+  let architectureNodes: any[] = [];
+  let customNodes: any[] = [];
+  let nodeCount = 0;
+  let edgeCount = 0;
 
-    // Separate architecture nodes from custom shapes/annotations
-    const architectureNodes = context.currentNodes.filter(
-      (n: any) => !["shape-rect", "shape-circle", "shape-diamond", "text"].includes(n.type),
+  if (currentNodes && currentNodes.length > 0) {
+    const nodes = currentNodes;
+    const edges = currentEdges || [];
+    nodeCount = nodes.length;
+    edgeCount = edges.length;
+
+    // Separate functional nodes from decorative/custom nodes
+    architectureNodes = nodes.filter(
+      (n: any) =>
+        n.type !== "stickyNote" &&
+        n.type !== "text" &&
+        n.type !== "group" &&
+        n.type !== "frame",
     );
-    const customNodes = context.currentNodes.filter(
-      (n: any) => ["shape-rect", "shape-circle", "shape-diamond", "text"].includes(n.type),
+    customNodes = nodes.filter(
+      (n: any) =>
+        n.type === "stickyNote" ||
+        n.type === "text" ||
+        n.type === "group" ||
+        n.type === "frame",
+    );
+
+    const operationInstructions = getOperationInstructions(
+      operationType || "modify",
     );
 
     currentArchitectureContext = `
-CURRENT ARCHITECTURE STATE:
+CURRENT STATE:
 You are MODIFYING an existing architecture with ${nodeCount} components and ${edgeCount} connections.
 
 Existing Architecture Components (${architectureNodes.length}):
@@ -995,7 +1026,9 @@ ${architectureNodes
   )
   .join("\n")}
 
-${customNodes.length > 0 ? `
+${
+  customNodes.length > 0
+    ? `
 Custom Annotations & Shapes (${customNodes.length}):
 ${customNodes
   .map(
@@ -1005,7 +1038,9 @@ ${customNodes
   .join("\n")}
 
 NOTE: Preserve these custom annotations when modifying the architecture. They represent user-added notes and visual elements.
-` : ""}
+`
+    : ""
+}
 
 IMPORTANT: ${operationInstructions}
 
@@ -1062,82 +1097,49 @@ ${getFrameworkCompatibilityRules()}`;
 
   const architectureGuidelines = getArchitectureGuidelines(detection.type);
 
-  // Quick mode: shorter prompt
-  if (context.quickMode) {
-    return `You are a Solutions Architect. ${context.currentNodes && context.currentNodes.length > 0 ? "MODIFY the existing" : "Generate a new"} architecture for: "${context.userInput}"
-${currentArchitectureContext}
-${conversationContext}
-
-OPERATION: ${operationType.toUpperCase()}
-ARCHITECTURE TYPE: ${detection.type}
-MODE: ${context.mode}
-COMPLEXITY: ${complexity}
-
-${componentGuidelines}
-
-${techRecommendations}
-
-REQUIRED JSON FORMAT:
-{
-  "nodes": [
-    {
-      "id": "node-1",
-      "type": "frontend|backend|database|gateway|cache|queue|ai|storage",
-      "position": { "x": 100, "y": 100 },
-      "data": {
-        "label": "Component Name",
-        "description": "Brief description",
-        "tech": "technology-name",
-        "serviceType": "type"
-      }
-    }
-  ],
-  "edges": [
-    {
-      "id": "edge-1",
-      "source": "node-1",
-      "target": "node-2",
-      "animated": true,
-      "data": { "protocol": "HTTPS" }
-    }
-  ]
-}
-
-RULES:
-1. Use ${adjustedMin}-${adjustedMax} components${shouldRelax ? " (relaxed for simplification)" : ""}
-2. Never mix incompatible frameworks (Next.js + Express)
-3. Use real technology names from the recommendations
-4. Position: Gateways top (y:50), Services middle (y:150-250), Data bottom (y:350-450)
-5. Return valid JSON only, no markdown`;
-  }
-
   if (context.userPreferences) {
     const { cloudProviders, languages, frameworks } = context.userPreferences;
     const prefParts = [];
-    
+
     // Handle Cloud Providers
     if (cloudProviders && cloudProviders.length > 0) {
-      const clouds = cloudProviders.filter(c => c !== "Generic").map(c => c.toUpperCase()).join(", ");
+      const clouds = cloudProviders
+        .filter((c) => c !== "Generic")
+        .map((c) => c.toUpperCase())
+        .join(", ");
       if (clouds) prefParts.push(`- Cloud Providers: ${clouds}`);
-    } else if (context.userPreferences.cloudProvider && context.userPreferences.cloudProvider !== "Generic") {
-       // Legacy fallback
-       prefParts.push(`- Cloud Provider: ${context.userPreferences.cloudProvider.toUpperCase()}`);
+    } else if (
+      context.userPreferences.cloudProvider &&
+      context.userPreferences.cloudProvider !== "Generic"
+    ) {
+      // Legacy fallback
+      prefParts.push(
+        `- Cloud Provider: ${context.userPreferences.cloudProvider.toUpperCase()}`,
+      );
     }
 
     // Handle Languages
     if (languages && languages.length > 0) {
-      prefParts.push(`- Programming Languages: ${languages.map(l => l.toUpperCase()).join(", ")}`);
+      prefParts.push(
+        `- Programming Languages: ${languages.map((l) => l.toUpperCase()).join(", ")}`,
+      );
     } else if (context.userPreferences.language) {
       // Legacy fallback
-      prefParts.push(`- Programming Language: ${context.userPreferences.language.toUpperCase()}`);
+      prefParts.push(
+        `- Programming Language: ${context.userPreferences.language.toUpperCase()}`,
+      );
     }
 
     // Handle Frameworks
     if (frameworks && frameworks.length > 0) {
-      prefParts.push(`- Core Frameworks: ${frameworks.map(f => f.toUpperCase()).join(", ")}`);
+      prefParts.push(
+        `- Core Frameworks: ${frameworks.map((f) => f.toUpperCase()).join(", ")}`,
+      );
     } else if (context.userPreferences.framework) {
       // Legacy fallback
-      prefParts.push(`- Core Framework: ${context.userPreferences.framework.toUpperCase()}`);
+      prefParts.push(
+        `- Core Framework: ${context.userPreferences.framework.toUpperCase()}`,
+      );
     }
 
     if (prefParts.length > 0) {
@@ -1145,12 +1147,18 @@ RULES:
     }
 
     // Handle Architecture Preferences (Patterns)
-    if (context.userPreferences.architectureTypes && context.userPreferences.architectureTypes.length > 0) {
+    if (
+      context.userPreferences.architectureTypes &&
+      context.userPreferences.architectureTypes.length > 0
+    ) {
       techRecommendations += `\n\nPREFERRED ARCHITECTURE PATTERNS:\n${context.userPreferences.architectureTypes.join(", ")}\n\nincorporate these architectural styles where applicable.`;
     }
 
     // Handle Application Type
-    if (context.userPreferences.applicationType && context.userPreferences.applicationType.length > 0) {
+    if (
+      context.userPreferences.applicationType &&
+      context.userPreferences.applicationType.length > 0
+    ) {
       techRecommendations += `\n\nTARGET APPLICATION TYPE:\n${context.userPreferences.applicationType.join(", ")}\n\nOptimize the architecture for this specific type of application.`;
     }
 
@@ -1167,11 +1175,17 @@ USER REQUEST: "${context.userInput}"
 ${currentArchitectureContext}
 ${conversationContext}
 
-OPERATION TYPE: ${operationType.toUpperCase()}
+OPERATION TYPE: ${operationType ? operationType.toUpperCase() : "CREATE"}
 DETECTED ARCHITECTURE: ${detection.type}
 CONFIDENCE: ${Math.round(detection.confidence * 100)}%
 
 ${componentGuidelines}
+
+${architectureGuidelines}
+
+${componentGuidelines}
+
+${getTechKnowledgeInjection(detection.type, context.userInput)}
 
 ${architectureGuidelines}
 
@@ -1254,4 +1268,72 @@ CRITICAL RULES:
 7. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
 
 Generate the complete JSON architecture now.`;
+}
+
+export function getTechKnowledgeInjection(
+  type: ArchitectureType,
+  userInput: string,
+): string {
+  const categories = new Set<string>();
+  const inputLower = userInput.toLowerCase();
+
+  // Always include core categories
+  categories.add("frontend");
+  categories.add("backend");
+  categories.add("database");
+  categories.add("cloud");
+
+  // Context-aware additions
+  if (
+    type.includes("ai") ||
+    inputLower.includes("ai") ||
+    inputLower.includes("agent")
+  ) {
+    categories.add("ai");
+    categories.add("vector-db");
+  }
+  if (
+    type === "microservices" ||
+    inputLower.includes("platform") ||
+    inputLower.includes("devops")
+  ) {
+    categories.add("devops");
+    categories.add("container");
+  }
+  if (
+    inputLower.includes("realtime") ||
+    inputLower.includes("socket") ||
+    inputLower.includes("collab")
+  ) {
+    categories.add("realtime");
+  }
+
+  const knowledgeEntries = Object.values(TECH_KNOWLEDGE_BASE)
+    .filter(
+      (tech) =>
+        categories.has(tech.category) ||
+        (categories.has("frontend") && tech.category === "frontend"),
+    ) // Simpler filter for now, can refine
+    .filter((tech) => {
+      // Optional: Filter by specific matching keywords if context is huge,
+      // but for now we inject the curated list which is ~30 items.
+      // We can optimize to top 3 per category if needed.
+      return true;
+    })
+    .map(
+      (tech) =>
+        `- ${tech.name}: ${tech.description} (Best for: ${tech.bestFor.join(", ")})`,
+    )
+    .join("\n");
+
+  return `
+Tech Stack Selection Guidelines:
+1. UNBIASED SELECTION: Do NOT blindly favor trending tools. "New" != "Best".
+2. MATCH REQUIREMENTS:
+   - For PREDICTABILITY/STABILITY: Choose proven stacks (e.g., Laravel, Rails, Django, Go, Java).
+   - For PERFORMANCE/EDGE: Choose modern runtimes (e.g., Bun, Hono, Rust, Go).
+   - For RAPID MVP: Choose all-inclusive frameworks (e.g., Next.js, Laravel, Rails).
+3. 2026 KNOWLEDGE BASE (Use if relevant to constraints):
+${knowledgeEntries}
+`;
 }

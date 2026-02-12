@@ -63,18 +63,11 @@
                   },
                   "provider": {
                     "type": "string",
-                    "enum": [
-                      "AWS",
-                      "GCP",
-                      "Azure",
-                      "Generic"
-                    ],
+                    "enum": ["AWS", "GCP", "Azure", "Generic"],
                     "default": "Generic"
                   }
                 },
-                "required": [
-                  "prompt"
-                ]
+                "required": ["prompt"]
               }
             }
           }
@@ -143,9 +136,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               }
             }
           }

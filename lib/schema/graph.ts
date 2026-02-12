@@ -20,6 +20,9 @@ export const NodeTypeSchema = v.picklist([
   "security",
   "vector-db",
   "ai-model",
+  "idp",
+  "function", // Serverless functions
+  "bucket", // Object storage
 ]);
 
 export const ProviderSchema = v.picklist(["AWS", "GCP", "Azure", "Generic"]);
@@ -61,6 +64,10 @@ export const EdgeProtocolSchema = v.picklist([
   "cache",
   "oauth",
   "grpc",
+  "webrtc",
+  "crdt", // Conflict-free Replicated Data Type sync
+  "rsc", // React Server Components wire format
+  "ipc", // Inter-process communication (for local AI)
 ]);
 
 export const EdgeDataSchema = v.object({

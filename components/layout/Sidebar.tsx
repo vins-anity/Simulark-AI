@@ -2,16 +2,13 @@
 
 import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
-import {
-  ChevronLeft,
-  Plus,
-  Settings,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 import { CreateProjectModal } from "@/components/dashboard/CreateProjectModal";
+import { UpgradeModal } from "@/components/subscription/UpgradeModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,22 +32,24 @@ const navItems = [
     name: "Mission Control",
     href: "/dashboard",
     icon: "lucide:layout-dashboard",
+    shortcut: "⌘1",
     disabled: false,
   },
   {
     name: "Blueprints",
     href: "/dashboard/templates",
     icon: "lucide:book-open",
+    shortcut: "⌘2",
     disabled: false,
   },
   {
     name: "Community",
     href: "#",
-    icon: "lucide:globe", // Globe icon for community
-    disabled: true, 
-    badge: "Coming Soon"
+    icon: "lucide:globe",
+    shortcut: null,
+    disabled: true,
+    badge: "SOON",
   },
-  // { name: "Archives", href: "/dashboard/projects", icon: "lucide:archive" }, // Future
 ];
 
 export function Sidebar() {
@@ -79,7 +78,6 @@ export function Sidebar() {
         return;
       }
 
-      // Force a hard navigation to clear all state
       window.location.href = "/";
     } catch (error) {
       console.error("Sign out failed:", error);
@@ -113,13 +111,14 @@ export function Sidebar() {
 
   const planDetails = getPlanDetails(plan);
 
+  if (!mounted) return null;
+
   return (
     <>
       <UpgradeModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
       />
-      
       <CreateProjectModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
@@ -127,66 +126,99 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "h-full bg-[#faf9f5] border-r border-brand-charcoal/10 transition-all duration-300 ease-in-out flex flex-col shrink-0 relative font-sans",
-          isCollapsed ? "w-20" : "w-72",
+          "h-full bg-bg-primary border-r border-border-primary flex flex-col shrink-0 font-sans fixed md:relative z-40 md:z-0 will-change-[width]",
+          "transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isCollapsed ? "w-[60px]" : "w-56",
         )}
       >
-        {/* Toggle Button */}
-        <button
-          onClick={toggleSidebar}
-          className={cn(
-            "absolute -right-3 top-8 z-50 bg-white border border-brand-charcoal/10 rounded-none p-1 shadow-sm hover:bg-brand-charcoal hover:text-white transition-all duration-300 flex items-center justify-center h-6 w-6 text-brand-charcoal",
-            isCollapsed ? "rotate-180" : "",
-          )}
-        >
-          <ChevronLeft className="w-3 h-3" />
-        </button>
-
-        {/* Header */}
         <div
           className={cn(
             "flex flex-col h-full w-full overflow-hidden",
-            isCollapsed ? "px-3 py-4" : "px-6 py-6",
+            isCollapsed ? "px-2 py-3" : "px-3 py-4",
           )}
         >
-          {/* ... existing header code ... */}
-          <div
-            className={cn(
-              "flex items-center mb-12 h-10 shrink-0",
-              isCollapsed ? "justify-center" : "",
-            )}
-          >
-            <Link href="/" className="flex items-center gap-3 group">
-              <div
-                className={cn(
-                  "border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange",
-                  isCollapsed ? "w-10 h-10" : "w-8 h-8",
-                )}
-              >
-                <Icon icon="lucide:box" className="w-4 h-4" />
-              </div>
-              {!isCollapsed && (
-                <div className="flex flex-col overflow-hidden">
-                  <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors">
-                    SIMULARK
-                  </span>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 leading-none mt-0.5">
-                    Architecture Engine
-                  </span>
-                </div>
-              )}
-            </Link>
-          </div>
-
           {/* Navigation */}
           <nav className="space-y-1 flex-1">
-            {/* ... existing nav items ... */}
-            {!isCollapsed && (
-              <div className="px-1 mb-4 flex items-center gap-2 text-[10px] font-mono font-bold text-brand-charcoal/40 uppercase tracking-widest">
-                <span>// SYSTEM NAVIGATION</span>
-                <div className="h-px bg-brand-charcoal/10 flex-1" />
-              </div>
-            )}
+            {/* Collapse Toggle - First Item */}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={toggleSidebar}
+                    className={cn(
+                      "flex items-center transition-colors duration-200 group relative overflow-hidden hover:bg-bg-tertiary",
+                      isCollapsed
+                        ? "justify-center p-2 mx-auto w-9 h-9 rounded-sm"
+                        : "gap-2 px-3 py-2",
+                    )}
+                  >
+                    <ChevronLeft
+                      className={cn(
+                        "shrink-0 transition-transform duration-300 w-4 h-4 text-text-muted group-hover:text-text-primary",
+                        isCollapsed ? "rotate-180" : "",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap text-text-secondary group-hover:text-text-primary overflow-hidden",
+                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                      )}
+                      style={{
+                        transition:
+                          "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                      }}
+                    >
+                      Collapse
+                    </span>
+                  </button>
+                </TooltipTrigger>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Home Link */}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/"
+                    className={cn(
+                      "flex items-center transition-colors duration-200 group relative overflow-hidden hover:bg-bg-tertiary text-text-secondary hover:text-text-primary",
+                      isCollapsed
+                        ? "justify-center p-2 mx-auto w-9 h-9 rounded-sm"
+                        : "gap-2 px-3 py-2",
+                    )}
+                  >
+                    <Icon icon="lucide:home" className="shrink-0 w-4 h-4" />
+                    <span
+                      className={cn(
+                        "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap overflow-hidden",
+                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                      )}
+                      style={{
+                        transition:
+                          "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                      }}
+                    >
+                      Home
+                    </span>
+                  </Link>
+                </TooltipTrigger>
+              </Tooltip>
+            </TooltipProvider>
+
+            <div
+              className={cn(
+                "px-1 mb-2 flex items-center gap-2 text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest overflow-hidden",
+                isCollapsed ? "h-0 opacity-0" : "h-auto opacity-100",
+              )}
+              style={{
+                transition: "height 250ms ease, opacity 200ms ease",
+              }}
+            >
+              <span>{"// NAV"}</span>
+              <div className="h-px bg-border-secondary flex-1" />
+            </div>
 
             <TooltipProvider delayDuration={0}>
               {navItems.map((item) => {
@@ -198,185 +230,235 @@ export function Sidebar() {
                     <TooltipTrigger asChild>
                       <Link
                         href={item.href}
-                        onClick={e => isDisabled && e.preventDefault()}
+                        onClick={(e) => isDisabled && e.preventDefault()}
                         className={cn(
-                          "flex items-center transition-all duration-200 group relative",
+                          "flex items-center transition-colors duration-200 group relative overflow-hidden",
                           isCollapsed
-                            ? "justify-center p-3 rounded-lg mx-auto"
-                            : "gap-3 px-4 py-3 border-r-2",
+                            ? "justify-center p-2 mx-auto w-9 h-9"
+                            : "gap-2 px-3 py-2",
                           isActive
                             ? isCollapsed
-                              ? "bg-brand-charcoal text-white rounded-none"
-                              : "border-brand-orange bg-brand-charcoal/5 text-brand-charcoal"
-                            : isDisabled 
-                                ? "border-transparent text-brand-charcoal/30 cursor-not-allowed" 
-                                : "border-transparent text-brand-charcoal/60 hover:text-brand-charcoal hover:bg-brand-charcoal/5",
+                              ? "bg-brand-charcoal text-text-inverse"
+                              : "bg-bg-tertiary text-text-primary border-l-2 border-brand-orange"
+                            : isDisabled
+                              ? "text-text-muted cursor-not-allowed opacity-50"
+                              : "text-text-secondary hover:text-text-primary hover:bg-bg-tertiary",
+                          isCollapsed && "rounded-sm",
                         )}
                       >
+                        {/* Active indicator line */}
+                        {isActive && isCollapsed && (
+                          <motion.div
+                            layoutId="activeIndicator"
+                            className="absolute left-0 top-0 bottom-0 w-0.5 bg-brand-orange"
+                            transition={{ duration: 0.2 }}
+                          />
+                        )}
+
                         <Icon
                           icon={item.icon}
                           className={cn(
-                            "shrink-0 transition-colors",
+                            "shrink-0 transition-all duration-200",
                             isCollapsed ? "w-5 h-5" : "w-4 h-4",
                             isActive
                               ? "text-brand-orange"
-                              : isDisabled 
-                                ? "text-brand-charcoal/30" 
-                                : "group-hover:text-brand-charcoal",
+                              : isDisabled
+                                ? "text-text-muted"
+                                : "group-hover:text-text-primary",
                           )}
                         />
-                        {!isCollapsed && (
-                          <div className="flex items-center justify-between w-full">
-                            <span className={cn("font-mono text-xs uppercase tracking-wider font-medium", isDisabled && "line-through opacity-70")}>
-                                {item.name}
-                            </span>
+
+                        <div
+                          className={cn(
+                            "flex items-center justify-between overflow-hidden",
+                            isCollapsed
+                              ? "w-0 opacity-0"
+                              : "w-full opacity-100",
+                          )}
+                          style={{
+                            transition:
+                              "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                          }}
+                        >
+                          <span
+                            className={cn(
+                              "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap",
+                              isDisabled && "line-through",
+                            )}
+                          >
+                            {item.name}
+                          </span>
+                          <div className="flex items-center gap-2">
                             {item.badge && (
-                                <span className="ml-2 text-[8px] bg-brand-charcoal/10 text-brand-charcoal/60 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-mono">
-                                    {item.badge}
-                                </span>
+                              <span className="text-[8px] bg-bg-tertiary text-text-muted px-1.5 py-0.5 uppercase tracking-wider font-mono border border-border-secondary">
+                                {item.badge}
+                              </span>
+                            )}
+                            {item.shortcut && !isDisabled && (
+                              <span className="text-[9px] text-text-muted font-mono opacity-0 group-hover:opacity-100 transition-opacity">
+                                {item.shortcut}
+                              </span>
                             )}
                           </div>
-                        )}
+                        </div>
                       </Link>
                     </TooltipTrigger>
-                    {isCollapsed && (
-                      <TooltipContent
-                        side="right"
-                        className="font-mono text-xs uppercase rounded-none border-brand-charcoal"
-                      >
-                        <p>{item.name} {item.badge ? `(${item.badge})` : ""}</p>
-                      </TooltipContent>
-                    )}
                   </Tooltip>
                 );
               })}
             </TooltipProvider>
 
-            {/* New Project Action */}
-            <div className={cn("mt-8", isCollapsed ? "px-0" : "px-0")}>
-              {!isCollapsed && (
-                <div className="px-1 mb-4 flex items-center gap-2 text-[10px] font-mono font-bold text-brand-charcoal/40 uppercase tracking-widest">
-                  <span>// OPERATIONS</span>
-                  <div className="h-px bg-brand-charcoal/10 flex-1" />
-                </div>
-              )}
+            {/* New Project */}
+            <div className="mt-8">
+              <div
+                className={cn(
+                  "px-1 mb-4 flex items-center gap-2 text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest overflow-hidden",
+                  isCollapsed ? "h-0 opacity-0 mb-0" : "h-auto opacity-100",
+                )}
+                style={{
+                  transition:
+                    "height 250ms ease, opacity 200ms ease, margin 250ms ease",
+                }}
+              >
+                <span>{"// OPS"}</span>
+                <div className="h-px bg-border-secondary flex-1" />
+              </div>
+
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      type="button"
                       onClick={() => setShowCreateModal(true)}
                       className={cn(
-                        "w-full flex items-center transition-all duration-200 group border border-dashed border-brand-charcoal/20 hover:border-brand-orange/50 hover:bg-brand-orange/5",
+                        "w-full flex items-center transition-colors duration-200 group border border-dashed border-border-primary hover:border-brand-orange hover:bg-brand-orange/5",
                         isCollapsed
-                          ? "justify-center p-3 h-12 w-12 mx-auto"
+                          ? "justify-center p-3 h-11 w-11 mx-auto rounded-sm"
                           : "gap-3 p-3",
                       )}
                     >
-                      <div
+                      <Plus className="w-4 h-4 text-text-muted group-hover:text-brand-orange transition-colors" />
+                      <span
                         className={cn(
-                          "flex items-center justify-center text-brand-charcoal/60 group-hover:text-brand-orange transition-colors",
-                          isCollapsed ? "" : "",
+                          "font-mono text-xs uppercase tracking-wider font-medium text-text-muted group-hover:text-brand-orange whitespace-nowrap overflow-hidden",
+                          isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
                         )}
+                        style={{
+                          transition:
+                            "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                        }}
                       >
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      {!isCollapsed && (
-                        <span className="font-mono text-xs uppercase tracking-wider font-medium text-brand-charcoal/60 group-hover:text-brand-orange">
-                          New Architecture
-                        </span>
-                      )}
+                        New Architecture
+                      </span>
                     </button>
                   </TooltipTrigger>
-                  {isCollapsed && (
-                    <TooltipContent
-                      side="right"
-                      className="font-mono text-xs uppercase rounded-none border-brand-charcoal"
-                    >
-                      <p>New Architecture</p>
-                    </TooltipContent>
-                  )}
                 </Tooltip>
               </TooltipProvider>
             </div>
           </nav>
 
-          {/* Footer / Settings */}
-          <div className="mt-auto pt-6 border-t border-brand-charcoal/5">
+          {/* User Section */}
+          <div className="mt-auto pt-6 border-t border-border-primary">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
+                  type="button"
                   className={cn(
-                    "flex items-center w-full transition-all duration-200 group outline-none",
+                    "flex items-center w-full transition-colors duration-200 group outline-none",
                     isCollapsed
                       ? "justify-center"
-                      : "gap-3 px-2 py-2 hover:bg-brand-charcoal/5",
+                      : "gap-3 px-2 py-2 hover:bg-bg-tertiary",
                   )}
                 >
-                  <div className="w-8 h-8 bg-brand-charcoal text-white flex items-center justify-center font-serif italic text-sm border border-brand-charcoal">
-                    {/* User Initials Placeholder - Could be from context */}U
+                  <div className="w-8 h-8 bg-brand-charcoal flex items-center justify-center border border-brand-charcoal shrink-0 group-hover:bg-brand-orange group-hover:border-brand-orange transition-colors">
+                    <Icon
+                      icon="lucide:box"
+                      className="w-4 h-4 text-white stroke-[2.5]"
+                    />
                   </div>
-                  {!isCollapsed && (
-                    <div className="flex flex-col items-start overflow-hidden">
-                      <span className="font-mono text-xs font-medium text-brand-charcoal truncate w-full text-left">
-                        User Account
+
+                  <div
+                    className={cn(
+                      "flex flex-col items-start overflow-hidden flex-1",
+                      isCollapsed ? "w-0 opacity-0" : "w-full opacity-100",
+                    )}
+                    style={{
+                      transition:
+                        "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                    }}
+                  >
+                    <span className="font-mono text-xs font-medium text-text-primary truncate w-full text-left">
+                      User Account
+                    </span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          plan === "free" ? "bg-text-muted" : "bg-brand-orange",
+                        )}
+                      />
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted">
+                        {planDetails.name} Ticket
                       </span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            plan === "free"
-                              ? "bg-brand-gray-mid"
-                              : "bg-brand-orange",
-                          )}
-                        />
-                        <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50">
-                          {planDetails.name} Ticket
-                        </span>
-                      </div>
                     </div>
-                  )}
-                  {!isCollapsed && (
-                    <Settings className="w-4 h-4 text-brand-charcoal/20 ml-auto group-hover:text-brand-charcoal transition-colors" />
-                  )}
+                  </div>
+
+                  <div
+                    className={cn(
+                      "shrink-0",
+                      isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                    )}
+                    style={{
+                      transition: "width 250ms ease, opacity 200ms ease",
+                    }}
+                  >
+                    <Settings className="w-4 h-4 text-text-muted ml-auto group-hover:text-text-primary transition-colors" />
+                  </div>
                 </button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent
                 side={isCollapsed ? "right" : "top"}
-                align={isCollapsed ? "end" : "center"} // Align center when expanded to stay above/near
-                className="w-64 p-0 rounded-none border border-brand-charcoal bg-white shadow-2xl mb-2"
+                align={isCollapsed ? "end" : "center"}
+                className="w-64 p-0 rounded-none border border-border-primary bg-bg-secondary shadow-2xl mb-2"
                 sideOffset={10}
               >
-                <div className="p-4 bg-[#faf9f5] border-b border-brand-charcoal/10">
-                  <div className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/50 mb-2">
+                <div className="p-4 bg-bg-tertiary border-b border-border-primary">
+                  <div className="font-mono text-xs uppercase tracking-widest text-text-muted mb-2">
                     Current Status
                   </div>
                   <div className="flex justify-between items-center mb-3">
-                    <span className="font-poppins font-bold text-brand-charcoal">
+                    <span className="font-poppins font-bold text-text-primary">
                       {planDetails.name} Plan
                     </span>
-                    <Badge className="bg-brand-orange text-white rounded-none font-mono text-[9px] uppercase">
+                    <Badge className="bg-brand-orange text-text-inverse rounded-none font-mono text-[9px] uppercase">
                       Active
                     </Badge>
                   </div>
                   {plan === "free" && (
                     <Button
+                      type="button"
                       onClick={() => setShowUpgradeModal(true)}
-                      className="w-full h-8 text-[10px] uppercase tracking-widest bg-brand-charcoal text-white hover:bg-brand-orange"
+                      className="w-full h-8 text-[10px] uppercase tracking-widest bg-transparent border border-brand-charcoal text-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-text-inverse transition-colors"
                     >
                       Upgrade Plan
                     </Button>
                   )}
                 </div>
+
                 <div className="p-2 space-y-1">
                   <Link href="/dashboard/settings">
-                    <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-brand-charcoal hover:text-white focus:bg-brand-charcoal focus:text-white px-3 py-2">
+                    <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-bg-tertiary hover:text-text-primary focus:bg-bg-tertiary focus:text-text-primary px-3 py-2">
                       System Configuration
                     </DropdownMenuItem>
                   </Link>
-                  <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-brand-charcoal hover:text-white focus:bg-brand-charcoal focus:text-white px-3 py-2">
+
+                  <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-bg-tertiary hover:text-text-primary focus:bg-bg-tertiary focus:text-text-primary px-3 py-2">
                     Billing Records
                   </DropdownMenuItem>
-                  <div className="h-px bg-brand-charcoal/10 my-1" />
+
+                  <div className="h-px bg-border-primary my-1" />
+
                   <DropdownMenuItem
                     onClick={handleSignOut}
                     className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white px-3 py-2 text-red-500"

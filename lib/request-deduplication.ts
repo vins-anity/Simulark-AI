@@ -60,7 +60,10 @@ export class RequestDeduplicator {
       const entries = Array.from(this.resultCache.entries());
       entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
 
-      const toRemove = entries.slice(0, this.resultCache.size - this.maxCacheSize);
+      const toRemove = entries.slice(
+        0,
+        this.resultCache.size - this.maxCacheSize,
+      );
       for (const [key] of toRemove) {
         this.resultCache.delete(key);
       }
@@ -95,7 +98,9 @@ export class RequestDeduplicator {
     // Check for pending request
     const pending = this.pendingRequests.get(hash);
     if (pending) {
-      logger.debug("Request deduplicated (pending)", { hash: hash.substring(0, 50) });
+      logger.debug("Request deduplicated (pending)", {
+        hash: hash.substring(0, 50),
+      });
       return pending.promise as Promise<T>;
     }
 

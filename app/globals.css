@@ -3,54 +3,193 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #faf9f5;
-  /* Anthropic-like Off-white */
-  --foreground: #141413;
-  /* Anthropic-like Dark charcoal */
+  /* ============================================
+     CORE SEMANTIC TOKENS - LIGHT MODE (Default)
+     ============================================ */
 
+  /* Background Colors */
+  --bg-primary: #faf9f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f4f0;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(250, 249, 245, 0.95);
+
+  /* Text Colors */
+  --text-primary: #141413;
+  --text-secondary: #4a4a48;
+  --text-tertiary: #6b6b69;
+  --text-muted: #9a9a97;
+  --text-inverse: #faf9f5;
+
+  /* Border Colors */
+  --border-primary: rgba(20, 20, 19, 0.1);
+  --border-secondary: rgba(20, 20, 19, 0.05);
+  --border-focus: rgba(217, 119, 87, 0.5);
+  --border-accent: rgba(217, 119, 87, 0.3);
+
+  /* Brand Colors */
   --brand-orange: #d97757;
   --brand-blue: #6a9bcc;
   --brand-green: #788c5d;
+  --brand-charcoal: #141413;
+  --brand-sand-light: #faf9f5;
   --brand-gray-mid: #b0aea5;
   --brand-gray-light: #e8e6dc;
-  --brand-sand-light: #faf9f5;
-  --brand-charcoal: #141413;
 
-  /* Popover / Dropdown Tokens */
+  /* Functional Colors */
+  --color-success: #788c5d;
+  --color-warning: #d97757;
+  --color-error: #dc2626;
+  --color-info: #6a9bcc;
+
+  /* Canvas Specific */
+  --canvas-bg: #faf9f5;
+  --canvas-grid: rgba(20, 20, 19, 0.05);
+  --canvas-dot: #e8e6dc;
+
+  /* Shadow System */
+  --shadow-sm: 0 1px 2px 0 rgba(20, 20, 19, 0.05);
+  --shadow-md:
+    0 4px 6px -1px rgba(20, 20, 19, 0.1), 0 2px 4px -2px rgba(20, 20, 19, 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgba(20, 20, 19, 0.1), 0 4px 6px -4px rgba(20, 20, 19, 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgba(20, 20, 19, 0.1), 0 8px 10px -6px
+    rgba(20, 20, 19, 0.1);
+  --shadow-glow: 0 0 40px rgba(217, 119, 87, 0.15);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: 16px;
+
+  /* Legacy compatibility */
+  --background: #faf9f5;
+  --foreground: #141413;
   --popover: #ffffff;
   --popover-foreground: #141413;
+}
 
-  /* Glassmorphism Tokens */
-  --glass-bg: rgba(255, 255, 255, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --glass-blur: 12px;
+/* ============================================
+   DARK MODE TOKENS
+   ============================================ */
+
+.dark {
+  /* Background Colors */
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-elevated: #1f1f23;
+  --bg-overlay: rgba(15, 15, 15, 0.95);
+
+  /* Text Colors */
+  --text-primary: #faf9f5;
+  --text-secondary: #e4e4e0;
+  --text-tertiary: #a1a1a1;
+  --text-muted: #717171;
+  --text-inverse: #141413;
+
+  /* Border Colors */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(217, 119, 87, 0.6);
+  --border-accent: rgba(217, 119, 87, 0.4);
+
+  /* Brand Colors - adjusted for dark */
+  --brand-orange: #e88a6a;
+  --brand-blue: #7daed6;
+  --brand-green: #8ba06e;
+  --brand-charcoal: #faf9f5;
+  --brand-sand-light: #0f0f0f;
+  --brand-gray-mid: #525252;
+  --brand-gray-light: #3f3f46;
+
+  /* Functional Colors */
+  --color-success: #8ba06e;
+  --color-warning: #e88a6a;
+  --color-error: #ef4444;
+  --color-info: #7daed6;
+
+  /* Canvas Specific */
+  --canvas-bg: #0f0f0f;
+  --canvas-grid: rgba(255, 255, 255, 0.03);
+  --canvas-dot: #27272a;
+
+  /* Shadow System - darker */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 50px rgba(232, 138, 106, 0.2);
+
+  /* Glassmorphism - dark */
+  --glass-bg: rgba(24, 24, 27, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* Legacy compatibility */
+  --background: #0f0f0f;
+  --foreground: #faf9f5;
+  --popover: #18181b;
+  --popover-foreground: #faf9f5;
 }
 
 @theme inline {
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-poppins), system-ui;
-  --font-serif: var(--font-lora), serif;
+  /* ============================================
+     TAILWIND THEME CONFIGURATION
+     ============================================ */
+
+  /* Font Families */
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-lora), ui-serif, Georgia, serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Colors mapped to semantic tokens */
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-elevated: var(--bg-elevated);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-muted: var(--text-muted);
+
+  --color-border-primary: var(--border-primary);
+  --color-border-secondary: var(--border-secondary);
 
   --color-brand-orange: var(--brand-orange);
   --color-brand-blue: var(--brand-blue);
   --color-brand-green: var(--brand-green);
+  --color-brand-charcoal: var(--brand-charcoal);
+  --color-brand-sand-light: var(--brand-sand-light);
   --color-brand-gray-mid: var(--brand-gray-mid);
   --color-brand-gray-light: var(--brand-gray-light);
-  --color-brand-sand-light: var(--brand-sand-light);
-  --color-brand-charcoal: var(--brand-charcoal);
 
+  /* Legacy support */
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  /* Animations */
   --animate-flow-fast: flow-fast 1s linear infinite;
   --animate-flow-slow: flow-slow 3s linear infinite;
   --animate-bounce-slight: bounce-slight 2s infinite;
+  --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
+  --animate-breathe: breathe 4s ease-in-out infinite;
+  --animate-shake: shake 0.5s ease-in-out;
+  --animate-fade-up: fade-up 0.5s ease-out forwards;
+  --animate-scale-in: scale-in 0.3s ease-out forwards;
 
   @keyframes flow-fast {
     from {
       stroke-dashoffset: 20;
     }
-
     to {
       stroke-dashoffset: 0;
     }
@@ -60,7 +199,6 @@
     from {
       stroke-dashoffset: 40;
     }
-
     to {
       stroke-dashoffset: 0;
     }
@@ -71,45 +209,180 @@
     100% {
       transform: translateY(0);
     }
-
     50% {
       transform: translateY(-5px);
     }
   }
+
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-3px);
+    }
+    75% {
+      transform: translateX(3px);
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
 }
 
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+  overflow-y: scroll;
 }
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 
 .glass-card {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.1),
-    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .drafting-grid {
-  background-image: radial-gradient(
-    var(--brand-gray-light) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
-/* React Flow Controls Styling - Reverted @apply to prevent Turbopack panic */
+.drafting-grid-enhanced {
+  background-image:
+    radial-gradient(var(--canvas-dot) 1.5px, transparent 1.5px),
+    radial-gradient(var(--canvas-grid) 1px, transparent 1px);
+  background-size:
+    20px 20px,
+    100px 100px;
+  background-position:
+    0 0,
+    10px 10px;
+}
+
+.drafting-grid-lines {
+  background-image:
+    linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Technical corner brackets */
+.corner-brackets {
+  position: relative;
+}
+
+.corner-brackets::before,
+.corner-brackets::after,
+.corner-brackets > .corner-brackets-inner::before,
+.corner-brackets > .corner-brackets-inner::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--text-muted);
+  border-style: solid;
+  transition: all 0.3s ease;
+}
+
+.corner-brackets::before {
+  top: 0;
+  left: 0;
+  border-width: 2px 0 0 2px;
+}
+
+.corner-brackets::after {
+  top: 0;
+  right: 0;
+  border-width: 2px 2px 0 0;
+}
+
+.corner-brackets > .corner-brackets-inner::before {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 2px 2px;
+}
+
+.corner-brackets > .corner-brackets-inner::after {
+  bottom: 0;
+  right: 0;
+  border-width: 0 2px 2px 0;
+}
+
+.corner-brackets:focus-within::before,
+.corner-brackets:focus-within::after,
+.corner-brackets:focus-within > .corner-brackets-inner::before,
+.corner-brackets:focus-within > .corner-brackets-inner::after {
+  border-color: var(--brand-orange);
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================
+   REACT FLOW OVERRIDES
+   ============================================ */
+
 .react-flow__controls {
-  background-color: white !important;
-  border: 1px solid rgba(20, 20, 19, 0.1) !important;
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.1),
-    0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
+  box-shadow: var(--shadow-lg) !important;
   border-radius: 0 !important;
   padding: 4px !important;
   display: flex !important;
@@ -118,9 +391,9 @@ body {
 }
 
 .react-flow__controls-button {
-  background-color: white !important;
+  background-color: var(--bg-secondary) !important;
   border: none !important;
-  color: rgba(20, 20, 19, 0.6) !important;
+  color: var(--text-muted) !important;
   transition-property: color !important;
   transition-duration: 150ms !important;
   width: 32px !important;
@@ -132,7 +405,7 @@ body {
 }
 
 .react-flow__controls-button:hover {
-  color: #d97757 !important;
+  color: var(--brand-orange) !important;
 }
 
 .react-flow__controls-button svg {
@@ -141,12 +414,367 @@ body {
 }
 
 .react-flow__panel .zoom-level {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace !important;
+  font-family: var(--font-mono) !important;
   font-size: 10px !important;
-  color: rgba(20, 20, 19, 0.6) !important;
-  background-color: white !important;
+  color: var(--text-muted) !important;
+  background-color: var(--bg-secondary) !important;
   padding: 4px 8px !important;
-  border: 1px solid rgba(20, 20, 19, 0.05) !important;
+  border: 1px solid var(--border-secondary) !important;
+}
+
+/* ============================================
+   CHAOS MODE STYLES
+   ============================================ */
+
+.chaos-mode-active {
+  --canvas-bg: #1a0505;
+  --canvas-grid: rgba(220, 38, 38, 0.1);
+  --canvas-dot: rgba(220, 38, 38, 0.2);
+}
+
+.chaos-mode-active .react-flow__background {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a0505 50%, #0f0f0f 100%) !important;
+}
+
+.chaos-mode-active .react-flow__background pattern circle {
+  fill: rgba(220, 38, 38, 0.3) !important;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-gray-mid);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ============================================
+   SELECTION STYLING
+   ============================================ */
+
+::selection {
+  background: var(--brand-orange);
+  color: var(--text-inverse);
+}
+
+/* ============================================
+   FOCUS STYLES
+   ============================================ */
+
+*:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
+}
+
+/* Remove outline from dashboard command input */
+input.no-focus-outline:focus-visible,
+input[type="text"]:focus,
+input[type="text"]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================
+   TYPOGRAPHY UTILITIES
+   ============================================ */
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.font-display {
+  font-family: var(--font-poppins);
+  font-weight: 600;
+}
+
+.font-body {
+  font-family: var(--font-lora);
+}
+
+.font-mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Fluid typography */
+.text-fluid-hero {
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1.1;
+}
+
+.text-fluid-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.text-fluid-body {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.6;
+}
+
+/* ============================================
+   CANVAS NODE & EDGE ENHANCEMENTS
+   ============================================ */
+
+/* Multi-layer shadows for nodes */
+.node-shadow-layered {
+  box-shadow:
+    0 1px 2px rgba(20, 20, 19, 0.05),
+    0 4px 8px rgba(20, 20, 19, 0.08),
+    0 12px 24px rgba(20, 20, 19, 0.1);
+}
+
+.node-shadow-hover {
+  box-shadow:
+    0 2px 4px rgba(20, 20, 19, 0.08),
+    0 8px 16px rgba(20, 20, 19, 0.12),
+    0 24px 48px rgba(20, 20, 19, 0.15);
+}
+
+.node-shadow-selected {
+  box-shadow:
+    0 0 0 2px var(--brand-orange),
+    0 4px 12px rgba(217, 119, 87, 0.2),
+    0 16px 32px rgba(20, 20, 19, 0.12);
+}
+
+/* Edge glow effects */
+.edge-glow {
+  filter: drop-shadow(0 0 3px var(--brand-orange));
+}
+
+.edge-glow-animated {
+  filter: drop-shadow(0 0 4px var(--brand-orange));
+  animation: edge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes edge-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px var(--brand-orange));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px var(--brand-orange));
+  }
+}
+
+/* Connection path styling */
+.react-flow__edge-path {
+  stroke-width: 2;
+  transition:
+    stroke 0.2s ease,
+    filter 0.2s ease;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--brand-orange);
+  filter: drop-shadow(0 0 3px var(--brand-orange));
+}
+
+/* Node selection ring */
+.react-flow__node.selected {
+  z-index: 10 !important;
+}
+
+/* Touch-friendly canvas controls */
+@media (pointer: coarse) {
+  .react-flow__controls-button {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .react-flow__node {
+    touch-action: none;
+  }
+}
+
+/* Canvas pattern overlay for texture */
+.canvas-texture {
+  position: relative;
+}
+
+.canvas-texture::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.02) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Mobile-optimized touch targets */
+@media (max-width: 768px) {
+  .react-flow__node {
+    min-width: 120px;
+    min-height: 60px;
+  }
+
+  .react-flow__handle {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
+
+/* ============================================
+   MOBILE RESPONSIVENESS & TOUCH TARGETS
+   ============================================ */
+
+/* Ensure all interactive elements meet 44px minimum */
+button,
+a,
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Override for inline buttons/links */
+button.inline,
+a.inline,
+.inline-button {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* Touch manipulation improvements */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Safe area insets for notched devices */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-pl {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-pr {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile navigation bottom bar */
+.mobile-nav {
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+}
+
+/* Responsive text sizing */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Responsive sidebar behavior */
+@media (max-width: 1024px) {
+  .sidebar-desktop {
+    display: none;
+  }
+
+  .sidebar-mobile {
+    display: flex;
+  }
+}
+
+@media (min-width: 1025px) {
+  .sidebar-desktop {
+    display: flex;
+  }
+
+  .sidebar-mobile {
+    display: none;
+  }
+}
+
+/* Mobile card adjustments */
+@media (max-width: 640px) {
+  .card-mobile {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+  .table-responsive {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Mobile-optimized modals */
+@media (max-width: 640px) {
+  [data-state="open"] > [data-radix-dialog-content] {
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+    max-width: 100vw;
+  }
+}
+
+/* Hamburger menu animation */
+.hamburger-line {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.hamburger-open .hamburger-line:first-child {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.hamburger-open .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-open .hamburger-line:last-child {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+  .grid-responsive-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-responsive-4 {
+    grid-template-columns: 1fr;
+  }
 }

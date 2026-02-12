@@ -2,6 +2,7 @@
 
 import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
   Building2,
@@ -66,8 +67,10 @@ interface AIAssistantPanelProps {
   isResizable?: boolean;
   getCurrentNodes?: () => any[];
   getCurrentEdges?: () => any[];
-  initialPrompt?: string; // New prop for auto-generation on page load
-  initialMetadata?: Record<string, any>; // New prop for persistence
+  initialPrompt?: string;
+  initialMetadata?: Record<string, any>;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
 interface Message {
@@ -93,7 +96,9 @@ export function AIAssistantPanel({
   getCurrentNodes = () => [],
   getCurrentEdges = () => [],
   initialPrompt,
-  initialMetadata = {}, // Default empty
+  initialMetadata = {},
+  isOpen = true,
+  onToggle,
 }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -118,7 +123,7 @@ export function AIAssistantPanel({
   const [model, setModelState] = useState(
     (initialMetadata?.model as string) || "glm-4.7-flash",
   );
-  const [quickMode, setQuickMode] = useState(false); // Fast generation with lean prompt
+
   const [userPreferences, setUserPreferences] = useState<{
     cloudProviders: string[];
     languages: string[];
@@ -214,32 +219,43 @@ export function AIAssistantPanel({
         .select("preferences")
         .eq("user_id", user.id)
         .single();
-        if (data?.preferences) {
-          // Robust handling of legacy strings vs new arrays
-          const prefs = data.preferences;
-          const cloudProviders = Array.isArray(prefs.cloudProviders) 
-            ? prefs.cloudProviders 
-            : prefs.cloudProvider ? [prefs.cloudProvider] : [];
-            
-          const languages = Array.isArray(prefs.languages)
-            ? prefs.languages
-            : prefs.language ? [prefs.language] : [];
-            
-          const frameworks = Array.isArray(prefs.frameworks)
-            ? prefs.frameworks
-            : prefs.framework ? [prefs.framework] : [];
+      if (data?.preferences) {
+        // Robust handling of legacy strings vs new arrays
+        const prefs = data.preferences;
+        const cloudProviders = Array.isArray(prefs.cloudProviders)
+          ? prefs.cloudProviders
+          : prefs.cloudProvider
+            ? [prefs.cloudProvider]
+            : [];
 
-          const architectureTypes = Array.isArray(prefs.architectureTypes) ? prefs.architectureTypes : [];
-          const customInstructions = typeof prefs.customInstructions === "string" ? prefs.customInstructions : "";
+        const languages = Array.isArray(prefs.languages)
+          ? prefs.languages
+          : prefs.language
+            ? [prefs.language]
+            : [];
 
-          setUserPreferences({
-            cloudProviders,
-            languages,
-            frameworks,
-            architectureTypes,
-            customInstructions,
-          });
-        }
+        const frameworks = Array.isArray(prefs.frameworks)
+          ? prefs.frameworks
+          : prefs.framework
+            ? [prefs.framework]
+            : [];
+
+        const architectureTypes = Array.isArray(prefs.architectureTypes)
+          ? prefs.architectureTypes
+          : [];
+        const customInstructions =
+          typeof prefs.customInstructions === "string"
+            ? prefs.customInstructions
+            : "";
+
+        setUserPreferences({
+          cloudProviders,
+          languages,
+          frameworks,
+          architectureTypes,
+          customInstructions,
+        });
+      }
     }
   };
 
@@ -358,78 +374,95 @@ export function AIAssistantPanel({
     }
   };
 
-  // Helper to generate structured summary (professional, archimyst.com style)
+  // Dynamic architecture summary generator - parses LLM response data
   const generateArchitectureSummary = (data: {
     nodes: any[];
     edges: any[];
+    analysis?: string;
+    recommendations?: string[];
   }) => {
-    const nodeCount = data.nodes.length;
-    const edgeCount = data.edges.length;
+    const nodeCount = data.nodes?.length || 0;
+    const edgeCount = data.edges?.length || 0;
 
-    // Group by service type
-    const services = data.nodes.filter(
-      (n) => n.type === "service" || n.data?.serviceType === "service",
-    );
-    const dbs = data.nodes.filter((n) => n.type === "database");
-    const queues = data.nodes.filter((n) => n.type === "queue");
-    const others = data.nodes.filter(
-      (n) => !["service", "database", "queue"].includes(n.type || ""),
-    );
+    // Group by service type with better categorization
+    const categories = {
+      compute:
+        data.nodes?.filter((n) =>
+          ["service", "function", "ai"].includes(n.type),
+        ) || [],
+      data:
+        data.nodes?.filter((n) =>
+          ["database", "cache", "storage", "vector-db"].includes(n.type),
+        ) || [],
+      messaging:
+        data.nodes?.filter((n) => ["queue", "messaging"].includes(n.type)) ||
+        [],
+      gateway:
+        data.nodes?.filter((n) =>
+          ["gateway", "loadbalancer", "client"].includes(n.type),
+        ) || [],
+      infrastructure:
+        data.nodes?.filter((n) =>
+          ["auth", "payment", "monitoring", "cicd", "security"].includes(
+            n.type,
+          ),
+        ) || [],
+    };
 
-    // Extract techs
+    // Extract unique technologies
     const techs = Array.from(
-      new Set(data.nodes.map((n) => n.data?.tech).filter(Boolean)),
+      new Set(data.nodes?.map((n) => n.data?.tech).filter(Boolean) || []),
     );
 
-    // Build component summary
-    const componentLines: string[] = [];
-    if (services.length)
-      componentLines.push(
-        `**Services**: ${services.map((n) => n.data?.label || n.id).join(", ")}`,
-      );
-    if (dbs.length)
-      componentLines.push(
-        `**Data Layer**: ${dbs.map((n) => n.data?.label || n.id).join(", ")}`,
-      );
-    if (queues.length)
-      componentLines.push(
-        `**Messaging**: ${queues.map((n) => n.data?.label || n.id).join(", ")}`,
-      );
-    if (others.length)
-      componentLines.push(
-        `**Infrastructure**: ${others.map((n) => n.data?.label || n.id).join(", ")}`,
-      );
+    // Build dynamic summary
+    let summary = `## Architecture Analysis\n\n`;
+    summary += `**Overview**: ${nodeCount} components connected by ${edgeCount} data flows\n\n`;
 
-    return `### Architecture Blueprint Generated
+    // Add category breakdown
+    const categoryNames: Record<string, string> = {
+      compute: "Compute Layer",
+      data: "Data Layer",
+      messaging: "Messaging",
+      gateway: "Gateway Layer",
+      infrastructure: "Infrastructure",
+    };
 
-**System Overview**: ${nodeCount}-node architecture with ${edgeCount} connections.
+    for (const [key, nodes] of Object.entries(categories)) {
+      if (nodes.length > 0) {
+        const techList = Array.from(
+          new Set(nodes.map((n) => n.data?.tech).filter(Boolean)),
+        ).join(", ");
+        summary += `**${categoryNames[key]}**: ${nodes.length} component${nodes.length !== 1 ? "s" : ""}${techList ? ` (${techList})` : ""}\n\n`;
+      }
+    }
 
-${componentLines.length > 0 ? componentLines.join("\n\n") : ""}
+    // Add technology stack summary
+    if (techs.length > 0) {
+      summary += `**Technology Stack**: ${techs.join(", ")}\n\n`;
+    }
 
-| Component Type | Count | Technologies |
-| :--- | :--- | :--- |
-| Services | ${services.length} | ${techs.slice(0, 3).join(", ") || "-"} |
-| Databases | ${dbs.length} | ${
-      dbs
-        .map((n) => n.data?.tech)
-        .filter(Boolean)
-        .join(", ") || "-"
-    } |
-| Queues | ${queues.length} | ${
-      queues
-        .map((n) => n.data?.tech)
-        .filter(Boolean)
-        .join(", ") || "-"
-    } |
-| Others | ${others.length} | - |
+    // Add analysis from LLM if available
+    if (data.analysis) {
+      summary += `## Design Rationale\n\n${data.analysis}\n\n`;
+    }
 
-This architecture separates concerns across dedicated service layers, enabling independent scaling and simplified maintenance. The data flow follows a clear request-response pattern through the load balancer.
+    // Add recommendations from LLM if available
+    if (data.recommendations && data.recommendations.length > 0) {
+      summary += `## Recommendations\n\n`;
+      for (const rec of data.recommendations) {
+        summary += `- ${rec}\n`;
+      }
+      summary += "\n";
+    }
 
-**Next Steps**
-- Review the canvas for the visual layout.
-- Click any node to configure specific properties.
-- Use the **Autofix** tool to optimize the diagram structure.
-`;
+    // Add next steps
+    summary += `## Next Steps\n\n`;
+    summary += `- Review components on the canvas\n`;
+    summary += `- Click any node to configure properties\n`;
+    summary += `- Use **Autofix** to optimize layout\n`;
+    summary += `- Enable **Chaos Mode** to test resilience\n`;
+
+    return summary;
   };
 
   const processMessage = async (content: string) => {
@@ -728,125 +761,149 @@ This architecture separates concerns across dedicated service layers, enabling i
   const currentChat = chats.find((c) => c.id === currentChatId);
 
   return (
-    <div className="flex flex-col h-full bg-white font-sans text-sm">
-      {/* Terminal Header */}
-      <div className="h-10 flex items-center justify-between px-3 border-b border-brand-charcoal/10 bg-[#faf9f5]">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-3.5 h-3.5 text-brand-orange" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">
-            System Terminal
-          </span>
+    <div className="flex flex-col h-full bg-bg-secondary font-sans text-sm overflow-hidden">
+      {/* Terminal Header - Minimal HUD Style */}
+      <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 border-b border-border-primary bg-bg-secondary">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 bg-brand-orange/10 flex items-center justify-center rounded-sm">
+            <Terminal className="w-3.5 h-3.5 text-brand-orange" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              Agentic Chat
+            </span>
+            <span className="font-mono text-[9px] text-text-muted">
+              {isGenerating ? "PROCESSING..." : "READY"}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Autofix and Share buttons moved to top header */}
-          <div className="w-[1px] h-3 bg-brand-charcoal/10 mx-1" />
 
-          {/* Status Indicator */}
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          {/* Status Dot */}
+          <div className="flex items-center gap-1.5 mr-3">
             <span
               className={cn(
-                "w-1.5 h-1.5 rounded-full block",
-                isGenerating
-                  ? "bg-green-500 animate-pulse"
-                  : "bg-brand-charcoal/20",
+                "w-1.5 h-1.5 rounded-full",
+                isGenerating ? "bg-brand-green animate-pulse" : "bg-text-muted",
               )}
             />
-            <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/40">
-              {isGenerating ? "PROCESSING" : "IDLE"}
+          </div>
+
+          {/* Toggle Button */}
+          {onToggle && (
+            <button
+              type="button"
+              onClick={onToggle}
+              className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors rounded-sm"
+              title="Toggle Panel"
+            >
+              <Icon icon="lucide:panel-right-close" className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Chat List Select */}
+      <div className="flex-shrink-0 border-b border-border-secondary bg-bg-secondary">
+        <button
+          type="button"
+          onClick={() => setShowChatList(!showChatList)}
+          className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-bg-tertiary transition-colors"
+        >
+          <div className="flex items-center gap-2 overflow-hidden">
+            <MessageSquare className="w-3.5 h-3.5 text-text-muted shrink-0" />
+            <span className="font-mono text-xs font-medium text-text-primary truncate">
+              {currentChat?.title || "Select Terminal..."}
             </span>
           </div>
-        </div>
-      </div>
+          <ChevronDown
+            className={cn(
+              "w-3.5 h-3.5 text-text-muted transition-transform duration-200 shrink-0",
+              showChatList && "rotate-180",
+            )}
+          />
+        </button>
 
-      {/* Chat List Select ... (unchanged) */}
-      <div
-        className="border-b border-brand-charcoal/5 px-3 py-2 bg-white flex items-center justify-between group cursor-pointer hover:bg-brand-charcoal/5"
-        onClick={() => setShowChatList(!showChatList)}
-      >
-        <div className="flex items-center gap-2 overflow-hidden">
-          <MessageSquare className="w-3.5 h-3.5 text-brand-charcoal/40" />
-          <span className="font-mono text-xs font-medium text-brand-charcoal truncate">
-            {currentChat?.title || "Select Terminal..."}
-          </span>
-        </div>
-        <ChevronDown
-          className={cn(
-            "w-3 h-3 text-brand-charcoal/40 transition-transform",
-            showChatList && "rotate-180",
-          )}
-        />
-      </div>
-
-      {showChatList && (
-        // ... (keep chat list logic)
-        <div className="border-b border-brand-charcoal/10 bg-white max-h-48 overflow-y-auto shadow-inner">
-          {isLoadingChats ? (
-            <div className="p-3 text-[10px] font-mono text-brand-charcoal/40">
-              Loading channels...
-            </div>
-          ) : (
-            chats.map((chat) => (
-              <div
-                key={chat.id}
-                className={cn(
-                  "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white transition-colors group/item",
-                  currentChatId === chat.id &&
-                    "bg-white border-l-2 border-brand-orange",
+        <AnimatePresence initial={false}>
+          {showChatList && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="overflow-hidden"
+            >
+              <div className="border-t border-border-secondary bg-bg-secondary max-h-48 overflow-y-auto">
+                {isLoadingChats ? (
+                  <div className="p-3 text-[10px] font-mono text-text-muted">
+                    Loading channels...
+                  </div>
+                ) : (
+                  chats.map((chat) => (
+                    <button
+                      type="button"
+                      key={chat.id}
+                      onClick={() => {
+                        setCurrentChatId(chat.id);
+                        setShowChatList(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 hover:bg-bg-tertiary transition-colors",
+                        currentChatId === chat.id &&
+                          "bg-bg-tertiary border-l-2 border-brand-orange",
+                      )}
+                    >
+                      <span className="font-mono text-xs text-text-secondary truncate text-left">
+                        {chat.title}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteChat(chat.id);
+                        }}
+                        className="p-1 text-text-muted hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </button>
+                  ))
                 )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentChatId(chat.id);
-                  setShowChatList(false);
-                }}
-              >
-                <span className="font-mono text-xs text-brand-charcoal/70 truncate">
-                  {chat.title}
-                </span>
-                <div className="opacity-0 group-hover/item:opacity-100 flex items-center gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteChat(chat.id);
-                    }}
-                    className="hover:text-red-500 text-brand-charcoal/40"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    createNewChat("New Channel");
+                    setShowChatList(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 text-text-muted hover:text-brand-orange transition-colors border-t border-border-secondary"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span className="font-mono text-[10px] uppercase tracking-wider">
+                    Initialize New Channel
+                  </span>
+                </button>
               </div>
-            ))
+            </motion.div>
           )}
-          <div
-            className="p-2 flex items-center justify-center border-t border-brand-charcoal/5 cursor-pointer hover:bg-white text-brand-charcoal/50 hover:text-brand-orange transition-colors"
-            onClick={() => {
-              createNewChat("New Channel");
-              setShowChatList(false);
-            }}
-          >
-            <span className="font-mono text-[10px] uppercase tracking-widest flex items-center gap-1">
-              <Icon icon="lucide:plus" className="w-3 h-3" /> Initialize New
-              Channel
-            </span>
-          </div>
-        </div>
-      )}
+        </AnimatePresence>
+      </div>
 
       {/* Messages Area */}
       <div
-        className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-brand-charcoal/10 scrollbar-track-transparent"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 scrollbar-thin scrollbar-thumb-brand-charcoal/10 scrollbar-track-transparent"
         ref={messagesEndRef}
       >
-        {/* ... (keep existing message mapping) */}
+        {/* Empty State */}
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4">
-            <div className="w-12 h-12 rounded-full border border-dashed border-brand-charcoal flex items-center justify-center">
+            <div className="w-12 h-12 rounded-none border border-dashed border-brand-charcoal flex items-center justify-center">
               <Terminal className="w-6 h-6 text-brand-charcoal" />
             </div>
             <div className="max-w-[200px]">
-              <p className="font-mono text-xs text-brand-charcoal mb-1">
+              <p className="font-mono text-xs text-text-primary mb-1">
                 TERMINAL READY
               </p>
-              <p className="font-serif italic text-xs text-brand-charcoal/70">
+              <p className="font-serif italic text-xs text-text-muted">
                 Describe your architectural requirements to begin generation.
               </p>
             </div>
@@ -900,12 +957,12 @@ This architecture separates concerns across dedicated service layers, enabling i
         )}
       </div>
 
-      {/* Input Area - REFACTORED */}
-      <div className="p-3 bg-white border-t border-brand-charcoal/10">
+      {/* Input Area */}
+      <div className="flex-shrink-0 p-3 bg-bg-secondary border-t border-border-primary">
         <form
           id="ai-prompt-form"
           onSubmit={handleSubmit}
-          className="relative flex flex-col gap-2 bg-[#faf9f5] border border-brand-charcoal/20 p-2 focus-within:ring-1 focus-within:ring-brand-orange/50 focus-within:border-brand-orange/50 transition-all rounded-sm"
+          className="relative flex flex-col gap-2 bg-bg-primary border border-border-primary focus-within:border-brand-orange transition-colors rounded-sm"
         >
           {/* Main Text Area */}
           <textarea
@@ -918,103 +975,93 @@ This architecture separates concerns across dedicated service layers, enabling i
               }
             }}
             placeholder="Enter architectural requirements..."
-            className="flex-1 bg-transparent text-xs font-mono text-brand-charcoal placeholder:text-brand-charcoal/30 focus:outline-none min-h-[40px] resize-none"
+            className="w-full bg-transparent text-xs font-mono text-text-primary placeholder:text-text-muted/50 focus:outline-none min-h-[44px] resize-none p-2"
             rows={2}
           />
 
-          {/* Bottom Toolbar: Model Select | Icons | Send */}
-          <div className="flex items-center justify-between pt-1 border-t border-brand-charcoal/5">
+          {/* Bottom Toolbar */}
+          <div className="flex items-center justify-between px-2 pb-1">
             {/* Left: Model Selector */}
-            <div className="flex items-center gap-4">
-              {/* Model Selector */}
-              <div className="">
-                <Select
-                  value={model}
-                  onValueChange={(val) => {
-                    if (val === "gemini-3.0-pro") {
-                      toast("Upgrade to Pro", {
-                        description:
-                          "Gemini 3.0 Pro is available on the Pro plan.",
-                      });
-                      return;
-                    }
-                    setModel(val);
-                  }}
-                >
-                  <SelectTrigger className="h-6 w-[130px] border-none bg-transparent text-[10px] uppercase font-mono tracking-wider focus:ring-0 px-0 gap-1 text-brand-charcoal/70 hover:text-brand-charcoal">
-                    <SelectValue placeholder="Select Model" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-brand-charcoal/20 shadow-xl">
-                    <SelectItem
-                      value="glm-4.7-flash"
-                      className="text-xs font-mono"
-                    >
-                      GLM-4.7-Flash (Free)
-                    </SelectItem>
-                    <SelectItem
-                      value="z-ai/glm-4.5-air:free"
-                      className="text-xs font-mono"
-                    >
-                      GLM-4.5-Air (Free)
-                    </SelectItem>
-                    <SelectItem
-                      value="deepseek-ai"
-                      className="text-xs font-mono"
-                    >
-                      Deepseek (Free)
-                    </SelectItem>
-                    <SelectItem
-                      value="kimi-k2.5"
-                      className="text-xs font-mono opacity-50 cursor-not-allowed"
-                      disabled
-                    >
-                      <span className="line-through">Kimi k2.5</span> 🔒
-                    </SelectItem>
-                    <SelectItem
-                      value="gemini-3.0-pro"
-                      className="text-xs font-mono opacity-50 cursor-not-allowed"
-                      disabled
-                    >
-                      Gemini-3.0-Pro 🔒
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={model}
+                onValueChange={(val) => {
+                  if (val === "gemini-3.0-pro") {
+                    toast("Upgrade to Pro", {
+                      description:
+                        "Gemini 3.0 Pro is available on the Pro plan.",
+                    });
+                    return;
+                  }
+                  setModel(val);
+                }}
+              >
+                <SelectTrigger className="h-7 w-[130px] border-none bg-transparent text-[10px] uppercase font-mono tracking-wider focus:ring-0 px-0 gap-1 text-text-secondary hover:text-text-primary">
+                  <SelectValue placeholder="Select Model" />
+                </SelectTrigger>
+                <SelectContent className="bg-bg-secondary border border-border-primary shadow-xl">
+                  <SelectItem
+                    value="glm-4.7-flash"
+                    className="text-xs font-mono"
+                  >
+                    GLM-4.7-Flash (Free)
+                  </SelectItem>
+                  <SelectItem
+                    value="z-ai/glm-4.5-air:free"
+                    className="text-xs font-mono"
+                  >
+                    GLM-4.5-Air (Free)
+                  </SelectItem>
+                  <SelectItem value="deepseek-ai" className="text-xs font-mono">
+                    Deepseek (Free)
+                  </SelectItem>
+                  <SelectItem
+                    value="kimi-k2.5"
+                    className="text-xs font-mono opacity-50 cursor-not-allowed"
+                    disabled
+                  >
+                    <span className="line-through">Kimi k2.5</span> 🔒
+                  </SelectItem>
+                  <SelectItem
+                    value="gemini-3.0-pro"
+                    className="text-xs font-mono opacity-50 cursor-not-allowed"
+                    disabled
+                  >
+                    Gemini-3.0-Pro 🔒
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-              <div className="w-[1px] h-3 bg-brand-charcoal/10" />
+              <div className="w-px h-4 bg-border-secondary" />
 
-              {/* Mode Toggle - Minimal Icon Dropdown */}
+              {/* Mode Toggle */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-brand-charcoal/40 hover:text-brand-orange rounded-full transition-colors"
+                  <button
+                    type="button"
+                    className="p-1.5 text-text-muted hover:text-brand-orange transition-colors rounded-sm"
                   >
                     {chatMode === "startup" ? (
                       <Rocket className="w-3.5 h-3.5 text-brand-orange" />
                     ) : chatMode === "corporate" ? (
                       <Building2 className="w-3.5 h-3.5 text-brand-blue" />
                     ) : (
-                      <Icon
-                        icon="lucide:scale"
-                        className="w-3.5 h-3.5 text-brand-charcoal/60"
-                      />
+                      <Icon icon="lucide:scale" className="w-3.5 h-3.5" />
                     )}
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="start"
-                  className="w-44 bg-white border border-brand-charcoal/20 shadow-xl p-1"
+                  className="w-44 bg-bg-secondary border border-border-primary shadow-xl p-1"
                 >
-                  <div className="px-2 py-1.5 text-[9px] uppercase tracking-widest text-brand-charcoal/40 font-mono">
+                  <div className="px-2 py-1.5 text-[9px] uppercase tracking-widest text-text-muted font-mono border-b border-border-secondary">
                     Output Mode
                   </div>
                   <DropdownMenuItem
                     onClick={() => setChatMode("default")}
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "default" && "bg-brand-charcoal/5",
+                      chatMode === "default" && "bg-bg-tertiary",
                     )}
                   >
                     <Icon icon="lucide:scale" className="w-3.5 h-3.5" />
@@ -1025,7 +1072,7 @@ This architecture separates concerns across dedicated service layers, enabling i
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
                       chatMode === "startup" &&
-                        "bg-brand-orange/5 text-brand-orange",
+                        "bg-brand-orange/10 text-brand-orange",
                     )}
                   >
                     <Rocket className="w-3.5 h-3.5" />
@@ -1036,7 +1083,7 @@ This architecture separates concerns across dedicated service layers, enabling i
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
                       chatMode === "corporate" &&
-                        "bg-brand-blue/5 text-brand-blue",
+                        "bg-brand-blue/10 text-brand-blue",
                     )}
                   >
                     <Building2 className="w-3.5 h-3.5" />
@@ -1044,84 +1091,57 @@ This architecture separates concerns across dedicated service layers, enabling i
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Quick Mode Toggle */}
-              <Button
-                type="button"
-                size="sm"
-                variant={quickMode ? "default" : "ghost"}
-                className={cn(
-                  "h-6 px-2 text-xs rounded-full flex items-center gap-1 transition-all",
-                  quickMode
-                    ? "bg-amber-500 text-white hover:bg-amber-600"
-                    : "text-brand-charcoal/60 hover:text-amber-500",
-                )}
-                onClick={() => setQuickMode(!quickMode)}
-                title={
-                  quickMode
-                    ? "Quick Mode ON - Faster generation"
-                    : "Enable Quick Mode for faster drafts"
-                }
-              >
-                <Zap className="w-3 h-3" />
-                {quickMode && <span>Quick</span>}
-              </Button>
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Icons */}
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-brand-charcoal/40 hover:text-brand-orange rounded-full"
-                  onClick={() => toast("Upload feature coming soon")}
-                  title="Attach File"
-                >
-                  <Paperclip className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-brand-charcoal/40 hover:text-brand-orange rounded-full"
-                  onClick={() => toast("URL extraction coming soon")}
-                  title="Add URL Configuration"
-                >
-                  <LinkIcon className="w-3.5 h-3.5" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Attachment Buttons */}
+              <button
+                type="button"
+                onClick={() => toast("Upload feature coming soon")}
+                className="p-1.5 text-text-muted hover:text-brand-orange transition-colors rounded-sm"
+                title="Attach File"
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => toast("URL extraction coming soon")}
+                className="p-1.5 text-text-muted hover:text-brand-orange transition-colors rounded-sm"
+                title="Add URL Configuration"
+              >
+                <LinkIcon className="w-3.5 h-3.5" />
+              </button>
 
-              <div className="w-[1px] h-4 bg-brand-charcoal/10 mx-1" />
+              <div className="w-px h-4 bg-border-secondary mx-1" />
 
               {/* Send Button */}
-              <Button
+              <button
                 type="submit"
-                size="icon"
                 disabled={!inputValue.trim() || isGenerating}
                 className={cn(
-                  "h-7 w-7 rounded-sm transition-all",
+                  "flex items-center justify-center w-8 h-8 rounded-sm transition-all",
                   inputValue.trim()
-                    ? "bg-brand-orange text-white hover:bg-brand-orange/90"
-                    : "bg-brand-charcoal/10 text-brand-charcoal/40",
+                    ? "bg-brand-orange text-text-inverse hover:bg-brand-orange/90"
+                    : "bg-bg-tertiary text-text-muted cursor-not-allowed",
                 )}
               >
                 {isGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-4 h-4" />
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </form>
-        <div className="flex justify-between items-center mt-2 px-1">
-          <span className="text-[9px] font-mono text-brand-charcoal/30">
-            v1.3.0
-          </span>
-        </div>
+      </div>
+
+      {/* Empty State / Version */}
+      <div className="flex-shrink-0 px-4 py-2 flex justify-between items-center border-t border-border-secondary">
+        <span className="text-[9px] font-mono text-text-muted uppercase tracking-wider">
+          v1.3.0
+        </span>
       </div>
     </div>
   );

@@ -321,7 +321,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(prompt).toContain("web-app");
@@ -334,7 +333,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "startup",
-        quickMode: false,
       });
 
       const corporate = buildEnhancedSystemPrompt({
@@ -342,7 +340,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(startup).toContain("MODE: STARTUP");
@@ -355,7 +352,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(prompt).toContain("COMPLEXITY");
@@ -367,7 +363,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(prompt).toContain("FRAMEWORK COMPATIBILITY");
@@ -380,7 +375,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "startup",
-        quickMode: false,
       });
 
       expect(prompt).toContain("RECOMMENDED TECHNOLOGIES");
@@ -392,7 +386,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(prompt).toContain("POSITIONING");
@@ -404,32 +397,11 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(prompt).toContain("JSON");
       expect(prompt).toContain("nodes");
       expect(prompt).toContain("edges");
-    });
-
-    it("should generate shorter prompt in quick mode", () => {
-      const fullPrompt = buildEnhancedSystemPrompt({
-        userInput: "Build app",
-        architectureType: "web-app",
-        detectedIntent: "Architecture: web-app",
-        mode: "corporate",
-        quickMode: false,
-      });
-
-      const quickPrompt = buildEnhancedSystemPrompt({
-        userInput: "Build app",
-        architectureType: "web-app",
-        detectedIntent: "Architecture: web-app",
-        mode: "corporate",
-        quickMode: true,
-      });
-
-      expect(quickPrompt.length).toBeLessThan(fullPrompt.length);
     });
 
     it("should include current nodes and edges when provided", () => {
@@ -438,9 +410,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
-        currentNodes: [{ id: "1" }],
-        currentEdges: [{ id: "e1" }],
       });
 
       // Should mention existing architecture
@@ -453,7 +422,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
       const aiPipeline = buildEnhancedSystemPrompt({
@@ -461,7 +429,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "ai-pipeline",
         detectedIntent: "Architecture: ai-pipeline",
         mode: "corporate",
-        quickMode: false,
       });
 
       const microservices = buildEnhancedSystemPrompt({
@@ -469,7 +436,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "microservices",
         detectedIntent: "Architecture: microservices",
         mode: "corporate",
-        quickMode: false,
       });
 
       expect(webApp).toContain("Web Application");
@@ -483,7 +449,6 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "startup",
-        quickMode: false,
       });
 
       const corporate = buildEnhancedSystemPrompt({
@@ -491,13 +456,12 @@ describe("Prompt Engineering Tests", () => {
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
         mode: "corporate",
-        quickMode: false,
       });
 
-      expect(startup).toContain("Minimum components: 3");
-      expect(startup).toContain("Maximum components: 5");
-      expect(corporate).toContain("Minimum components: 4");
-      expect(corporate).toContain("Maximum components: 8");
+      expect(startup).toContain("MINIMUM COMPONENTS: 3");
+      expect(startup).toContain("MAXIMUM COMPONENTS: 5");
+      expect(corporate).toContain("MINIMUM COMPONENTS: 4");
+      expect(corporate).toContain("MAXIMUM COMPONENTS: 8");
     });
   });
 });
