@@ -1,114 +1,275 @@
-// Production-ready logging utility
-// In development, logs are shown. In production, logs can be sent to a monitoring service.
+import pino, { type Logger, type LoggerOptions } from "pino";
 
-type LogLevel = "debug" | "info" | "warn" | "error";
+/**
+ * Log levels supported by Pino
+ */
+type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
+/**
+ * Context object for structured logging
+ */
 interface LogContext {
   module?: string;
   action?: string;
   projectId?: string;
   userId?: string;
+  requestId?: string;
+  duration?: number;
   [key: string]: unknown;
 }
 
-interface LogEntry {
-  level: LogLevel;
-  message: string;
-  timestamp: string;
-  context?: LogContext;
-  error?: Error;
+/**
+ * Determine log level based on environment
+ */
+function getLogLevel(): LogLevel {
+  if (process.env.LOG_LEVEL) {
+    return process.env.LOG_LEVEL as LogLevel;
+  }
+  return process.env.NODE_ENV === "production" ? "info" : "debug";
 }
 
-// Current environment
-const isProduction = process.env.NODE_ENV === "production";
+/**
+ * Pino configuration options
+ */
+const pinoOptions: LoggerOptions = {
+  level: getLogLevel(),
+  // Use pino-pretty in development for readable logs
+  transport:
+    process.env.NODE_ENV !== "production"
+      ? {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            translateTime: "SYS:standard",
+            ignore: "pid,hostname",
+            messageFormat: "{msg}",
+          },
+        }
+      : undefined,
+  // Base fields included in every log
+  base: {
+    env: process.env.NODE_ENV,
+    service: "simulark-api",
+  },
+  // Timestamp format
+  timestamp: pino.stdTimeFunctions.isoTime,
+  // Custom log formatting
+  formatters: {
+    level: (label) => ({ level: label }),
+    bindings: (bindings) => ({
+      ...bindings,
+      node_version: process.version,
+    }),
+  },
+  // Redact sensitive fields
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "req.headers['x-api-key']",
+      "password",
+      "token",
+      "apiKey",
+      "api_key",
+      "access_token",
+      "refresh_token",
+    ],
+    censor: "[REDACTED]",
+  },
+};
 
-class Logger {
-  private module: string;
+/**
+ * Create the base Pino logger instance
+ */
+const baseLogger = pino(pinoOptions);
 
-  constructor(module: string) {
-    this.module = module;
+/**
+ * AppLogger - Wrapper around Pino with module context support
+ * Provides a familiar API while leveraging Pino's performance
+ */
+class AppLogger {
+  private logger: Logger;
+  private moduleContext: LogContext;
+
+  constructor(logger: Logger, moduleContext: LogContext = {}) {
+    this.logger = logger;
+    this.moduleContext = moduleContext;
   }
 
-  private formatMessage(
-    level: LogLevel,
-    message: string,
-    context?: LogContext,
-  ): string {
-    const timestamp = new Date().toISOString();
-    const moduleStr = this.module ? `[${this.module}]` : "";
-    const contextStr = context ? ` ${JSON.stringify(context)}` : "";
-    return `[${timestamp}] [${level.toUpperCase()}] ${moduleStr} ${message}${contextStr}`;
+  /**
+   * Merge context with module context
+   */
+  private mergeContext(context?: LogContext): LogContext {
+    return { ...this.moduleContext, ...context };
   }
 
-  private log(
-    level: LogLevel,
-    message: string,
-    context?: LogContext,
-    error?: Error,
-  ): void {
-    const formattedMessage = this.formatMessage(level, message, context);
-
-    if (isProduction) {
-      // In production, you could send logs to a service like Sentry, Datadog, etc.
-      // For now, we'll use console but could be extended
-      switch (level) {
-        case "error":
-          console.error(formattedMessage, error?.stack || error);
-          break;
-        case "warn":
-          console.warn(formattedMessage);
-          break;
-        case "info":
-          console.log(formattedMessage);
-          break;
-        default:
-          console.debug(formattedMessage);
-      }
-    } else {
-      // In development, use colored console for better DX
-      const colors = {
-        debug: "#6b7280",
-        info: "#3b82f6",
-        warn: "#f59e0b",
-        error: "#ef4444",
-      };
-
-      const color = colors[level];
-      console.log(
-        `%c${formattedMessage}`,
-        `color: ${color}`,
-        error?.stack || "",
-      );
-    }
-
-    // Could also send to external service in production
-    // this.sendToMonitoring(level, message, context, error);
+  /**
+   * Log trace level message
+   */
+  trace(message: string, context?: LogContext): void {
+    this.logger.trace(this.mergeContext(context), message);
   }
 
+  /**
+   * Log debug level message
+   */
   debug(message: string, context?: LogContext): void {
-    this.log("debug", message, context);
+    this.logger.debug(this.mergeContext(context), message);
   }
 
+  /**
+   * Log info level message
+   */
   info(message: string, context?: LogContext): void {
-    this.log("info", message, context);
+    this.logger.info(this.mergeContext(context), message);
   }
 
+  /**
+   * Log warning level message
+   */
   warn(message: string, context?: LogContext): void {
-    this.log("warn", message, context);
+    this.logger.warn(this.mergeContext(context), message);
   }
 
-  error(message: string, error?: Error, context?: LogContext): void {
-    this.log("error", message, context, error);
+  /**
+   * Log error level message with optional Error object
+   */
+  error(message: string, error?: Error | unknown, context?: LogContext): void {
+    const mergedContext = this.mergeContext(context);
+
+    if (error instanceof Error) {
+      this.logger.error(
+        {
+          ...mergedContext,
+          err: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          },
+        },
+        message,
+      );
+    } else if (error) {
+      this.logger.error({ ...mergedContext, error }, message);
+    } else {
+      this.logger.error(mergedContext, message);
+    }
   }
 
-  // Create a child logger with additional module context
-  child(module: string): Logger {
-    return new Logger(`${this.module}:${module}`);
+  /**
+   * Log fatal level message - for critical errors
+   */
+  fatal(message: string, error?: Error | unknown, context?: LogContext): void {
+    const mergedContext = this.mergeContext(context);
+
+    if (error instanceof Error) {
+      this.logger.fatal(
+        {
+          ...mergedContext,
+          err: {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          },
+        },
+        message,
+      );
+    } else {
+      this.logger.fatal(mergedContext, message);
+    }
+  }
+
+  /**
+   * Create a child logger with additional module context
+   */
+  child(module: string): AppLogger {
+    return new AppLogger(this.logger, {
+      ...this.moduleContext,
+      module: this.moduleContext.module
+        ? `${this.moduleContext.module}:${module}`
+        : module,
+    });
+  }
+
+  /**
+   * Create a child logger with request context
+   */
+  withRequest(requestId: string, userId?: string): AppLogger {
+    return new AppLogger(this.logger, {
+      ...this.moduleContext,
+      requestId,
+      userId,
+    });
+  }
+
+  /**
+   * Time tracking helper
+   */
+  time(label: string): { end: (context?: LogContext) => void } {
+    const start = Date.now();
+
+    return {
+      end: (context?: LogContext) => {
+        const duration = Date.now() - start;
+        this.debug(`${label} completed`, { ...context, duration });
+      },
+    };
+  }
+
+  /**
+   * Async function timing wrapper
+   */
+  async withTiming<T>(
+    label: string,
+    fn: () => Promise<T>,
+    context?: LogContext,
+  ): Promise<T> {
+    const start = Date.now();
+    try {
+      const result = await fn();
+      const duration = Date.now() - start;
+      this.debug(`${label} completed`, { ...context, duration, success: true });
+      return result;
+    } catch (error) {
+      const duration = Date.now() - start;
+      this.error(`${label} failed`, error, {
+        ...context,
+        duration,
+        success: false,
+      });
+      throw error;
+    }
   }
 }
 
-// Export a default logger instance
-export const logger = new Logger("app");
+/**
+ * Default logger instance for app-wide use
+ */
+export const logger = new AppLogger(baseLogger, { module: "app" });
 
-// Export class for creating module-specific loggers
-export { Logger };
+/**
+ * Create a module-specific logger
+ */
+export function createLogger(module: string): AppLogger {
+  return logger.child(module);
+}
+
+/**
+ * Create a request-scoped logger with request ID
+ */
+export function createRequestLogger(
+  requestId: string,
+  userId?: string,
+): AppLogger {
+  return logger.withRequest(requestId, userId);
+}
+
+/**
+ * Export the AppLogger class for type imports
+ */
+export { AppLogger };
+
+/**
+ * Export the base Pino logger for advanced use cases
+ */
+export { baseLogger as pinoLogger };

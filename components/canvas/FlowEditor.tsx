@@ -24,10 +24,12 @@ import {
 } from "react";
 import "@xyflow/react/dist/style.css";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Undo2, Redo2 } from "lucide-react";
 import { toast } from "sonner";
 import { saveProject } from "@/actions/projects";
-import { applyLayout, applyLayoutAsync } from "@/lib/layout";
+import { useGraphHistory } from "@/lib/history-store";
+import { useCanvasShortcuts } from "@/lib/keyboard-shortcuts";
+import { applyLayout, applyLayoutAsync, type LayoutAlgorithm } from "@/lib/layout";
 import { useSimulationStore } from "@/lib/store";
 import { cn, generateMermaidCode } from "@/lib/utils";
 import { SimulationEdge } from "./edges/SimulationEdge";
@@ -51,6 +53,7 @@ import { SecurityNode } from "./nodes/SecurityNode";
 import { ServiceNode } from "./nodes/ServiceNode";
 import { StorageNode } from "./nodes/StorageNode";
 import { VectorDBNode } from "./nodes/VectorDBNode";
+import { Button } from "@/components/ui/button";
 
 interface FlowEditorProps {
   initialNodes?: any[];
@@ -62,10 +65,136 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
   ({ initialNodes = [], initialEdges = [], projectId }, ref) => {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-    const { fitView, getNodes, getEdges } = useReactFlow();
+    const { fitView, getNodes, getEdges, zoomIn, zoomOut } = useReactFlow();
     const { chaosMode } = useSimulationStore();
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isInitializedRef = useRef(false);
+    const isUndoRedoRef = useRef(false);
+
+    // History store for undo/redo
+    const {
+      pushState,
+      undo,
+      redo,
+      canUndo,
+      canRedo,
+      clear: clearHistory,
+    } = useGraphHistory();
+
+    // Push initial state to history
+    useEffect(() => {
+      if (initialNodes.length > 0 || initialEdges.length > 0) {
+        pushState({ nodes: initialNodes, edges: initialEdges }, "initial");
+      }
+    }, []);
+
+    // Track changes and push to history (debounced)
+    const historyTimerRef = useRef<NodeJS.Timeout | null>(null);
+    useEffect(() => {
+      // Skip if this is an undo/redo operation
+      if (isUndoRedoRef.current) {
+        isUndoRedoRef.current = false;
+        return;
+      }
+
+      if (historyTimerRef.current) {
+        clearTimeout(historyTimerRef.current);
+      }
+
+      historyTimerRef.current = setTimeout(() => {
+        if (nodes.length > 0 || edges.length > 0) {
+          pushState({ nodes, edges });
+        }
+      }, 500);
+
+      return () => {
+        if (historyTimerRef.current) {
+          clearTimeout(historyTimerRef.current);
+        }
+      };
+    }, [nodes, edges, pushState]);
+
+    // Handle undo
+    const handleUndo = useCallback(() => {
+      const previousState = undo();
+      if (previousState) {
+        isUndoRedoRef.current = true;
+        setNodes(previousState.nodes);
+        setEdges(previousState.edges);
+        toast.success("Undo");
+      }
+    }, [undo, setNodes, setEdges]);
+
+    // Handle redo
+    const handleRedo = useCallback(() => {
+      const nextState = redo();
+      if (nextState) {
+        isUndoRedoRef.current = true;
+        setNodes(nextState.nodes);
+        setEdges(nextState.edges);
+        toast.success("Redo");
+      }
+    }, [redo, setNodes, setEdges]);
+
+    // Handle delete selected
+    const handleDelete = useCallback(() => {
+      const selectedNodes = getNodes().filter((n) => n.selected);
+      const selectedEdges = getEdges().filter((e) => e.selected);
+      if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+        setNodes((nds) => nds.filter((n) => !n.selected));
+        setEdges((eds) => eds.filter((e) => !e.selected));
+        toast.success(
+          `Deleted ${selectedNodes.length} node(s) and ${selectedEdges.length} edge(s)`,
+        );
+      }
+    }, [getNodes, getEdges, setNodes, setEdges]);
+
+    // Handle select all
+    const handleSelectAll = useCallback(() => {
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
+      setEdges((eds) => eds.map((e) => ({ ...e, selected: true })));
+    }, [setNodes, setEdges]);
+
+    // Handle save
+    const handleSave = useCallback(async () => {
+      try {
+        await saveProject(projectId, { nodes, edges });
+        toast.success("Project saved");
+      } catch (error) {
+        toast.error("Failed to save");
+      }
+    }, [projectId, nodes, edges]);
+
+    // Handle export
+    const handleExport = useCallback(async () => {
+      // Export as PNG by default
+      const element = document.querySelector(".react-flow") as HTMLElement;
+      if (!element) return;
+
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(element, {
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+      });
+      const link = document.createElement("a");
+      link.download = `architecture-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Exported as PNG");
+    }, []);
+
+    // Setup keyboard shortcuts
+    useCanvasShortcuts({
+      undo: handleUndo,
+      redo: handleRedo,
+      delete: handleDelete,
+      selectAll: handleSelectAll,
+      zoomIn: () => zoomIn({ duration: 200 }),
+      zoomOut: () => zoomOut({ duration: 200 }),
+      fitView: () => fitView({ duration: 300 }),
+      save: handleSave,
+      export: handleExport,
+    });
 
     useEffect(() => {
       if (!isInitializedRef.current) {
@@ -152,6 +281,23 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           }
         }
       },
+      autoLayoutWithAlgorithm: async (algorithm: LayoutAlgorithm) => {
+        try {
+          const currentNodes = getNodes();
+          const currentEdges = getEdges();
+
+          const { nodes: layoutNodes } = applyLayout(currentNodes, currentEdges, {
+            algorithm,
+          });
+          setNodes(layoutNodes);
+          setTimeout(() => fitView({ duration: 500 }), 100);
+        } catch (error) {
+          console.error(
+            "[FlowEditor] AutoLayout with algorithm error:",
+            error,
+          );
+        }
+      },
       get nodes() {
         return getNodes();
       },
@@ -167,6 +313,35 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           const element = document.querySelector(".react-flow") as HTMLElement;
           if (!element) return;
 
+          // Get all nodes to calculate the full bounds
+          const nodes = getNodes();
+          if (nodes.length === 0) {
+            toast.error("No nodes to export");
+            return;
+          }
+
+          // Calculate bounding box of all nodes
+          const padding = 50;
+          let minX = Infinity;
+          let minY = Infinity;
+          let maxX = -Infinity;
+          let maxY = -Infinity;
+
+          nodes.forEach((node) => {
+            const x = node.position.x;
+            const y = node.position.y;
+            const width = node.measured?.width || 200;
+            const height = node.measured?.height || 100;
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + width);
+            maxY = Math.max(maxY, y + height);
+          });
+
+          const width = maxX - minX + padding * 2;
+          const height = maxY - minY + padding * 2;
+
           const { toPng, toSvg } = await import("html-to-image");
 
           switch (format) {
@@ -174,22 +349,53 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               const dataUrl = await toPng(element, {
                 cacheBust: true,
                 backgroundColor: "#ffffff",
+                width,
+                height,
+                style: {
+                  transform: `translate(${-minX + padding}px, ${-minY + padding}px)`,
+                },
+                filter: (node) => {
+                  // Filter out any UI overlays
+                  if (
+                    node.classList?.contains("react-flow__panel") ||
+                    node.classList?.contains("react-flow__attribution")
+                  ) {
+                    return false;
+                  }
+                  return true;
+                },
               });
               const link = document.createElement("a");
               link.download = `architecture-${Date.now()}.png`;
               link.href = dataUrl;
               link.click();
+              toast.success("PNG exported successfully!");
               break;
             }
             case "svg": {
               const dataUrl = await toSvg(element, {
                 cacheBust: true,
                 backgroundColor: "#ffffff",
+                width,
+                height,
+                style: {
+                  transform: `translate(${-minX + padding}px, ${-minY + padding}px)`,
+                },
+                filter: (node) => {
+                  if (
+                    node.classList?.contains("react-flow__panel") ||
+                    node.classList?.contains("react-flow__attribution")
+                  ) {
+                    return false;
+                  }
+                  return true;
+                },
               });
               const link = document.createElement("a");
               link.download = `architecture-${Date.now()}.svg`;
               link.href = dataUrl;
               link.click();
+              toast.success("SVG exported successfully!");
               break;
             }
             case "pdf": {
@@ -197,13 +403,29 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               const dataUrl = await toPng(element, {
                 cacheBust: true,
                 backgroundColor: "#ffffff",
+                width,
+                height,
+                style: {
+                  transform: `translate(${-minX + padding}px, ${-minY + padding}px)`,
+                },
+                filter: (node) => {
+                  if (
+                    node.classList?.contains("react-flow__panel") ||
+                    node.classList?.contains("react-flow__attribution")
+                  ) {
+                    return false;
+                  }
+                  return true;
+                },
               });
-              const pdf = new jsPDF({ orientation: "landscape" });
-              const imgProps = pdf.getImageProperties(dataUrl);
-              const pdfWidth = pdf.internal.pageSize.getWidth();
-              const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-              pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
+              const pdf = new jsPDF({
+                orientation: width > height ? "landscape" : "portrait",
+                unit: "px",
+                format: [width, height],
+              });
+              pdf.addImage(dataUrl, "PNG", 0, 0, width, height);
               pdf.save(`architecture-${Date.now()}.pdf`);
+              toast.success("PDF exported successfully!");
               break;
             }
           }
@@ -304,6 +526,40 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
             className="transition-colors duration-500 opacity-60"
           />
 
+          {/* Undo/Redo Toolbar */}
+          <Panel position="top-left" className="ml-4 mt-4">
+            <div className="flex items-center gap-1 bg-white/90 dark:bg-zinc-900/90 rounded-lg shadow-md p-1">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={!canUndo()}
+                className={cn(
+                  "p-2 rounded-md transition-colors",
+                  canUndo()
+                    ? "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                    : "text-zinc-300 dark:text-zinc-600 cursor-not-allowed",
+                )}
+                title="Undo (⌘Z)"
+              >
+                <Undo2 size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={handleRedo}
+                disabled={!canRedo()}
+                className={cn(
+                  "p-2 rounded-md transition-colors",
+                  canRedo()
+                    ? "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                    : "text-zinc-300 dark:text-zinc-600 cursor-not-allowed",
+                )}
+                title="Redo (⌘⇧Z)"
+              >
+                <Redo2 size={18} />
+              </button>
+            </div>
+          </Panel>
+
           {chaosMode && (
             <Panel position="bottom-center" className="mb-8">
               <div className="bg-red-950/90 text-red-100 px-6 py-2 border-t-2 border-red-500 text-xs font-mono uppercase tracking-widest shadow-2xl flex items-center gap-3">
@@ -334,6 +590,7 @@ FlowEditorInner.displayName = "FlowEditorInner";
 export interface FlowEditorRef {
   updateGraph: (data: { nodes: any[]; edges: any[] }) => void;
   autoLayout: (direction?: "DOWN" | "RIGHT") => Promise<void>;
+  autoLayoutWithAlgorithm: (algorithm: LayoutAlgorithm) => Promise<void>;
   exportGraph: (format: "mermaid" | "png" | "pdf" | "svg") => Promise<void>;
   nodes: any[];
   edges: any[];

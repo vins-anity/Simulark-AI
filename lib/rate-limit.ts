@@ -1,5 +1,8 @@
+import { createLogger } from "@/lib/logger";
 import { getPlanDetails } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
+
+const logger = createLogger("rate-limit");
 
 export async function checkRateLimit(userId: string) {
   const supabase = await createClient(); // Use server client
@@ -12,7 +15,7 @@ export async function checkRateLimit(userId: string) {
     .single();
 
   if (userError) {
-    console.error("Rate Limit: Failed to fetch user tier", userError);
+    logger.error("Failed to fetch user tier", userError, { userId });
     // Fail open or closed? Let's fail safe to free tier limits if we can't read
   }
 
@@ -45,6 +48,12 @@ export async function checkRateLimit(userId: string) {
 
   // 3. Check Limit
   if (currentCount >= dailyLimit) {
+    logger.warn("Rate limit exceeded", {
+      userId,
+      tier,
+      currentCount,
+      dailyLimit,
+    });
     return {
       allowed: false,
       limit: dailyLimit,
@@ -66,10 +75,18 @@ export async function checkRateLimit(userId: string) {
   );
 
   if (updateError) {
-    console.error("Rate Limit: Failed to update usage", updateError);
+    logger.error("Failed to update usage", updateError, { userId });
     // If we can't write usage, we might want to still allow it but log error
     // Or fail close. For now, allow but log.
   }
+
+  logger.debug("Rate limit check passed", {
+    userId,
+    tier,
+    currentCount: currentCount + 1,
+    dailyLimit,
+    remaining: dailyLimit - (currentCount + 1),
+  });
 
   return {
     allowed: true,

@@ -1,5 +1,7 @@
-import { logger } from "@/lib/logger";
+import { createLogger } from "@/lib/logger";
 import { aiCircuitBreaker } from "./circuit-breaker";
+
+const logger = createLogger("ai-resilience");
 
 export interface RetryConfig {
   maxRetries: number;

@@ -1,4 +1,6 @@
-import { logger } from "./logger";
+import { createLogger } from "./logger";
+
+const logger = createLogger("intent-detector");
 
 /**
  * Operation types for dynamic architecture modifications

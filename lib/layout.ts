@@ -639,7 +639,9 @@ function applyPipelineLayout(
 
   // Find source (no incoming edges)
   const inDegree = new Map<string, number>();
-  nodes.forEach((n) => { inDegree.set(n.id, 0); });
+  nodes.forEach((n) => {
+    inDegree.set(n.id, 0);
+  });
   edges.forEach((e) => {
     inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
   });
@@ -827,7 +829,9 @@ function applyRadialLayout(
   const nodeIds = new Set(nodes.map((n) => n.id));
 
   const incomingCounts = new Map<string, number>();
-  nodes.forEach((n) => { incomingCounts.set(n.id, 0); });
+  nodes.forEach((n) => {
+    incomingCounts.set(n.id, 0);
+  });
   edges.forEach((e) => {
     if (nodeIds.has(e.target)) {
       incomingCounts.set(e.target, (incomingCounts.get(e.target) || 0) + 1);
@@ -840,7 +844,9 @@ function applyRadialLayout(
 
   while (currentLevel.length > 0) {
     levels.push(currentLevel);
-    currentLevel.forEach((id) => { visited.add(id); });
+    currentLevel.forEach((id) => {
+      visited.add(id);
+    });
 
     const nextLevel: string[] = [];
     currentLevel.forEach((nodeId) => {

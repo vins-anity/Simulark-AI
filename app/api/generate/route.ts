@@ -1,12 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { generateArchitectureStream } from "@/lib/ai-client";
-import { logger } from "@/lib/logger";
+import { createLogger } from "@/lib/logger";
 import { validatePrompt } from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
+import {
+  getCachedResponse,
+  setCachedResponse,
+  CACHE_TTL,
+} from "@/lib/ai-cache";
 
 export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
+
+// Create module-specific logger
+const logger = createLogger("api:generate");
 
 // Helper to add timeout to a promise
 function withTimeout<T>(
@@ -23,6 +32,10 @@ function withTimeout<T>(
 }
 
 export async function POST(req: NextRequest) {
+  // Generate request ID for tracing
+  const requestId = randomUUID();
+  const timer = logger.time("generate-request");
+
   try {
     // Authentication check
     const supabase = await createClient();
@@ -30,8 +43,13 @@ export async function POST(req: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
+      logger.warn("Unauthorized access attempt", { requestId });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Create user-scoped logger
+    const userLogger = logger.withRequest(requestId, user.id);
+    userLogger.info("Generation request started");
 
     // Parse body early
     const body = await req.json();
@@ -41,6 +59,10 @@ export async function POST(req: NextRequest) {
     const rateLimitResult = await checkRateLimit(user.id);
 
     if (!rateLimitResult.allowed) {
+      userLogger.warn("Rate limit exceeded", {
+        limit: rateLimitResult.limit,
+        remaining: rateLimitResult.remaining,
+      });
       return NextResponse.json(
         {
           error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
@@ -58,6 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!prompt) {
+      userLogger.warn("Missing prompt in request");
       return NextResponse.json(
         { error: "Prompt is required" },
         { status: 400 },
@@ -67,6 +90,7 @@ export async function POST(req: NextRequest) {
     // Validate prompt quality
     const validation = validatePrompt(prompt);
     if (!validation.isValid) {
+      userLogger.warn("Prompt validation failed", { error: validation.error });
       return NextResponse.json(
         {
           error: validation.error,
@@ -79,17 +103,38 @@ export async function POST(req: NextRequest) {
 
     // Log warning if prompt is just a greeting
     if (validation.warning) {
-      logger.warn("Prompt validation warning", { warning: validation.warning });
+      userLogger.warn("Prompt validation warning", {
+        warning: validation.warning,
+      });
     }
 
-    logger.info("Starting generation", {
+    // Check for cached response (only for non-quick mode, which is more expensive)
+    if (!quickMode) {
+      const cachedResult = await getCachedResponse<{
+        nodes: Array<Record<string, unknown> & { data?: Record<string, unknown> }>;
+        edges: unknown[];
+      }>({
+        prompt,
+        model,
+        mode,
+        userId: user.id,
+      });
+
+      if (cachedResult) {
+        userLogger.info("Returning cached architecture result");
+        const enrichedNodes = enrichNodesWithTech(cachedResult.nodes);
+        return NextResponse.json({
+          type: "cached",
+          data: { ...cachedResult, nodes: enrichedNodes },
+        });
+      }
+    }
+
+    userLogger.info("Starting generation", {
       model: model || "auto",
       mode: mode || "default",
       quickMode,
-    });
-    logger.debug("User prompt", {
-      preview: prompt.substring(0, 200),
-      length: prompt.length,
+      promptLength: prompt.length,
     });
     const stream = await generateArchitectureStream(
       prompt,
@@ -149,7 +194,7 @@ export async function POST(req: NextRequest) {
           }
 
           // DEBUG: Log accumulated content for diagnosis
-          logger.debug("Raw accumulated content", {
+          userLogger.debug("Raw accumulated content", {
             length: accumulatedContent.length,
             preview: accumulatedContent.substring(0, 100),
           });
@@ -182,7 +227,7 @@ export async function POST(req: NextRequest) {
                 jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
               }
 
-              logger.debug("Cleaned content for parsing", {
+              userLogger.debug("Cleaned content for parsing", {
                 length: jsonStr.length,
               });
 
@@ -191,7 +236,7 @@ export async function POST(req: NextRequest) {
                 // Enrich nodes with tech ecosystem data (icons, normalized IDs)
                 const enrichedNodes = enrichNodesWithTech(parsed.nodes);
                 const enrichedData = { ...parsed, nodes: enrichedNodes };
-                logger.info("Emitting result", {
+                userLogger.info("Emitting result", {
                   nodes: enrichedNodes.length,
                   edges: parsed.edges.length,
                 });
@@ -203,13 +248,13 @@ export async function POST(req: NextRequest) {
                 );
                 hasJsonResult = true;
               } else {
-                logger.warn("Parsed JSON missing nodes or edges", {
+                userLogger.warn("Parsed JSON missing nodes or edges", {
                   hasNodes: !!parsed.nodes,
                   hasEdges: !!parsed.edges,
                 });
               }
             } catch (parseErr: any) {
-              logger.error(
+              userLogger.error(
                 "Could not parse content as architecture JSON",
                 parseErr,
                 { contentLength: accumulatedContent.length },
@@ -218,7 +263,7 @@ export async function POST(req: NextRequest) {
           }
 
           if (!hasJsonResult && accumulatedContent.length > 0) {
-            logger.warn("No valid JSON architecture found in response", {
+            userLogger.warn("No valid JSON architecture found in response", {
               contentLength: accumulatedContent.length,
             });
             // Try one more time with more aggressive JSON extraction
@@ -229,7 +274,7 @@ export async function POST(req: NextRequest) {
                 if (parsed.nodes && parsed.edges) {
                   const enrichedNodes = enrichNodesWithTech(parsed.nodes);
                   const enrichedData = { ...parsed, nodes: enrichedNodes };
-                  logger.info("Recovery: Found JSON", {
+                  userLogger.info("Recovery: Found JSON", {
                     nodes: enrichedNodes.length,
                     edges: parsed.edges.length,
                   });
@@ -243,13 +288,14 @@ export async function POST(req: NextRequest) {
                 }
               }
             } catch (recoveryErr: any) {
-              logger.error("Recovery parse also failed", recoveryErr);
+              userLogger.error("Recovery parse also failed", recoveryErr);
             }
           }
 
+          timer.end({ success: hasJsonResult, chunks: chunkCount });
           controller.close();
         } catch (err: any) {
-          logger.error("Streaming error", err);
+          userLogger.error("Streaming error", err);
           controller.enqueue(
             encoder.encode(
               JSON.stringify({
@@ -271,7 +317,8 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("[API Generate] Error:", error);
+    timer.end({ success: false });
+    logger.error("Generation request failed", error);
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 },

@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger";
+import { createLogger } from "@/lib/logger";
 import {
   detectOperation,
   getComponentCountAdjustment,
@@ -6,6 +6,8 @@ import {
   type OperationType,
   shouldRelaxConstraints,
 } from "./intent-detector";
+
+const logger = createLogger("prompt-engineering");
 
 export type ArchitectureType =
   | "web-app"
