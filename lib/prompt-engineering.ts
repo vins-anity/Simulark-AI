@@ -42,6 +42,18 @@ export interface PromptContext {
   quickMode: boolean;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
   operationType?: OperationType; // Type of operation (create/modify/simplify/remove/extend)
+  userPreferences?: {
+    cloudProviders?: string[];
+    languages?: string[];
+    frameworks?: string[];
+    architectureTypes?: string[];
+    applicationType?: string[];
+    customInstructions?: string;
+    // Legacy fields for backward compatibility
+    cloudProvider?: string;
+    language?: string;
+    framework?: string;
+  };
 }
 
 // Complexity indicators
@@ -1042,7 +1054,7 @@ ${getComplexityGuidelines(complexity)}
 
 ${getFrameworkCompatibilityRules()}`;
 
-  const techRecommendations = getTechRecommendations(
+  let techRecommendations = getTechRecommendations(
     detection.type,
     context.mode,
     complexity,
@@ -1097,6 +1109,55 @@ RULES:
 3. Use real technology names from the recommendations
 4. Position: Gateways top (y:50), Services middle (y:150-250), Data bottom (y:350-450)
 5. Return valid JSON only, no markdown`;
+  }
+
+  if (context.userPreferences) {
+    const { cloudProviders, languages, frameworks } = context.userPreferences;
+    const prefParts = [];
+    
+    // Handle Cloud Providers
+    if (cloudProviders && cloudProviders.length > 0) {
+      const clouds = cloudProviders.filter(c => c !== "Generic").map(c => c.toUpperCase()).join(", ");
+      if (clouds) prefParts.push(`- Cloud Providers: ${clouds}`);
+    } else if (context.userPreferences.cloudProvider && context.userPreferences.cloudProvider !== "Generic") {
+       // Legacy fallback
+       prefParts.push(`- Cloud Provider: ${context.userPreferences.cloudProvider.toUpperCase()}`);
+    }
+
+    // Handle Languages
+    if (languages && languages.length > 0) {
+      prefParts.push(`- Programming Languages: ${languages.map(l => l.toUpperCase()).join(", ")}`);
+    } else if (context.userPreferences.language) {
+      // Legacy fallback
+      prefParts.push(`- Programming Language: ${context.userPreferences.language.toUpperCase()}`);
+    }
+
+    // Handle Frameworks
+    if (frameworks && frameworks.length > 0) {
+      prefParts.push(`- Core Frameworks: ${frameworks.map(f => f.toUpperCase()).join(", ")}`);
+    } else if (context.userPreferences.framework) {
+      // Legacy fallback
+      prefParts.push(`- Core Framework: ${context.userPreferences.framework.toUpperCase()}`);
+    }
+
+    if (prefParts.length > 0) {
+      techRecommendations += `\n\nUSER PREFERRED STACK (MANDATORY):\n${prefParts.join("\n")}\n\nPrioritize these technologies. If conflicting options are present, choose the best fit for the detected pattern.`;
+    }
+
+    // Handle Architecture Preferences (Patterns)
+    if (context.userPreferences.architectureTypes && context.userPreferences.architectureTypes.length > 0) {
+      techRecommendations += `\n\nPREFERRED ARCHITECTURE PATTERNS:\n${context.userPreferences.architectureTypes.join(", ")}\n\nincorporate these architectural styles where applicable.`;
+    }
+
+    // Handle Application Type
+    if (context.userPreferences.applicationType && context.userPreferences.applicationType.length > 0) {
+      techRecommendations += `\n\nTARGET APPLICATION TYPE:\n${context.userPreferences.applicationType.join(", ")}\n\nOptimize the architecture for this specific type of application.`;
+    }
+
+    // Handle Custom User Instructions
+    if (context.userPreferences.customInstructions) {
+      techRecommendations += `\n\nCUSTOM USER INSTRUCTIONS:\n"${context.userPreferences.customInstructions}"\n\nFollow these specific instructions strictly.`;
+    }
   }
 
   // Full prompt

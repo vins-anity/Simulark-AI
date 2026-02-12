@@ -20,6 +20,38 @@ export const metadata: Metadata = {
   title: "Simulark",
   description:
     "Intelligent Backend Architecture Design & Visual Simulation Platform",
+  icons: {
+    icon: [
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
+  manifest: "/site.webmanifest",
+  metadataBase: new URL("https://simulark-ai.vercel.app"),
+  openGraph: {
+    title: "Simulark",
+    description: "Intelligent Backend Architecture Design & Visual Simulation Platform",
+    url: "https://simulark-ai.vercel.app",
+    siteName: "Simulark",
+    images: [
+      {
+        url: "/web-app-manifest-512x512.png", // Fallback to largest icon
+        width: 512,
+        height: 512,
+        alt: "Simulark Preview",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Simulark",
+    description: "Intelligent Backend Architecture Design & Visual Simulation Platform",
+    images: ["/web-app-manifest-512x512.png"], // Fallback to largest icon
+  },
 };
 
 import { SidebarProvider } from "@/components/layout/SidebarProvider";

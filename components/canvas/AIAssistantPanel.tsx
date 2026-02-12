@@ -115,11 +115,23 @@ export function AIAssistantPanel({
   );
 
   // Settings / Preferences
-  const [cloudProvider, setCloudProvider] = useState("Generic");
   const [model, setModelState] = useState(
     (initialMetadata?.model as string) || "glm-4.7-flash",
   );
   const [quickMode, setQuickMode] = useState(false); // Fast generation with lean prompt
+  const [userPreferences, setUserPreferences] = useState<{
+    cloudProviders: string[];
+    languages: string[];
+    frameworks: string[];
+    architectureTypes: string[];
+    customInstructions: string;
+  }>({
+    cloudProviders: [],
+    languages: [],
+    frameworks: [],
+    architectureTypes: [],
+    customInstructions: "",
+  });
 
   // Wrappers to persist on change
   const setChatMode = (mode: ArchitectureMode) => {
@@ -202,9 +214,32 @@ export function AIAssistantPanel({
         .select("preferences")
         .eq("user_id", user.id)
         .single();
-      if (data?.preferences?.cloudProvider) {
-        setCloudProvider(data.preferences.cloudProvider);
-      }
+        if (data?.preferences) {
+          // Robust handling of legacy strings vs new arrays
+          const prefs = data.preferences;
+          const cloudProviders = Array.isArray(prefs.cloudProviders) 
+            ? prefs.cloudProviders 
+            : prefs.cloudProvider ? [prefs.cloudProvider] : [];
+            
+          const languages = Array.isArray(prefs.languages)
+            ? prefs.languages
+            : prefs.language ? [prefs.language] : [];
+            
+          const frameworks = Array.isArray(prefs.frameworks)
+            ? prefs.frameworks
+            : prefs.framework ? [prefs.framework] : [];
+
+          const architectureTypes = Array.isArray(prefs.architectureTypes) ? prefs.architectureTypes : [];
+          const customInstructions = typeof prefs.customInstructions === "string" ? prefs.customInstructions : "";
+
+          setUserPreferences({
+            cloudProviders,
+            languages,
+            frameworks,
+            architectureTypes,
+            customInstructions,
+          });
+        }
     }
   };
 
@@ -464,6 +499,7 @@ This architecture separates concerns across dedicated service layers, enabling i
           model: model,
           currentNodes: getCurrentNodes(),
           currentEdges: getCurrentEdges(),
+          userPreferences,
         }),
       });
 

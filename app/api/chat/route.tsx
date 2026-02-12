@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
       currentNodes = [],
       currentEdges = [],
       projectId,
+      userPreferences,
     } = body;
 
     // Validate messages
@@ -210,6 +211,7 @@ export async function POST(req: NextRequest) {
       quickMode: false,
       conversationHistory,
       operationType,
+      userPreferences,
     });
 
     // Get provider and model

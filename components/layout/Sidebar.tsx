@@ -3,14 +3,7 @@
 import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
 import {
-  BookOpen,
-  Box,
   ChevronLeft,
-  ChevronRight,
-  FileCode,
-  Layers,
-  LayoutDashboard,
-  Menu,
   Plus,
   Settings,
 } from "lucide-react";
@@ -18,14 +11,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UpgradeModal } from "@/components/subscription/UpgradeModal";
+import { CreateProjectModal } from "@/components/dashboard/CreateProjectModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -43,11 +35,20 @@ const navItems = [
     name: "Mission Control",
     href: "/dashboard",
     icon: "lucide:layout-dashboard",
+    disabled: false,
   },
   {
     name: "Blueprints",
     href: "/dashboard/templates",
     icon: "lucide:book-open",
+    disabled: false,
+  },
+  {
+    name: "Community",
+    href: "#",
+    icon: "lucide:globe", // Globe icon for community
+    disabled: true, 
+    badge: "Coming Soon"
   },
   // { name: "Archives", href: "/dashboard/projects", icon: "lucide:archive" }, // Future
 ];
@@ -58,6 +59,7 @@ export function Sidebar() {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [plan, setPlan] = useState("free");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const handleSignOut = async (e: React.MouseEvent) => {
@@ -116,6 +118,11 @@ export function Sidebar() {
       <UpgradeModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
+      />
+      
+      <CreateProjectModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
       />
 
       <aside
@@ -184,11 +191,14 @@ export function Sidebar() {
             <TooltipProvider delayDuration={0}>
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
+                const isDisabled = item.disabled;
+
                 return (
                   <Tooltip key={item.name}>
                     <TooltipTrigger asChild>
                       <Link
                         href={item.href}
+                        onClick={e => isDisabled && e.preventDefault()}
                         className={cn(
                           "flex items-center transition-all duration-200 group relative",
                           isCollapsed
@@ -198,7 +208,9 @@ export function Sidebar() {
                             ? isCollapsed
                               ? "bg-brand-charcoal text-white rounded-none"
                               : "border-brand-orange bg-brand-charcoal/5 text-brand-charcoal"
-                            : "border-transparent text-brand-charcoal/60 hover:text-brand-charcoal hover:bg-brand-charcoal/5",
+                            : isDisabled 
+                                ? "border-transparent text-brand-charcoal/30 cursor-not-allowed" 
+                                : "border-transparent text-brand-charcoal/60 hover:text-brand-charcoal hover:bg-brand-charcoal/5",
                         )}
                       >
                         <Icon
@@ -208,13 +220,22 @@ export function Sidebar() {
                             isCollapsed ? "w-5 h-5" : "w-4 h-4",
                             isActive
                               ? "text-brand-orange"
-                              : "group-hover:text-brand-charcoal",
+                              : isDisabled 
+                                ? "text-brand-charcoal/30" 
+                                : "group-hover:text-brand-charcoal",
                           )}
                         />
                         {!isCollapsed && (
-                          <span className="font-mono text-xs uppercase tracking-wider font-medium">
-                            {item.name}
-                          </span>
+                          <div className="flex items-center justify-between w-full">
+                            <span className={cn("font-mono text-xs uppercase tracking-wider font-medium", isDisabled && "line-through opacity-70")}>
+                                {item.name}
+                            </span>
+                            {item.badge && (
+                                <span className="ml-2 text-[8px] bg-brand-charcoal/10 text-brand-charcoal/60 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-mono">
+                                    {item.badge}
+                                </span>
+                            )}
+                          </div>
                         )}
                       </Link>
                     </TooltipTrigger>
@@ -223,7 +244,7 @@ export function Sidebar() {
                         side="right"
                         className="font-mono text-xs uppercase rounded-none border-brand-charcoal"
                       >
-                        <p>{item.name}</p>
+                        <p>{item.name} {item.badge ? `(${item.badge})` : ""}</p>
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -242,30 +263,29 @@ export function Sidebar() {
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href="/dashboard/templates">
-                      <button
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className={cn(
+                        "w-full flex items-center transition-all duration-200 group border border-dashed border-brand-charcoal/20 hover:border-brand-orange/50 hover:bg-brand-orange/5",
+                        isCollapsed
+                          ? "justify-center p-3 h-12 w-12 mx-auto"
+                          : "gap-3 p-3",
+                      )}
+                    >
+                      <div
                         className={cn(
-                          "w-full flex items-center transition-all duration-200 group border border-dashed border-brand-charcoal/20 hover:border-brand-orange/50 hover:bg-brand-orange/5",
-                          isCollapsed
-                            ? "justify-center p-3 h-12 w-12 mx-auto"
-                            : "gap-3 p-3",
+                          "flex items-center justify-center text-brand-charcoal/60 group-hover:text-brand-orange transition-colors",
+                          isCollapsed ? "" : "",
                         )}
                       >
-                        <div
-                          className={cn(
-                            "flex items-center justify-center text-brand-charcoal/60 group-hover:text-brand-orange transition-colors",
-                            isCollapsed ? "" : "",
-                          )}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </div>
-                        {!isCollapsed && (
-                          <span className="font-mono text-xs uppercase tracking-wider font-medium text-brand-charcoal/60 group-hover:text-brand-orange">
-                            New Architecture
-                          </span>
-                        )}
-                      </button>
-                    </Link>
+                        <Plus className="w-4 h-4" />
+                      </div>
+                      {!isCollapsed && (
+                        <span className="font-mono text-xs uppercase tracking-wider font-medium text-brand-charcoal/60 group-hover:text-brand-orange">
+                          New Architecture
+                        </span>
+                      )}
+                    </button>
                   </TooltipTrigger>
                   {isCollapsed && (
                     <TooltipContent
