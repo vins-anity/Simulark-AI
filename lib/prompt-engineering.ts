@@ -93,7 +93,7 @@ const COMPLEXITY_INDICATORS: Record<ComplexityLevel, string[]> = {
 };
 
 // Mode-specific constraints
-export type ArchitectureMode = "startup" | "corporate" | "enterprise";
+export type ArchitectureMode = "default" | "startup" | "corporate";
 
 const MODE_CONSTRAINTS: Record<
   ArchitectureMode,
@@ -109,6 +109,18 @@ const MODE_CONSTRAINTS: Record<
     focus: string;
   }
 > = {
+  default: {
+    maxComponents: 8,
+    minComponents: 4,
+    preferFullStack: false,
+    requireCDN: true,
+    requireLoadBalancer: false,
+    requireObservability: true,
+    costFocus: "balanced",
+    description:
+      "Default (Balanced) - Production-ready with balanced accuracy, comprehensiveness, and efficiency. Best for most use cases.",
+    focus: "Balanced approach - accuracy, speed, and completeness",
+  },
   startup: {
     maxComponents: 5,
     minComponents: 3,
@@ -122,18 +134,6 @@ const MODE_CONSTRAINTS: Record<
     focus: "Speed to market, cost optimization, rapid iteration",
   },
   corporate: {
-    maxComponents: 8,
-    minComponents: 4,
-    preferFullStack: false,
-    requireCDN: true,
-    requireLoadBalancer: false,
-    requireObservability: true,
-    costFocus: "balanced",
-    description:
-      "Corporate (Default) - Production-ready, maintainable, scalable. Industry best practices with proper monitoring.",
-    focus: "Production reliability, team scalability, maintainability",
-  },
-  enterprise: {
     maxComponents: 15,
     minComponents: 6,
     preferFullStack: false,
@@ -963,17 +963,37 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
     const nodeCount = context.currentNodes.length;
     const edgeCount = context.currentEdges?.length || 0;
 
+    // Separate architecture nodes from custom shapes/annotations
+    const architectureNodes = context.currentNodes.filter(
+      (n: any) => !["shape-rect", "shape-circle", "shape-diamond", "text"].includes(n.type),
+    );
+    const customNodes = context.currentNodes.filter(
+      (n: any) => ["shape-rect", "shape-circle", "shape-diamond", "text"].includes(n.type),
+    );
+
     currentArchitectureContext = `
 CURRENT ARCHITECTURE STATE:
 You are MODIFYING an existing architecture with ${nodeCount} components and ${edgeCount} connections.
 
-Existing Components:
-${context.currentNodes
+Existing Architecture Components (${architectureNodes.length}):
+${architectureNodes
   .map(
     (n: any) =>
       `- ${n.data?.label || n.id} (${n.type}): ${n.data?.description || "No description"}`,
   )
   .join("\n")}
+
+${customNodes.length > 0 ? `
+Custom Annotations & Shapes (${customNodes.length}):
+${customNodes
+  .map(
+    (n: any) =>
+      `- ${n.type === "text" ? `Text: "${n.data?.label || ""}"` : `Shape: ${n.data?.label || n.id} (${n.type})`}`,
+  )
+  .join("\n")}
+
+NOTE: Preserve these custom annotations when modifying the architecture. They represent user-added notes and visual elements.
+` : ""}
 
 IMPORTANT: ${operationInstructions}
 
@@ -981,7 +1001,8 @@ PRESERVATION RULES:
 1. Keep existing node IDs where possible
 2. Only modify components explicitly mentioned in the request
 3. Maintain connections unless they involve removed components
-4. Preserve the overall architecture pattern unless changing it entirely`;
+4. Preserve the overall architecture pattern unless changing it entirely
+5. Always preserve custom shapes and text annotations - these are user-created elements`;
   }
 
   // Build conversation context analysis

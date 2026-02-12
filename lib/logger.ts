@@ -1,7 +1,6 @@
-import pino, { type Logger, type LoggerOptions } from "pino";
 
 /**
- * Log levels supported by Pino
+ * Log levels
  */
 type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 
@@ -19,171 +18,58 @@ interface LogContext {
 }
 
 /**
- * Determine log level based on environment
- */
-function getLogLevel(): LogLevel {
-  if (process.env.LOG_LEVEL) {
-    return process.env.LOG_LEVEL as LogLevel;
-  }
-  return process.env.NODE_ENV === "production" ? "info" : "debug";
-}
-
-/**
- * Pino configuration options
- */
-const pinoOptions: LoggerOptions = {
-  level: getLogLevel(),
-  // Use pino-pretty in development for readable logs
-  transport:
-    process.env.NODE_ENV !== "production"
-      ? {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-            translateTime: "SYS:standard",
-            ignore: "pid,hostname",
-            messageFormat: "{msg}",
-          },
-        }
-      : undefined,
-  // Base fields included in every log
-  base: {
-    env: process.env.NODE_ENV,
-    service: "simulark-api",
-  },
-  // Timestamp format
-  timestamp: pino.stdTimeFunctions.isoTime,
-  // Custom log formatting
-  formatters: {
-    level: (label) => ({ level: label }),
-    bindings: (bindings) => ({
-      ...bindings,
-      node_version: process.version,
-    }),
-  },
-  // Redact sensitive fields
-  redact: {
-    paths: [
-      "req.headers.authorization",
-      "req.headers.cookie",
-      "req.headers['x-api-key']",
-      "password",
-      "token",
-      "apiKey",
-      "api_key",
-      "access_token",
-      "refresh_token",
-    ],
-    censor: "[REDACTED]",
-  },
-};
-
-/**
- * Create the base Pino logger instance
- */
-const baseLogger = pino(pinoOptions);
-
-/**
- * AppLogger - Wrapper around Pino with module context support
- * Provides a familiar API while leveraging Pino's performance
+ * AppLogger - Simplified logger using console methods
  */
 class AppLogger {
-  private logger: Logger;
   private moduleContext: LogContext;
 
-  constructor(logger: Logger, moduleContext: LogContext = {}) {
-    this.logger = logger;
+  constructor(moduleContext: LogContext = {}) {
     this.moduleContext = moduleContext;
   }
 
-  /**
-   * Merge context with module context
-   */
-  private mergeContext(context?: LogContext): LogContext {
-    return { ...this.moduleContext, ...context };
+  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
+    const mergedContext = { ...this.moduleContext, ...context };
+    const moduleStr = mergedContext.module ? `[${mergedContext.module}] ` : "";
+    const contextStr = Object.keys(mergedContext).length > (mergedContext.module ? 1 : 0) 
+      ? ` | ${JSON.stringify(mergedContext)}` 
+      : "";
+    return `${moduleStr}${message}${contextStr}`;
   }
 
-  /**
-   * Log trace level message
-   */
   trace(message: string, context?: LogContext): void {
-    this.logger.trace(this.mergeContext(context), message);
+    if (process.env.NODE_ENV !== "production") {
+      console.debug(`%cTRACE%c ${this.formatMessage("trace", message, context)}`, "color: #888", "color: inherit");
+    }
   }
 
-  /**
-   * Log debug level message
-   */
   debug(message: string, context?: LogContext): void {
-    this.logger.debug(this.mergeContext(context), message);
+    if (process.env.NODE_ENV !== "production") {
+      console.debug(`%cDEBUG%c ${this.formatMessage("debug", message, context)}`, "color: #007acc", "color: inherit");
+    }
   }
 
-  /**
-   * Log info level message
-   */
   info(message: string, context?: LogContext): void {
-    this.logger.info(this.mergeContext(context), message);
+    console.log(`%cINFO%c ${this.formatMessage("info", message, context)}`, "color: #28a745", "color: inherit");
   }
 
-  /**
-   * Log warning level message
-   */
   warn(message: string, context?: LogContext): void {
-    this.logger.warn(this.mergeContext(context), message);
+    console.warn(`%cWARN%c ${this.formatMessage("warn", message, context)}`, "color: #ffc107", "color: inherit");
   }
 
-  /**
-   * Log error level message with optional Error object
-   */
   error(message: string, error?: Error | unknown, context?: LogContext): void {
-    const mergedContext = this.mergeContext(context);
-
-    if (error instanceof Error) {
-      this.logger.error(
-        {
-          ...mergedContext,
-          err: {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          },
-        },
-        message,
-      );
-    } else if (error) {
-      this.logger.error({ ...mergedContext, error }, message);
-    } else {
-      this.logger.error(mergedContext, message);
-    }
+    const formattedMessage = this.formatMessage("error", message, context);
+    console.error(`%cERROR%c ${formattedMessage}`, "color: #dc3545", "color: inherit");
+    if (error) console.error(error);
   }
 
-  /**
-   * Log fatal level message - for critical errors
-   */
   fatal(message: string, error?: Error | unknown, context?: LogContext): void {
-    const mergedContext = this.mergeContext(context);
-
-    if (error instanceof Error) {
-      this.logger.fatal(
-        {
-          ...mergedContext,
-          err: {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          },
-        },
-        message,
-      );
-    } else {
-      this.logger.fatal(mergedContext, message);
-    }
+    const formattedMessage = this.formatMessage("fatal", message, context);
+    console.error(`%cFAFATAL%c ${formattedMessage}`, "background: #dc3545; color: white; padding: 2px 4px; border-radius: 2px", "color: #dc3545; font-weight: bold");
+    if (error) console.error(error);
   }
 
-  /**
-   * Create a child logger with additional module context
-   */
   child(module: string): AppLogger {
-    return new AppLogger(this.logger, {
+    return new AppLogger({
       ...this.moduleContext,
       module: this.moduleContext.module
         ? `${this.moduleContext.module}:${module}`
@@ -191,23 +77,16 @@ class AppLogger {
     });
   }
 
-  /**
-   * Create a child logger with request context
-   */
   withRequest(requestId: string, userId?: string): AppLogger {
-    return new AppLogger(this.logger, {
+    return new AppLogger({
       ...this.moduleContext,
       requestId,
       userId,
     });
   }
 
-  /**
-   * Time tracking helper
-   */
   time(label: string): { end: (context?: LogContext) => void } {
     const start = Date.now();
-
     return {
       end: (context?: LogContext) => {
         const duration = Date.now() - start;
@@ -216,9 +95,6 @@ class AppLogger {
     };
   }
 
-  /**
-   * Async function timing wrapper
-   */
   async withTiming<T>(
     label: string,
     fn: () => Promise<T>,
@@ -242,34 +118,14 @@ class AppLogger {
   }
 }
 
-/**
- * Default logger instance for app-wide use
- */
-export const logger = new AppLogger(baseLogger, { module: "app" });
+export const logger = new AppLogger({ module: "app" });
 
-/**
- * Create a module-specific logger
- */
 export function createLogger(module: string): AppLogger {
   return logger.child(module);
 }
 
-/**
- * Create a request-scoped logger with request ID
- */
-export function createRequestLogger(
-  requestId: string,
-  userId?: string,
-): AppLogger {
+export function createRequestLogger(requestId: string, userId?: string): AppLogger {
   return logger.withRequest(requestId, userId);
 }
 
-/**
- * Export the AppLogger class for type imports
- */
 export { AppLogger };
-
-/**
- * Export the base Pino logger for advanced use cases
- */
-export { baseLogger as pinoLogger };

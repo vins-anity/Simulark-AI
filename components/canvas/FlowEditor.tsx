@@ -46,12 +46,13 @@ import { GatewayNode } from "./nodes/GatewayNode";
 import { LoadbalancerNode } from "./nodes/LoadbalancerNode";
 import { MessagingNode } from "./nodes/MessagingNode";
 import { MonitoringNode } from "./nodes/MonitoringNode";
-import { NodeProperties } from "./nodes/NodeProperties";
 import { PaymentNode } from "./nodes/PaymentNode";
 import { QueueNode } from "./nodes/QueueNode";
 import { SecurityNode } from "./nodes/SecurityNode";
 import { ServiceNode } from "./nodes/ServiceNode";
+import { ShapeNode } from "./nodes/ShapeNode";
 import { StorageNode } from "./nodes/StorageNode";
+import { TextNode } from "./nodes/TextNode";
 import { VectorDBNode } from "./nodes/VectorDBNode";
 import { Button } from "@/components/ui/button";
 
@@ -59,10 +60,11 @@ interface FlowEditorProps {
   initialNodes?: any[];
   initialEdges?: any[];
   projectId: string;
+  onViewportChange?: (viewport: { x: number; y: number; zoom: number }) => void;
 }
 
 const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
-  ({ initialNodes = [], initialEdges = [], projectId }, ref) => {
+  ({ initialNodes = [], initialEdges = [], projectId, onViewportChange }, ref) => {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const { fitView, getNodes, getEdges, zoomIn, zoomOut } = useReactFlow();
@@ -431,6 +433,12 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           }
         }
       },
+      zoomIn: () => {
+        zoomIn({ duration: 200 });
+      },
+      zoomOut: () => {
+        zoomOut({ duration: 200 });
+      },
     }));
 
     const nodeTypes = useMemo(
@@ -456,6 +464,11 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         monitoring: MonitoringNode,
         cicd: CICDNode,
         security: SecurityNode,
+        // Custom shape and text nodes
+        "shape-rect": ShapeNode,
+        "shape-circle": ShapeNode,
+        "shape-diamond": ShapeNode,
+        text: TextNode,
       }),
       [],
     );
@@ -494,12 +507,6 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       [setEdges],
     );
 
-    const selectedNodes = useMemo(
-      () =>
-        nodes.filter((n): n is any & { selected: true } => n.selected === true),
-      [nodes],
-    );
-
     return (
       <div
         className={cn(
@@ -513,11 +520,16 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onMove={(_e, viewport) => onViewportChange?.(viewport)}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           fitView
           className="drafting-grid"
+          // Enable connection from all nodes
+          onNodeClick={(_e, node) => {
+            // Optionally select node on click
+          }}
         >
           <Background
             gap={24}
@@ -573,12 +585,6 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               </div>
             </Panel>
           )}
-
-          {selectedNodes.map((node) => (
-            <Panel key={node.id} position="top-right" className="mr-4 mt-16">
-              <NodeProperties id={node.id} data={node.data} type={node.type} />
-            </Panel>
-          ))}
         </ReactFlow>
       </div>
     );
@@ -592,6 +598,8 @@ export interface FlowEditorRef {
   autoLayout: (direction?: "DOWN" | "RIGHT") => Promise<void>;
   autoLayoutWithAlgorithm: (algorithm: LayoutAlgorithm) => Promise<void>;
   exportGraph: (format: "mermaid" | "png" | "pdf" | "svg") => Promise<void>;
+  zoomIn: () => void;
+  zoomOut: () => void;
   nodes: any[];
   edges: any[];
 }

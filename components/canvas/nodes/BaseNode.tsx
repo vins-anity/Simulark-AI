@@ -48,7 +48,8 @@ export function BaseNode({
     useSimulationStore();
   const { setNodes, getNodes } = useReactFlow();
   const nodeLabel = (data?.label as string) || label || "Node";
-  const nodeLogo = (data?.logo as string) || null;
+  // Check for logo (direct), techIcon (from enrichment), or fallback
+  const nodeLogo = (data?.logo as string) || (data?.techIcon as string) || null;
   const nodeTechLabel = (data?.techLabel as string) || null;
 
   const [contextMenu, setContextMenu] = useState<{

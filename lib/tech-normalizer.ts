@@ -719,6 +719,7 @@ export function enrichNodeWithTech(
       tech: tech.id,
       techLabel: tech.label,
       techIcon: tech.icon,
+      logo: tech.icon, // Also set logo for BaseNode compatibility
       techCategory: tech.category,
     };
   }

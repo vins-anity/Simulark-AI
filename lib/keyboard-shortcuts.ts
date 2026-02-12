@@ -15,10 +15,50 @@ export interface KeyboardShortcut {
 }
 
 /**
+ * Check if the current focus is on an input element
+ */
+function isInputElementFocused(): boolean {
+  const activeElement = document.activeElement;
+  if (!activeElement) return false;
+
+  const tagName = activeElement.tagName.toLowerCase();
+  const isEditable = (activeElement as HTMLElement).isContentEditable;
+
+  // Check for input-like elements
+  if (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    isEditable ||
+    activeElement.getAttribute("role") === "textbox"
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Check if the focus is within the canvas area
+ */
+function isCanvasFocused(): boolean {
+  const activeElement = document.activeElement;
+  if (!activeElement) return false;
+
+  // Check if we're inside the ReactFlow canvas
+  const reactFlowElement = activeElement.closest(".react-flow");
+  return !!reactFlowElement;
+}
+
+/**
  * Hook for registering keyboard shortcuts
  */
-export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
+export function useKeyboardShortcuts(
+  shortcuts: KeyboardShortcut[],
+  options: { requireCanvasFocus?: boolean } = {},
+) {
   const shortcutsRef = useRef(shortcuts);
+  const { requireCanvasFocus = false } = options;
 
   // Update ref when shortcuts change
   useEffect(() => {
@@ -27,6 +67,22 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Skip if focused on input elements (unless it's a save shortcut)
+      if (isInputElementFocused()) {
+        // Allow save shortcut even when in inputs
+        const isSaveShortcut =
+          (event.ctrlKey || event.metaKey) &&
+          event.key.toLowerCase() === "s";
+        if (!isSaveShortcut) {
+          return;
+        }
+      }
+
+      // If canvas focus is required, check if we're in the canvas
+      if (requireCanvasFocus && !isCanvasFocused()) {
+        return;
+      }
+
       const { key, ctrlKey, shiftKey, altKey, metaKey } = event;
 
       // Find matching shortcut
@@ -50,7 +106,7 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [requireCanvasFocus]);
 }
 
 /**
@@ -72,6 +128,7 @@ export interface CanvasShortcuts {
 
 /**
  * Hook for canvas keyboard shortcuts
+ * Only enables shortcuts when the canvas is focused (not when typing in inputs)
  */
 export function useCanvasShortcuts(actions: Partial<CanvasShortcuts>) {
   const shortcuts: KeyboardShortcut[] = [
@@ -166,7 +223,8 @@ export function useCanvasShortcuts(actions: Partial<CanvasShortcuts>) {
     },
   ];
 
-  useKeyboardShortcuts(shortcuts);
+  // Enable shortcuts only when canvas is focused (not in input fields)
+  useKeyboardShortcuts(shortcuts, { requireCanvasFocus: true });
 
   // Return shortcut list for help display
   return shortcuts.filter((s) => s.description);

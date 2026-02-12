@@ -109,9 +109,9 @@ export function AIAssistantPanel({
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
 
-  // Load initial settings or default (renamed from "default" to "corporate")
+  // Load initial settings or default mode
   const [chatMode, setChatModeState] = useState<ArchitectureMode>(
-    (initialMetadata?.mode as ArchitectureMode) || "corporate",
+    (initialMetadata?.mode as ArchitectureMode) || "default",
   );
 
   // Settings / Preferences
@@ -961,31 +961,28 @@ This architecture separates concerns across dedicated service layers, enabling i
                       <Building2 className="w-3.5 h-3.5 text-brand-blue" />
                     ) : (
                       <Icon
-                        icon="lucide:layout-template"
-                        className="w-3.5 h-3.5"
+                        icon="lucide:scale"
+                        className="w-3.5 h-3.5 text-brand-charcoal/60"
                       />
                     )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="start"
-                  className="w-40 bg-white border border-brand-charcoal/20 shadow-xl p-1"
+                  className="w-44 bg-white border border-brand-charcoal/20 shadow-xl p-1"
                 >
                   <div className="px-2 py-1.5 text-[9px] uppercase tracking-widest text-brand-charcoal/40 font-mono">
                     Output Mode
                   </div>
                   <DropdownMenuItem
-                    onClick={() => setChatMode("corporate")}
+                    onClick={() => setChatMode("default")}
                     className={cn(
                       "flex items-center gap-2 cursor-pointer text-xs font-mono",
-                      chatMode === "corporate" && "bg-brand-charcoal/5",
+                      chatMode === "default" && "bg-brand-charcoal/5",
                     )}
                   >
-                    <Icon
-                      icon="lucide:layout-template"
-                      className="w-3.5 h-3.5"
-                    />
-                    Corporate (Default)
+                    <Icon icon="lucide:scale" className="w-3.5 h-3.5" />
+                    Default (Balanced)
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setChatMode("startup")}

@@ -4,7 +4,7 @@ import { Icon } from "@iconify/react";
 import { Activity } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { getProject, saveProject } from "@/actions/projects";
 import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
@@ -16,6 +16,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   ResizableHandle,
@@ -23,9 +25,11 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import type { Project } from "@/lib/schema/graph";
-import { useSimulationStore } from "@/lib/store";
+import type { LayoutAlgorithm } from "@/lib/layout";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
+import { useSimulationStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Workstation Components
 // Workstation Components
@@ -36,7 +40,8 @@ function WorkstationHeader({
   onToggleTerminal,
   onExport,
   onExportSkill,
-  onAutolayout, // Renamed from onAutofix
+  onAutolayout,
+  onLayoutAlgorithm,
 }: {
   project: Project | null;
   saving: boolean;
@@ -45,6 +50,7 @@ function WorkstationHeader({
   onExport: (format: "mermaid" | "png" | "pdf" | "svg") => void;
   onExportSkill: () => void;
   onAutolayout: (direction: "DOWN" | "RIGHT") => void;
+  onLayoutAlgorithm: (algorithm: LayoutAlgorithm) => void;
 }) {
   const { chaosMode, setChaosMode } = useSimulationStore();
   if (!project)
@@ -179,26 +185,69 @@ function WorkstationHeader({
                 size="sm"
                 className="h-7 px-2 text-xs font-medium text-brand-charcoal/70 hover:bg-brand-charcoal/5 hover:text-brand-charcoal rounded-sm"
               >
+                <Icon icon="lucide:layers" className="w-3.5 h-3.5 mr-1.5" />
                 Layout
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-48 font-mono text-xs"
+              className="w-56 font-mono text-xs"
             >
+              <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-brand-charcoal/50">
+                Direction
+              </DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => onAutolayout("DOWN")}
                 className="cursor-pointer"
               >
-                <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" />{" "}
-                Auto-Layout (Vertical)
+                <Icon icon="lucide:arrow-down" className="w-3.5 h-3.5 mr-2" />
+                Vertical (TB)
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onAutolayout("RIGHT")}
                 className="cursor-pointer"
               >
-                <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" />{" "}
-                Auto-Layout (Horizontal)
+                <Icon icon="lucide:arrow-right" className="w-3.5 h-3.5 mr-2" />
+                Horizontal (LR)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[9px] uppercase tracking-widest text-brand-charcoal/50">
+                Algorithms
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => onLayoutAlgorithm("arch-pattern")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:git-branch" className="w-3.5 h-3.5 mr-2 text-brand-orange" />
+                Architecture Pattern
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onLayoutAlgorithm("dagre-hierarchy")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:list" className="w-3.5 h-3.5 mr-2" />
+                Hierarchical (Dagre)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onLayoutAlgorithm("radial")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:circle" className="w-3.5 h-3.5 mr-2" />
+                Radial Layout
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onLayoutAlgorithm("force")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:move" className="w-3.5 h-3.5 mr-2" />
+                Force-Directed
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onLayoutAlgorithm("grid")}
+                className="cursor-pointer"
+              >
+                <Icon icon="lucide:grid" className="w-3.5 h-3.5 mr-2" />
+                Grid Layout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -249,89 +298,13 @@ function WorkstationHeader({
           </div>
           <span>Lat: 12ms</span>
         </div>
-
-        <div className="h-4 w-px bg-brand-charcoal/10" />
-
-        {/* Deploy Action */}
-        <Button
-          size="sm"
-          className="h-8 rounded-none bg-brand-charcoal text-white font-mono text-[10px] uppercase tracking-widest hover:bg-brand-orange transition-all shadow-sm"
-        >
-          <Icon icon="lucide:rocket" className="w-3 h-3 mr-2" />
-          Deploy
-        </Button>
-
-        {/* Share Action */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 w-8 p-0 rounded-none border-brand-charcoal/20 text-brand-charcoal/60 hover:text-brand-charcoal hover:border-brand-charcoal/40"
-          onClick={() => navigator.clipboard.writeText(window.location.href)}
-          title="Copy Link"
-        >
-          <Icon icon="lucide:share-2" className="w-3.5 h-3.5" />
-        </Button>
       </div>
     </header>
   );
 }
 
-function ToolRail() {
-  return (
-    <div className="w-14 border-r border-brand-charcoal/10 bg-[#faf9f5] flex flex-col items-center py-4 gap-4 shrink-0 z-20 relative">
-      <div className="flex flex-col gap-2">
-        {[
-          { icon: "lucide:mouse-pointer-2", label: "Select" },
-          { icon: "lucide:hand", label: "Pan" },
-          { icon: "lucide:crop", label: "Slice" },
-        ].map((tool, i) => (
-          <button
-            key={i}
-            className={cn(
-              "w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal",
-              i === 0 && "bg-brand-charcoal/10 text-brand-charcoal",
-            )}
-            title={tool.label}
-          >
-            <Icon icon={tool.icon} className="w-4 h-4" />
-          </button>
-        ))}
-      </div>
-
-      <div className="w-8 h-px bg-brand-charcoal/10" />
-
-      <div className="flex flex-col gap-2">
-        {[
-          { icon: "lucide:square", label: "Node" },
-          { icon: "lucide:type", label: "Text" },
-          { icon: "lucide:image", label: "Image" },
-        ].map((tool, i) => (
-          <button
-            key={i}
-            className="w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal"
-            title={tool.label}
-          >
-            <Icon icon={tool.icon} className="w-4 h-4" />
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-auto flex flex-col gap-2">
-        <button
-          className="w-9 h-9 flex items-center justify-center rounded-sm transition-all hover:bg-brand-charcoal/5 text-brand-charcoal/60 hover:text-brand-charcoal"
-          title="Settings"
-        >
-          <Icon icon="lucide:settings-2" className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 interface ProjectPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default function ProjectPage({
@@ -345,6 +318,7 @@ export default function ProjectPage({
 
   // Terminal State
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     async function init() {
@@ -399,6 +373,10 @@ export default function ProjectPage({
 
   const handleAutolayout = (direction: "DOWN" | "RIGHT") => {
     flowEditorRef.current?.autoLayout(direction);
+  };
+
+  const handleLayoutAlgorithm = (algorithm: LayoutAlgorithm) => {
+    flowEditorRef.current?.autoLayoutWithAlgorithm(algorithm);
   };
 
   const handleExport = (format: "mermaid" | "png" | "pdf" | "svg") => {
@@ -476,10 +454,10 @@ export default function ProjectPage({
         onExport={handleExport}
         onExportSkill={handleExportSkill}
         onAutolayout={handleAutolayout}
+        onLayoutAlgorithm={handleLayoutAlgorithm}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
-        <ToolRail />
 
         <div className="flex-1 flex h-full relative">
           {/* Canvas Area */}
@@ -491,17 +469,24 @@ export default function ProjectPage({
               initialNodes={project.nodes}
               initialEdges={project.edges}
               projectId={id}
+              onViewportChange={(viewport) => setZoom(viewport.zoom)}
             />
 
             {/* Overlay Canvas Controls */}
             <div className="absolute bottom-6 left-6 p-1 bg-white border border-brand-charcoal/10 shadow-sm flex items-center gap-1 rounded-sm z-10">
-              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60">
+              <button 
+                onClick={() => flowEditorRef.current?.zoomOut()}
+                className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"
+              >
                 <Icon icon="lucide:minus" className="w-4 h-4" />
               </button>
               <span className="font-mono text-[10px] w-12 text-center text-brand-charcoal/60">
-                100%
+                {Math.round(zoom * 100)}%
               </span>
-              <button className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60">
+              <button 
+                onClick={() => flowEditorRef.current?.zoomIn()}
+                className="w-8 h-8 flex items-center justify-center hover:bg-brand-charcoal/5 text-brand-charcoal/60"
+              >
                 <Icon icon="lucide:plus" className="w-4 h-4" />
               </button>
             </div>
@@ -531,3 +516,4 @@ export default function ProjectPage({
     </div>
   );
 }
+

@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
       detectedIntent: `Architecture: ${detection.type}, Complexity: ${complexity}`,
       currentNodes,
       currentEdges,
-      mode: (mode || "corporate") as ArchitectureMode,
+      mode: (mode || "default") as ArchitectureMode,
       quickMode: false,
       conversationHistory,
       operationType,
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
     const reasoningLevel =
       mode === "startup"
         ? "disabled"
-        : mode === "corporate" || complexity === "complex"
+        : mode === "enterprise" || complexity === "complex"
           ? "enabled"
           : "low";
 

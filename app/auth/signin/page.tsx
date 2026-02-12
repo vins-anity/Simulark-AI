@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { getBaseURL } from "@/lib/url";
 import { useState } from "react";
 
 // Technical background grid component
@@ -230,7 +231,7 @@ export default function SignInPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${getBaseURL()}/auth/callback`,
         },
       });
 
