@@ -3,15 +3,15 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, Minus } from "lucide-react";
+import { Check, Minus, Zap, Shield, Crown } from "lucide-react";
 
 const contracts = [
   {
     id: "P-100-X",
     name: "Doodle",
-    subtitle: "FREE_TIER",
+    subtitle: "EXPERIMENTAL",
     price: "0",
-    period: "mo",
+    period: "MO",
     description: "For experimental prototyping.",
     features: [
       "Up to 3 Projects",
@@ -20,17 +20,17 @@ const contracts = [
       "Public Exports (SVG, PNG, PDF, Mermaid, Agent Skills)",
       "GLM-4.7-Flash (10x Daily Limit)",
     ],
-    limits: ["Private Projects", "Auto-Layout", "Chaos Mode"],
-    cta: "INITIALIZE",
+    limits: ["Private Projects", "Auto-Layout", "Chaos Mode", "Code Export"],
+    cta: "[ INITIALIZE_FREE ]",
+    icon: Zap,
     popular: false,
-    dark: false,
   },
   {
     id: "P-200-X",
     name: "Sketch",
     subtitle: "DEVS_CHOICE",
     price: "5",
-    period: "mo",
+    period: "MO",
     description: "For professional architects.",
     features: [
       "Unlimited Projects",
@@ -42,16 +42,16 @@ const contracts = [
       "Priority Email Support",
     ],
     limits: ["Terraform Export", "Team Collaboration"],
-    cta: "UPGRADE CAPACITY",
+    cta: "[ UPGRADE_CAPACITY ]",
+    icon: Crown,
     popular: true,
-    dark: false,
   },
   {
     id: "P-300-X",
     name: "Blueprint",
     subtitle: "LIFETIME",
     price: "10",
-    period: "one-time",
+    period: "ONE-TIME",
     description: "Forever access for mission-critical scale.",
     features: [
       "Everything in Sketch, Forever",
@@ -59,12 +59,12 @@ const contracts = [
       "Priority Generation Queue",
       "Private Mode (Zero Data Retention)",
       "Claude Opus 4.5",
-      "Code Generation/Export (soon)",
+      "Code Generation/Export (BETA)",
     ],
     limits: [],
-    cta: "MINT BLUEPRINT",
+    cta: "[ MINT_BLUEPRINT ]",
+    icon: Shield,
     popular: false,
-    dark: true,
   },
 ];
 
@@ -75,165 +75,112 @@ function ContractCard({
   contract: (typeof contracts)[0];
   index: number;
 }) {
+  const Icon = contract.icon;
+
   return (
     <motion.div
-      className={`relative ${contract.popular ? "z-10" : ""}`}
+      className="relative group"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.15 }}
     >
-      {/* Popular Badge - DEVS CHOICE style */}
+      {/* Popular Badge */}
       {contract.popular && (
-        <div className="absolute -top-3 right-0 z-20">
-          <span className="font-mono text-[9px] uppercase tracking-[0.15em] bg-brand-charcoal text-white px-3 py-1.5">
-            {contract.subtitle}
-          </span>
-        </div>
-      )}
-
-      {/* Lifetime Badge - Blueprint */}
-      {contract.dark && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-          <span className="font-mono text-[9px] uppercase tracking-[0.15em] bg-[#c67b5c] text-white px-4 py-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] bg-brand-orange text-white px-4 py-1.5">
             {contract.subtitle}
           </span>
         </div>
       )}
 
+      {/* Card Container */}
       <div
-        className={`h-full border relative ${
-          contract.dark
-            ? "bg-[#1a2332] border-[#c67b5c]"
-            : contract.popular
-              ? "bg-white border-brand-charcoal"
-              : "bg-white border-brand-charcoal/10"
+        className={`h-full border bg-white relative transition-all duration-300 ${
+          contract.popular
+            ? "border-brand-orange"
+            : "border-brand-charcoal/10 group-hover:border-brand-charcoal/30"
         }`}
       >
-        {/* Contract Header */}
-        <div
-          className={`p-6 border-b ${
-            contract.dark ? "border-white/10" : "border-brand-charcoal/5"
-          }`}
-        >
+        {/* Corner Accents */}
+        <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-brand-charcoal/20" />
+        <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-brand-charcoal/20" />
+        <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-brand-charcoal/20" />
+        <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-brand-charcoal/20" />
+
+        {/* Header */}
+        <div className="p-6 border-b border-brand-charcoal/5">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <span
-                className={`font-mono text-[9px] uppercase tracking-wider block mb-1 ${
-                  contract.dark ? "text-white/40" : "text-brand-charcoal/40"
-                }`}
-              >
+              <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40 block mb-1">
                 REF: {contract.id}
               </span>
-              <h3
-                className={`font-poppins text-2xl font-bold tracking-tight ${
-                  contract.dark ? "text-white" : "text-brand-charcoal"
-                }`}
-              >
+              <h3 className="font-mono text-xl font-bold text-brand-charcoal uppercase tracking-wide">
                 {contract.name}
               </h3>
             </div>
-            {!contract.popular && !contract.dark && (
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30">
+            {!contract.popular && (
+              <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/30">
                 {contract.subtitle}
               </span>
             )}
           </div>
 
-          <p
-            className={`font-lora italic text-sm mb-6 ${
-              contract.dark ? "text-white/50" : "text-brand-charcoal/50"
-            }`}
-          >
+          <p className="font-lora text-brand-charcoal/60 italic text-sm mb-6">
             {contract.description}
           </p>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-1">
-            <span
-              className={`font-mono text-lg ${
-                contract.dark ? "text-[#c67b5c]" : "text-brand-charcoal/40"
-              }`}
-            >
-              $
-            </span>
-            <span
-              className={`font-poppins text-6xl font-bold tracking-tight ${
-                contract.dark ? "text-[#c67b5c]" : "text-brand-charcoal"
-              }`}
-            >
+          {/* Price Block */}
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-lg text-brand-charcoal/40">$</span>
+            <span className="font-poppins text-5xl font-bold text-brand-charcoal tracking-tight">
               {contract.price}
             </span>
-            <span
-              className={`font-mono text-sm ${
-                contract.dark ? "text-white/40" : "text-brand-charcoal/40"
-              }`}
-            >
+            <span className="font-mono text-xs uppercase tracking-wider text-brand-charcoal/40">
               /{contract.period}
             </span>
           </div>
         </div>
 
-        {/* Features */}
-        <div className={`p-6 ${contract.dark ? "bg-[#1a2332]" : "bg-white"}`}>
-          <span
-            className={`font-mono text-[9px] uppercase tracking-[0.15em] block mb-4 ${
-              contract.dark ? "text-white/30" : "text-brand-charcoal/40"
-            }`}
-          >
-            // INCLUDED
+        {/* Features Section */}
+        <div className="p-6">
+          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40 block mb-4">
+            // INCLUDED_RESOURCES
           </span>
 
           <ul className="space-y-3 mb-6">
-            {contract.features.map((feature) => (
-              <li key={feature} className="flex items-start gap-3">
-                <div
-                  className={`w-4 h-4 flex items-center justify-center shrink-0 mt-0.5 ${
-                    contract.dark ? "text-[#c67b5c]" : "text-brand-charcoal"
-                  }`}
-                >
-                  <Check className="w-3.5 h-3.5" />
+            {contract.features.map((feature, i) => (
+              <motion.li
+                key={feature}
+                className="flex items-start gap-3"
+                initial={{ opacity: 0, x: -10 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 + i * 0.05 }}
+              >
+                <div className="w-4 h-4 border border-brand-charcoal/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-2.5 h-2.5 text-brand-charcoal" />
                 </div>
-                <span
-                  className={`text-sm leading-relaxed ${
-                    contract.dark ? "text-white/80" : "text-brand-charcoal/70"
-                  }`}
-                >
+                <span className="text-brand-charcoal/70 text-sm leading-relaxed">
                   {feature}
                 </span>
-              </li>
+              </motion.li>
             ))}
           </ul>
 
-          {/* Limits */}
+          {/* Limits Section */}
           {contract.limits.length > 0 && (
             <>
-              <span
-                className={`font-mono text-[9px] uppercase tracking-[0.15em] block mb-4 ${
-                  contract.dark ? "text-white/20" : "text-brand-charcoal/30"
-                }`}
-              >
-                // NOT INCLUDED
+              <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/30 block mb-4">
+                // LIMITATIONS
               </span>
               <ul className="space-y-2 mb-6">
                 {contract.limits.map((limit) => (
                   <li key={limit} className="flex items-start gap-3">
-                    <div
-                      className={`w-4 h-4 flex items-center justify-center shrink-0 mt-0.5 ${
-                        contract.dark
-                          ? "text-white/20"
-                          : "text-brand-charcoal/20"
-                      }`}
-                    >
-                      <Minus className="w-3 h-3" />
+                    <div className="w-4 h-4 border border-brand-charcoal/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Minus className="w-2.5 h-2.5 text-brand-charcoal/30" />
                     </div>
-                    <span
-                      className={`text-sm line-through ${
-                        contract.dark
-                          ? "text-white/30"
-                          : "text-brand-charcoal/30"
-                      }`}
-                    >
+                    <span className="text-brand-charcoal/40 text-sm line-through">
                       {limit}
                     </span>
                   </li>
@@ -242,32 +189,31 @@ function ContractCard({
             </>
           )}
 
-          {/* CTA */}
+          {/* CTA Button */}
           <Link href="/auth/signin">
             <Button
-              className={`w-full h-14 font-mono text-xs uppercase tracking-[0.15em] rounded-none border-0 transition-all duration-300 ${
-                contract.dark
-                  ? "bg-[#c67b5c] hover:bg-[#b36a4d] text-white"
-                  : contract.popular
-                    ? "bg-white border-2 border-brand-charcoal hover:bg-brand-charcoal text-brand-charcoal hover:text-white"
-                    : "bg-white border-2 border-brand-charcoal hover:bg-brand-charcoal text-brand-charcoal hover:text-white"
+              className={`w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none border-0 transition-all duration-300 ${
+                contract.popular
+                  ? "bg-brand-charcoal text-white hover:bg-brand-orange"
+                  : "bg-transparent border-2 border-brand-charcoal text-brand-charcoal hover:bg-brand-charcoal hover:text-white"
               }`}
-              variant="outline"
+              variant={contract.popular ? "default" : "outline"}
             >
-              {contract.cta}
+              <span className="text-white/40 group-hover:text-white/40">[</span>
+              <span className="mx-2">
+                {contract.popular
+                  ? "UPGRADE_CAPACITY"
+                  : contract.cta.replace(/[\[\] ]/g, "")}
+              </span>
+              <span className="text-white/40 group-hover:text-white/40">]</span>
             </Button>
           </Link>
         </div>
 
-        {/* Corner Accents */}
-        {!contract.dark && (
-          <>
-            <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-brand-charcoal/10" />
-            <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-brand-charcoal/10" />
-            <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-brand-charcoal/10" />
-            <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-brand-charcoal/10" />
-          </>
-        )}
+        {/* Bottom Status Line */}
+        <div
+          className={`h-0.5 ${contract.popular ? "bg-brand-orange" : "bg-brand-charcoal/10"}`}
+        />
       </div>
     </motion.div>
   );
@@ -275,22 +221,23 @@ function ContractCard({
 
 export function ResourceContracts() {
   return (
-    <section className="py-32 bg-white relative overflow-hidden">
-      {/* Background */}
+    <section className="py-32 bg-[#faf9f5] relative overflow-hidden">
+      {/* Background Grid */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-10"
+        className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.05) 1px, transparent 1px)
+            linear-gradient(to right, rgba(26,26,26,0.04) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(26,26,26,0.04) 1px, transparent 1px)
           `,
-          backgroundSize: "120px 100%",
+          backgroundSize: "80px 80px",
         }}
       />
 
       <div className="container mx-auto px-6 relative z-10">
-        {/* Header */}
+        {/* Section Header */}
         <motion.div
-          className="mb-16 text-center"
+          className="mb-16"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -304,8 +251,8 @@ export function ResourceContracts() {
               LEVELS
             </span>
           </h2>
-          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-xl mx-auto">
-            Start free. Upgrade when you need more power.
+          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-2xl">
+            Transparent pricing. No hidden fees. Scale as you grow.
           </p>
         </motion.div>
 
@@ -316,16 +263,25 @@ export function ResourceContracts() {
           ))}
         </div>
 
-        {/* Footer Note */}
+        {/* Bottom Info */}
         <motion.div
-          className="mt-12 text-center"
+          className="mt-16 pt-8 border-t border-brand-charcoal/10"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-brand-charcoal/30">
-            All plans include SSL Encryption • Daily Backups • Export Anytime
-          </p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-brand-charcoal/30">
+              All plans include: SSL Encryption • Daily Backups • 99.9% Uptime
+              SLA
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-brand-green rounded-full animate-pulse" />
+              <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40">
+                SECURE_CHECKOUT
+              </span>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>
