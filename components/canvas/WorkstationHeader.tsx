@@ -216,7 +216,8 @@ export function WorkstationHeader({
                     }}
                     className={cn(
                       "cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 flex justify-between",
-                      currentLayoutIndex === index && "bg-neutral-50 border-l-4 border-brand-orange",
+                      currentLayoutIndex === index &&
+                        "bg-neutral-50 border-l-4 border-brand-orange",
                     )}
                   >
                     <span className="flex items-center">
@@ -241,10 +242,15 @@ export function WorkstationHeader({
             "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
             chaosMode
               ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
-              : "bg-white border-brand-charcoal/10 text-brand-charcoal/40 hover:bg-brand-charcoal hover:text-white"
+              : "bg-white border-brand-charcoal/10 text-brand-charcoal/40 hover:bg-brand-charcoal hover:text-white",
           )}
         >
-          <Zap className={cn("w-3.5 h-3.5", chaosMode && "fill-current animate-pulse")} />
+          <Zap
+            className={cn(
+              "w-3.5 h-3.5",
+              chaosMode && "fill-current animate-pulse",
+            )}
+          />
           <span>{chaosMode ? "CHAOS_MODE:ON" : "SYSTEM_SIM"}</span>
         </Button>
 

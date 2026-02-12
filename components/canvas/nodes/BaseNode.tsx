@@ -191,8 +191,7 @@ export function BaseNode({
           // Degraded state
           isDegraded && "border-brand-orange/60",
           // Recovering state
-          isRecovering &&
-            "border-brand-green/60 animate-pulse",
+          isRecovering && "border-brand-green/60 animate-pulse",
           className,
         )}
       >
@@ -210,12 +209,12 @@ export function BaseNode({
 
         {/* Technical Header Band */}
         <div className="h-2 border-b-2 border-brand-charcoal bg-brand-charcoal/80 flex items-center justify-between px-3">
-           <div className="flex gap-1">
+          <div className="flex gap-1">
             <div className="w-1.5 h-1.5 bg-white/20" />
             <div className="w-1.5 h-1.5 bg-white/20" />
           </div>
           <span className="font-mono text-[9px] text-white/40 uppercase tracking-[0.2em]">
-            SYSTEM_NODE // ARCH_{id.slice(0,4)}
+            SYSTEM_NODE // ARCH_{id.slice(0, 4)}
           </span>
         </div>
 
@@ -242,7 +241,7 @@ export function BaseNode({
             {/* Title & Metadata */}
             <div className="flex flex-col min-w-0 flex-1">
               <div className="flex flex-col gap-0.5">
-                 <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
+                <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
                   {nodeTechLabel || (data?.tech as string) || "GENERIC_SRV"}
                 </span>
                 {isEditingLabel ? (
@@ -273,18 +272,20 @@ export function BaseNode({
 
           {/* Technical Data Fields */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-brand-charcoal/10 pt-4 px-1 font-mono">
-             <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0.5">
               <span className="text-[8px] opacity-40 uppercase">Class</span>
               <span className="text-[10px] font-bold uppercase truncate">
                 {(data?.serviceType as string) || type || "SERVICE"}
               </span>
             </div>
-             <div className="flex flex-col gap-0.5 text-right">
+            <div className="flex flex-col gap-0.5 text-right">
               <span className="text-[8px] opacity-40 uppercase">Status</span>
-              <span className={cn(
-                "text-[10px] font-bold uppercase",
-                isKilled ? "text-red-500" : "text-brand-green"
-              )}>
+              <span
+                className={cn(
+                  "text-[10px] font-bold uppercase",
+                  isKilled ? "text-red-500" : "text-brand-green",
+                )}
+              >
                 {isKilled ? "OFFLINE" : "STABLE"}
               </span>
             </div>
@@ -292,11 +293,11 @@ export function BaseNode({
 
           {/* Infrastructure Metrics (Mock Readout) */}
           <div className="bg-neutral-50 border border-brand-charcoal/5 p-2 font-mono text-[9px] flex items-center justify-between opacity-60">
-             <div className="flex items-center gap-2">
-                <Cpu className="w-3 h-3" />
-                <span>LOAD: {isKilled ? "0.00" : "1.42"}%</span>
-             </div>
-             <span>0x{id.slice(-4).toUpperCase()}</span>
+            <div className="flex items-center gap-2">
+              <Cpu className="w-3 h-3" />
+              <span>LOAD: {isKilled ? "0.00" : "1.42"}%</span>
+            </div>
+            <span>0x{id.slice(-4).toUpperCase()}</span>
           </div>
         </div>
 

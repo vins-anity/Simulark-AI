@@ -783,31 +783,47 @@ export function AIAssistantPanel({
           className="w-full flex items-center justify-between group"
         >
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] text-brand-charcoal/50 uppercase tracking-wider">Channel:</span>
+            <span className="font-mono text-[9px] text-brand-charcoal/50 uppercase tracking-wider">
+              Channel:
+            </span>
             <span className="font-mono text-[11px] font-black uppercase tracking-wider text-brand-charcoal group-hover:text-brand-orange transition-colors truncate max-w-[180px]">
               {currentChat?.title || "UNSET"}
             </span>
           </div>
-          <ChevronDown className={cn("w-4 h-4 text-brand-charcoal/40 transition-transform duration-200", showChatList && "rotate-180")} />
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-brand-charcoal/40 transition-transform duration-200",
+              showChatList && "rotate-180",
+            )}
+          />
         </button>
 
         <AnimatePresence>
           {showChatList && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }} 
-              animate={{ height: "auto", opacity: 1 }} 
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
               <div className="pt-2 pb-1 space-y-0.5 border-t border-brand-charcoal/10 mt-2">
-                {chats.map(chat => (
-                  <button key={chat.id} onClick={() => { setCurrentChatId(chat.id); setShowChatList(false); }}
+                {chats.map((chat) => (
+                  <button
+                    key={chat.id}
+                    onClick={() => {
+                      setCurrentChatId(chat.id);
+                      setShowChatList(false);
+                    }}
                     className={cn(
                       "w-full text-left font-mono text-[10px] uppercase py-1.5 px-2 hover:bg-brand-orange/10 transition-all rounded-sm",
-                      currentChatId === chat.id ? "text-brand-orange font-black bg-brand-orange/5" : "text-brand-charcoal/60"
+                      currentChatId === chat.id
+                        ? "text-brand-orange font-black bg-brand-orange/5"
+                        : "text-brand-charcoal/60",
                     )}
                   >
-                    <span className="inline-block w-3">{currentChatId === chat.id ? ">" : " "}</span>
+                    <span className="inline-block w-3">
+                      {currentChatId === chat.id ? ">" : " "}
+                    </span>
                     {chat.title}
                   </button>
                 ))}
@@ -824,15 +840,15 @@ export function AIAssistantPanel({
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-25 text-center">
-             <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal mb-5 flex items-center justify-center animate-pulse">
-                <Bot className="w-10 h-10" />
-             </div>
-             <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed">
-               Waiting for operator input
-             </p>
-             <p className="font-mono text-[9px] text-brand-charcoal/60 mt-1">
-               [ STANDBY_MODE ]
-             </p>
+            <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal mb-5 flex items-center justify-center animate-pulse">
+              <Bot className="w-10 h-10" />
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed">
+              Waiting for operator input
+            </p>
+            <p className="font-mono text-[9px] text-brand-charcoal/60 mt-1">
+              [ STANDBY_MODE ]
+            </p>
           </div>
         ) : (
           messages.map((message) => (
@@ -851,10 +867,14 @@ export function AIAssistantPanel({
                 {message.role === "assistant" && (
                   <div className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
                 )}
-                <span className={cn(
-                  "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
-                  message.role === "user" ? "text-brand-charcoal/50" : "text-brand-orange"
-                )}>
+                <span
+                  className={cn(
+                    "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
+                    message.role === "user"
+                      ? "text-brand-charcoal/50"
+                      : "text-brand-orange",
+                  )}
+                >
                   {message.role === "user" ? "[ OPERATOR ]" : "[ SYSTEM ]"}
                 </span>
                 {message.role === "user" && (
@@ -873,25 +893,27 @@ export function AIAssistantPanel({
                     "px-3 py-2.5 shadow-sm",
                     message.role === "user"
                       ? "rounded-tl-xl rounded-bl-xl rounded-br-xl"
-                      : "rounded-tr-xl rounded-br-xl rounded-bl-xl"
+                      : "rounded-tr-xl rounded-br-xl rounded-bl-xl",
                   )}
                 >
                   {/* Copy button for assistant messages */}
-                  {message.role === "assistant" && message.content !== "__LOADING__" && (
-                    <button
-                      onClick={() => copyToClipboard(message.content)}
-                      className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/10 rounded"
-                      title="Copy to clipboard"
-                    >
-                      <Copy className="w-3 h-3 text-brand-charcoal/40" />
-                    </button>
-                  )}
+                  {message.role === "assistant" &&
+                    message.content !== "__LOADING__" && (
+                      <button
+                        onClick={() => copyToClipboard(message.content)}
+                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/10 rounded"
+                        title="Copy to clipboard"
+                      >
+                        <Copy className="w-3 h-3 text-brand-charcoal/40" />
+                      </button>
+                    )}
 
                   {message.role === "assistant" ? (
                     message.content === "__LOADING__" ? (
                       <LoadingState />
                     ) : (
-                      <div className="prose prose-sm max-w-none font-mono text-[10px] leading-relaxed
+                      <div
+                        className="prose prose-sm max-w-none font-mono text-[10px] leading-relaxed
                         prose-p:my-1.5 prose-p:text-brand-charcoal/90
                         prose-headings:font-black prose-headings:uppercase prose-headings:tracking-[0.08em] prose-headings:text-brand-charcoal prose-headings:mt-3 prose-headings:mb-2
                         prose-h1:text-sm prose-h2:text-xs prose-h3:text-[11px]
@@ -899,7 +921,8 @@ export function AIAssistantPanel({
                         prose-ul:my-1.5 prose-ul:space-y-0.5
                         prose-li:my-0 prose-li:text-brand-charcoal/80
                         prose-code:text-[9px] prose-code:bg-brand-charcoal/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                        prose-pre:bg-brand-charcoal prose-pre:text-white prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2">
+                        prose-pre:bg-brand-charcoal prose-pre:text-white prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2"
+                      >
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     )
@@ -923,36 +946,51 @@ export function AIAssistantPanel({
         >
           {/* Top Row: Controls & Model */}
           <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 pb-1.5">
-             {/* Mode Selector */}
-             <div className="flex gap-1">
-               {(["default", "startup", "corporate"] as const).map((mode) => (
-                 <button
-                   key={mode}
-                   type="button"
-                   onClick={() => setChatMode(mode)}
-                   className={cn(
-                     "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm",
-                     chatMode === mode
-                       ? "bg-brand-charcoal text-white font-black"
-                       : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5"
-                   )}
-                 >
-                   {mode === "corporate" ? "ENT" : mode}
-                 </button>
-               ))}
-             </div>
+            {/* Mode Selector */}
+            <div className="flex gap-1">
+              {(["default", "startup", "corporate"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setChatMode(mode)}
+                  className={cn(
+                    "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm",
+                    chatMode === mode
+                      ? "bg-brand-charcoal text-white font-black"
+                      : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5",
+                  )}
+                >
+                  {mode === "corporate" ? "ENTERPRISE" : mode}
+                </button>
+              ))}
+            </div>
 
-             {/* Model Selector */}
-             <Select value={model} onValueChange={setModel}>
-               <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 bg-neutral-50 font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal transition-colors gap-2 hover:bg-white hover:border-brand-charcoal/40 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none">
-                 <SelectValue />
-               </SelectTrigger>
-               <SelectContent className="rounded-none border-2 border-brand-charcoal font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)]">
-                 <SelectItem value="glm-4.5-air" className="text-[10px] uppercase">GLM_4.5_AIR</SelectItem>
-                 <SelectItem value="glm-4.7-flash" className="text-[10px] uppercase">GLM_4.7_FLASH</SelectItem>
-                 <SelectItem value="deepseek-ai" className="text-[10px] uppercase">DEEPSEEK_V3</SelectItem>
-               </SelectContent>
-             </Select>
+            {/* Model Selector */}
+            <Select value={model} onValueChange={setModel}>
+              <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 bg-neutral-50 font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal transition-colors gap-2 hover:bg-white hover:border-brand-charcoal/40 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-none border-2 border-brand-charcoal font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)]">
+                <SelectItem
+                  value="glm-4.5-air"
+                  className="text-[10px] uppercase"
+                >
+                  GLM_4.5_AIR
+                </SelectItem>
+                <SelectItem
+                  value="glm-4.7-flash"
+                  className="text-[10px] uppercase"
+                >
+                  GLM_4.7_FLASH
+                </SelectItem>
+                <SelectItem
+                  value="deepseek-ai"
+                  className="text-[10px] uppercase"
+                >
+                  DEEPSEEK_V3
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Input & Action Row */}
@@ -960,38 +998,49 @@ export function AIAssistantPanel({
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
               placeholder="[ ENTER CMD ]"
               className="flex-1 bg-transparent border-none p-1.5 font-mono text-[11px] uppercase tracking-wider placeholder:text-brand-charcoal/25 focus:outline-none focus:ring-0 min-h-[36px] max-h-[140px] resize-none leading-relaxed"
               rows={1}
             />
-            
+
             <div className="flex flex-col justify-end">
-               <button
-                  type="submit"
-                  disabled={!inputValue.trim() || isGenerating}
-                  className={cn(
-                    "h-8 px-3 flex items-center justify-center font-mono font-black uppercase text-[9px] tracking-[0.12em] transition-all duration-200",
-                    "border-2 border-brand-charcoal bg-brand-charcoal text-white",
-                    "hover:bg-brand-orange hover:border-brand-orange hover:shadow-md",
-                    "active:scale-95",
-                    "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100",
-                  )}
-                  title="TRANSMIT"
-                >
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : "SEND"}
-                </button>
+              <button
+                type="submit"
+                disabled={!inputValue.trim() || isGenerating}
+                className={cn(
+                  "h-8 px-3 flex items-center justify-center font-mono font-black uppercase text-[9px] tracking-[0.12em] transition-all duration-200",
+                  "border-2 border-brand-charcoal bg-brand-charcoal text-white",
+                  "hover:bg-brand-orange hover:border-brand-orange hover:shadow-md",
+                  "active:scale-95",
+                  "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100",
+                )}
+                title="TRANSMIT"
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  "SEND"
+                )}
+              </button>
             </div>
           </div>
         </form>
-        
+
         {/* Status bar */}
         <div className="flex items-center justify-between mt-1.5 px-1">
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isGenerating ? "bg-brand-orange animate-pulse" : "bg-green-500"
-            )} />
+            <div
+              className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isGenerating ? "bg-brand-orange animate-pulse" : "bg-green-500",
+              )}
+            />
             <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40">
               {isGenerating ? "PROCESSING..." : "READY"}
             </span>
@@ -1001,8 +1050,6 @@ export function AIAssistantPanel({
           </span>
         </div>
       </div>
-
-
     </div>
   );
 }

@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
     const reasoningLevel =
       mode === "startup"
         ? "disabled"
-        : mode === "enterprise" || complexity === "complex"
+        : mode === "corporate" || complexity === "complex"
           ? "enabled"
           : "low";
 

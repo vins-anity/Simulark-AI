@@ -28,7 +28,7 @@
   --border-accent: rgba(217, 119, 87, 0.3);
 
   /* Brand Colors */
-  --brand-orange: #d97757;
+  --brand-orange: #ff4d00;
   --brand-blue: #6a9bcc;
   --brand-green: #788c5d;
   --brand-charcoal: #141413;
@@ -96,7 +96,7 @@
   --border-accent: rgba(217, 119, 87, 0.4);
 
   /* Brand Colors - adjusted for dark */
-  --brand-orange: #e88a6a;
+  --brand-orange: #ff5c1a;
   --brand-blue: #7daed6;
   --brand-green: #8ba06e;
   --brand-charcoal: #faf9f5;
@@ -804,8 +804,14 @@ a.inline,
 
 /* Terminal cursor blink effect */
 @keyframes terminal-cursor {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .terminal-cursor::after {
@@ -816,10 +822,11 @@ a.inline,
 
 /* Status indicator pulse */
 @keyframes status-pulse {
-  0%, 100% { 
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(120, 140, 93, 0.4);
   }
-  50% { 
+  50% {
     box-shadow: 0 0 0 4px rgba(120, 140, 93, 0);
   }
 }

@@ -175,14 +175,16 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          <motion.h1 
+          <motion.h1
             variants={itemVariants}
             className="text-7xl md:text-8xl font-poppins font-bold text-brand-charcoal uppercase tracking-tighter leading-[0.85] mb-6 text-center"
           >
-            Mission<br />Control
+            Mission
+            <br />
+            Control
           </motion.h1>
 
-          <motion.p 
+          <motion.p
             variants={itemVariants}
             className="text-lg md:text-xl text-brand-charcoal/60 font-lora italic text-center max-w-2xl"
           >
@@ -293,7 +295,8 @@ export default function DashboardPage() {
             {totalPages > 1 && (
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-mono font-bold text-brand-charcoal/30 tracking-widest uppercase">
-                  PAGE: {currentPage.toString().padStart(2, '0')} / {totalPages.toString().padStart(2, '0')}
+                  PAGE: {currentPage.toString().padStart(2, "0")} /{" "}
+                  {totalPages.toString().padStart(2, "0")}
                 </span>
                 <div className="flex border border-brand-charcoal divide-x divide-brand-charcoal">
                   <button

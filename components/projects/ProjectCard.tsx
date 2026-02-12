@@ -37,7 +37,7 @@ export function ProjectCard({
     </div>
   );
 
-  const moduleId = `MOD-${(index + 1).toString().padStart(3, '0')}`;
+  const moduleId = `MOD-${(index + 1).toString().padStart(3, "0")}`;
 
   return (
     <Link href={`/projects/${id}`} className={cn("block group", className)}>

@@ -171,11 +171,22 @@ export default function ProjectPage({
         <div className="flex-1 flex h-full relative">
           {/* Canvas Area */}
           <div className="flex-1 relative bg-[#f5f5f5]">
-             {/* Architectural Blueprint Background */}
-             <div className="absolute inset-0 opacity-[0.012] pointer-events-none" 
-                  style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-             <div className="absolute inset-0 opacity-[0.008] pointer-events-none" 
-                  style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
+            {/* Architectural Blueprint Background */}
+            <div
+              className="absolute inset-0 opacity-[0.012] pointer-events-none"
+              style={{
+                backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
+                backgroundSize: "20px 20px",
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-[0.008] pointer-events-none"
+              style={{
+                backgroundImage:
+                  "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)",
+                backgroundSize: "100px 100px",
+              }}
+            />
 
             <FlowEditor
               ref={flowEditorRef}
@@ -185,7 +196,6 @@ export default function ProjectPage({
               onViewportChange={(viewport) => setZoom(viewport.zoom)}
             />
 
-         
             {/* Floating Panel Toggle - Shows when panel is closed */}
             {!isTerminalOpen && (
               <button

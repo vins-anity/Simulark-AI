@@ -179,12 +179,16 @@ export default function TemplatesPage() {
           </div>
           <div>COORD_X: 40.71 / Y: -74.00</div>
           <div>STATUS: ACCESS_GRANTED</div>
-          <div className="hidden md:block">ENTRIES: {templates.length}_LOADED</div>
+          <div className="hidden md:block">
+            ENTRIES: {templates.length}_LOADED
+          </div>
         </div>
 
         {/* Decorative HUD lines */}
         <div className="absolute top-0 right-0 hidden lg:block opacity-[0.05] pointer-events-none">
-          <div className="text-[120px] font-black leading-none select-none">BPRNT</div>
+          <div className="text-[120px] font-black leading-none select-none">
+            BPRNT
+          </div>
         </div>
       </div>
 
@@ -204,15 +208,19 @@ export default function TemplatesPage() {
 
               {/* Card Top: Identifier */}
               <div className="flex justify-between items-start mb-10 relative z-10">
-                <div 
+                <div
                   className="w-12 h-12 border-2 border-brand-charcoal flex items-center justify-center bg-white group-hover:bg-brand-charcoal group-hover:text-white transition-all transform group-hover:-translate-y-1"
                   style={{ boxShadow: `4px 4px 0px 0px ${template.accent}` }}
                 >
                   <Icon icon={template.icon} className="w-6 h-6" />
                 </div>
                 <div className="flex flex-col items-end gap-1 font-mono text-[10px]">
-                  <span className="text-brand-charcoal/40 uppercase">Arch_ID</span>
-                  <span className="font-bold tracking-widest">{template.id_code}</span>
+                  <span className="text-brand-charcoal/40 uppercase">
+                    Arch_ID
+                  </span>
+                  <span className="font-bold tracking-widest">
+                    {template.id_code}
+                  </span>
                 </div>
               </div>
 
@@ -229,16 +237,26 @@ export default function TemplatesPage() {
               {/* Technical Readout */}
               <div className="grid grid-cols-3 gap-4 mb-8 border-y border-brand-charcoal/10 py-4 font-mono">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] uppercase opacity-40">Complexity</span>
-                  <span className="text-xs font-bold text-brand-orange">{template.metrics.complexity}</span>
+                  <span className="text-[9px] uppercase opacity-40">
+                    Complexity
+                  </span>
+                  <span className="text-xs font-bold text-brand-orange">
+                    {template.metrics.complexity}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-[9px] uppercase opacity-40">Nodes</span>
-                  <span className="text-xs font-bold">{template.metrics.nodes}</span>
+                  <span className="text-xs font-bold">
+                    {template.metrics.nodes}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] uppercase opacity-40">Up_Time</span>
-                  <span className="text-xs font-bold">{template.metrics.uptime}</span>
+                  <span className="text-[9px] uppercase opacity-40">
+                    Up_Time
+                  </span>
+                  <span className="text-xs font-bold">
+                    {template.metrics.uptime}
+                  </span>
                 </div>
               </div>
 
@@ -259,19 +277,22 @@ export default function TemplatesPage() {
                   className={cn(
                     "w-full rounded-none h-12 font-mono uppercase tracking-[0.2em] text-[11px] font-bold transition-all border-2",
                     "bg-white text-brand-charcoal border-brand-charcoal hover:bg-brand-charcoal hover:text-white",
-                    "shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none translate-x-[-2px] translate-y-[-2px] active:translate-x-0 active:translate-y-0"
+                    "shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none translate-x-[-2px] translate-y-[-2px] active:translate-x-0 active:translate-y-0",
                   )}
                   onClick={() => handleClone(template.id)}
                   disabled={!!cloningId}
                 >
                   {cloningId === template.id ? (
                     <span className="flex items-center gap-2">
-                      <Icon icon="lucide:loader-2" className="h-4 w-4 animate-spin" />
+                      <Icon
+                        icon="lucide:loader-2"
+                        className="h-4 w-4 animate-spin"
+                      />
                       STAGING_ARCHITECTURE...
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                       [ INITIALIZE_BLUEPRINT ]
+                      [ INITIALIZE_BLUEPRINT ]
                     </span>
                   )}
                 </Button>
