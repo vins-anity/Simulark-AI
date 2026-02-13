@@ -256,7 +256,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleExecute}
                     disabled={!prompt.trim() || isExecuting}
-                    className="h-16 px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-brand-charcoal font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-16 px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-zinc-950 font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isExecuting ? "BUSY..." : "INITIALIZE"}
                   </button>

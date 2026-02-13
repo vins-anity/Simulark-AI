@@ -44,7 +44,7 @@ export function MarketingThemeToggle() {
 
             {/* Slider Indicator */}
             <motion.div
-                className="absolute top-0.5 bottom-0.5 w-6 bg-brand-charcoal dark:bg-brand-sand-light rounded-sm shadow-sm z-0"
+                className="absolute top-0.5 bottom-0.5 w-6 bg-brand-charcoal dark:bg-zinc-200 rounded-sm shadow-sm z-0"
                 initial={false}
                 animate={{
                     x: isDark ? 28 : 2,

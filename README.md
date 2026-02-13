@@ -38,6 +38,11 @@ The platform solves the "Context Loss" problem in modern software engineering—
 - **IDE Integration:** Generates `.cursorrules` and Markdown for Cursor/Windsurf
 - **Export Options:** Mermaid, PNG, SVG, PDF
 
+### User Experience
+
+- **Dark Mode:** Fully supported dark/light themes with system detection
+- **Responsive Design:** Optimized for mobile and desktop workstations
+
 ---
 
 ## Tech Stack

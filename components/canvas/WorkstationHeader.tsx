@@ -177,7 +177,7 @@ export function WorkstationHeader({
             variant="ghost"
             onClick={handleLayoutRotate}
             disabled={isLayoutAnimating}
-            className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all gap-2"
+            className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2"
           >
             <motion.div
               animate={{ rotate: isLayoutAnimating ? 180 : 0 }}
@@ -242,7 +242,7 @@ export function WorkstationHeader({
             "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
             chaosMode
               ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
-              : "bg-bg-elevated border-brand-charcoal/10 text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal",
+              : "bg-bg-elevated border-brand-charcoal/10 text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950",
           )}
         >
           <Zap
@@ -259,7 +259,7 @@ export function WorkstationHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all"
+              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all"
             >
               [ ARCHIVE ]
             </Button>
