@@ -24,43 +24,60 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Simulark",
-  description:
-    "Intelligent Backend Architecture Design & Visual Simulation Platform",
-  icons: {
-    icon: [
-      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  title: {
+    default: "Simulark - Intelligent Backend Architecture Design",
+    template: "%s | Simulark",
   },
-  manifest: "/site.webmanifest",
+  description:
+    "Simulark is an intelligent platform for designing, visualizing, and simulating backend architectures. Transform text into professional cloud diagrams instantly.",
+  applicationName: "Simulark",
+  authors: [{ name: "Simulark Team" }],
+  generator: "Next.js",
+  keywords: [
+    "Backend Architecture",
+    "System Design",
+    "Cloud Architecture",
+    "Visual Simulation",
+    "AI Architecture Generator",
+    "DevOps",
+    "Infrastructure as Code",
+    "Software Architecture",
+  ],
+  referrer: "origin-when-cross-origin",
+  creator: "Simulark Team",
+  publisher: "Simulark",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://simulark-ai.vercel.app",
+  },
   metadataBase: new URL("https://simulark-ai.vercel.app"),
   openGraph: {
-    title: "Simulark",
+    title: "Simulark - Intelligent Backend Architecture Design",
     description:
-      "Intelligent Backend Architecture Design & Visual Simulation Platform",
+      "Design, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
     url: "https://simulark-ai.vercel.app",
     siteName: "Simulark",
-    images: [
-      {
-        url: "/web-app-manifest-512x512.png",
-        width: 512,
-        height: 512,
-        alt: "Simulark Preview",
-      },
-    ],
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Simulark",
+    title: "Simulark - Intelligent Backend Architecture Design",
     description:
-      "Intelligent Backend Architecture Design & Visual Simulation Platform",
-    images: ["/web-app-manifest-512x512.png"],
+      "Design, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
+    creator: "@simulark_ai",
   },
+  manifest: "/site.webmanifest",
 };
 
 import { SidebarProvider } from "@/components/layout/SidebarProvider";
