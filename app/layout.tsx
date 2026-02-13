@@ -67,6 +67,14 @@ export const metadata: Metadata = {
       "Design, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
     url: "https://simulark-ai.vercel.app",
     siteName: "Simulark",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Simulark - Intelligent Backend Architecture Design",
+      },
+    ],
     locale: "en_US",
     type: "website",
   },
@@ -76,6 +84,7 @@ export const metadata: Metadata = {
     description:
       "Design, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
     creator: "@simulark_ai",
+    images: ["/opengraph-image.png"],
   },
   manifest: "/site.webmanifest",
 };
