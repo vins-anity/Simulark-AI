@@ -70,9 +70,11 @@ export const metadata: Metadata = {
     images: [
       {
         url: "https://simulark-ai.vercel.app/opengraph-image.png",
+        secureUrl: "https://simulark-ai.vercel.app/opengraph-image.png",
         width: 1200,
         height: 630,
         alt: "Simulark - Intelligent Backend Architecture Design",
+        type: "image/png",
       },
     ],
     locale: "en_US",
