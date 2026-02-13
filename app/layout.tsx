@@ -25,17 +25,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Simulark - Intelligent Backend Architecture Design",
+    default: "Simulark -  AI Architecture Engine",
     template: "%s | Simulark",
   },
   description:
-    "Simulark is an intelligent platform for designing, visualizing, and simulating backend architectures. Transform text into professional cloud diagrams instantly.",
+    "Simulark is an intelligent platform for Engineing, visualizing, and simulating backend architectures. Transform text into professional cloud diagrams instantly.",
   applicationName: "Simulark",
   authors: [{ name: "Simulark Team" }],
   generator: "Next.js",
   keywords: [
     "Backend Architecture",
-    "System Design",
+    "System Engine",
     "Cloud Architecture",
     "Visual Simulation",
     "AI Architecture Generator",
@@ -62,9 +62,9 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL("https://simulark-ai.vercel.app"),
   openGraph: {
-    title: "Simulark - Intelligent Backend Architecture Design",
+    title: "Simulark - AI Architecture Engine",
     description:
-      "Design, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
+      "Engine, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
     url: "https://simulark-ai.vercel.app",
     siteName: "Simulark",
     images: [
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
         secureUrl: "https://simulark-ai.vercel.app/opengraph-image.png?v=1",
         width: 1200,
         height: 630,
-        alt: "Simulark - Intelligent Backend Architecture Design",
+        alt: "Simulark - AI Architecture Engine",
         type: "image/png",
       },
     ],
@@ -82,9 +82,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Simulark - Intelligent Backend Architecture Design",
+    title: "Simulark - AI Architecture Engine",
     description:
-      "Design, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
+      "Engine, visualize, and simulate backend architectures with AI. Transform requirements into professional cloud diagrams in seconds.",
     creator: "@simulark_ai",
     images: ["https://simulark-ai.vercel.app/opengraph-image.png?v=1"],
   },
