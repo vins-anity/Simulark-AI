@@ -1,15 +1,15 @@
-import { describe, it, expect } from "vitest";
 import * as v from "valibot";
+import { describe, expect, it } from "vitest";
 import {
-  FunctionSchema,
-  DatabaseSchema,
-  QueueSchema,
-  ServiceSchema,
-  StorageSchema,
   AISchema,
   ClientSchema,
-  SCHEMAS,
+  DatabaseSchema,
+  FunctionSchema,
   getSchemaForType,
+  QueueSchema,
+  SCHEMAS,
+  ServiceSchema,
+  StorageSchema,
 } from "../lib/node-schemas";
 
 describe("Node Schemas Validation", () => {

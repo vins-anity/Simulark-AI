@@ -1,7 +1,7 @@
+import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
-import { Redis } from "@upstash/redis";
 
 const logger = createLogger("api:health");
 

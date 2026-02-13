@@ -1,10 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { motion } from "framer-motion";
+import { AlertCircle, ArrowRight, Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check, AlertCircle } from "lucide-react";
 
 export function DataTransmission() {
   const [email, setEmail] = useState("");
@@ -158,10 +158,11 @@ export function DataTransmission() {
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    className={`p-4 border ${status === "success"
+                    className={`p-4 border ${
+                      status === "success"
                         ? "border-brand-green/30 bg-brand-green/10"
                         : "border-red-500/30 bg-red-500/10"
-                      }`}
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       {status === "success" ? (
@@ -170,10 +171,11 @@ export function DataTransmission() {
                         <AlertCircle className="w-4 h-4 text-red-500" />
                       )}
                       <span
-                        className={`font-mono text-xs uppercase ${status === "success"
+                        className={`font-mono text-xs uppercase ${
+                          status === "success"
                             ? "text-brand-green"
                             : "text-red-400"
-                          }`}
+                        }`}
                       >
                         {status === "success"
                           ? "TRANSMISSION_SUCCESSFUL"

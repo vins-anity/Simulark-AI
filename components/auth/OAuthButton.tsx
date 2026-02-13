@@ -1,7 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { type ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes } from "react";
 import { twMerge } from "tailwind-merge";
 
 interface OAuthButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

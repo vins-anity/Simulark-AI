@@ -24,10 +24,10 @@ const modules = [
   {
     id: "MOD-03",
     title: "Production Export",
-    desc: "Compile to Terraform, K8s, or implementation code. Deploy-ready infrastructure specifications.",
+    desc: "Generate Terraform configuration and context files for Cursor/Windsurf IDE integration.",
     sub: "CODE_GEN",
     icon: "lucide:terminal-square",
-    specs: ["Terraform HCL", "Docker", "K8s manifests"],
+    specs: ["Terraform HCL", "Cursor Rules", "Mermaid diagrams"],
   },
 ];
 

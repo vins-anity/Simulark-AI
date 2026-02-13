@@ -1,18 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { generateContext } from "@/lib/bridge/context-engine";
-import {
-  type ArchitectureGraph,
-  ArchitectureGraphSchema,
-} from "@/lib/schema/graph"; // Use valid schema
+import type { ArchitectureGraph } from "@/lib/schema/graph"; // Use valid schema
 
 // Mock data for now, in real app we fetch from DB
-const mockGraph: ArchitectureGraph = {
+const _mockGraph: ArchitectureGraph = {
   nodes: [],
   edges: [],
 };
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }, // In Next.js 15, params is a Promise
 ) {
   const { id } = await params;

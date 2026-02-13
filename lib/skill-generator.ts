@@ -1,4 +1,4 @@
-import { Node, Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 
 export interface SkillGenerationOptions {
   projectName: string;
@@ -217,7 +217,7 @@ export function generateSkillContent(
     projectDescription ||
     `${projectName} is a ${componentTypes.has("gateway") ? "microservices-based" : "distributed"} architecture with ${nodes.length} components.`;
 
-  let skillMd = `---
+  const skillMd = `---
 name: ${skillName}
 description: ${description}
 ---

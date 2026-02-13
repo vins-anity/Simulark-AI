@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { motion } from "framer-motion";
 
 const capabilities = [
   {
@@ -106,10 +106,11 @@ function CapabilityCard({
       transition={{ delay: index * 0.05 }}
     >
       <div
-        className={`h-full p-6 border bg-bg-secondary group-hover:border-brand-orange/40 transition-all duration-300 relative ${isComingSoon
+        className={`h-full p-6 border bg-bg-secondary group-hover:border-brand-orange/40 transition-all duration-300 relative ${
+          isComingSoon
             ? "border-brand-charcoal/5 opacity-75"
             : "border-brand-charcoal/10"
-          }`}
+        }`}
       >
         {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-brand-charcoal/20 group-hover:border-brand-orange/40 transition-colors" />
@@ -127,12 +128,13 @@ function CapabilityCard({
         {/* Status Badge */}
         <div className="absolute top-4 right-4">
           <span
-            className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${isLive
+            className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${
+              isLive
                 ? "bg-brand-green/10 text-brand-green"
                 : isBeta
                   ? "bg-brand-orange/10 text-brand-orange"
                   : "bg-brand-charcoal/5 text-brand-charcoal/40"
-              }`}
+            }`}
           >
             {isComingSoon ? "SOON" : capability.status}
           </span>
@@ -145,17 +147,19 @@ function CapabilityCard({
 
         {/* Icon */}
         <div
-          className={`w-10 h-10 border flex items-center justify-center mb-4 transition-colors ${isComingSoon
+          className={`w-10 h-10 border flex items-center justify-center mb-4 transition-colors ${
+            isComingSoon
               ? "border-brand-charcoal/5 bg-brand-charcoal/5"
               : "border-brand-charcoal/10 group-hover:border-brand-orange/30"
-            }`}
+          }`}
         >
           <Icon
             icon={capability.icon}
-            className={`w-5 h-5 ${isComingSoon
+            className={`w-5 h-5 ${
+              isComingSoon
                 ? "text-brand-charcoal/20"
                 : "text-brand-charcoal/60 group-hover:text-brand-orange"
-              } transition-colors`}
+            } transition-colors`}
           />
         </div>
 
@@ -164,8 +168,9 @@ function CapabilityCard({
           {capability.title}
         </h3>
         <p
-          className={`font-lora text-sm leading-relaxed mb-4 ${isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
-            }`}
+          className={`font-lora text-sm leading-relaxed mb-4 ${
+            isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
+          }`}
         >
           {capability.description}
         </p>
@@ -175,10 +180,11 @@ function CapabilityCard({
           {capability.specs.map((spec) => (
             <span
               key={spec}
-              className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider ${isComingSoon
+              className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider ${
+                isComingSoon
                   ? "bg-brand-charcoal/5 text-brand-charcoal/30"
                   : "bg-brand-charcoal/5 text-brand-charcoal/50"
-                }`}
+              }`}
             >
               {spec}
             </span>

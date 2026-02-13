@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, Variants, Transition } from "framer-motion";
-import { ReactNode } from "react";
+import { motion, type Transition, type Variants } from "framer-motion";
+import type { ReactNode } from "react";
 
 type RevealType =
   | "fade"
@@ -171,7 +171,7 @@ export function Parallax({
   speed = 0.5,
   direction = "up",
 }: ParallaxProps) {
-  const getTransform = (scrollYProgress: number) => {
+  const _getTransform = (scrollYProgress: number) => {
     const distance = scrollYProgress * 100 * speed;
     switch (direction) {
       case "up":

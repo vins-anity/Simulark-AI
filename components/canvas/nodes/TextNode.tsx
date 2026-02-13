@@ -1,10 +1,15 @@
 "use client";
 
-import { Handle, type NodeProps, Position, useReactFlow } from "@xyflow/react";
-import { useState, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
-import { NodeToolbar } from "@xyflow/react";
+import {
+  Handle,
+  type NodeProps,
+  NodeToolbar,
+  Position,
+  useReactFlow,
+} from "@xyflow/react";
 import { Type } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface TextNodeData {
   label?: string;

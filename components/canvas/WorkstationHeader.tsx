@@ -22,10 +22,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { updateProjectName } from "@/actions/projects";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { updateProjectName } from "@/actions/projects";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import type { LayoutAlgorithm } from "@/lib/layout";
 import type { Project } from "@/lib/schema/graph";
 import { useSimulationStore } from "@/lib/store";
@@ -52,12 +52,12 @@ const LAYOUT_ALGORITHMS: {
   label: string;
   icon: React.ElementType;
 }[] = [
-    { id: "arch-pattern", label: "Architecture", icon: GitBranch },
-    { id: "dagre-hierarchy", label: "Hierarchical", icon: List },
-    { id: "radial", label: "Radial", icon: Circle },
-    { id: "force", label: "Force", icon: Move },
-    { id: "grid", label: "Grid", icon: Grid3X3 },
-  ];
+  { id: "arch-pattern", label: "Architecture", icon: GitBranch },
+  { id: "dagre-hierarchy", label: "Hierarchical", icon: List },
+  { id: "radial", label: "Radial", icon: Circle },
+  { id: "force", label: "Force", icon: Move },
+  { id: "grid", label: "Grid", icon: Grid3X3 },
+];
 
 export function WorkstationHeader({
   project,
@@ -217,7 +217,7 @@ export function WorkstationHeader({
                     className={cn(
                       "cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 flex justify-between",
                       currentLayoutIndex === index &&
-                      "bg-neutral-50 border-l-4 border-brand-orange",
+                        "bg-neutral-50 border-l-4 border-brand-orange",
                     )}
                   >
                     <span className="flex items-center">

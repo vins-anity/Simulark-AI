@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  RequestDeduplicator,
   deduplicateGeneration,
+  RequestDeduplicator,
   useDeduplicatedRequest,
 } from "../lib/request-deduplication";
 
@@ -46,7 +46,7 @@ describe("RequestDeduplicator", () => {
       const promise2 = deduplicator.execute("test-key", requestFn);
 
       // Resolve the promise
-      resolvePromise!({ data: "concurrent" });
+      resolvePromise?.({ data: "concurrent" });
 
       const [result1, result2] = await Promise.all([promise1, promise2]);
 

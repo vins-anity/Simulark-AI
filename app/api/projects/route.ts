@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUserProjects, createProject } from "@/actions/projects";
+import { type NextRequest, NextResponse } from "next/server";
+import { createProject, getUserProjects } from "@/actions/projects";
 
 /**
  * GET /api/projects

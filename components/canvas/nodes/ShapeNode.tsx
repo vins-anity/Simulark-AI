@@ -1,9 +1,14 @@
 "use client";
 
-import { Handle, NodeProps, Position, useReactFlow } from "@xyflow/react";
-import { useState, useCallback, useRef } from "react";
+import {
+  Handle,
+  type NodeProps,
+  NodeToolbar,
+  Position,
+  useReactFlow,
+} from "@xyflow/react";
+import { useCallback, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { NodeToolbar } from "@xyflow/react";
 
 export type ShapeType =
   | "shape-rect"
@@ -100,13 +105,13 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
           nodes.map((node) =>
             node.id === id
               ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  width: dimensions.width,
-                  height: dimensions.height,
-                },
-              }
+                  ...node,
+                  data: {
+                    ...node.data,
+                    width: dimensions.width,
+                    height: dimensions.height,
+                  },
+                }
               : node,
           ),
         );
@@ -206,9 +211,9 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
                       nodes.map((node) =>
                         node.id === id
                           ? {
-                            ...node,
-                            data: { ...node.data, color: e.target.value },
-                          }
+                              ...node,
+                              data: { ...node.data, color: e.target.value },
+                            }
                           : node,
                       ),
                     )

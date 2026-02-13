@@ -78,5 +78,13 @@ export function shouldInvertIcon(icon: string): boolean {
     "logos:unity",
     "logos:unreal",
   ];
-  return ICON_BLOCKLIST.includes(icon) || ICON_BLOCKLIST.some(i => icon.includes("nextjs") || icon.includes("vercel") || icon.includes("github"));
+  return (
+    ICON_BLOCKLIST.includes(icon) ||
+    ICON_BLOCKLIST.some(
+      (_i) =>
+        icon.includes("nextjs") ||
+        icon.includes("vercel") ||
+        icon.includes("github"),
+    )
+  );
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { createProjectFromTemplate } from "@/actions/projects";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface Template {
@@ -146,7 +146,7 @@ export default function TemplatesPage() {
           description: result.error || "Unknown error",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error("An error occurred");
     } finally {
       setCloningId(null);

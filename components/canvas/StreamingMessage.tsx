@@ -1,20 +1,20 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
+  Box,
   Brain,
-  Layers,
-  Network,
-  Database,
-  Server,
-  Shield,
-  Zap,
   CheckCircle2,
   Circle,
-  Sparkles,
   Cpu,
+  Database,
   GitBranch,
-  Box,
+  Layers,
+  Network,
+  Server,
+  Shield,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -114,7 +114,7 @@ function parseArchitectureThoughts(reasoning: string): ThoughtStep[] {
 }
 
 // Determine current stage based on reasoning content
-function getCurrentStage(reasoning: string): ThoughtStep["status"] {
+function _getCurrentStage(reasoning: string): ThoughtStep["status"] {
   if (!reasoning) return "pending";
   const length = reasoning.length;
   if (length < 100) return "active";
@@ -133,7 +133,7 @@ export function StreamingMessage({
   useEffect(() => {
     if (!isGenerating) return;
     const interval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+      setDots((prev) => (prev.length >= 3 ? "" : `${prev}.`));
     }, 400);
     return () => clearInterval(interval);
   }, [isGenerating]);

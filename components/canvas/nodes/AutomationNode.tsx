@@ -1,6 +1,6 @@
 "use client";
 
-import { GitBranch, Workflow, Zap } from "lucide-react";
+import { Workflow } from "lucide-react";
 import { getTechIcon } from "@/lib/icons";
 import { BaseNode, type BaseNodeProps } from "./BaseNode";
 

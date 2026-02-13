@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { motion } from "framer-motion";
 import { useState } from "react";
 
 const architectures = [
@@ -102,12 +102,13 @@ function ArchitectureCard({
       onClick={onSelect}
     >
       <div
-        className={`h-full bg-bg-secondary border transition-all duration-300 ${isSelected
+        className={`h-full bg-bg-secondary border transition-all duration-300 ${
+          isSelected
             ? "border-brand-orange"
             : isComingSoon
               ? "border-brand-charcoal/5 opacity-60"
               : "border-brand-charcoal/10 group-hover:border-brand-charcoal/30"
-          }`}
+        }`}
       >
         {/* Header with ID */}
         <div className="flex justify-between items-start p-4 border-b border-brand-charcoal/5">
@@ -142,12 +143,13 @@ function ArchitectureCard({
               />
             )}
             <span
-              className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${isLive
+              className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${
+                isLive
                   ? "bg-brand-green/10 text-brand-green"
                   : isBeta
                     ? "bg-brand-orange/10 text-brand-orange"
                     : "bg-brand-charcoal/5 text-brand-charcoal/40"
-                }`}
+              }`}
             >
               {isComingSoon ? "SOON" : arch.status}
             </span>
@@ -157,8 +159,9 @@ function ArchitectureCard({
         {/* Specs */}
         <div className="p-4">
           <p
-            className={`font-lora text-sm mb-4 leading-relaxed ${isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
-              }`}
+            className={`font-lora text-sm mb-4 leading-relaxed ${
+              isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
+            }`}
           >
             {arch.description}
           </p>
@@ -168,10 +171,11 @@ function ArchitectureCard({
             {arch.stack.map((tech) => (
               <span
                 key={tech}
-                className={`px-2 py-1 font-mono text-[8px] uppercase tracking-wider ${isComingSoon
+                className={`px-2 py-1 font-mono text-[8px] uppercase tracking-wider ${
+                  isComingSoon
                     ? "bg-brand-charcoal/5 text-brand-charcoal/30"
                     : "bg-brand-charcoal/5 text-brand-charcoal/60"
-                  }`}
+                }`}
               >
                 {tech}
               </span>

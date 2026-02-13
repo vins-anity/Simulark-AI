@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 // In a real app, we'd fetch the latest project state from DB or pass it in body.
 // For live context from external tools, they might query by Project ID.
 // However, since state is client-side in Editor mostly until saved,
 // this endpoint might be for fetching SAVED context.
 
-import { createClient } from "@/lib/supabase/server";
 import { generateLiveContext } from "@/lib/bridge/context-generator";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
   const projectId = req.nextUrl.searchParams.get("projectId");

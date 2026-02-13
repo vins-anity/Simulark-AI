@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Icon } from "@iconify/react";
+import Link from "next/link";
+import { MarketingLayout } from "@/components/marketing/MarketingLayout";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (

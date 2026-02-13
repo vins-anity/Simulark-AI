@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { createProviderRegistry, type LanguageModel } from "ai";
+import type { LanguageModel } from "ai";
 import { createZhipu } from "zhipu-ai-provider";
 import { env } from "./env";
 

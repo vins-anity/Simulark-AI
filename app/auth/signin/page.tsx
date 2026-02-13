@@ -6,8 +6,8 @@ import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { getBaseURL } from "@/lib/url";
 import { useState } from "react";
+import { getBaseURL } from "@/lib/url";
 
 // Technical background grid component
 function TechnicalBackground() {

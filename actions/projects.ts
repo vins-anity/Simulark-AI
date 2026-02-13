@@ -1,12 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import * as v from "valibot";
-import {
-  type ArchitectureGraph,
-  type Project,
-  ProjectSchema,
-} from "@/lib/schema/graph";
+import type { ArchitectureGraph, Project } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATE_GRAPHS } from "@/lib/templates";
 

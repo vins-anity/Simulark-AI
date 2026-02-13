@@ -229,7 +229,6 @@ function applyArchitecturePatternLayout(
         rankSep,
         nodeSep,
       });
-    case "modular":
     default:
       return applyModularLayout(nodes, edges, {
         nodeWidth,
@@ -652,7 +651,7 @@ function applyPipelineLayout(
     order.push(current);
     visited.add(current.id);
 
-    const nextEdge = edges.find((e) => e.source === current!.id);
+    const nextEdge = edges.find((e) => e.source === current?.id);
     if (nextEdge) {
       current = nodes.find((n) => n.id === nextEdge.target);
     } else {
@@ -1060,7 +1059,7 @@ export function applyLayoutAsync(
       }
     };
 
-    worker.onerror = (error) => {
+    worker.onerror = (_error) => {
       worker.terminate();
       const syncResult = applyLayout(nodes, edges, options);
       resolve(syncResult);

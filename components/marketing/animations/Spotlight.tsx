@@ -1,12 +1,7 @@
 "use client";
 
-import { useRef, useState, MouseEvent } from "react";
-import {
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useSpring,
-} from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { type MouseEvent, useRef } from "react";
 
 interface SpotlightProps {
   children: React.ReactNode;

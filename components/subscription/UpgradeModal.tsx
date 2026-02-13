@@ -1,19 +1,19 @@
 "use client";
 
+import { createBrowserClient } from "@supabase/ssr";
+import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription";
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/ssr";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -22,7 +22,7 @@ interface UpgradeModalProps {
 
 export function UpgradeModal({ open, onOpenChange }: UpgradeModalProps) {
   const [currentPlan, setCurrentPlan] = useState("free");
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (open) {

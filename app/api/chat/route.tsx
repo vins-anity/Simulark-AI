@@ -1,11 +1,10 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { convertToModelMessages, streamText, tool, type UIMessage } from "ai";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
 import { createZhipu } from "zhipu-ai-provider";
-import { diagramTools, getToolsForOperation } from "@/lib/diagram-tools";
 import { env } from "@/lib/env";
-import { detectOperation, type OperationType } from "@/lib/intent-detector";
+import { detectOperation } from "@/lib/intent-detector";
 import { logger } from "@/lib/logger";
 import {
   type ArchitectureMode,
@@ -279,7 +278,7 @@ export async function POST(req: NextRequest) {
                 // Send content chunk in legacy format
                 controller.enqueue(
                   encoder.encode(
-                    JSON.stringify({ type: "content", data: part.text }) + "\n",
+                    `${JSON.stringify({ type: "content", data: part.text })}\n`,
                   ),
                 );
 
@@ -301,15 +300,15 @@ export async function POST(req: NextRequest) {
                         // Send result in legacy format
                         controller.enqueue(
                           encoder.encode(
-                            JSON.stringify({
+                            `${JSON.stringify({
                               type: "result",
                               data: architectureData,
-                            }) + "\n",
+                            })}\n`,
                           ),
                         );
                       }
                     }
-                  } catch (e) {
+                  } catch (_e) {
                     // JSON not complete yet
                   }
                 }

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  type ArchitectureType,
   buildEnhancedSystemPrompt,
-  type ComplexityLevel,
   detectArchitectureType,
   detectComplexity,
   validatePrompt,
@@ -242,7 +240,7 @@ describe("Prompt Engineering Tests", () => {
     it("should default based on length", () => {
       const veryShort = "hi";
       const medium = "This is a medium length prompt describing requirements";
-      const long =
+      const _long =
         "This is a very long prompt with many detailed requirements about the system architecture and all the features that need to be implemented";
 
       expect(detectComplexity(veryShort)).toBe("simple");
@@ -266,7 +264,7 @@ describe("Prompt Engineering Tests", () => {
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("too short");
       expect(result.suggestedPrompts).toBeDefined();
-      expect(result.suggestedPrompts!.length).toBeGreaterThan(0);
+      expect(result.suggestedPrompts?.length).toBeGreaterThan(0);
     });
 
     it("should accept valid prompts", () => {

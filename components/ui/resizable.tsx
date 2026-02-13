@@ -1,7 +1,6 @@
 "use client";
 
 import { GripVertical } from "lucide-react";
-// @ts-ignore - Version mismatch workaround
 import {
   Panel,
   Group as PanelGroup,

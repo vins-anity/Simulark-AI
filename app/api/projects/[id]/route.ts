@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getProject, saveProject } from "@/actions/projects";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
  * Retrieve a specific project by ID.
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -66,7 +66,7 @@ export async function PATCH(
  * Delete a specific project.
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {

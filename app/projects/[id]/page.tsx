@@ -1,11 +1,8 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { Activity } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 import { getProject, saveProject } from "@/actions/projects";
 import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
@@ -41,7 +38,7 @@ export default function ProjectPage({
       const prompt = sessionStorage.getItem(`initial-prompt-${projectId}`);
       if (prompt) {
         setInitialPrompt(prompt);
-        sessionStorage.removeItem(`initial-prompt-${projectId}`);
+        // DO NOT clear sessionStorage here - wait for successful processing
       }
 
       const { data, error } = await getProject(projectId);
@@ -81,6 +78,15 @@ export default function ProjectPage({
     if (id && data.nodes && data.edges) {
       await saveProject(id, { nodes: data.nodes, edges: data.edges });
     }
+  };
+
+  const handleInitialPromptProcessed = () => {
+    // Only clear sessionStorage AFTER successful processing
+    if (id) {
+      sessionStorage.removeItem(`initial-prompt-${id}`);
+    }
+    // Clear the initial prompt from state to prevent re-processing
+    setInitialPrompt(null);
   };
 
   const handleAutolayout = (direction: "DOWN" | "RIGHT") => {
@@ -175,7 +181,8 @@ export default function ProjectPage({
             <div
               className="absolute inset-0 opacity-[0.012] pointer-events-none"
               style={{
-                backgroundImage: "radial-gradient(var(--pattern-dot) 1px, transparent 1px)",
+                backgroundImage:
+                  "radial-gradient(var(--pattern-dot) 1px, transparent 1px)",
                 backgroundSize: "20px 20px",
               }}
             />
@@ -254,6 +261,7 @@ export default function ProjectPage({
               initialMetadata={project.metadata}
               isOpen={isTerminalOpen}
               onToggle={() => setIsTerminalOpen(!isTerminalOpen)}
+              onInitialPromptProcessed={handleInitialPromptProcessed}
             />
           </div>
         </div>

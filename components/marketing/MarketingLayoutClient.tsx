@@ -1,9 +1,9 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -131,10 +131,11 @@ export function MarketingLayoutClient({
     <div className="min-h-screen bg-bg-primary selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-text-primary flex flex-col">
       {/* Command Bar Header */}
       <header
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-          ? "bg-bg-primary/95 backdrop-blur-sm border-b border-brand-charcoal/10"
-          : "bg-bg-primary border-b border-brand-charcoal/5"
-          }`}
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-bg-primary/95 backdrop-blur-sm border-b border-brand-charcoal/10"
+            : "bg-bg-primary border-b border-brand-charcoal/5"
+        }`}
       >
         {/* Status Bar - HUD Style */}
         <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
@@ -201,12 +202,10 @@ export function MarketingLayoutClient({
                 12ms
               </motion.span>
             </div>
-
           </div>
 
           {/* Right - Auth Actions */}
           <div className="flex items-center gap-4">
-
             {loading ? (
               // Skeleton placeholder during loading
               <div className="flex items-center gap-4">

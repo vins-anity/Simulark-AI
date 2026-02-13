@@ -1,9 +1,9 @@
 "use client";
 
-import { MarketingLayout } from "@/components/marketing/MarketingLayout";
-import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { UpgradeModal } from "@/components/marketing/UpgradeModal";
+import { Button } from "@/components/ui/button";
 
 export default function PricingPage() {
   return (

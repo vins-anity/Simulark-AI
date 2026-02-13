@@ -1,28 +1,25 @@
 // Enhanced Marketing Components - Living Blueprint Design System
 // Brutalist, Technical, Schematic Aesthetic
 
-// Main Sections
-export { HeroEnhanced } from "./HeroEnhanced";
-export { TrustedByEnhanced } from "./TrustedByEnhanced";
-export { FeatureShowcaseEnhanced } from "./FeatureShowcaseEnhanced";
-export { TestimonialsEnhanced } from "./TestimonialsEnhanced";
-export { CTAEnhanced } from "./CTAEnhanced";
-
 // New Sections
 export { ArchitectureShowcase } from "./ArchitectureShowcase";
-export { CapabilitiesGrid } from "./CapabilitiesGrid";
-export { ResourceContracts } from "./ResourceContracts";
-export { DocumentationFAQ } from "./DocumentationFAQ";
-export { DataTransmission } from "./DataTransmission";
-
 // Animation Components
 export * from "./animations";
-
+export { CapabilitiesGrid } from "./CapabilitiesGrid";
+export { CTA } from "./CTA";
+export { CTAEnhanced } from "./CTAEnhanced";
+export { DataTransmission } from "./DataTransmission";
+export { DocumentationFAQ } from "./DocumentationFAQ";
+export { FeatureShowcase } from "./FeatureShowcase";
+export { FeatureShowcaseEnhanced } from "./FeatureShowcaseEnhanced";
 // Original Components (for backwards compatibility)
 export { Hero } from "./Hero";
-export { TrustedBy } from "./TrustedBy";
-export { FeatureShowcase } from "./FeatureShowcase";
-export { Testimonials } from "./Testimonials";
-export { CTA } from "./CTA";
 export { HeroCanvas } from "./HeroCanvas";
+// Main Sections
+export { HeroEnhanced } from "./HeroEnhanced";
 export { MarketingLayout } from "./MarketingLayout";
+export { ResourceContracts } from "./ResourceContracts";
+export { Testimonials } from "./Testimonials";
+export { TestimonialsEnhanced } from "./TestimonialsEnhanced";
+export { TrustedBy } from "./TrustedBy";
+export { TrustedByEnhanced } from "./TrustedByEnhanced";

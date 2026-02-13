@@ -176,9 +176,6 @@ export function getComponentCountAdjustment(operation: OperationType): {
       return { minAdjustment: -1, maxAdjustment: 0 }; // Can go 1 below
     case "extend":
       return { minAdjustment: 0, maxAdjustment: 2 }; // Can go 2 above
-    case "create":
-    case "modify":
-    case "optimize":
     default:
       return { minAdjustment: 0, maxAdjustment: 0 }; // No adjustment
   }

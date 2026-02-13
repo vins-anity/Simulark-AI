@@ -207,7 +207,7 @@ export async function getCacheStats(): Promise<{
     const sampleKeys = keys.slice(0, 10);
     const sampleEntries = await Promise.all(
       sampleKeys.map(async (key) => {
-        const entry = await redis!.get<CacheEntry<unknown>>(key);
+        const entry = await redis?.get<CacheEntry<unknown>>(key);
         return {
           key: key.substring(0, 50),
           model: entry?.model ?? "unknown",

@@ -39,7 +39,7 @@ export async function updateSession(request: NextRequest) {
       data: { user: authUser },
     } = await supabase.auth.getUser();
     user = authUser;
-  } catch (e) {
+  } catch (_e) {
     // Ignore invalid refresh token errors
   }
 

@@ -6,17 +6,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
   ChevronDown,
-  ChevronUp,
   Cpu,
   FileText,
   Info,
   LayoutGrid,
   Pencil,
+  Rocket,
   Save,
   User,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +26,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/utils/avatar";
-import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
 
 // Module configuration with IDs
 const CONFIG_MODULES = [
@@ -550,7 +551,44 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Onboarding Settings */}
+        <section className="mb-8">
+          <div className="border border-border-primary bg-bg-secondary">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border-primary bg-bg-tertiary">
+              <Rocket className="w-4 h-4 text-text-muted" />
+              <h2 className="font-poppins font-semibold text-sm text-text-primary">
+                Onboarding
+              </h2>
+              <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted px-1.5 py-0.5 bg-bg-secondary border border-border-secondary ml-auto">
+                ONB-00
+              </span>
+            </div>
 
+            <div className="p-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-medium text-sm text-text-primary mb-1">
+                    Getting Started Guide
+                  </h3>
+                  <p className="text-xs text-text-muted">
+                    Complete the onboarding flow to personalize your AI
+                    architecture recommendations
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/dashboard?onboarding=true"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange hover:bg-brand-orange hover:text-white transition-colors font-mono text-xs uppercase tracking-wider"
+                  >
+                    <Rocket className="w-4 h-4" />
+                    Restart Onboarding
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Generator Defaults Label */}
         <div className="flex items-center justify-between gap-2 mb-4 px-1">

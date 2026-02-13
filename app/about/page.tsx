@@ -1,7 +1,7 @@
 "use client";
 
-import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Icon } from "@iconify/react";
+import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 
 export default function AboutPage() {
   return (

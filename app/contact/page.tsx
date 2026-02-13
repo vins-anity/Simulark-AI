@@ -1,10 +1,10 @@
 "use client";
 
+import { Icon } from "@iconify/react";
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Icon } from "@iconify/react";
 
 export default function ContactPage() {
   return (

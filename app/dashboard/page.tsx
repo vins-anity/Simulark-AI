@@ -1,24 +1,28 @@
 "use client";
 
-import { motion, Variants } from "framer-motion";
+import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
   Activity,
   Box,
   ChevronLeft,
   ChevronRight,
   Layout,
+  Loader2,
   Plus,
   Sparkles,
   Terminal,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createProject, getUserProjects } from "@/actions/projects";
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
+import { useOnboarding } from "@/lib/hooks/useOnboarding";
 import type { Project } from "@/lib/schema/graph";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 3;
 
@@ -59,7 +63,7 @@ const itemVariants: Variants = {
   },
 };
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [projects, setProjects] = useState<
     (Project & { updated_at?: string })[] | null
   >(null);
@@ -68,6 +72,24 @@ export default function DashboardPage() {
   const [prompt, setPrompt] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [forceOnboarding, setForceOnboarding] = useState(false);
+
+  // Onboarding integration
+  const {
+    showOnboarding,
+    onboardingStatus,
+    isLoading: onboardingLoading,
+    dismissOnboarding,
+    completeOnboarding,
+  } = useOnboarding();
+
+  // Check for manual onboarding trigger
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("onboarding") === "true") {
+      setForceOnboarding(true);
+    }
+  }, [searchParams]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,6 +128,7 @@ export default function DashboardPage() {
     const randomPrompt =
       PROMPT_EXAMPLES[Math.floor(Math.random() * PROMPT_EXAMPLES.length)];
     setPrompt(randomPrompt);
+    inputRef.current?.focus();
   };
 
   const handleExecute = async (e: React.FormEvent) => {
@@ -113,22 +136,34 @@ export default function DashboardPage() {
     if (!prompt.trim() || isExecuting) return;
 
     setIsExecuting(true);
+    const trimmedPrompt = prompt.trim();
+
     try {
-      const result = await createProject(prompt.trim());
+      const result = await createProject(trimmedPrompt);
       if (result.success && result.data) {
+        // Store prompt in sessionStorage for the project page to pick up
+        // Use a longer TTL to handle slow network/navigation delays
         sessionStorage.setItem(
           `initial-prompt-${result.data.id}`,
-          prompt.trim(),
+          trimmedPrompt,
         );
+        // Also store timestamp to handle stale prompts
+        sessionStorage.setItem(
+          `initial-prompt-${result.data.id}-timestamp`,
+          Date.now().toString(),
+        );
+
+        // Navigate to the project page
         router.push(`/projects/${result.data.id}`);
       } else {
         toast.error(result.error || "Failed to create project");
+        setIsExecuting(false);
       }
     } catch (err) {
       toast.error("Failed to execute command");
-    } finally {
       setIsExecuting(false);
     }
+    // Note: We don't reset isExecuting on success because we're navigating away
   };
 
   const handleCreateNew = async () => {
@@ -140,10 +175,10 @@ export default function DashboardPage() {
         router.push(`/projects/${result.data.id}`);
       } else {
         toast.error("Failed to initialize project");
+        setIsExecuting(false);
       }
     } catch (e) {
       toast.error("System error during initialization");
-    } finally {
       setIsExecuting(false);
     }
   };
@@ -188,7 +223,7 @@ export default function DashboardPage() {
             variants={itemVariants}
             className="text-lg md:text-xl text-brand-charcoal/60 dark:text-gray-400 font-lora italic text-center max-w-2xl"
           >
-            "Design, simulate, and deploy infrastructure architecture"
+            &quot;Design, simulate, and deploy infrastructure architecture&quot;
           </motion.p>
         </motion.div>
 
@@ -209,7 +244,9 @@ export default function DashboardPage() {
             <div className="bg-white dark:bg-zinc-900 border-2 border-brand-charcoal dark:border-zinc-700 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] transition-all flex flex-col overflow-hidden">
               <div className="bg-brand-charcoal/5 dark:bg-white/5 border-b border-brand-charcoal dark:border-zinc-700 px-4 py-1.5 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
                 <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none">
-                  UPLINK_STATION:IDLE
+                  {isExecuting
+                    ? "UPLINK_STATION:TRANSMITTING"
+                    : "UPLINK_STATION:IDLE"}
                 </span>
                 <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none hidden sm:block">
                   COORD_X:40.71/Y:-74.00
@@ -256,16 +293,32 @@ export default function DashboardPage() {
                   <button
                     onClick={handleExecute}
                     disabled={!prompt.trim() || isExecuting}
-                    className="h-16 px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-zinc-950 font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-16 px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-zinc-950 font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isExecuting ? "BUSY..." : "INITIALIZE"}
+                    {isExecuting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        BUSY...
+                      </>
+                    ) : (
+                      "INITIALIZE"
+                    )}
                   </button>
                 </div>
               </div>
             </div>
             <div className="mt-4 flex justify-center">
-              <span className="text-[8px] font-mono text-brand-charcoal/30 dark:text-gray-600 uppercase tracking-[0.4em] animate-pulse">
-                [ PRESS_ENTER_TO_TRANSMIT ]
+              <span
+                className={cn(
+                  "text-[8px] font-mono uppercase tracking-[0.4em] transition-all",
+                  isExecuting
+                    ? "opacity-100 animate-pulse text-brand-orange"
+                    : "opacity-30",
+                )}
+              >
+                {isExecuting
+                  ? "[ ESTABLISHING CONNECTION... ]"
+                  : "[ PRESS_ENTER_TO_TRANSMIT ]"}
               </span>
             </div>
           </div>
@@ -338,7 +391,10 @@ export default function DashboardPage() {
             </div>
           ) : !projects || projects.length === 0 ? (
             <div className="p-16 border-2 border-dashed border-brand-charcoal/20 dark:border-white/10 flex flex-col items-center justify-center grayscale opacity-50">
-              <Activity size={32} className="mb-4 text-brand-charcoal dark:text-gray-600" />
+              <Activity
+                size={32}
+                className="mb-4 text-brand-charcoal dark:text-gray-600"
+              />
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand-charcoal dark:text-gray-500">
                 No Active Operations
               </p>
@@ -381,6 +437,49 @@ export default function DashboardPage() {
           </span>
         </div>
       </footer>
+
+      {/* Onboarding Modal */}
+      <AnimatePresence>
+        {!onboardingLoading &&
+          onboardingStatus &&
+          (showOnboarding || forceOnboarding) && (
+            <OnboardingModal
+              status={onboardingStatus}
+              onComplete={() => {
+                setForceOnboarding(false);
+                completeOnboarding();
+              }}
+              onSkip={() => {
+                setForceOnboarding(false);
+                dismissOnboarding();
+              }}
+            />
+          )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Wrapper with Suspense for useSearchParams
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="flex-1 w-full min-h-screen bg-brand-sand-light dark:bg-zinc-950 flex flex-col">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-brand-charcoal/20 border-t-brand-charcoal animate-spin" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40">
+            Loading Mission Control...
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

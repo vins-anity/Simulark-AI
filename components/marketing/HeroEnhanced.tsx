@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import {
   motion,
   useMotionTemplate,
@@ -10,8 +7,11 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import { MouseEvent, useRef } from "react";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { type MouseEvent, useRef } from "react";
 import { HeroCanvas } from "@/components/marketing/HeroCanvas";
+import { Button } from "@/components/ui/button";
 
 export function HeroEnhanced() {
   const containerRef = useRef<HTMLElement>(null);

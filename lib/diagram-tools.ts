@@ -340,10 +340,6 @@ export function getToolsForOperation(operation: string): typeof diagramTools {
         connectNodes: diagramTools.connectNodes,
         addNode: diagramTools.addNode,
       };
-
-    case "extend":
-    case "modify":
-    case "optimize":
     default:
       // For modifications, provide all tools
       return diagramTools;

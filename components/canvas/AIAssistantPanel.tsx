@@ -3,17 +3,16 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertCircle,
   Bot,
   ChevronDown,
   ChevronRight,
   Copy,
   Loader2,
+  RotateCcw,
   Terminal,
-  Signal,
-  Wifi,
-  Zap,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import {
@@ -35,7 +34,6 @@ import {
 } from "@/components/ui/select";
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { cn } from "@/lib/utils";
-import { LoadingState } from "./LoadingState";
 import { StreamingMessage } from "./StreamingMessage";
 
 interface AIAssistantPanelProps {
@@ -48,6 +46,7 @@ interface AIAssistantPanelProps {
   initialMetadata?: Record<string, any>;
   isOpen?: boolean;
   onToggle?: () => void;
+  onInitialPromptProcessed?: () => void;
 }
 
 interface Message {
@@ -65,6 +64,13 @@ interface Chat {
   created_at: string;
   updated_at: string;
 }
+
+type GenerationState =
+  | "idle"
+  | "preparing"
+  | "generating"
+  | "complete"
+  | "error";
 
 // Signal strength indicator based on streaming progress
 function SignalStrengthIndicator({
@@ -160,12 +166,91 @@ function ProcessingSteps({ isGenerating }: { isGenerating: boolean }) {
               {step}
             </span>
             {i < steps.length - 1 && (
-              <span className="text-brand-charcoal/20 dark:text-border-primary/50">→</span>
+              <span className="text-brand-charcoal/20 dark:text-border-primary/50">
+                →
+              </span>
             )}
           </div>
         ))}
       </motion.div>
     </div>
+  );
+}
+
+// Error display with retry option
+function GenerationError({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col gap-3 p-4 border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 rounded-sm"
+    >
+      <div className="flex items-start gap-2">
+        <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+            Generation Failed
+          </p>
+          <p className="font-mono text-[10px] text-red-600/80 dark:text-red-400/80 mt-1">
+            {message}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="flex items-center justify-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-500/20 hover:bg-red-200 dark:hover:bg-red-500/30 text-red-700 dark:text-red-400 font-mono text-[10px] uppercase tracking-wider transition-colors"
+      >
+        <RotateCcw className="w-3 h-3" />
+        Retry
+      </button>
+    </motion.div>
+  );
+}
+
+// Loading state for initial prompt processing
+function InitialPromptLoader() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col gap-3 p-4 border border-brand-orange/30 bg-brand-orange/5"
+    >
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Loader2 className="w-5 h-5 text-brand-orange animate-spin" />
+          <div className="absolute inset-0 animate-ping opacity-20">
+            <Loader2 className="w-5 h-5 text-brand-orange" />
+          </div>
+        </div>
+        <div className="flex-1">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-brand-charcoal dark:text-text-primary">
+            Initializing Architecture
+          </p>
+          <p className="font-mono text-[9px] text-brand-charcoal/60 dark:text-text-secondary/60 mt-0.5">
+            Setting up environment...
+          </p>
+        </div>
+      </div>
+      <div className="h-1 bg-brand-charcoal/10 dark:bg-border-primary/30 overflow-hidden">
+        <motion.div
+          className="h-full bg-brand-orange"
+          initial={{ width: "0%" }}
+          animate={{ width: ["0%", "40%", "60%", "80%", "100%"] }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+    </motion.div>
   );
 }
 
@@ -179,6 +264,7 @@ export function AIAssistantPanel({
   initialMetadata = {},
   isOpen = true,
   onToggle,
+  onInitialPromptProcessed,
 }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -194,6 +280,15 @@ export function AIAssistantPanel({
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [_editingChatId, _setEditingChatId] = useState<string | null>(null);
   const [_editingTitle, _setEditingTitle] = useState("");
+
+  // Generation state machine for reliable prompt processing
+  const [generationState, setGenerationState] =
+    useState<GenerationState>("idle");
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Track if initial prompt was already processed to prevent double-processing
+  const processedPromptRef = useRef<string | null>(null);
 
   // Load initial settings or default mode
   const [chatMode, setChatModeState] = useState<ArchitectureMode>(
@@ -251,7 +346,8 @@ export function AIAssistantPanel({
   useEffect(() => {
     loadChats();
     loadUserPreferences();
-  }, [projectId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load messages when current chat changes
   useEffect(() => {
@@ -260,6 +356,7 @@ export function AIAssistantPanel({
     } else {
       setMessages([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChatId]);
 
   // Scroll to bottom on new messages
@@ -267,34 +364,83 @@ export function AIAssistantPanel({
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
     }
-  }, [messages, isGenerating]);
+  }, []);
 
-  // Track if we've processed the initial prompt to prevent double-processing
-  const hasProcessedInitialPrompt = useRef(false);
-
-  // Reset the ref when projectId changes (handles navigation from dashboard)
+  // Reliable initial prompt processing with state machine
   useEffect(() => {
-    hasProcessedInitialPrompt.current = false;
-  }, [projectId]);
+    // Skip if no initial prompt provided
+    if (!initialPrompt) return;
 
-  // Auto-generate architecture when initialPrompt is provided (from dashboard)
-  useEffect(() => {
-    // Only trigger if we have a prompt, haven't started generating, have no messages yet,
-    // chats have finished loading, and we haven't already processed it
-    if (
-      initialPrompt &&
-      !isGenerating &&
-      messages.length === 0 &&
-      !isLoadingChats &&
-      !hasProcessedInitialPrompt.current
-    ) {
-      hasProcessedInitialPrompt.current = true;
-      // Small delay to ensure UI is ready
-      setTimeout(() => {
-        processMessage(initialPrompt);
-      }, 100);
+    // Skip if we've already processed this exact prompt
+    if (processedPromptRef.current === initialPrompt) return;
+
+    // Skip if we're already processing
+    if (generationState !== "idle") return;
+
+    // Skip if chats are still loading
+    if (isLoadingChats) return;
+
+    // Skip if we already have messages (user refreshed after starting)
+    if (messages.length > 0) {
+      // Mark as processed to prevent re-triggering
+      processedPromptRef.current = initialPrompt;
+      return;
     }
-  }, [initialPrompt, isGenerating, messages.length, isLoadingChats, projectId]);
+
+    // Set up the pending prompt and transition to preparing state
+    setPendingPrompt(initialPrompt);
+    setGenerationState("preparing");
+  }, [initialPrompt, isLoadingChats, messages.length, generationState]);
+
+  // Handle the actual processing when in preparing state
+  useEffect(() => {
+    if (generationState !== "preparing" || !pendingPrompt) return;
+
+    // Mark this prompt as processed to prevent re-triggering
+    processedPromptRef.current = pendingPrompt;
+
+    // Small delay to ensure UI is ready and show loading state
+    const timeoutId = setTimeout(() => {
+      setGenerationState("generating");
+      processMessage(pendingPrompt)
+        .then(() => {
+          setGenerationState("complete");
+          setPendingPrompt(null);
+          setGenerationError(null);
+          // Notify parent that processing is complete
+          onInitialPromptProcessed?.();
+        })
+        .catch((error) => {
+          setGenerationState("error");
+          setGenerationError(
+            error instanceof Error ? error.message : "Generation failed",
+          );
+        });
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [generationState, pendingPrompt, onInitialPromptProcessed]);
+
+  // Retry handler for failed initial prompt
+  const handleRetryInitialPrompt = useCallback(() => {
+    if (pendingPrompt) {
+      setGenerationState("preparing");
+      setGenerationError(null);
+    }
+  }, [pendingPrompt]);
+
+  // Clear generation state when user sends a new message manually
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isGenerating) return;
+
+    // Clear any pending/failed initial prompt state
+    setGenerationState("idle");
+    setPendingPrompt(null);
+    setGenerationError(null);
+
+    await processMessage(inputValue);
+  };
 
   const loadUserPreferences = async () => {
     const supabase = createBrowserClient(
@@ -414,7 +560,7 @@ export function AIAssistantPanel({
     }
   };
 
-  const deleteChat = async (chatId: string) => {
+  const _deleteChat = async (chatId: string) => {
     try {
       const { error } = await deleteChatAction(chatId, projectId);
       if (error) {
@@ -436,7 +582,7 @@ export function AIAssistantPanel({
     }
   };
 
-  const updateChatTitle = async (chatId: string, newTitle: string) => {
+  const _updateChatTitle = async (chatId: string, newTitle: string) => {
     try {
       const { error } = await updateChatTitleAction(chatId, newTitle);
       if (error) {
@@ -666,10 +812,10 @@ export function AIAssistantPanel({
           prev.map((m) =>
             m.id === aiMsgId
               ? {
-                ...m,
-                isThinking: false,
-                content: "❌ No response from server",
-              }
+                  ...m,
+                  isThinking: false,
+                  content: "❌ No response from server",
+                }
               : m,
           ),
         );
@@ -685,8 +831,8 @@ export function AIAssistantPanel({
       let buffer = "";
 
       // Collect nodes and edges from tool results
-      const generatedNodes: any[] = [];
-      const generatedEdges: any[] = [];
+      const _generatedNodes: any[] = [];
+      const _generatedEdges: any[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -736,7 +882,7 @@ export function AIAssistantPanel({
                           setStreamProgress(100);
                         }
                       }
-                    } catch (e) {
+                    } catch (_e) {
                       // JSON not complete yet
                     }
                   }
@@ -745,12 +891,12 @@ export function AIAssistantPanel({
                     prev.map((m) =>
                       m.id === aiMsgId
                         ? {
-                          ...m,
-                          isThinking: false,
-                          content: isJsonLike
-                            ? "__LOADING__"
-                            : accumulatedContent,
-                        }
+                            ...m,
+                            isThinking: false,
+                            content: isJsonLike
+                              ? "__LOADING__"
+                              : accumulatedContent,
+                          }
                         : m,
                     ),
                   );
@@ -786,12 +932,12 @@ export function AIAssistantPanel({
                 prev.map((m) =>
                   m.id === aiMsgId
                     ? {
-                      ...m,
-                      isThinking: false,
-                      content: isJsonLike
-                        ? "__LOADING__"
-                        : accumulatedContent,
-                    }
+                        ...m,
+                        isThinking: false,
+                        content: isJsonLike
+                          ? "__LOADING__"
+                          : accumulatedContent,
+                      }
                     : m,
                 ),
               );
@@ -855,16 +1001,14 @@ export function AIAssistantPanel({
             : m,
         ),
       );
+
+      // Re-throw for the initial prompt handling
+      throw err;
     } finally {
       setIsGenerating(false);
       clearInterval(progressInterval);
       setStreamProgress(0);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await processMessage(inputValue);
   };
 
   const currentChat = chats.find((c) => c.id === currentChatId);
@@ -964,222 +1108,210 @@ export function AIAssistantPanel({
         className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4 bg-white dark:bg-bg-secondary"
         ref={messagesEndRef}
       >
-        {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center opacity-25 text-center">
-            <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal dark:border-border-primary mb-5 flex items-center justify-center animate-pulse">
-              <Bot className="w-10 h-10" />
+        {/* Initial Prompt Loading States */}
+        {generationState === "preparing" && <InitialPromptLoader />}
+
+        {generationState === "error" && generationError && (
+          <GenerationError
+            message={generationError}
+            onRetry={handleRetryInitialPrompt}
+          />
+        )}
+
+        {/* Empty State */}
+        {messages.length === 0 &&
+          generationState !== "preparing" &&
+          generationState !== "error" && (
+            <div className="h-full flex flex-col items-center justify-center opacity-25 text-center">
+              <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal dark:border-border-primary mb-5 flex items-center justify-center animate-pulse">
+                <Bot className="w-10 h-10" />
+              </div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed dark:text-text-secondary">
+                Waiting for operator input
+              </p>
+              <p className="font-mono text-[9px] text-brand-charcoal/60 dark:text-text-secondary/60 mt-1">
+                [ STANDBY_MODE ]
+              </p>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed dark:text-text-secondary">
-              Waiting for operator input
-            </p>
-            <p className="font-mono text-[9px] text-brand-charcoal/60 dark:text-text-secondary/60 mt-1">
-              [ STANDBY_MODE ]
-            </p>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
+          )}
+
+        {/* Messages */}
+        {messages.map((message) => (
+          <motion.div
+            key={message.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className={cn(
+              "flex flex-col gap-1.5",
+              message.role === "user" ? "ml-auto items-end" : "items-start",
+            )}
+          >
+            {/* Message Header */}
+            <div className="flex items-center gap-2 px-0.5">
+              {message.role === "assistant" && (
+                <div className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
+              )}
+              <span
+                className={cn(
+                  "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
+                  message.role === "user"
+                    ? "text-brand-charcoal/50 dark:text-text-secondary/50"
+                    : "text-brand-charcoal/40 dark:text-text-secondary/40",
+                )}
+              >
+                {message.role === "user" ? "OPERATOR" : "ASSISTANT"}
+              </span>
+              <span className="font-mono text-[8px] text-brand-charcoal/30 dark:text-text-secondary/30">
+                {new Date().toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+
+            {/* Message Content */}
+            <div
               className={cn(
-                "flex flex-col gap-1.5",
-                message.role === "user" ? "ml-auto items-end" : "items-start",
+                "relative max-w-[95%] px-3 py-2.5 text-[13px] leading-relaxed",
+                message.role === "user"
+                  ? "bg-brand-charcoal dark:bg-bg-elevated text-white dark:text-text-primary rounded-sm"
+                  : "bg-neutral-100 dark:bg-bg-tertiary text-brand-charcoal dark:text-text-primary rounded-sm border-l-2 border-brand-orange",
               )}
             >
-              {/* Message Header */}
-              <div className="flex items-center gap-2 px-0.5">
-                {message.role === "assistant" && (
-                  <div className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
-                )}
-                <span
-                  className={cn(
-                    "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
-                    message.role === "user"
-                      ? "text-brand-charcoal/50 dark:text-text-secondary/50"
-                      : "text-brand-orange",
-                  )}
-                >
-                  {message.role === "user" ? "[ OPERATOR ]" : "[ SYSTEM ]"}
-                </span>
-                {message.role === "user" && (
-                  <div className="w-1.5 h-1.5 bg-brand-charcoal/30 dark:bg-text-secondary/30" />
-                )}
-              </div>
-
-              {/* Message Content - Fixed overflow */}
-              {message.content && (
+              {message.role === "assistant" &&
+              message.content === "__LOADING__" ? (
+                <StreamingMessage isGenerating={true} />
+              ) : (
                 <div
                   className={cn(
-                    "relative group max-w-full",
-                    message.role === "user"
-                      ? "bg-brand-charcoal text-white dark:bg-bg-elevated dark:text-text-primary dark:border dark:border-border-primary"
-                      : "bg-neutral-50 text-brand-charcoal border border-brand-charcoal/10 dark:bg-bg-tertiary dark:text-text-secondary/80 dark:border-border-primary/30",
-                    "px-3 py-2.5 shadow-sm",
-                    message.role === "user"
-                      ? "rounded-tl-xl rounded-bl-xl rounded-br-xl"
-                      : "rounded-tr-xl rounded-br-xl rounded-bl-xl",
+                    "prose prose-sm max-w-none dark:prose-invert",
+                    "prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5",
+                    "prose-code:text-[11px] prose-code:bg-neutral-200 dark:prose-code:bg-bg-elevated prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
+                    message.role === "user" && "prose-invert",
                   )}
                 >
-                  {/* Copy button for assistant messages */}
-                  {message.role === "assistant" &&
-                    message.content &&
-                    message.content !== "__LOADING__" && (
-                      <button
-                        onClick={() => copyToClipboard(message.content)}
-                        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/10 rounded z-10"
-                        title="Copy to clipboard"
-                      >
-                        <Copy className="w-3 h-3 text-brand-charcoal/40" />
-                      </button>
-                    )}
-
-                  {message.role === "assistant" ? (
-                    message.content === "__LOADING__" ? (
-                      <StreamingMessage
-                        isGenerating={isGenerating}
-                        reasoning={message.reasoning}
-                      />
-                    ) : (
-                      <div
-                        className="prose prose-sm max-w-none font-mono text-[10px] leading-relaxed
-                        prose-p:my-1.5 prose-p:text-brand-charcoal/90 dark:prose-p:text-text-secondary
-                        prose-p:overflow-wrap-break-word prose-p:word-break-break-word
-                        prose-headings:font-black prose-headings:uppercase prose-headings:tracking-[0.08em] prose-headings:text-brand-charcoal dark:prose-headings:text-text-primary prose-headings:mt-3 prose-headings:mb-2
-                        prose-h1:text-sm prose-h2:text-xs prose-h3:text-[11px]
-                        prose-strong:text-brand-orange prose-strong:font-bold
-                        prose-ul:my-1.5 prose-ul:space-y-0.5
-                        prose-li:my-0 prose-li:text-brand-charcoal/80 dark:prose-li:text-text-secondary/80
-                        prose-code:text-[9px] prose-code:bg-brand-charcoal/10 dark:prose-code:bg-bg-elevated dark:prose-code:text-text-primary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:break-all
-                        prose-pre:bg-brand-charcoal dark:prose-pre:bg-bg-elevated prose-pre:text-white dark:prose-pre:text-text-primary prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2 prose-pre:overflow-x-auto"
-                      >
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
-                      </div>
-                    )
-                  ) : (
-                    <div className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed uppercase tracking-wide break-all dark:text-text-primary">
-                      {message.content}
-                    </div>
-                  )}
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
               )}
-            </motion.div>
-          ))
-        )}
+
+              {/* Reasoning Block */}
+              {message.role === "assistant" && message.reasoning && (
+                <div className="mt-3 pt-2 border-t border-brand-charcoal/10 dark:border-border-primary/30">
+                  <details className="group">
+                    <summary className="flex items-center gap-1.5 cursor-pointer font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40 dark:text-text-secondary/50 hover:text-brand-orange transition-colors select-none">
+                      <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
+                      Chain of Thought
+                    </summary>
+                    <div className="mt-2 p-2 bg-neutral-50 dark:bg-bg-primary/50 text-[11px] text-brand-charcoal/70 dark:text-text-secondary/70 font-mono rounded border border-brand-charcoal/5 dark:border-border-primary/20">
+                      {message.reasoning}
+                    </div>
+                  </details>
+                </div>
+              )}
+
+              {/* Copy Button */}
+              <button
+                type="button"
+                onClick={() => copyToClipboard(message.content)}
+                className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/5 dark:hover:bg-bg-elevated rounded"
+                title="Copy"
+              >
+                <Copy className="w-3 h-3 text-brand-charcoal/40 dark:text-text-secondary/50" />
+              </button>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       {/* Input Area */}
-      <div className="p-2.5 bg-gradient-to-t from-neutral-50 to-white dark:from-bg-secondary dark:to-bg-tertiary border-t border-brand-charcoal/10 dark:border-border-primary/50">
-        <form
-          onSubmit={handleSubmit}
-          className="relative flex flex-col gap-1.5 border border-brand-charcoal/20 dark:border-border-primary/50 p-2 bg-white dark:bg-bg-tertiary shadow-sm"
-        >
-          {/* Top Row: Controls & Model */}
-          <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 dark:border-border-primary/50 pb-1.5 overflow-x-auto scrollbar-hide">
-            {/* Mode Selector */}
-            <div className="flex gap-1 shrink-0">
-              {(["default", "startup", "corporate"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setChatMode(mode)}
-                  className={cn(
-                    "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm whitespace-nowrap",
-                    chatMode === mode
-                      ? "bg-brand-charcoal text-white font-black dark:bg-bg-elevated dark:text-text-primary"
-                      : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5 dark:text-text-secondary/50 dark:hover:text-text-primary dark:hover:bg-bg-elevated/20",
-                  )}
-                >
-                  {mode === "corporate" ? "ENTERPRISE" : mode}
-                </button>
-              ))}
-            </div>
+      <div className="flex-shrink-0 border-t border-brand-charcoal/10 dark:border-border-primary/50 bg-white dark:bg-bg-secondary">
+        {/* Progress Bar */}
+        <AnimatePresence>
+          {isGenerating && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              exit={{ height: 0 }}
+              className="border-b border-brand-charcoal/5 dark:border-border-primary/30 overflow-hidden"
+            >
+              <div className="px-3 py-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <SignalStrengthIndicator
+                    isGenerating={isGenerating}
+                    streamProgress={streamProgress}
+                  />
+                  <ProcessingSteps isGenerating={isGenerating} />
+                </div>
+                <div className="h-0.5 bg-brand-charcoal/5 dark:bg-border-primary/30 overflow-hidden">
+                  <motion.div
+                    className="h-full bg-brand-orange"
+                    style={{ width: `${streamProgress}%` }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Model Selector */}
-            <Select value={model} onValueChange={setModel}>
-              <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 dark:border-border-primary/50 bg-neutral-50 dark:bg-bg-elevated font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal dark:text-text-primary transition-colors gap-2 hover:bg-white dark:hover:bg-bg-secondary hover:border-brand-charcoal/40 dark:hover:border-border-primary [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none shrink-0">
-                <SelectValue />
+        {/* Input Controls */}
+        <div className="p-3 space-y-3">
+          {/* Mode & Model Selectors */}
+          <div className="flex gap-2">
+            <Select value={chatMode} onValueChange={setChatMode}>
+              <SelectTrigger className="w-full h-8 text-[11px] font-mono uppercase tracking-wider bg-neutral-50 dark:bg-bg-tertiary border-brand-charcoal/10 dark:border-border-primary/50 focus:ring-brand-orange/20">
+                <SelectValue placeholder="MODE" />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-2 border-brand-charcoal dark:border-border-primary font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)] bg-white dark:bg-bg-elevated dark:text-text-primary">
-                <SelectItem
-                  value="glm-4.5-air"
-                  className="text-[10px] uppercase"
-                >
-                  GLM_4.5_AIR
-                </SelectItem>
-                <SelectItem
-                  value="glm-4.7-flash"
-                  className="text-[10px] uppercase"
-                >
-                  GLM_4.7_FLASH
-                </SelectItem>
-                <SelectItem
-                  value="deepseek-ai"
-                  className="text-[10px] uppercase"
-                >
-                  DEEPSEEK_V3
-                </SelectItem>
+              <SelectContent className="font-mono text-[11px]">
+                <SelectItem value="default">Default</SelectItem>
+                <SelectItem value="chaos">Chaos Mode</SelectItem>
+                <SelectItem value="cost">Cost Optimizer</SelectItem>
+                <SelectItem value="expert">Expert Review</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={model} onValueChange={setModel}>
+              <SelectTrigger className="w-full h-8 text-[11px] font-mono uppercase tracking-wider bg-neutral-50 dark:bg-bg-tertiary border-brand-charcoal/10 dark:border-border-primary/50 focus:ring-brand-orange/20">
+                <SelectValue placeholder="MODEL" />
+              </SelectTrigger>
+              <SelectContent className="font-mono text-[11px]">
+                <SelectItem value="glm-4.7-flash">GLM-4.7-Flash</SelectItem>
+                <SelectItem value="glm-4.7-air">GLM-4.7-Air</SelectItem>
+                <SelectItem value="glm-4.7-plus">GLM-4.7-Plus</SelectItem>
+                <SelectItem value="kimi-k2">Kimi-K2</SelectItem>
+                <SelectItem value="deepseek-v3">DeepSeek-V3</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Input & Action Row */}
-          <div className="relative flex gap-2">
-            <textarea
+          {/* Input Field */}
+          <form onSubmit={handleManualSubmit} className="relative">
+            <input
+              type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              placeholder="[ ENTER CMD ]"
-              className="flex-1 bg-transparent border-none p-1.5 font-mono text-[11px] uppercase tracking-wider placeholder:text-brand-charcoal/25 dark:placeholder:text-text-secondary/25 focus:outline-none focus:ring-0 min-h-[36px] max-h-[140px] resize-none leading-relaxed dark:text-text-primary"
-              rows={1}
+              placeholder={
+                isGenerating
+                  ? "PROCESSING..."
+                  : generationState === "preparing"
+                    ? "INITIALIZING..."
+                    : "ENTER_COMMAND..."
+              }
+              disabled={isGenerating || generationState === "preparing"}
+              className="w-full h-11 pl-4 pr-12 bg-neutral-50 dark:bg-bg-tertiary border border-brand-charcoal/15 dark:border-border-primary/50 text-brand-charcoal dark:text-text-primary placeholder:text-brand-charcoal/30 dark:placeholder:text-text-secondary/30 text-[13px] font-mono focus:outline-none focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
-
-            <div className="flex flex-col justify-end">
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isGenerating}
-                className={cn(
-                  "h-8 px-3 flex items-center justify-center font-mono font-black uppercase text-[9px] tracking-[0.12em] transition-all duration-200",
-                  "border-2 border-brand-charcoal bg-brand-charcoal text-white dark:border-border-primary dark:bg-bg-elevated dark:text-text-primary",
-                  "hover:bg-brand-orange hover:border-brand-orange hover:shadow-md dark:hover:bg-brand-orange dark:hover:border-brand-orange",
-                  "active:scale-95",
-                  "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100",
-                )}
-                title="TRANSMIT"
-              >
-                {isGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  "SEND"
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-
-        {/* Enhanced Status bar with Signal Strength */}
-        <div className="flex items-center justify-between mt-2 px-1">
-          <div className="flex items-center gap-3">
-            <SignalStrengthIndicator
-              isGenerating={isGenerating}
-              streamProgress={streamProgress}
-            />
-            {isGenerating && (
-              <>
-                <div className="h-3 w-px bg-brand-charcoal/10 dark:bg-border-primary/50" />
-                <ProcessingSteps isGenerating={isGenerating} />
-              </>
-            )}
-          </div>
-          <span className="font-mono text-[8px] text-brand-charcoal/30 dark:text-text-secondary/30 uppercase">
-            {inputValue.length} chars
-          </span>
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || isGenerating}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-brand-charcoal dark:bg-bg-elevated text-white dark:text-text-primary hover:bg-brand-orange dark:hover:bg-brand-orange disabled:opacity-30 disabled:hover:bg-brand-charcoal dark:disabled:hover:bg-bg-elevated transition-colors"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+          </form>
         </div>
       </div>
     </div>

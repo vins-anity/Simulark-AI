@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Check, Crown, Minus, Shield, Zap } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, Minus, Zap, Shield, Crown } from "lucide-react";
 
 const contracts = [
   {
@@ -59,7 +59,7 @@ const contracts = [
       "Priority Generation Queue",
       "Private Mode (Zero Data Retention)",
       "Claude Opus 4.5",
-      "Code Generation/Export (BETA)",
+      "Code Export",
     ],
     limits: [],
     cta: "[ MINT_BLUEPRINT ]",
@@ -96,10 +96,11 @@ function ContractCard({
 
       {/* Card Container */}
       <div
-        className={`h-full border bg-bg-secondary relative transition-all duration-300 ${contract.popular
+        className={`h-full border bg-bg-secondary relative transition-all duration-300 ${
+          contract.popular
             ? "border-brand-orange"
             : "border-brand-charcoal/10 group-hover:border-brand-charcoal/30"
-          }`}
+        }`}
       >
         {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-brand-charcoal/20" />
@@ -191,17 +192,18 @@ function ContractCard({
           {/* CTA Button */}
           <Link href="/auth/signin">
             <Button
-              className={`w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none border-0 transition-all duration-300 ${contract.popular
+              className={`w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none border-0 transition-all duration-300 ${
+                contract.popular
                   ? "bg-brand-charcoal text-white hover:bg-brand-orange"
                   : "bg-transparent border-2 border-brand-charcoal text-brand-charcoal hover:bg-brand-charcoal hover:text-white dark:text-text-primary dark:border-brand-charcoal/50 dark:hover:bg-brand-charcoal"
-                }`}
+              }`}
               variant={contract.popular ? "default" : "outline"}
             >
               <span className="text-white/40 group-hover:text-white/40">[</span>
               <span className="mx-2">
                 {contract.popular
                   ? "UPGRADE_CAPACITY"
-                  : contract.cta.replace(/[\[\] ]/g, "")}
+                  : contract.cta.replace(/[[\] ]/g, "")}
               </span>
               <span className="text-white/40 group-hover:text-white/40">]</span>
             </Button>

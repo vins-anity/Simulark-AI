@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 const integrations = [
   {
@@ -107,10 +107,11 @@ export function TrustedByEnhanced() {
                       {integration.name}
                     </span>
                     <span
-                      className={`font-mono text-[7px] uppercase ${integration.status === "ACTIVE"
+                      className={`font-mono text-[7px] uppercase ${
+                        integration.status === "ACTIVE"
                           ? "text-brand-green"
                           : "text-brand-orange"
-                        }`}
+                      }`}
                     >
                       {integration.status}
                     </span>

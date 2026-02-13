@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  ChevronDown,
-  ChevronUp,
+  ArrowRight,
   BrainCircuit,
   Check,
-  Loader2,
-  Server,
+  ChevronDown,
+  ChevronUp,
   Database,
-  Network,
   Layers,
-  ArrowRight,
+  Loader2,
+  Network,
+  Server,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface ThinkingPanelProps {
@@ -184,7 +184,7 @@ export function ThinkingPanel({ reasoning, isThinking }: ThinkingPanelProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [reasoning]);
+  }, []);
 
   // If no steps detected, show a default message
   const hasSteps = stepsWithStatus.length > 0;

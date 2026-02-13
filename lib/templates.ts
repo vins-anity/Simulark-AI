@@ -1,9 +1,9 @@
-import { type Node, type Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 
 // --- Wrapper to enforce generic types for template nodes ---
 // We use 'any' for data to avoid strict type checking against the dynamic Node type here,
 // but in the app it will be cast to AppNode.
-const createNode = (node: any) => node;
+const _createNode = (node: any) => node;
 
 export const SAAS_TEMPLATE = {
   nodes: [

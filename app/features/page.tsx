@@ -1,8 +1,8 @@
 "use client";
 
-import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
+import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 
 const features = [
   {

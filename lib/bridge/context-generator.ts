@@ -1,4 +1,4 @@
-import { Edge, Node } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 
 /**
  * Generates a .cursorrules file content based on the current architecture.

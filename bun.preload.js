@@ -3,13 +3,13 @@
 
 if (typeof globalThis.TextEncoderStream === "undefined") {
   // Use a simple object to mock TextEncoderStream
-  const encoder = new TextEncoder();
+  const _encoder = new TextEncoder();
   globalThis.TextEncoderStream = class TextEncoderStream extends (
     ReadableStream
   ) {
     constructor() {
       super({
-        start(controller) {
+        start(_controller) {
           // No-op for mock
         },
       });

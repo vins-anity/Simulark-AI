@@ -17,7 +17,9 @@ export function CacheNode(props: BaseNodeProps) {
             {">"} {props.data.description as string}
           </span>
         ) : (
-          <div className="text-xs text-text-secondary mt-1">In-memory store</div>
+          <div className="text-xs text-text-secondary mt-1">
+            In-memory store
+          </div>
         )}
       </div>
     </BaseNode>

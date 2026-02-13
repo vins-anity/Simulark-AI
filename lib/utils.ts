@@ -1,7 +1,6 @@
+import type { Edge, Node } from "@xyflow/react";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-
-import { type Node, type Edge } from "@xyflow/react";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

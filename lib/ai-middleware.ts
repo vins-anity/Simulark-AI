@@ -3,7 +3,6 @@ import {
   type Architecture,
   validateArchitecture,
 } from "./architecture-schemas";
-import { logger } from "./logger";
 import { enrichNodesWithTech } from "./tech-normalizer";
 
 /**

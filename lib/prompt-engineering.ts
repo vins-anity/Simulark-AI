@@ -1,6 +1,5 @@
 import { createLogger } from "@/lib/logger";
 import {
-  detectOperation,
   getComponentCountAdjustment,
   getOperationInstructions,
   type OperationType,
@@ -8,7 +7,7 @@ import {
 } from "./intent-detector";
 import { TECH_KNOWLEDGE_BASE } from "./tech-knowledge";
 
-const logger = createLogger("prompt-engineering");
+const _logger = createLogger("prompt-engineering");
 
 export type ArchitectureType =
   | "web-app"
@@ -168,7 +167,7 @@ const FRAMEWORK_GROUPS = {
   frontend: ["react", "vue", "angular", "svelte"],
 };
 
-const INCOMPATIBLE_PAIRS: Array<[string[], string[]]> = [
+const _INCOMPATIBLE_PAIRS: Array<[string[], string[]]> = [
   [FRAMEWORK_GROUPS.fullstack, FRAMEWORK_GROUPS.backend], // Next.js + Express
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.backend], // Laravel + Express
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.fullstack], // Laravel + Next.js
@@ -493,7 +492,7 @@ export interface PromptValidation {
  * Minimum requirements for a valid architecture prompt
  */
 const MIN_PROMPT_LENGTH = 5;
-const MIN_MEANINGFUL_WORDS = 2;
+const _MIN_MEANINGFUL_WORDS = 2;
 
 /**
  * Validate if a prompt is meaningful enough to generate architecture
@@ -724,7 +723,7 @@ Start with simple 3-tier: Frontend → API → Database. Add components based on
 function getTechRecommendations(
   type: ArchitectureType,
   mode: ArchitectureMode,
-  complexity: ComplexityLevel,
+  _complexity: ComplexityLevel,
 ): string {
   // Mode-specific tech preferences
   const startupTechs: Record<ArchitectureType, string> = {
@@ -1215,7 +1214,7 @@ POSITIONING GUIDELINES:
 
 CRITICAL RULES:
 1. Never exceed ${adjustedMax} components
-2. Never use less than ${adjustedMin} components${shouldRelax ? " (relaxed for " + operationType + ")" : ""}
+2. Never use less than ${adjustedMin} components${shouldRelax ? ` (relaxed for ${operationType})` : ""}
 3. Never mix full-stack frameworks with separate backend frameworks
 4. Match complexity to request (simple apps don't need CDN/load balancer)
 5. Prefer managed services in startup mode
@@ -1260,7 +1259,7 @@ CONNECTION REQUIREMENTS - VERY IMPORTANT:
 
 CRITICAL RULES:
 1. Never exceed ${adjustedMax} components
-2. Never use less than ${adjustedMin} components${shouldRelax ? " (relaxed for " + operationType + ")" : ""}
+2. Never use less than ${adjustedMin} components${shouldRelax ? ` (relaxed for ${operationType})` : ""}
 3. Never mix full-stack frameworks with separate backend frameworks
 4. Match complexity to request (simple apps don't need CDN/load balancer)
 5. Prefer managed services in startup mode
@@ -1314,7 +1313,7 @@ export function getTechKnowledgeInjection(
         categories.has(tech.category) ||
         (categories.has("frontend") && tech.category === "frontend"),
     ) // Simpler filter for now, can refine
-    .filter((tech) => {
+    .filter((_tech) => {
       // Optional: Filter by specific matching keywords if context is huge,
       // but for now we inject the curated list which is ~30 items.
       // We can optimize to top 3 per category if needed.

@@ -1,22 +1,22 @@
 // Animation Components - Living Blueprint Design System
 // Minimal, technical, schematic aesthetic
 
+export { AnimatedCounter, StatsCard } from "./AnimatedCounter";
 export { FloatingParticles } from "./FloatingParticles";
-export { Spotlight, SpotlightCard } from "./Spotlight";
+export { GlowButton, MagneticButton } from "./GlowButton";
+export { GlitchText, GradientText, ShimmerText } from "./GradientText";
+export { InfiniteMarquee, MarqueeItem } from "./InfiniteMarquee";
 export {
-  TextReveal,
-  WordReveal,
-  CharacterReveal,
-  Typewriter,
-} from "./TextReveal";
-export {
+  Magnetic,
+  Parallax,
   ScrollReveal,
   StaggerContainer,
   StaggerItem,
-  Parallax,
-  Magnetic,
 } from "./ScrollReveal";
-export { InfiniteMarquee, MarqueeItem } from "./InfiniteMarquee";
-export { AnimatedCounter, StatsCard } from "./AnimatedCounter";
-export { GlowButton, MagneticButton } from "./GlowButton";
-export { GradientText, ShimmerText, GlitchText } from "./GradientText";
+export { Spotlight, SpotlightCard } from "./Spotlight";
+export {
+  CharacterReveal,
+  TextReveal,
+  Typewriter,
+  WordReveal,
+} from "./TextReveal";

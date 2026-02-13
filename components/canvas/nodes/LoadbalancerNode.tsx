@@ -1,8 +1,8 @@
 "use client";
 
 import { Scale } from "lucide-react";
-import { BaseNode, type BaseNodeProps } from "./BaseNode";
 import { getTechIcon } from "@/lib/icons";
+import { BaseNode, type BaseNodeProps } from "./BaseNode";
 
 export function LoadbalancerNode(props: BaseNodeProps) {
   const label = (props.data?.label as string) || "Load Balancer";
@@ -23,7 +23,9 @@ export function LoadbalancerNode(props: BaseNodeProps) {
             {">"} {props.data.description as string}
           </span>
         ) : (
-          <div className="text-xs text-text-secondary mt-1">Traffic distribution</div>
+          <div className="text-xs text-text-secondary mt-1">
+            Traffic distribution
+          </div>
         )}
       </div>
     </BaseNode>

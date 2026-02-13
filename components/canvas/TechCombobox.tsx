@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { Icon } from "@iconify/react";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TECH_ECOSYSTEM, type TechItem } from "@/lib/tech-ecosystem";
-import { Icon } from "@iconify/react";
+import { cn } from "@/lib/utils";
 
 interface TechComboboxProps {
   value?: string;
@@ -110,7 +110,10 @@ export function TechCombobox({
           <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[240px] p-0 bg-white dark:bg-bg-elevated border-brand-charcoal/10 dark:border-border-primary/50" align="start">
+      <DropdownMenuContent
+        className="w-[240px] p-0 bg-white dark:bg-bg-elevated border-brand-charcoal/10 dark:border-border-primary/50"
+        align="start"
+      >
         <div className="flex items-center border-b border-brand-charcoal/10 dark:border-border-primary/50 px-3 pb-2 pt-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <input

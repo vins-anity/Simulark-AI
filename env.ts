@@ -1,5 +1,5 @@
 import { createEnv } from "@t3-oss/env-nextjs";
-import { boolean, minLength, optional, pipe, string, transform } from "valibot";
+import { minLength, optional, pipe, string, transform } from "valibot";
 
 export const env = createEnv({
   server: {
@@ -51,6 +51,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_SUPABASE_URL: pipe(string(), minLength(1)),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: pipe(string(), minLength(1)),
+    NEXT_PUBLIC_SITE_URL: optional(string()),
   },
   runtimeEnv: {
     ZHIPU_API_KEY: process.env.ZHIPU_API_KEY,
@@ -80,5 +81,6 @@ export const env = createEnv({
       process.env.FEATURE_UNLIMITED_PROJECTS_TIERS,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
 });

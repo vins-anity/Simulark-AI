@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { useRef } from "react";
+import { Button } from "@/components/ui/button";
 
 export function CTAEnhanced() {
   const containerRef = useRef<HTMLElement>(null);
@@ -29,7 +29,7 @@ export function CTAEnhanced() {
             linear-gradient(to bottom, var(--color-brand-sand-light) 1px, transparent 1px)
           `,
           backgroundSize: "80px 80px",
-          opacity: 0.1
+          opacity: 0.1,
         }}
       />
 

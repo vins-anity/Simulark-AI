@@ -145,7 +145,7 @@ export async function processExpiredSubscriptions(): Promise<{
         )
       : await createClient();
 
-    const now = new Date().toISOString();
+    const _now = new Date().toISOString();
     const gracePeriodCutoff = new Date();
     gracePeriodCutoff.setDate(gracePeriodCutoff.getDate() - GRACE_PERIOD_DAYS);
 

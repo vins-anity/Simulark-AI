@@ -28,7 +28,7 @@ function getNodeData(node: Node): NodeData {
  */
 export function generateTerraform(
   nodes: Node[],
-  edges: Edge[],
+  _edges: Edge[],
   provider: "aws" | "gcp" | "azure" = "aws",
 ): string {
   const resources: TerraformResource[] = [];

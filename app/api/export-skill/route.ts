@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { generateSkillContent, packageSkill } from "@/lib/skill-generator";
 
 export async function POST(req: NextRequest) {

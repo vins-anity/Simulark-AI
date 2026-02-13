@@ -1,16 +1,16 @@
-import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 import {
-  HeroEnhanced,
-  TrustedByEnhanced,
   ArchitectureShowcase,
-  FeatureShowcaseEnhanced,
   CapabilitiesGrid,
+  CTAEnhanced,
+  DataTransmission,
+  DocumentationFAQ,
+  FeatureShowcaseEnhanced,
+  HeroEnhanced,
   ResourceContracts,
   TestimonialsEnhanced,
-  DocumentationFAQ,
-  DataTransmission,
-  CTAEnhanced,
+  TrustedByEnhanced,
 } from "@/components/marketing";
+import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 
 export default function Home() {
   return (

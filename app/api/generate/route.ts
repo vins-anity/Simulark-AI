@@ -1,16 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "crypto";
+import { getCachedResponse } from "@/lib/ai-cache";
 import { generateArchitectureStream } from "@/lib/ai-client";
+import {
+  type ValidationIssue,
+  validateArchitecture,
+} from "@/lib/architecture-validator";
 import { createLogger } from "@/lib/logger";
 import { validatePrompt } from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
-import {
-  getCachedResponse,
-  setCachedResponse,
-  CACHE_TTL,
-} from "@/lib/ai-cache";
 
 export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
 
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
             if (reasoning) {
               controller.enqueue(
                 encoder.encode(
-                  JSON.stringify({ type: "reasoning", data: reasoning }) + "\n",
+                  `${JSON.stringify({ type: "reasoning", data: reasoning })}\n`,
                 ),
               );
             }
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
               accumulatedContent += content;
               controller.enqueue(
                 encoder.encode(
-                  JSON.stringify({ type: "content", data: content }) + "\n",
+                  `${JSON.stringify({ type: "content", data: content })}\n`,
                 ),
               );
             }
@@ -233,10 +233,42 @@ export async function POST(req: NextRequest) {
               if (parsed.nodes && parsed.edges) {
                 // Enrich nodes with tech ecosystem data (icons, normalized IDs)
                 const enrichedNodes = enrichNodesWithTech(parsed.nodes);
-                const enrichedData = { ...parsed, nodes: enrichedNodes };
+
+                // Validate the generated architecture
+                const validationResult = validateArchitecture(
+                  enrichedNodes,
+                  parsed.edges,
+                  mode || "default",
+                  { autoFix: true },
+                );
+
+                if (!validationResult.valid) {
+                  userLogger.warn("Architecture validation issues", {
+                    issues: validationResult.issues,
+                  });
+                }
+
+                // Use fixed architecture if auto-fixes were applied
+                const finalNodes =
+                  validationResult.fixed?.nodes || enrichedNodes;
+                const finalEdges =
+                  validationResult.fixed?.edges || parsed.edges;
+
+                const enrichedData = {
+                  nodes: finalNodes,
+                  edges: finalEdges,
+                  validation: {
+                    valid: validationResult.valid,
+                    issues: validationResult.issues,
+                    appliedFixes: validationResult.appliedFixes,
+                  },
+                };
+
                 userLogger.info("Emitting result", {
-                  nodes: enrichedNodes.length,
-                  edges: parsed.edges.length,
+                  nodes: finalNodes.length,
+                  edges: finalEdges.length,
+                  validationIssues: validationResult.issues.length,
+                  appliedFixes: validationResult.appliedFixes.length,
                 });
                 controller.enqueue(
                   encoder.encode(
@@ -271,10 +303,34 @@ export async function POST(req: NextRequest) {
                 const parsed = JSON.parse(jsonMatch[0]);
                 if (parsed.nodes && parsed.edges) {
                   const enrichedNodes = enrichNodesWithTech(parsed.nodes);
-                  const enrichedData = { ...parsed, nodes: enrichedNodes };
-                  userLogger.info("Recovery: Found JSON", {
-                    nodes: enrichedNodes.length,
-                    edges: parsed.edges.length,
+
+                  // Validate recovered architecture
+                  const validationResult = validateArchitecture(
+                    enrichedNodes,
+                    parsed.edges,
+                    mode || "default",
+                    { autoFix: true },
+                  );
+
+                  const finalNodes =
+                    validationResult.fixed?.nodes || enrichedNodes;
+                  const finalEdges =
+                    validationResult.fixed?.edges || parsed.edges;
+
+                  const enrichedData = {
+                    nodes: finalNodes,
+                    edges: finalEdges,
+                    validation: {
+                      valid: validationResult.valid,
+                      issues: validationResult.issues,
+                      appliedFixes: validationResult.appliedFixes,
+                    },
+                  };
+
+                  userLogger.info("Recovery: Found JSON with validation", {
+                    nodes: finalNodes.length,
+                    edges: finalEdges.length,
+                    validationIssues: validationResult.issues.length,
                   });
                   controller.enqueue(
                     encoder.encode(
@@ -296,10 +352,10 @@ export async function POST(req: NextRequest) {
           userLogger.error("Streaming error", err);
           controller.enqueue(
             encoder.encode(
-              JSON.stringify({
+              `${JSON.stringify({
                 type: "error",
                 data: "An error occurred during generation",
-              }) + "\n",
+              })}\n`,
             ),
           );
           controller.error(err);

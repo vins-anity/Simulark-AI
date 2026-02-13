@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
 import { Copy, Edit2, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface NodeContextMenuProps {
   x: number;

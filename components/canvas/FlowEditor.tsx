@@ -4,8 +4,6 @@ import {
   addEdge,
   Background,
   type Connection,
-  type Edge,
-  type Node,
   Panel,
   ReactFlow,
   ReactFlowProvider,
@@ -20,7 +18,6 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
 } from "react";
 import "@xyflow/react/dist/style.css";
 
@@ -28,7 +25,6 @@ import { Redo2, Undo2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { saveProject } from "@/actions/projects";
-import { Button } from "@/components/ui/button";
 import { useGraphHistory } from "@/lib/history-store";
 import { useCanvasShortcuts } from "@/lib/keyboard-shortcuts";
 import {
@@ -98,7 +94,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       if (initialNodes.length > 0 || initialEdges.length > 0) {
         pushState({ nodes: initialNodes, edges: initialEdges }, "initial");
       }
-    }, []);
+    }, [initialEdges, initialNodes, pushState]);
 
     // Track changes and push to history (debounced)
     const historyTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -172,7 +168,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       try {
         await saveProject(projectId, { nodes, edges });
         toast.success("Project saved");
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to save");
       }
     }, [projectId, nodes, edges]);
@@ -194,7 +190,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       link.href = dataUrl;
       link.click();
       toast.success("Exported as PNG");
-    }, []);
+    }, [resolvedTheme]);
 
     // Setup keyboard shortcuts
     useCanvasShortcuts({
@@ -540,7 +536,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           proOptions={{ hideAttribution: true }}
           fitView
           className="drafting-grid-enhanced"
-          onNodeClick={(_e, node) => {
+          onNodeClick={(_e, _node) => {
             // Optionally select node on click
           }}
         >

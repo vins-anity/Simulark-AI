@@ -1,8 +1,8 @@
 "use client";
 
-import { HardDrive, Cloud } from "lucide-react";
-import { BaseNode, type BaseNodeProps } from "./BaseNode";
+import { Cloud, HardDrive } from "lucide-react";
 import { getTechIcon } from "@/lib/icons";
+import { BaseNode, type BaseNodeProps } from "./BaseNode";
 
 export function StorageNode(props: BaseNodeProps) {
   const label = (props.data?.label as string) || "Storage";

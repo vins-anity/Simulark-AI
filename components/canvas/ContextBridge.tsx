@@ -1,5 +1,10 @@
 "use client";
 
+import { Icon } from "@iconify/react";
+import { useEdges, useNodes } from "@xyflow/react";
+import { Download, FileCode, Link as LinkIcon } from "lucide-react";
+import type { JSX } from "react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,16 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Share2, FileCode, Link as LinkIcon, Download } from "lucide-react";
-import { toast } from "sonner";
 import {
   generateCursorRules,
   generateMermaid,
 } from "@/lib/bridge/context-generator";
-import { useNodes, useEdges } from "@xyflow/react";
-import { JSX } from "react";
-import { Icon } from "@iconify/react";
 
 interface ContextBridgeProps {
   projectId: string;

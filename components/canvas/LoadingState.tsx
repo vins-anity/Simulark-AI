@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
 import {
-  Cpu,
-  Zap,
   Activity,
-  Cog,
   Binary,
-  Network,
   CircuitBoard,
+  Cog,
+  Cpu,
+  Network,
+  Zap,
 } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 
 const LOADING_MESSAGES = [
   "INITIALIZING SYSTEM MODULES...",

@@ -276,7 +276,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       },
     }),
 
-  getAffectedNodes: (nodeId) => {
+  getAffectedNodes: (_nodeId) => {
     // Simple cascade detection - return nodes that would be affected
     // In a real implementation, this would use the graph structure
     return [];

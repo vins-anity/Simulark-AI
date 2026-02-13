@@ -7,29 +7,22 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import {
-  CreateChatSchema,
   type CreateProjectInput,
   CreateProjectSchema,
   EmailSchema,
   type GenerateRequestInput,
   GenerateRequestSchema,
   NonEmptyStringSchema,
-  SendMessageSchema,
-  UpdateProjectSchema,
   UuidSchema,
 } from "../lib/schema/api";
 import {
   type ArchitectureGraph,
   ArchitectureGraphSchema,
-  EdgeDataSchema,
   EdgeSchema,
-  NodeDataSchema,
   NodeSchema,
   type NodeType,
-  NodeTypeSchema,
   type Project,
   ProjectSchema,
-  ProviderSchema,
 } from "../lib/schema/graph";
 
 // ============================================================================

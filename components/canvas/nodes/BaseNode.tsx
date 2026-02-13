@@ -21,8 +21,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
-import { useSimulationStore } from "@/lib/store";
 import { shouldInvertIcon } from "@/lib/icons";
+import { useSimulationStore } from "@/lib/store";
 import { NodeContextMenu } from "./NodeContextMenu";
 import { NodeProperties } from "./NodeProperties";
 
@@ -40,6 +40,16 @@ export type BaseNodeProps = NodeProps & {
   tier?: string; // e.g. "Serverless", "vCPU 2"
 };
 
+// Type for the data prop
+type BaseNodeData = {
+  label?: string;
+  tech?: string;
+  techLabel?: string;
+  logo?: string;
+  tier?: string;
+  [key: string]: unknown;
+};
+
 export function BaseNode({
   id,
   selected,
@@ -50,13 +60,15 @@ export function BaseNode({
   label,
   type,
 }: BaseNodeProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nodeData = data as any;
   const { viewMode, chaosMode, nodeStatus, toggleNodeStatus } =
     useSimulationStore();
   const { setNodes, getNodes } = useReactFlow();
-  const nodeLabel = (data?.label as string) || label || "Node";
+  const nodeLabel = nodeData?.label || label || "Node";
   // Check for logo (direct), techIcon (from enrichment), or fallback
-  const nodeLogo = (data?.logo as string) || (data?.techIcon as string) || null;
-  const nodeTechLabel = (data?.techLabel as string) || null;
+  const nodeLogo = nodeData?.logo || nodeData?.techIcon || null;
+  const nodeTechLabel = nodeData?.techLabel || null;
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -161,8 +173,8 @@ export function BaseNode({
       >
         <NodeProperties
           id={id}
-          data={data}
-          type={(data?.serviceType as string) || type}
+          data={nodeData}
+          type={(nodeData?.serviceType as string) || type}
         />
       </NodeToolbar>
       <div
@@ -175,20 +187,20 @@ export function BaseNode({
           "border-2 border-brand-charcoal bg-bg-secondary dark:bg-zinc-800 dark:border-white/20",
           // Normal state - hard brutalist shadow
           !chaosMode &&
-          !isKilled &&
-          "shadow-[3px_3px_0px_0px_var(--shadow-color)] hover:shadow-[1px_1px_0px_0px_var(--shadow-color)] hover:translate-x-[2px] hover:translate-y-[2px]",
+            !isKilled &&
+            "shadow-[3px_3px_0px_0px_var(--shadow-color)] hover:shadow-[1px_1px_0px_0px_var(--shadow-color)] hover:translate-x-[2px] hover:translate-y-[2px]",
           !chaosMode &&
-          !isKilled &&
-          selected &&
-          "border-brand-orange shadow-[3px_3px_0px_0px_#FF5733]",
+            !isKilled &&
+            selected &&
+            "border-brand-orange shadow-[3px_3px_0px_0px_#FF5733]",
           // Chaos mode - active
           chaosMode &&
-          !isKilled &&
-          !isDegraded &&
-          "cursor-crosshair border-brand-charcoal hover:border-red-500",
+            !isKilled &&
+            !isDegraded &&
+            "cursor-crosshair border-brand-charcoal hover:border-red-500",
           // Killed state
           isKilled &&
-          "bg-bg-tertiary border-neutral-600 grayscale opacity-75 cursor-not-allowed shadow-none",
+            "bg-bg-tertiary border-neutral-600 grayscale opacity-75 cursor-not-allowed shadow-none",
           // Degraded state
           isDegraded && "border-brand-orange/60",
           // Recovering state
@@ -234,7 +246,7 @@ export function BaseNode({
             <div className="shrink-0 w-12 h-12 border-2 border-brand-charcoal bg-bg-secondary dark:bg-stone-200 flex items-center justify-center transition-all">
               {nodeLogo ? (
                 <Icon
-                  icon={nodeLogo}
+                  icon={nodeLogo as string}
                   className="w-7 h-7 text-brand-charcoal transition-all"
                 />
               ) : (
@@ -246,7 +258,7 @@ export function BaseNode({
             <div className="flex flex-col min-w-0 flex-1">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
-                  {nodeTechLabel || (data?.tech as string) || "GENERIC_SRV"}
+                  {nodeTechLabel || (nodeData?.tech as string) || "GENERIC_SRV"}
                 </span>
                 {isEditingLabel ? (
                   <input
@@ -279,7 +291,7 @@ export function BaseNode({
             <div className="flex flex-col gap-0.5">
               <span className="text-[8px] opacity-40 uppercase">Class</span>
               <span className="text-[10px] font-bold uppercase truncate">
-                {(data?.serviceType as string) || type || "SERVICE"}
+                {(nodeData?.serviceType as string) || type || "SERVICE"}
               </span>
             </div>
             <div className="flex flex-col gap-0.5 text-right">
@@ -296,10 +308,13 @@ export function BaseNode({
           </div>
 
           {/* Infrastructure Metrics (Mock Readout) */}
-          {data?.description && (
+          {nodeData?.description && (
             <div className="bg-bg-tertiary border border-brand-charcoal/5 p-1.5 font-mono text-[9px] opacity-80 leading-tight">
-              <span className="line-clamp-3" title={data.description as string}>
-                {data.description as string}
+              <span
+                className="line-clamp-3"
+                title={nodeData.description as string}
+              >
+                {nodeData.description as string}
               </span>
             </div>
           )}

@@ -59,7 +59,7 @@ self.onmessage = (
     for (const edge of edges) {
       try {
         g.setEdge(edge.source, edge.target, {}, edge.id);
-      } catch (e) {
+      } catch (_e) {
         // Ignore edge errors
       }
     }
@@ -87,7 +87,7 @@ self.onmessage = (
             },
           };
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore
       }
       return node;

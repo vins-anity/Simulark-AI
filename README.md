@@ -12,6 +12,69 @@ The platform solves the "Context Loss" problem in modern software engineering—
 
 ---
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │   Browser   │  │   Mobile    │  │    IDE      │  │   Canvas Editor     │ │
+│  │  (Next.js)  │  │  (PWA)      │  │ (Cursor/    │  │   (XYFlow)          │ │
+│  │             │  │             │  │  Windsurf)  │  │                     │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
+└─────────┼────────────────┼────────────────┼────────────────────┼──────────────┘
+          │                │                │                    │
+          ▼                ▼                ▼                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              EDGE/MIDDLEWARE                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────────────┐     │
+│  │  Auth Callback  │  │  Rate Limiter  │  │      Context Bridge        │     │
+│  │  (OAuth)        │  │  (Upstash)     │  │   (cursorrules export)    │     │
+│  └────────┬────────┘  └────────┬────────┘  └─────────────┬──────────────┘     │
+└───────────┼───────────────────┼─────────────────────────┼─────────────────────┘
+            │                   │                         │
+            ▼                   ▼                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              API LAYER (Next.js)                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │  /generate  │  │   /chat     │  │ /projects   │  │    /admin/*        │ │
+│  │  (AI Gen)   │  │  (Streaming)│  │  (CRUD)     │  │  (Subscriptions)   │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬────────┘ │
+└─────────┼────────────────┼────────────────┼────────────────────┼──────────────┘
+          │                │                │                    │
+          ▼                │                ▼                    ▼
+┌─────────────────────────┐ │  ┌─────────────────────────────────────────────────┐
+│      AI PROVIDERS      │ │  │              DATABASE (Supabase)                 │
+├─────────────────────────┤ │  ├─────────────────────────────────────────────────┤
+│  ┌─────────────────┐   │ │  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
+│  │    ZhipuAI      │   │ │  │  │ users  │ │projects│ │ graphs │ │  chats  │  │
+│  │  (GLM-4.7)     │   │ │  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
+│  └─────────────────┘   │ │  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
+│  ┌─────────────────┐   │ │  │  │ messages│ │templates│ │contexts│ │api_keys │  │
+│  │   OpenRouter    │   │ │  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
+│  │ (Multi-Provider)│   │ │  └─────────────────────────────────────────────────┘
+│  └─────────────────┘   │ │
+│  ┌─────────────────┐   │ │
+│  │     Kimi       │   │ │
+│  │   (Moonshot)   │   │ │
+│  └─────────────────┘   │ │
+└───────────────────────┘ │
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │    UPSTASH         │
+              │    (Redis)        │
+              │  - Rate Limits    │
+              │  - AI Response    │
+              │    Cache          │
+              └─────────────────────┘
+```
+
+---
+
 ## Features
 
 ### Interactive Architecture Canvas
@@ -47,17 +110,17 @@ The platform solves the "Context Loss" problem in modern software engineering—
 
 ## Tech Stack
 
-| Layer | Technology |
-|--------|------------|
-| Frontend | Next.js 16, React 19, TypeScript |
-| Styling | Tailwind CSS v4, Shadcn/UI |
-| Canvas | XYFlow (React Flow), Dagre |
-| State | Zustand |
-| Backend | Bun Runtime, Server Actions |
-| Database | Supabase (PostgreSQL + Auth) |
-| AI | OpenAI SDK, ZhipuAI, OpenRouter |
-| Validation | Valibot |
-| Rate Limiting | Upstash Redis |
+| Layer         | Technology                       |
+| ------------- | -------------------------------- |
+| Frontend      | Next.js 16, React 19, TypeScript |
+| Styling       | Tailwind CSS v4, Shadcn/UI       |
+| Canvas        | XYFlow (React Flow), Dagre       |
+| State         | Zustand                          |
+| Backend       | Bun Runtime, Server Actions      |
+| Database      | Supabase (PostgreSQL + Auth)     |
+| AI            | OpenAI SDK, ZhipuAI, OpenRouter  |
+| Validation    | Valibot                          |
+| Rate Limiting | Upstash Redis                    |
 
 ---
 
@@ -128,11 +191,11 @@ GET /api/health
 
 ## Subscription Plans
 
-| Plan | Price | Features |
-|------|-------|----------|
-| **Doodle** (Free) | $0 | 3 Projects, Standard Nodes, 10 AI requests/day |
-| **Sketch** (Starter) | $5/mo | Unlimited Projects, Chaos Mode, Auto-Layouts, Kimi/Gemini/Minimax |
-| **Blueprint** (Lifetime) | $10 | Forever Access, Commercial Rights, Private Mode, Claude Opus 4.5 |
+| Plan                     | Price | Features                                                          |
+| ------------------------ | ----- | ----------------------------------------------------------------- |
+| **Doodle** (Free)        | $0    | 3 Projects, Standard Nodes, 10 AI requests/day                    |
+| **Sketch** (Starter)     | $5/mo | Unlimited Projects, Chaos Mode, Auto-Layouts, Kimi/Gemini/Minimax |
+| **Blueprint** (Lifetime) | $10   | Forever Access, Commercial Rights, Private Mode, Claude Opus 4.5  |
 
 ---
 

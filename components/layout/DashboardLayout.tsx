@@ -1,8 +1,8 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { useSidebar } from "./SidebarProvider";
-import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -30,9 +30,7 @@ function MainContent({
         <div
           className={cn(
             "flex-1 flex flex-col min-h-full",
-            fullWidth
-              ? "w-full"
-              : "max-w-7xl mx-auto p-4 lg:p-6 w-full",
+            fullWidth ? "w-full" : "max-w-7xl mx-auto p-4 lg:p-6 w-full",
           )}
         >
           {children}

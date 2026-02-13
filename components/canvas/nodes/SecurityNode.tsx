@@ -39,7 +39,9 @@ export function SecurityNode(props: BaseNodeProps) {
               {">"} type: {getSecurityType()}
             </span>
             <span className="opacity-70">{">"} encryption: tls1.3</span>
-            <span className="text-[var(--color-error)]">{">"} status: enforced</span>
+            <span className="text-[var(--color-error)]">
+              {">"} status: enforced
+            </span>
           </>
         )}
       </div>

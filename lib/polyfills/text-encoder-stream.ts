@@ -2,7 +2,7 @@
 // This file must be imported before any Next.js code
 
 if (typeof globalThis.TextEncoderStream === "undefined") {
-  // @ts-ignore - Polyfill for Bun
+  // @ts-expect-error - Polyfill for Bun
   globalThis.TextEncoderStream = class TextEncoderStream extends (
     TransformStream<string, Uint8Array>
   ) {

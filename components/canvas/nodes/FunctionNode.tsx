@@ -1,8 +1,8 @@
 "use client";
 
 import { Zap } from "lucide-react";
-import { BaseNode, type BaseNodeProps } from "./BaseNode";
 import { getTechIcon } from "@/lib/icons";
+import { BaseNode, type BaseNodeProps } from "./BaseNode";
 
 export function FunctionNode(props: BaseNodeProps) {
   const label = (props.data?.label as string) || "Function";

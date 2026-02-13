@@ -27,7 +27,7 @@ class AppLogger {
   }
 
   private formatMessage(
-    level: LogLevel,
+    _level: LogLevel,
     message: string,
     context?: LogContext,
   ): string {

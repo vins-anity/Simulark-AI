@@ -1,17 +1,17 @@
-import {
-  X,
-  Trash2,
-  Database,
-  Zap,
-  HardDrive,
-  Globe,
-  Cpu,
-  Box,
-} from "lucide-react";
+import { Icon } from "@iconify/react";
 import { useReactFlow } from "@xyflow/react";
+import {
+  Box,
+  Cpu,
+  Database,
+  Globe,
+  HardDrive,
+  Trash2,
+  X,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { TechCombobox } from "../TechCombobox";
-import { Icon } from "@iconify/react";
 
 interface NodePropertiesProps {
   id: string;
@@ -84,7 +84,10 @@ export function NodeProperties({
           {data.logo ? (
             <Icon icon={data.logo} className="w-5 h-5 shrink-0" />
           ) : (
-            <TypeIcon size={16} className="text-brand-charcoal/40 dark:text-text-secondary/40 shrink-0" />
+            <TypeIcon
+              size={16}
+              className="text-brand-charcoal/40 dark:text-text-secondary/40 shrink-0"
+            />
           )}
           <input
             value={data.label || ""}

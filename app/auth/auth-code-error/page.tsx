@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Icon } from "@iconify/react";
+import Link from "next/link";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { Button } from "@/components/ui/button";
 
 export default function AuthCodeError() {
   return (

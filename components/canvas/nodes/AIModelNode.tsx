@@ -1,6 +1,6 @@
 "use client";
 
-import { Brain, Cpu, Sparkles } from "lucide-react";
+import { Brain } from "lucide-react";
 import { getTechIcon } from "@/lib/icons";
 import { BaseNode, type BaseNodeProps } from "./BaseNode";
 

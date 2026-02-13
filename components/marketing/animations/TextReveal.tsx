@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, Variants } from "framer-motion";
-import { ReactNode } from "react";
+import { motion, type Variants } from "framer-motion";
+import type { ReactNode } from "react";
 
 interface TextRevealProps {
   children: ReactNode;
@@ -55,7 +55,7 @@ export function WordReveal({
 
   const container: Variants = {
     hidden: { opacity: 0 },
-    visible: (i = 1) => ({
+    visible: (_i = 1) => ({
       opacity: 1,
       transition: { staggerChildren: staggerDelay, delayChildren: delay },
     }),

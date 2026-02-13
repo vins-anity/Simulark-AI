@@ -1,23 +1,23 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Terminal } from "lucide-react";
 import {
   motion,
   useMotionTemplate,
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { MouseEvent } from "react";
+import { ArrowRight, Terminal } from "lucide-react";
+import Link from "next/link";
+import type { MouseEvent } from "react";
 import { HeroCanvas } from "@/components/marketing/HeroCanvas";
+import { Button } from "@/components/ui/button";
 
 export function Hero() {
-  let mouseX = useMotionValue(0);
-  let mouseY = useMotionValue(0);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
   function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
-    let { left, top } = currentTarget.getBoundingClientRect();
+    const { left, top } = currentTarget.getBoundingClientRect();
     mouseX.set(clientX - left);
     mouseY.set(clientY - top);
   }
