@@ -77,25 +77,25 @@ export function NodeProperties({
   };
 
   return (
-    <div className="w-56 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border border-brand-charcoal/10 overflow-hidden font-sans animation-in slide-in-from-right-10 duration-200">
+    <div className="w-56 bg-white/95 dark:bg-bg-elevated/95 backdrop-blur-sm rounded-lg shadow-xl border border-brand-charcoal/10 dark:border-border-primary/50 overflow-hidden font-sans animation-in slide-in-from-right-10 duration-200">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-brand-charcoal/5 bg-gray-50/80">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-brand-charcoal/5 dark:border-border-primary/50 bg-gray-50/80 dark:bg-bg-secondary/50">
         <div className="flex items-center gap-2 overflow-hidden">
           {data.logo ? (
             <Icon icon={data.logo} className="w-5 h-5 shrink-0" />
           ) : (
-            <TypeIcon size={16} className="text-brand-charcoal/40 shrink-0" />
+            <TypeIcon size={16} className="text-brand-charcoal/40 dark:text-text-secondary/40 shrink-0" />
           )}
           <input
             value={data.label || ""}
             onChange={(e) => handleUpdate({ label: e.target.value })}
-            className="text-xs font-bold text-brand-charcoal bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-full placeholder:text-gray-300 truncate"
+            className="text-xs font-bold text-brand-charcoal dark:text-text-primary bg-transparent border-none focus:outline-none focus:ring-0 p-0 w-full placeholder:text-gray-300 dark:placeholder:text-text-secondary/30 truncate"
             placeholder="Node Name"
           />
         </div>
         <button
           onClick={handleClose}
-          className="text-brand-charcoal/20 hover:text-brand-charcoal/60 transition-colors shrink-0"
+          className="text-brand-charcoal/20 dark:text-text-secondary/20 hover:text-brand-charcoal/60 dark:hover:text-text-primary transition-colors shrink-0"
         >
           <X size={12} />
         </button>
@@ -104,7 +104,7 @@ export function NodeProperties({
       <div className="p-3 space-y-3">
         {/* Service Type Badge */}
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-mono font-bold uppercase text-brand-charcoal/40 tracking-tight px-1.5 py-0.5 bg-brand-charcoal/5 rounded">
+          <span className="text-[9px] font-mono font-bold uppercase text-brand-charcoal/40 dark:text-text-secondary/40 tracking-tight px-1.5 py-0.5 bg-brand-charcoal/5 dark:bg-bg-tertiary rounded">
             {serviceType.label}
           </span>
         </div>
@@ -118,9 +118,9 @@ export function NodeProperties({
         />
 
         {/* Footer Actions */}
-        <div className="pt-2 flex items-center justify-between border-t border-brand-charcoal/5">
+        <div className="pt-2 flex items-center justify-between border-t border-brand-charcoal/5 dark:border-border-primary/50">
           <span
-            className="text-[9px] font-mono text-brand-charcoal/20 truncate max-w-[80px]"
+            className="text-[9px] font-mono text-brand-charcoal/20 dark:text-text-secondary/20 truncate max-w-[80px]"
             title={id}
           >
             {id.split("-")[0]}

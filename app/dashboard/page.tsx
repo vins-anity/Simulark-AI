@@ -151,10 +151,10 @@ export default function DashboardPage() {
   const totalPages = Math.ceil(totalProjects / ITEMS_PER_PAGE);
 
   return (
-    <div className="flex-1 w-full min-h-screen bg-brand-sand-light flex flex-col">
+    <div className="flex-1 w-full min-h-screen bg-brand-sand-light dark:bg-zinc-950 flex flex-col transition-colors duration-300">
       {/* Background grid motif */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="fixed inset-0 pointer-events-none opacity-[0.015] dark:opacity-[0.05] z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
       </div>
 
       <main className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto w-full px-6 pt-20 pb-12">
@@ -166,7 +166,7 @@ export default function DashboardPage() {
           className="flex flex-col items-center mb-16"
         >
           <motion.div variants={itemVariants} className="mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-charcoal text-brand-sand-light border border-brand-charcoal text-[10px] font-mono uppercase tracking-[0.3em]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-charcoal dark:bg-brand-sand-light text-brand-sand-light dark:text-brand-charcoal border border-brand-charcoal dark:border-brand-sand-light text-[10px] font-mono uppercase tracking-[0.3em]">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-400" />
@@ -177,7 +177,7 @@ export default function DashboardPage() {
 
           <motion.h1
             variants={itemVariants}
-            className="text-7xl md:text-8xl font-poppins font-bold text-brand-charcoal uppercase tracking-tighter leading-[0.85] mb-6 text-center"
+            className="text-7xl md:text-8xl font-poppins font-bold text-brand-charcoal dark:text-gray-100 uppercase tracking-tighter leading-[0.85] mb-6 text-center"
           >
             Mission
             <br />
@@ -186,7 +186,7 @@ export default function DashboardPage() {
 
           <motion.p
             variants={itemVariants}
-            className="text-lg md:text-xl text-brand-charcoal/60 font-lora italic text-center max-w-2xl"
+            className="text-lg md:text-xl text-brand-charcoal/60 dark:text-gray-400 font-lora italic text-center max-w-2xl"
           >
             "Design, simulate, and deploy infrastructure architecture"
           </motion.p>
@@ -201,23 +201,23 @@ export default function DashboardPage() {
         >
           <div className="relative group">
             {/* Corner HUD Markers */}
-            <div className="absolute -top-3 -left-3 w-6 h-6 border-t border-l border-brand-charcoal/20" />
-            <div className="absolute -top-3 -right-3 w-6 h-6 border-t border-r border-brand-charcoal/20" />
-            <div className="absolute -bottom-3 -left-3 w-6 h-6 border-b border-l border-brand-charcoal/20" />
-            <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b border-r border-brand-charcoal/20" />
+            <div className="absolute -top-3 -left-3 w-6 h-6 border-t border-l border-brand-charcoal/20 dark:border-white/20" />
+            <div className="absolute -top-3 -right-3 w-6 h-6 border-t border-r border-brand-charcoal/20 dark:border-white/20" />
+            <div className="absolute -bottom-3 -left-3 w-6 h-6 border-b border-l border-brand-charcoal/20 dark:border-white/20" />
+            <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b border-r border-brand-charcoal/20 dark:border-white/20" />
 
-            <div className="bg-white border-2 border-brand-charcoal shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] transition-all flex flex-col overflow-hidden">
-              <div className="bg-brand-charcoal/5 border-b border-brand-charcoal px-4 py-1.5 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
-                <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 uppercase tracking-widest leading-none">
+            <div className="bg-white dark:bg-zinc-900 border-2 border-brand-charcoal dark:border-zinc-700 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] transition-all flex flex-col overflow-hidden">
+              <div className="bg-brand-charcoal/5 dark:bg-white/5 border-b border-brand-charcoal dark:border-zinc-700 px-4 py-1.5 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none">
                   UPLINK_STATION:IDLE
                 </span>
-                <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 uppercase tracking-widest leading-none hidden sm:block">
+                <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none hidden sm:block">
                   COORD_X:40.71/Y:-74.00
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch">
                 <div className="flex-1 flex items-center min-w-0">
-                  <div className="pl-5 text-brand-charcoal/20">
+                  <div className="pl-5 text-brand-charcoal/20 dark:text-gray-600">
                     <Terminal size={18} />
                   </div>
                   <form onSubmit={handleExecute} className="flex-1">
@@ -227,19 +227,19 @@ export default function DashboardPage() {
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder="DESCRIBE_ARCHITECTURE..."
-                      className="w-full h-16 px-5 bg-transparent text-brand-charcoal focus:outline-none font-mono text-base uppercase tracking-tight placeholder:text-brand-charcoal/20"
+                      className="w-full h-16 px-5 bg-transparent text-brand-charcoal dark:text-gray-200 focus:outline-none font-mono text-base uppercase tracking-tight placeholder:text-brand-charcoal/20 dark:placeholder:text-gray-600"
                       disabled={isExecuting}
                     />
                   </form>
                 </div>
-                <div className="flex border-t sm:border-t-0 sm:border-l border-brand-charcoal divide-x divide-brand-charcoal">
+                <div className="flex border-t sm:border-t-0 sm:border-l border-brand-charcoal dark:border-zinc-700 divide-x divide-brand-charcoal dark:divide-zinc-700">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     disabled={isExecuting}
                     onClick={handleRandomPrompt}
-                    className="h-16 w-16 rounded-none hover:bg-brand-orange/10 hover:text-brand-orange transition-colors"
+                    className="h-16 w-16 rounded-none hover:bg-brand-orange/10 hover:text-brand-orange dark:text-gray-400 transition-colors"
                   >
                     <Sparkles size={18} />
                   </Button>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
                     variant="ghost"
                     disabled={isExecuting}
                     onClick={handleCreateNew}
-                    className="h-16 px-6 rounded-none font-mono text-[10px] uppercase font-bold tracking-widest hover:bg-brand-charcoal/5"
+                    className="h-16 px-6 rounded-none font-mono text-[10px] uppercase font-bold tracking-widest hover:bg-brand-charcoal/5 dark:text-gray-400 dark:hover:bg-white/5"
                   >
                     <Plus size={14} className="mr-2" />
                     BLANK
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleExecute}
                     disabled={!prompt.trim() || isExecuting}
-                    className="h-16 px-8 bg-brand-charcoal text-brand-sand-light font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-16 px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-brand-charcoal font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isExecuting ? "BUSY..." : "INITIALIZE"}
                   </button>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mt-4 flex justify-center">
-              <span className="text-[8px] font-mono text-brand-charcoal/30 uppercase tracking-[0.4em] animate-pulse">
+              <span className="text-[8px] font-mono text-brand-charcoal/30 dark:text-gray-600 uppercase tracking-[0.4em] animate-pulse">
                 [ PRESS_ENTER_TO_TRANSMIT ]
               </span>
             </div>
@@ -273,16 +273,16 @@ export default function DashboardPage() {
 
         {/* Active Operations Section */}
         <div className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-8 border-b-2 border-brand-charcoal pb-4">
+          <div className="flex items-center justify-between mb-8 border-b-2 border-brand-charcoal dark:border-zinc-700 pb-4">
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-brand-charcoal flex items-center justify-center text-brand-sand-light">
+              <div className="w-8 h-8 bg-brand-charcoal dark:bg-white flex items-center justify-center text-brand-sand-light dark:text-brand-charcoal">
                 <Box size={16} />
               </div>
               <div className="flex flex-col">
-                <h2 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-brand-charcoal leading-none mb-1">
+                <h2 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-brand-charcoal dark:text-gray-200 leading-none mb-1">
                   Active Operations
                 </h2>
-                <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest leading-none">
+                <span className="text-[9px] font-mono text-brand-charcoal/40 dark:text-gray-500 uppercase tracking-widest leading-none">
                   // PROJECT_REGISTRY_01
                 </span>
               </div>
@@ -294,22 +294,22 @@ export default function DashboardPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-mono font-bold text-brand-charcoal/30 tracking-widest uppercase">
+                <span className="text-[10px] font-mono font-bold text-brand-charcoal/30 dark:text-gray-600 tracking-widest uppercase">
                   PAGE: {currentPage.toString().padStart(2, "0")} /{" "}
                   {totalPages.toString().padStart(2, "0")}
                 </span>
-                <div className="flex border border-brand-charcoal divide-x divide-brand-charcoal">
+                <div className="flex border border-brand-charcoal dark:border-zinc-700 divide-x divide-brand-charcoal dark:divide-zinc-700">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1 || loading}
-                    className="p-1.5 hover:bg-brand-charcoal/5 disabled:opacity-20 transition-colors"
+                    className="p-1.5 hover:bg-brand-charcoal/5 dark:hover:bg-white/5 disabled:opacity-20 dark:text-gray-400 transition-colors"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages || loading}
-                    className="p-1.5 hover:bg-brand-charcoal/5 disabled:opacity-20 transition-colors"
+                    className="p-1.5 hover:bg-brand-charcoal/5 dark:hover:bg-white/5 disabled:opacity-20 dark:text-gray-400 transition-colors"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -319,11 +319,11 @@ export default function DashboardPage() {
           </div>
 
           {error ? (
-            <div className="p-12 border-2 border-brand-charcoal bg-red-50 text-center">
-              <p className="font-mono text-xs text-red-600 uppercase tracking-widest leading-none mb-2">
+            <div className="p-12 border-2 border-brand-charcoal dark:border-red-500/50 bg-red-50 dark:bg-red-500/10 text-center">
+              <p className="font-mono text-xs text-red-600 dark:text-red-400 uppercase tracking-widest leading-none mb-2">
                 !! SYSTEM_MALFUNCTION !!
               </p>
-              <p className="font-mono text-[10px] text-red-600/60 uppercase tracking-widest leading-none">
+              <p className="font-mono text-[10px] text-red-600/60 dark:text-red-400/60 uppercase tracking-widest leading-none">
                 ERR: {error}
               </p>
             </div>
@@ -332,17 +332,17 @@ export default function DashboardPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-40 border border-brand-charcoal/10 bg-brand-charcoal/5 animate-pulse"
+                  className="h-40 border border-brand-charcoal/10 dark:border-white/10 bg-brand-charcoal/5 dark:bg-white/5 animate-pulse"
                 />
               ))}
             </div>
           ) : !projects || projects.length === 0 ? (
-            <div className="p-16 border-2 border-dashed border-brand-charcoal/20 flex flex-col items-center justify-center grayscale opacity-50">
-              <Activity size={32} className="mb-4 text-brand-charcoal" />
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand-charcoal">
+            <div className="p-16 border-2 border-dashed border-brand-charcoal/20 dark:border-white/10 flex flex-col items-center justify-center grayscale opacity-50">
+              <Activity size={32} className="mb-4 text-brand-charcoal dark:text-gray-600" />
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand-charcoal dark:text-gray-500">
                 No Active Operations
               </p>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/60 mt-2">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/60 dark:text-gray-600 mt-2">
                 Transmit blueprint to initialize
               </p>
             </div>
@@ -371,8 +371,8 @@ export default function DashboardPage() {
       </main>
 
       {/* Decorative Footer Element */}
-      <footer className="relative z-10 p-6 border-t border-brand-charcoal/10">
-        <div className="max-w-7xl mx-auto flex justify-between items-center opacity-30">
+      <footer className="relative z-10 p-6 border-t border-brand-charcoal/10 dark:border-white/10">
+        <div className="max-w-7xl mx-auto flex justify-between items-center opacity-30 dark:opacity-20 dark:text-white">
           <span className="text-[8px] font-mono uppercase tracking-[0.5em]">
             // SIMULARK_OS_V1.6.2_BUILD_FINAL
           </span>

@@ -102,13 +102,12 @@ function ArchitectureCard({
       onClick={onSelect}
     >
       <div
-        className={`h-full bg-white border transition-all duration-300 ${
-          isSelected
+        className={`h-full bg-bg-secondary border transition-all duration-300 ${isSelected
             ? "border-brand-orange"
             : isComingSoon
               ? "border-brand-charcoal/5 opacity-60"
               : "border-brand-charcoal/10 group-hover:border-brand-charcoal/30"
-        }`}
+          }`}
       >
         {/* Header with ID */}
         <div className="flex justify-between items-start p-4 border-b border-brand-charcoal/5">
@@ -126,7 +125,7 @@ function ArchitectureCard({
               />
             </div>
             <div>
-              <h3 className="font-mono text-sm font-bold text-brand-charcoal uppercase tracking-wide">
+              <h3 className="font-mono text-sm font-bold text-text-primary uppercase tracking-wide">
                 {arch.name}
               </h3>
               <span className="font-mono text-[9px] text-brand-charcoal/40">
@@ -143,13 +142,12 @@ function ArchitectureCard({
               />
             )}
             <span
-              className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${
-                isLive
+              className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${isLive
                   ? "bg-brand-green/10 text-brand-green"
                   : isBeta
                     ? "bg-brand-orange/10 text-brand-orange"
                     : "bg-brand-charcoal/5 text-brand-charcoal/40"
-              }`}
+                }`}
             >
               {isComingSoon ? "SOON" : arch.status}
             </span>
@@ -159,9 +157,8 @@ function ArchitectureCard({
         {/* Specs */}
         <div className="p-4">
           <p
-            className={`font-lora text-sm mb-4 leading-relaxed ${
-              isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
-            }`}
+            className={`font-lora text-sm mb-4 leading-relaxed ${isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
+              }`}
           >
             {arch.description}
           </p>
@@ -171,11 +168,10 @@ function ArchitectureCard({
             {arch.stack.map((tech) => (
               <span
                 key={tech}
-                className={`px-2 py-1 font-mono text-[8px] uppercase tracking-wider ${
-                  isComingSoon
+                className={`px-2 py-1 font-mono text-[8px] uppercase tracking-wider ${isComingSoon
                     ? "bg-brand-charcoal/5 text-brand-charcoal/30"
                     : "bg-brand-charcoal/5 text-brand-charcoal/60"
-                }`}
+                  }`}
               >
                 {tech}
               </span>
@@ -185,7 +181,7 @@ function ArchitectureCard({
           {/* Metrics */}
           <div className="flex gap-4 pt-3 border-t border-brand-charcoal/5">
             <div>
-              <span className="font-mono text-lg font-bold text-brand-charcoal">
+              <span className="font-mono text-lg font-bold text-text-primary">
                 {arch.nodes}
               </span>
               <span className="font-mono text-[8px] uppercase text-brand-charcoal/40 block">
@@ -193,7 +189,7 @@ function ArchitectureCard({
               </span>
             </div>
             <div>
-              <span className="font-mono text-lg font-bold text-brand-charcoal">
+              <span className="font-mono text-lg font-bold text-text-primary">
                 {arch.connections}
               </span>
               <span className="font-mono text-[8px] uppercase text-brand-charcoal/40 block">
@@ -221,14 +217,14 @@ export function ArchitectureShowcase() {
   const [selectedArch, setSelectedArch] = useState(architectures[0]);
 
   return (
-    <section className="py-32 bg-white relative overflow-hidden">
+    <section className="py-32 bg-bg-primary relative overflow-hidden">
       {/* Grid Background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(26,26,26,0.03) 1px, transparent 1px)
+            linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
@@ -245,7 +241,7 @@ export function ArchitectureShowcase() {
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
             // ARCHITECTURE_LIBRARY
           </span>
-          <h2 className="text-4xl md:text-5xl font-poppins font-bold text-brand-charcoal mb-4">
+          <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
             BLUEPRINT{" "}
             <span className="font-serif italic font-light text-brand-charcoal/50">
               COLLECTION
@@ -259,20 +255,20 @@ export function ArchitectureShowcase() {
         {/* Selected Preview */}
         {selectedArch.status !== "COMING_SOON" && (
           <motion.div
-            className="mb-12 p-6 border border-brand-charcoal/10 bg-brand-sand-light"
+            className="mb-12 p-6 border border-brand-charcoal/10 bg-bg-tertiary"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* Preview Visual */}
-              <div className="w-full md:w-1/3 aspect-video border border-brand-charcoal/10 bg-white relative overflow-hidden">
+              <div className="w-full md:w-1/3 aspect-video border border-brand-charcoal/10 bg-bg-secondary relative overflow-hidden">
                 {/* Schematic representation */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="relative w-32 h-32">
                     {/* Center node */}
                     <div
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 border-2 flex items-center justify-center bg-white z-10"
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 border-2 flex items-center justify-center bg-bg-secondary z-10"
                       style={{ borderColor: selectedArch.color }}
                     >
                       <Icon
@@ -291,7 +287,7 @@ export function ArchitectureShowcase() {
                         return (
                           <motion.div
                             key={i}
-                            className="absolute w-4 h-4 border border-brand-charcoal/20 bg-white"
+                            className="absolute w-4 h-4 border border-brand-charcoal/20 bg-bg-secondary"
                             style={{
                               left: `calc(50% + ${x}px)`,
                               top: `calc(50% + ${y}px)`,
@@ -360,7 +356,7 @@ export function ArchitectureShowcase() {
                     </>
                   )}
                 </div>
-                <h3 className="text-2xl font-poppins font-bold text-brand-charcoal mb-2">
+                <h3 className="text-2xl font-poppins font-bold text-text-primary mb-2">
                   {selectedArch.name}
                 </h3>
                 <p className="text-brand-charcoal/60 font-lora mb-4">

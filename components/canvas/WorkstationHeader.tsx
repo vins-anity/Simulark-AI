@@ -52,12 +52,12 @@ const LAYOUT_ALGORITHMS: {
   label: string;
   icon: React.ElementType;
 }[] = [
-  { id: "arch-pattern", label: "Architecture", icon: GitBranch },
-  { id: "dagre-hierarchy", label: "Hierarchical", icon: List },
-  { id: "radial", label: "Radial", icon: Circle },
-  { id: "force", label: "Force", icon: Move },
-  { id: "grid", label: "Grid", icon: Grid3X3 },
-];
+    { id: "arch-pattern", label: "Architecture", icon: GitBranch },
+    { id: "dagre-hierarchy", label: "Hierarchical", icon: List },
+    { id: "radial", label: "Radial", icon: Circle },
+    { id: "force", label: "Force", icon: Move },
+    { id: "grid", label: "Grid", icon: Grid3X3 },
+  ];
 
 export function WorkstationHeader({
   project,
@@ -124,13 +124,13 @@ export function WorkstationHeader({
   }
 
   return (
-    <header className="h-14 border-b border-brand-charcoal/20 bg-white flex items-center justify-between px-6 shrink-0 z-20 relative">
+    <header className="h-14 border-b border-border-primary bg-bg-elevated flex items-center justify-between px-6 shrink-0 z-20 relative">
       {/* Left Section - Navigation & Identity */}
       <div className="flex items-center gap-4">
         {/* Back Navigation */}
         <Link
           href="/dashboard"
-          className="flex items-center justify-center w-8 h-8 border border-brand-charcoal/20 text-brand-charcoal hover:bg-brand-charcoal hover:text-white transition-all active:translate-x-0.5 active:translate-y-0.5"
+          className="flex items-center justify-center w-8 h-8 border border-brand-charcoal/20 text-brand-charcoal dark:text-text-primary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all active:translate-x-0.5 active:translate-y-0.5"
           title="[ ESC ] Return to Dashboard"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -149,12 +149,12 @@ export function WorkstationHeader({
                 onBlur={handleNameSave}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="h-6 w-[200px] text-base font-poppins font-bold uppercase text-brand-charcoal bg-white border-b border-brand-orange focus:outline-none"
+                className="h-6 w-[200px] text-base font-poppins font-bold uppercase text-brand-charcoal dark:text-text-primary bg-bg-elevated border-b border-brand-orange focus:outline-none"
               />
             ) : (
               <h2
                 onClick={() => setIsEditingName(true)}
-                className="font-poppins font-bold text-base text-brand-charcoal uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors"
+                className="font-poppins font-bold text-base text-brand-charcoal dark:text-text-primary uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors"
               >
                 {project.name}
               </h2>
@@ -177,7 +177,7 @@ export function WorkstationHeader({
             variant="ghost"
             onClick={handleLayoutRotate}
             disabled={isLayoutAnimating}
-            className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all gap-2"
+            className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all gap-2"
           >
             <motion.div
               animate={{ rotate: isLayoutAnimating ? 180 : 0 }}
@@ -199,7 +199,7 @@ export function WorkstationHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0"
+              className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated"
             >
               <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
                 LAYOUT_ALGOS
@@ -217,7 +217,7 @@ export function WorkstationHeader({
                     className={cn(
                       "cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 flex justify-between",
                       currentLayoutIndex === index &&
-                        "bg-neutral-50 border-l-4 border-brand-orange",
+                      "bg-neutral-50 border-l-4 border-brand-orange",
                     )}
                   >
                     <span className="flex items-center">
@@ -242,7 +242,7 @@ export function WorkstationHeader({
             "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
             chaosMode
               ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
-              : "bg-white border-brand-charcoal/10 text-brand-charcoal/40 hover:bg-brand-charcoal hover:text-white",
+              : "bg-bg-elevated border-brand-charcoal/10 text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal",
           )}
         >
           <Zap
@@ -259,14 +259,14 @@ export function WorkstationHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 hover:bg-brand-charcoal hover:text-white transition-all"
+              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all"
             >
               [ ARCHIVE ]
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0"
+            className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated"
           >
             <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
               OPERATIONS_LOG

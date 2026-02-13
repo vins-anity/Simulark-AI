@@ -197,7 +197,7 @@ export default function TemplatesPage() {
         {templates.map((template) => (
           <div
             key={template.id}
-            className="group relative border-r border-b border-brand-charcoal hover:bg-neutral-50 transition-colors duration-300 flex flex-col min-h-[420px]"
+            className="group relative border-r border-b border-brand-charcoal hover:bg-bg-tertiary transition-colors duration-300 flex flex-col min-h-[420px]"
           >
             {/* Template Card Content */}
             <div className="p-8 flex flex-col flex-1 relative overflow-hidden">
@@ -209,7 +209,7 @@ export default function TemplatesPage() {
               {/* Card Top: Identifier */}
               <div className="flex justify-between items-start mb-10 relative z-10">
                 <div
-                  className="w-12 h-12 border-2 border-brand-charcoal flex items-center justify-center bg-white group-hover:bg-brand-charcoal group-hover:text-white transition-all transform group-hover:-translate-y-1"
+                  className="w-12 h-12 border-2 border-brand-charcoal flex items-center justify-center bg-bg-elevated group-hover:bg-brand-charcoal group-hover:text-text-inverse transition-all transform group-hover:-translate-y-1"
                   style={{ boxShadow: `4px 4px 0px 0px ${template.accent}` }}
                 >
                   <Icon icon={template.icon} className="w-6 h-6" />
@@ -276,7 +276,7 @@ export default function TemplatesPage() {
                 <Button
                   className={cn(
                     "w-full rounded-none h-12 font-mono uppercase tracking-[0.2em] text-[11px] font-bold transition-all border-2",
-                    "bg-white text-brand-charcoal border-brand-charcoal hover:bg-brand-charcoal hover:text-white",
+                    "bg-bg-elevated text-brand-charcoal border-brand-charcoal hover:bg-brand-charcoal hover:text-text-inverse",
                     "shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none translate-x-[-2px] translate-y-[-2px] active:translate-x-0 active:translate-y-0",
                   )}
                   onClick={() => handleClone(template.id)}

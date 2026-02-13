@@ -60,7 +60,7 @@ export function UpgradeModal({
       <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden gap-0 border-brand-charcoal/10">
         {/* Header Banner */}
         <div
-          className={`p-6 pb-8 text-center relative overflow-hidden ${isSpecial ? "bg-[#1B2F45] text-white" : "bg-brand-charcoal/5"}`}
+          className={`p-6 pb-8 text-center relative overflow-hidden ${isSpecial ? "bg-bg-elevated text-text-primary border-b border-brand-charcoal/10" : "bg-bg-tertiary"}`}
         >
           {/* Decorative Pattern */}
           {isSpecial && (
@@ -120,7 +120,7 @@ export function UpgradeModal({
                     className="flex items-start gap-2 text-sm text-brand-charcoal/80"
                   >
                     <Check
-                      className={`w-4 h-4 mt-0.5 shrink-0 ${isSpecial ? "text-[#d97757]" : "text-brand-charcoal"}`}
+                      className={`w-4 h-4 mt-0.5 shrink-0 ${isSpecial ? "text-brand-orange" : "text-text-primary"}`}
                     />
                     <span>{feat}</span>
                   </li>
@@ -138,7 +138,7 @@ export function UpgradeModal({
                 type="submit"
                 disabled={isLoading}
                 className={`w-full h-12 rounded-none font-mono text-xs uppercase tracking-widest transition-all
-                                    ${isSpecial ? "bg-[#d97757] hover:bg-[#c06649] text-white" : "bg-brand-charcoal hover:bg-black text-white"}
+                                    ${isSpecial ? "bg-brand-orange hover:bg-brand-orange/90 text-white" : "bg-brand-charcoal hover:bg-black text-white dark:bg-white dark:text-brand-charcoal dark:hover:bg-white/90"}
                                 `}
               >
                 {isLoading ? "Processing..." : "Request Access"}

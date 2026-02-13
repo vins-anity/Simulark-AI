@@ -15,12 +15,19 @@ export function DatabaseNode(props: BaseNodeProps) {
       label={label}
       icon={<Database size={16} />}
       logo={logo}
-      className="border-l-[#788c5d]" // Green accent
+      className="border-l-brand-green" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} type: persistent_vol</span>
-        <span className="opacity-70">{">"} replicas: 1 (primary)</span>
-        <span className="text-green-600/80">{">"} connection: active</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} type: database</span>
+            <span className="text-brand-green">{">"} connection: active</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

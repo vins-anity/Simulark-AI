@@ -15,12 +15,19 @@ export function ServiceNode(props: BaseNodeProps) {
       label={label}
       icon={<Server size={16} />}
       logo={logo}
-      className="border-l-[#6a9bcc]" // Blue accent
+      className="border-l-brand-blue" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} instance_type: t3.micro</span>
-        <span className="opacity-70">{">"} region: us-east-1</span>
-        <span className="text-brand-orange/80">{">"} status: healthy</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} type: service</span>
+            <span className="text-brand-orange/80">{">"} status: active</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

@@ -9,9 +9,17 @@ export function CacheNode(props: BaseNodeProps) {
       {...props}
       label={(props.data?.label as string) || "Cache"}
       icon={<Zap size={16} />}
-      className="border-l-4 border-l-[#f1c40f]" // Yellow accent for Cache
+      className="border-l-brand-warning" // semantic border
     >
-      <div className="text-xs text-[#b0aea5] mt-1">In-memory store</div>
+      <div className="flex flex-col gap-1">
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <div className="text-xs text-text-secondary mt-1">In-memory store</div>
+        )}
+      </div>
     </BaseNode>
   );
 }

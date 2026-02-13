@@ -27,12 +27,12 @@ export function Hero() {
 
   return (
     <section
-      className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-[#faf9f5] border-b border-brand-charcoal/5"
+      className="relative min-h-[90vh] flex flex-col items-center justify-center overflow-hidden bg-bg-primary border-b border-brand-charcoal/5"
       onMouseMove={handleMouseMove}
     >
       {/* Interactive Grid Background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1908_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1908_1px,transparent_1px)] bg-[size:40px_40px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--canvas-grid)_1px,transparent_1px),linear-gradient(to_bottom,var(--canvas-grid)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
         {/* Mouse Coordinate Tracking Labels */}
         <motion.div
@@ -67,7 +67,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-3 px-3 py-1.5 border border-brand-charcoal/10 bg-white/50 backdrop-blur-sm rounded-sm"
+          className="inline-flex items-center gap-3 px-3 py-1.5 border border-brand-charcoal/10 bg-bg-secondary/50 backdrop-blur-sm rounded-sm"
         >
           <span className="w-2 h-2 bg-brand-orange animate-pulse" />
           <span className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/70">
@@ -79,7 +79,7 @@ export function Hero() {
         {/* Headline */}
         <div className="space-y-4">
           <motion.h1
-            className="text-6xl md:text-8xl font-poppins font-bold tracking-tighter text-[#1a1a19] leading-[1] relative inline-block"
+            className="text-6xl md:text-8xl font-poppins font-bold tracking-tighter text-text-primary leading-[1] relative inline-block"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -143,9 +143,9 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              className="group h-14 px-8 text-sm font-mono uppercase tracking-wider rounded-none border-brand-charcoal/20 hover:border-brand-charcoal text-brand-charcoal hover:bg-transparent transition-all"
+              className="group h-14 px-8 text-sm font-mono uppercase tracking-wider rounded-none border-brand-charcoal/20 hover:border-text-primary text-text-primary hover:bg-transparent transition-all"
             >
-              <Terminal className="w-4 h-4 mr-3 text-brand-gray-mid group-hover:text-brand-charcoal transition-colors" />
+              <Terminal className="w-4 h-4 mr-3 text-brand-gray-mid group-hover:text-text-primary transition-colors" />
               <span>See How It Works</span>
             </Button>
           </Link>
@@ -156,10 +156,10 @@ export function Hero() {
           initial={{ opacity: 0, rotateX: 20, z: -100 }}
           animate={{ opacity: 1, rotateX: 0, z: 0 }}
           transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
-          className="mt-20 w-full max-w-5xl aspect-[16/9] bg-white border border-brand-charcoal/10 shadow-2xl shadow-brand-charcoal/5 relative overflow-hidden group perspective-1000"
+          className="mt-20 w-full max-w-5xl aspect-[16/9] bg-bg-secondary border border-brand-charcoal/10 shadow-2xl shadow-brand-charcoal/5 relative overflow-hidden group perspective-1000"
         >
           {/* UI Mockup Header */}
-          <div className="h-10 border-b border-brand-charcoal/10 bg-[#faf9f5] flex items-center px-4 gap-2 z-20 relative">
+          <div className="h-10 border-b border-brand-charcoal/10 bg-bg-tertiary flex items-center px-4 gap-2 z-20 relative">
             <div className="flex gap-2">
               <div className="w-3 h-3 rounded-full bg-[#FF5F57] shadow-sm" />
               <div className="w-3 h-3 rounded-full bg-[#FEBC2E] shadow-sm" />
@@ -176,7 +176,7 @@ export function Hero() {
           </div>
 
           {/* Interactive Canvas */}
-          <div className="absolute inset-0 top-10 flex items-center justify-center bg-[#faf9f5]">
+          <div className="absolute inset-0 top-10 flex items-center justify-center bg-bg-primary">
             <HeroCanvas />
           </div>
 

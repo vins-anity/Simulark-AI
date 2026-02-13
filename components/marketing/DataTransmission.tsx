@@ -36,24 +36,24 @@ export function DataTransmission() {
   };
 
   return (
-    <section className="py-32 bg-brand-charcoal relative overflow-hidden">
+    <section className="py-32 bg-bg-elevated relative overflow-hidden">
       {/* Schematic Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-5"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(250,249,245,0.3) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(250,249,245,0.3) 1px, transparent 1px)
+            linear-gradient(to right, var(--text-primary) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--text-primary) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
       />
 
       {/* Corner Frames */}
-      <div className="absolute top-12 left-12 w-24 h-24 border-t border-l border-white/10" />
-      <div className="absolute top-12 right-12 w-24 h-24 border-t border-r border-white/10" />
-      <div className="absolute bottom-12 left-12 w-24 h-24 border-b border-l border-white/10" />
-      <div className="absolute bottom-12 right-12 w-24 h-24 border-b border-r border-white/10" />
+      <div className="absolute top-12 left-12 w-24 h-24 border-t border-l border-text-primary/10" />
+      <div className="absolute top-12 right-12 w-24 h-24 border-t border-r border-text-primary/10" />
+      <div className="absolute bottom-12 left-12 w-24 h-24 border-b border-l border-text-primary/10" />
+      <div className="absolute bottom-12 right-12 w-24 h-24 border-b border-r border-text-primary/10" />
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-3xl mx-auto">
@@ -67,13 +67,13 @@ export function DataTransmission() {
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
               // DATA_TRANSMISSION
             </span>
-            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
               UPLINK{" "}
-              <span className="font-serif italic font-light text-white/50">
+              <span className="font-serif italic font-light text-text-primary/50">
                 CHANNEL
               </span>
             </h2>
-            <p className="font-lora text-white/50 text-lg">
+            <p className="font-lora text-text-primary/50 text-lg">
               Subscribe to architecture patterns, system updates, and technical
               deep dives.
             </p>
@@ -81,21 +81,21 @@ export function DataTransmission() {
 
           {/* Form Container */}
           <motion.div
-            className="border border-white/10 bg-white/5 backdrop-blur-sm p-1"
+            className="border border-text-primary/10 bg-bg-primary/50 backdrop-blur-sm p-1"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <div className="border border-white/5 p-8">
+            <div className="border border-text-primary/5 p-8">
               {/* Form Header */}
-              <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
+              <div className="flex justify-between items-center mb-6 pb-6 border-b border-text-primary/10">
                 <div className="flex items-center gap-3">
                   <span className="w-2 h-2 bg-brand-orange animate-pulse" />
-                  <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/60">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-primary/60">
                     TRANSMISSION_READY
                   </span>
                 </div>
-                <span className="font-mono text-[9px] uppercase text-white/30">
+                <span className="font-mono text-[9px] uppercase text-text-primary/30">
                   SECURE_CHANNEL
                 </span>
               </div>
@@ -104,7 +104,7 @@ export function DataTransmission() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Identifier Field */}
                 <div>
-                  <label className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/40 block mb-2">
+                  <label className="font-mono text-[9px] uppercase tracking-[0.15em] text-text-primary/40 block mb-2">
                     IDENTIFIER (EMAIL)
                   </label>
                   <div className="relative">
@@ -113,28 +113,28 @@ export function DataTransmission() {
                       value={email}
                       onChange={handleEmailChange}
                       placeholder="operator@organization.com"
-                      className="w-full bg-transparent border border-white/20 px-4 py-4 font-mono text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-brand-orange transition-colors"
+                      className="w-full bg-transparent border border-text-primary/20 px-4 py-4 font-mono text-sm text-text-primary placeholder:text-text-primary/20 focus:outline-none focus:border-brand-orange transition-colors"
                       disabled={status === "success"}
                     />
                     {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/30" />
-                    <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/30" />
-                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-white/30" />
-                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/30" />
+                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-text-primary/30" />
+                    <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-text-primary/30" />
+                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-text-primary/30" />
+                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-text-primary/30" />
                   </div>
                 </div>
 
                 {/* Signal Strength Indicator */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/40">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-text-primary/40">
                       SIGNAL_STRENGTH
                     </span>
-                    <span className="font-mono text-xs text-white/60">
+                    <span className="font-mono text-xs text-text-primary/60">
                       {signalStrength}%
                     </span>
                   </div>
-                  <div className="h-1 bg-white/10 relative overflow-hidden">
+                  <div className="h-1 bg-text-primary/10 relative overflow-hidden">
                     <motion.div
                       className="absolute top-0 left-0 h-full bg-brand-orange"
                       initial={{ width: 0 }}
@@ -146,7 +146,7 @@ export function DataTransmission() {
                       {[...Array(10)].map((_, i) => (
                         <div
                           key={i}
-                          className="flex-1 border-r border-brand-charcoal/50"
+                          className="flex-1 border-r border-text-primary/10"
                         />
                       ))}
                     </div>
@@ -158,11 +158,10 @@ export function DataTransmission() {
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
-                    className={`p-4 border ${
-                      status === "success"
+                    className={`p-4 border ${status === "success"
                         ? "border-brand-green/30 bg-brand-green/10"
                         : "border-red-500/30 bg-red-500/10"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       {status === "success" ? (
@@ -171,11 +170,10 @@ export function DataTransmission() {
                         <AlertCircle className="w-4 h-4 text-red-500" />
                       )}
                       <span
-                        className={`font-mono text-xs uppercase ${
-                          status === "success"
+                        className={`font-mono text-xs uppercase ${status === "success"
                             ? "text-brand-green"
                             : "text-red-400"
-                        }`}
+                          }`}
                       >
                         {status === "success"
                           ? "TRANSMISSION_SUCCESSFUL"
@@ -189,33 +187,33 @@ export function DataTransmission() {
                 <Button
                   type="submit"
                   disabled={status === "success"}
-                  className="w-full h-14 font-mono text-sm uppercase tracking-[0.15em] rounded-none bg-brand-orange hover:bg-white hover:text-brand-charcoal text-white transition-all duration-300 border-0 disabled:opacity-50"
+                  className="w-full h-14 font-mono text-sm uppercase tracking-[0.15em] rounded-none bg-brand-orange hover:bg-bg-secondary hover:text-text-primary text-text-inverse transition-all duration-300 border-0 disabled:opacity-50"
                 >
-                  <span className="text-white/40 hover:text-brand-charcoal/40">
+                  <span className="text-text-inverse/40 hover:text-text-primary/40">
                     [
                   </span>
                   <span className="mx-2 flex items-center gap-2">
                     {status === "success" ? "SUBSCRIBED" : "INITIATE_UPLINK"}
                     {status !== "success" && <ArrowRight className="w-4 h-4" />}
                   </span>
-                  <span className="text-white/40 hover:text-brand-charcoal/40">
+                  <span className="text-text-inverse/40 hover:text-text-primary/40">
                     ]
                   </span>
                 </Button>
               </form>
 
               {/* Footer */}
-              <div className="mt-6 pt-6 border-t border-white/10 flex flex-wrap justify-between gap-4">
+              <div className="mt-6 pt-6 border-t border-text-primary/10 flex flex-wrap justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <Icon
                     icon="lucide:shield-check"
-                    className="w-4 h-4 text-white/30"
+                    className="w-4 h-4 text-text-primary/30"
                   />
-                  <span className="font-mono text-[9px] uppercase text-white/30">
+                  <span className="font-mono text-[9px] uppercase text-text-primary/30">
                     ENCRYPTED_TRANSMISSION
                   </span>
                 </div>
-                <span className="font-mono text-[9px] uppercase text-white/30">
+                <span className="font-mono text-[9px] uppercase text-text-primary/30">
                   NO_SPAM_GUARANTEE
                 </span>
               </div>
@@ -235,10 +233,10 @@ export function DataTransmission() {
               { value: "0%", label: "SPAM" },
             ].map((stat, index) => (
               <div key={stat.label} className="text-center">
-                <span className="font-poppins text-2xl font-bold text-white block">
+                <span className="font-poppins text-2xl font-bold text-text-primary block">
                   {stat.value}
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/30">
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-text-primary/30">
                   {stat.label}
                 </span>
               </div>

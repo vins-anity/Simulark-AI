@@ -47,9 +47,9 @@ function ModuleCard({
       transition={{ delay: index * 0.15, duration: 0.5 }}
     >
       {/* Module Container */}
-      <div className="relative h-full bg-white border border-brand-charcoal/10 group-hover:border-brand-orange/40 transition-all duration-300">
+      <div className="relative h-full bg-bg-secondary border border-border-primary group-hover:border-brand-orange/40 transition-all duration-300">
         {/* Module ID Badge - Top Right */}
-        <div className="absolute -top-3 right-4 bg-[#faf9f5] px-2">
+        <div className="absolute -top-3 right-4 bg-bg-primary px-2">
           <span className="font-mono text-[10px] uppercase tracking-wider text-brand-charcoal/40 group-hover:text-brand-orange transition-colors">
             {module.id}
           </span>
@@ -65,7 +65,7 @@ function ModuleCard({
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             {/* Icon in rigid box */}
-            <div className="w-12 h-12 border border-brand-charcoal/10 flex items-center justify-center bg-brand-sand-light group-hover:border-brand-orange/30 transition-colors">
+            <div className="w-12 h-12 border border-border-primary flex items-center justify-center bg-bg-tertiary group-hover:border-brand-orange/30 transition-colors">
               <Icon
                 icon={module.icon}
                 className="w-5 h-5 text-brand-charcoal/60 group-hover:text-brand-orange transition-colors"
@@ -82,7 +82,7 @@ function ModuleCard({
           </div>
 
           {/* Title */}
-          <h3 className="text-lg font-poppins font-bold text-brand-charcoal mb-3 uppercase tracking-tight">
+          <h3 className="text-lg font-poppins font-bold text-text-primary mb-3 uppercase tracking-tight">
             {module.title}
           </h3>
 
@@ -135,15 +135,15 @@ export function FeatureShowcaseEnhanced() {
   return (
     <section
       ref={containerRef}
-      className="py-32 bg-[#faf9f5] relative overflow-hidden"
+      className="py-32 bg-bg-primary relative overflow-hidden"
     >
       {/* Background Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-30"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(26,26,26,0.04) 1px, transparent 1px)
+            linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
           `,
           backgroundSize: "80px 80px",
         }}
@@ -162,7 +162,7 @@ export function FeatureShowcaseEnhanced() {
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
                 // SYSTEM_ARCHITECTURE
               </span>
-              <h2 className="text-4xl md:text-5xl font-poppins font-bold text-brand-charcoal tracking-tight">
+              <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary tracking-tight">
                 THE PIPELINE
               </h2>
               <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 mt-2">
@@ -241,7 +241,7 @@ export function FeatureShowcaseEnhanced() {
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 * index }}
               >
-                <div className="text-3xl md:text-4xl font-poppins font-bold text-brand-charcoal mb-1">
+                <div className="text-3xl md:text-4xl font-poppins font-bold text-text-primary mb-1">
                   {stat.value}
                 </div>
                 <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40">

@@ -38,7 +38,7 @@ export function HeroEnhanced() {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-[#faf9f5]"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-bg-primary"
       onMouseMove={handleMouseMove}
     >
       {/* Schematic Grid Background */}
@@ -48,8 +48,8 @@ export function HeroEnhanced() {
           className="absolute inset-0"
           style={{
             backgroundImage: `
-              linear-gradient(to right, rgba(26,26,26,0.06) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(26,26,26,0.06) 1px, transparent 1px)
+              linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+              linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
             `,
             backgroundSize: "60px 60px",
           }}
@@ -59,8 +59,8 @@ export function HeroEnhanced() {
           className="absolute inset-0"
           style={{
             backgroundImage: `
-              linear-gradient(to right, rgba(26,26,26,0.03) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(26,26,26,0.03) 1px, transparent 1px)
+              linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+              linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
             `,
             backgroundSize: "20px 20px",
           }}
@@ -157,7 +157,7 @@ export function HeroEnhanced() {
               DESIGN SYSTEMS.
             </motion.h1>
           </div>
-          <div className="overflow-hidden">
+          <div className="overflow-hidden pb-4">
             <motion.h1
               className="text-5xl md:text-7xl lg:text-8xl font-poppins font-bold tracking-tight leading-[0.95]"
               initial={{ y: "100%" }}
@@ -252,7 +252,7 @@ export function HeroEnhanced() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-20 w-full max-w-5xl aspect-[16/9] bg-white border border-brand-charcoal/20 relative overflow-hidden"
+          className="mt-20 w-full max-w-5xl aspect-[16/9] bg-bg-secondary border border-brand-charcoal/20 relative overflow-hidden"
         >
           {/* Interface Header - Technical */}
           <div className="h-8 border-b border-brand-charcoal/10 bg-brand-sand-light flex items-center px-3">
@@ -268,7 +268,7 @@ export function HeroEnhanced() {
           </div>
 
           {/* Canvas Area */}
-          <div className="absolute inset-0 top-8 flex items-center justify-center bg-[#faf9f5]">
+          <div className="absolute inset-0 top-8 flex items-center justify-center bg-bg-primary">
             <HeroCanvas />
           </div>
 

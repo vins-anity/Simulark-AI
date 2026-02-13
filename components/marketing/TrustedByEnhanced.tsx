@@ -35,13 +35,13 @@ const integrations = [
 
 export function TrustedByEnhanced() {
   return (
-    <section className="py-10 border-y border-brand-charcoal/10 bg-[#faf9f5] relative overflow-hidden">
+    <section className="py-10 border-y border-brand-charcoal/10 bg-bg-primary relative overflow-hidden">
       {/* Technical Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-50"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.04) 1px, transparent 1px)
+            linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px)
           `,
           backgroundSize: "120px 100%",
         }}
@@ -59,7 +59,7 @@ export function TrustedByEnhanced() {
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-charcoal/40">
               // INTEGRATION_LAYER
             </span>
-            <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal font-bold">
+            <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-text-primary font-bold">
               AI_IDE_CONTEXT
             </h2>
             <div className="flex items-center gap-2 mt-2">
@@ -91,7 +91,7 @@ export function TrustedByEnhanced() {
                   </span>
 
                   {/* Icon Container */}
-                  <div className="w-7 h-7 border border-brand-charcoal/10 flex items-center justify-center bg-white group-hover:border-brand-orange/30 transition-colors duration-300">
+                  <div className="w-7 h-7 border border-brand-charcoal/10 flex items-center justify-center bg-bg-secondary group-hover:border-brand-orange/30 transition-colors duration-300">
                     <Image
                       src={integration.icon}
                       alt={integration.name}
@@ -103,15 +103,14 @@ export function TrustedByEnhanced() {
 
                   {/* Name & Status */}
                   <div className="flex flex-col">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-brand-charcoal/60 group-hover:text-brand-charcoal transition-colors">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-brand-charcoal/60 group-hover:text-text-primary transition-colors">
                       {integration.name}
                     </span>
                     <span
-                      className={`font-mono text-[7px] uppercase ${
-                        integration.status === "ACTIVE"
+                      className={`font-mono text-[7px] uppercase ${integration.status === "ACTIVE"
                           ? "text-brand-green"
                           : "text-brand-orange"
-                      }`}
+                        }`}
                     >
                       {integration.status}
                     </span>

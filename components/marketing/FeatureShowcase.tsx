@@ -29,11 +29,11 @@ const steps = [
 
 export function FeatureShowcase() {
   return (
-    <section className="py-32 bg-white relative overflow-hidden border-b border-brand-charcoal/5">
+    <section className="py-32 bg-bg-primary relative overflow-hidden border-b border-brand-charcoal/5">
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-end mb-20 border-b border-brand-charcoal/10 pb-6">
           <div>
-            <h2 className="text-4xl font-poppins font-bold text-brand-charcoal mb-2">
+            <h2 className="text-4xl font-poppins font-bold text-text-primary mb-2">
               The Architecture Pipeline
             </h2>
             <p className="font-mono text-xs text-brand-gray-mid uppercase tracking-widest">
@@ -59,21 +59,21 @@ export function FeatureShowcase() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.2 }}
-              className="relative z-10 p-8 border-l border-brand-charcoal/5 first:border-l-0 group hover:bg-[#faf9f5] transition-colors"
+              className="relative z-10 p-8 border-l border-brand-charcoal/5 first:border-l-0 group hover:bg-bg-secondary transition-colors"
             >
               <div className="mb-6 flex items-center justify-between">
                 <span className="font-mono text-3xl font-light text-brand-charcoal/20 group-hover:text-brand-orange transition-colors">
                   {step.id}
                 </span>
-                <div className="w-12 h-12 bg-white border border-brand-charcoal/10 rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                <div className="w-12 h-12 bg-bg-secondary border border-brand-charcoal/10 rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
                   <Icon
                     icon={step.icon}
-                    className="w-5 h-5 text-brand-charcoal"
+                    className="w-5 h-5 text-text-primary"
                   />
                 </div>
               </div>
 
-              <h3 className="text-xl font-poppins font-bold text-brand-charcoal mb-3 group-hover:translate-x-1 transition-transform">
+              <h3 className="text-xl font-poppins font-bold text-text-primary mb-3 group-hover:translate-x-1 transition-transform">
                 {step.title}
               </h3>
               <p className="text-brand-gray-mid font-lora text-sm leading-relaxed mb-6">

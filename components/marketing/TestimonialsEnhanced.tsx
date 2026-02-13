@@ -57,7 +57,7 @@ function FieldReport({
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 }}
     >
-      <div className="bg-white border border-brand-charcoal/10 p-6 group-hover:border-brand-orange/30 transition-all duration-300 relative">
+      <div className="bg-bg-secondary border border-brand-charcoal/10 p-6 group-hover:border-brand-orange/30 transition-all duration-300 relative">
         {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-brand-charcoal/20" />
         <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-brand-charcoal/20" />
@@ -84,14 +84,14 @@ function FieldReport({
         </div>
 
         {/* Quote */}
-        <blockquote className="font-lora text-base text-brand-charcoal/80 leading-relaxed mb-6">
+        <blockquote className="font-lora text-base text-text-primary/80 leading-relaxed mb-6">
           &ldquo;{report.quote}&rdquo;
         </blockquote>
 
         {/* Author */}
         <div className="flex items-center gap-3 pt-4 border-t border-brand-charcoal/5">
           {/* Avatar placeholder */}
-          <div className="w-10 h-10 border border-brand-charcoal/10 flex items-center justify-center bg-brand-sand-light">
+          <div className="w-10 h-10 border border-brand-charcoal/10 flex items-center justify-center bg-bg-tertiary">
             <span className="font-mono text-xs text-brand-charcoal/60">
               {report.author
                 .split(" ")
@@ -100,7 +100,7 @@ function FieldReport({
             </span>
           </div>
           <div>
-            <div className="font-mono text-xs text-brand-charcoal font-bold uppercase tracking-wide">
+            <div className="font-mono text-xs text-text-primary font-bold uppercase tracking-wide">
               {report.author}
             </div>
             <div className="font-mono text-[9px] text-brand-charcoal/40 uppercase">
@@ -119,15 +119,15 @@ export function TestimonialsEnhanced() {
   return (
     <section
       ref={containerRef}
-      className="py-32 bg-white relative overflow-hidden"
+      className="py-32 bg-bg-primary relative overflow-hidden"
     >
       {/* Subtle Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(26,26,26,0.03) 1px, transparent 1px)
+            linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
@@ -146,7 +146,7 @@ export function TestimonialsEnhanced() {
               // FIELD_REPORTS
             </span>
 
-            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-brand-charcoal mb-4">
+            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
               FIELD
               <br />
               <span className="font-serif italic font-light text-brand-charcoal/50">
@@ -162,7 +162,7 @@ export function TestimonialsEnhanced() {
             <div className="space-y-4 pt-6 border-t border-brand-charcoal/10">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 border border-brand-charcoal/10 flex items-center justify-center">
-                  <span className="font-mono text-sm text-brand-charcoal">
+                  <span className="font-mono text-sm text-text-primary">
                     4.9
                   </span>
                 </div>

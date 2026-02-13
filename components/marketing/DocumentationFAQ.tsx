@@ -60,7 +60,7 @@ function FAQItem({
 }) {
   return (
     <motion.div
-      className="border border-brand-charcoal/10 bg-white"
+      className="border border-brand-charcoal/10 bg-bg-secondary"
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -121,14 +121,14 @@ export function DocumentationFAQ() {
   const [openId, setOpenId] = useState<string | null>("DOC-01");
 
   return (
-    <section className="py-32 bg-[#faf9f5] relative overflow-hidden">
+    <section className="py-32 bg-bg-primary relative overflow-hidden">
       {/* Grid Background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(26,26,26,0.04) 1px, transparent 1px)
+            linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
           `,
           backgroundSize: "60px 60px",
         }}
@@ -147,7 +147,7 @@ export function DocumentationFAQ() {
               // KNOWLEDGE_BASE
             </span>
 
-            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-brand-charcoal mb-4">
+            <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
               DOCS &
               <br />
               <span className="font-serif italic font-light text-brand-charcoal/50">
@@ -192,7 +192,7 @@ export function DocumentationFAQ() {
             </div>
 
             {/* Support */}
-            <div className="mt-8 p-4 border border-brand-charcoal/10 bg-white">
+            <div className="mt-8 p-4 border border-brand-charcoal/10 bg-bg-secondary">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-2 h-2 bg-brand-green rounded-full animate-pulse" />
                 <span className="font-mono text-[9px] uppercase text-brand-charcoal/40">

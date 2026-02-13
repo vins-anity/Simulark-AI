@@ -25,6 +25,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { Redo2, Undo2 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { saveProject } from "@/actions/projects";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isInitializedRef = useRef(false);
     const isUndoRedoRef = useRef(false);
+    const { resolvedTheme } = useTheme();
 
     // History store for undo/redo
     const {
@@ -182,9 +184,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       if (!element) return;
 
       const { toPng } = await import("html-to-image");
+      const bgColor = resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5";
       const dataUrl = await toPng(element, {
         cacheBust: true,
-        backgroundColor: "#ffffff",
+        backgroundColor: bgColor,
       });
       const link = document.createElement("a");
       link.download = `architecture-${Date.now()}.png`;
@@ -354,12 +357,13 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           const height = maxY - minY + padding * 2;
 
           const { toPng, toSvg } = await import("html-to-image");
+          const bgColor = resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5";
 
           switch (format) {
             case "png": {
               const dataUrl = await toPng(element, {
                 cacheBust: true,
-                backgroundColor: "#ffffff",
+                backgroundColor: bgColor,
                 width,
                 height,
                 style: {
@@ -386,7 +390,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
             case "svg": {
               const dataUrl = await toSvg(element, {
                 cacheBust: true,
-                backgroundColor: "#ffffff",
+                backgroundColor: bgColor,
                 width,
                 height,
                 style: {
@@ -413,7 +417,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               const { jsPDF } = await import("jspdf");
               const dataUrl = await toPng(element, {
                 cacheBust: true,
-                backgroundColor: "#ffffff",
+                backgroundColor: bgColor,
                 width,
                 height,
                 style: {
@@ -528,6 +532,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           edges={augmentedEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          colorMode={resolvedTheme === "dark" ? "dark" : "light"}
           onConnect={onConnect}
           onMove={(_e, viewport) => onViewportChange?.(viewport)}
           nodeTypes={nodeTypes}

@@ -15,10 +15,18 @@ export function GatewayNode(props: BaseNodeProps) {
       label={label}
       icon={<Network size={16} />}
       logo={logo}
-      className="border-l-4 border-l-[#d97757]" // Orange accent
+      className="border-l-brand-orange" // semantic border
     >
-      <div className="text-xs text-[#b0aea5] mt-1">
-        Handles incoming traffic
+      <div className="flex flex-col gap-1">
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <div className="text-xs text-text-muted mt-1">
+            Handles incoming traffic
+          </div>
+        )}
       </div>
     </BaseNode>
   );

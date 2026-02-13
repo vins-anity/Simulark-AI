@@ -25,15 +25,18 @@ function MainContent({
         fullWidth ? "" : "",
       )}
     >
-      <div
-        className={cn(
-          "flex-1 min-h-0 flex flex-col",
-          fullWidth
-            ? "w-full"
-            : "max-w-7xl mx-auto p-4 lg:p-6 w-full overflow-y-auto",
-        )}
-      >
-        {children}
+      {/* Scrollable container - Always full width of the main area */}
+      <div className="flex-1 w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-brand-charcoal/20 dark:scrollbar-thumb-white/20 hover:scrollbar-thumb-brand-charcoal/40 dark:hover:scrollbar-thumb-white/40">
+        <div
+          className={cn(
+            "flex-1 flex flex-col min-h-full",
+            fullWidth
+              ? "w-full"
+              : "max-w-7xl mx-auto p-4 lg:p-6 w-full",
+          )}
+        >
+          {children}
+        </div>
       </div>
     </main>
   );
@@ -44,7 +47,7 @@ export function DashboardLayout({
   fullWidth = false,
 }: DashboardLayoutProps) {
   return (
-    <div className="flex bg-[#faf9f5] h-screen overflow-hidden w-screen">
+    <div className="flex bg-[#faf9f5] dark:bg-zinc-950 h-screen overflow-hidden w-screen transition-colors duration-300">
       <Sidebar />
       <MainContent fullWidth={fullWidth}>{children}</MainContent>
     </div>

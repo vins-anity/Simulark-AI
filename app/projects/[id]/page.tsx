@@ -157,7 +157,7 @@ export default function ProjectPage({
   }
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-full overflow-hidden bg-[#faf9f5] font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
+    <div className="flex flex-col h-screen w-full max-w-full overflow-hidden bg-bg-primary font-sans selection:bg-brand-orange/20 selection:text-brand-charcoal">
       <WorkstationHeader
         project={project}
         saving={false}
@@ -170,12 +170,12 @@ export default function ProjectPage({
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex h-full relative">
           {/* Canvas Area */}
-          <div className="flex-1 relative bg-[#f5f5f5]">
+          <div className="flex-1 relative bg-bg-secondary">
             {/* Architectural Blueprint Background */}
             <div
               className="absolute inset-0 opacity-[0.012] pointer-events-none"
               style={{
-                backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
+                backgroundImage: "radial-gradient(var(--pattern-dot) 1px, transparent 1px)",
                 backgroundSize: "20px 20px",
               }}
             />
@@ -183,7 +183,7 @@ export default function ProjectPage({
               className="absolute inset-0 opacity-[0.008] pointer-events-none"
               style={{
                 backgroundImage:
-                  "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)",
+                  "linear-gradient(var(--pattern-grid) 1px, transparent 1px), linear-gradient(90deg, var(--pattern-grid) 1px, transparent 1px)",
                 backgroundSize: "100px 100px",
               }}
             />
@@ -201,7 +201,7 @@ export default function ProjectPage({
               <button
                 type="button"
                 onClick={() => setIsTerminalOpen(true)}
-                className="absolute right-6 top-6 z-30 flex items-center justify-center w-12 h-12 bg-white border-2 border-brand-charcoal shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all group"
+                className="absolute right-6 top-6 z-30 flex items-center justify-center w-12 h-12 bg-bg-elevated border-2 border-brand-charcoal shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all group"
                 title="Open Agentic Chat"
               >
                 <Icon
@@ -212,7 +212,7 @@ export default function ProjectPage({
             )}
 
             {/* Overlay HUD Zoom Controls */}
-            <div className="absolute bottom-6 left-6 p-0.5 bg-white border border-brand-charcoal/20 flex items-center gap-0 z-10">
+            <div className="absolute bottom-6 left-6 p-0.5 bg-bg-elevated border border-brand-charcoal/20 flex items-center gap-0 z-10">
               <button
                 type="button"
                 onClick={() => flowEditorRef.current?.zoomOut()}
@@ -238,7 +238,7 @@ export default function ProjectPage({
           {/* Terminal Sidebar (Fixed Width, Collapsible) */}
           <div
             className={cn(
-              "bg-white border-l border-brand-charcoal/10 flex flex-col transition-all duration-300 ease-in-out absolute right-0 top-0 bottom-0 shadow-xl z-20",
+              "bg-bg-elevated border-l border-brand-charcoal/10 flex flex-col transition-all duration-300 ease-in-out absolute right-0 top-0 bottom-0 shadow-xl z-20",
               isTerminalOpen
                 ? "w-full md:w-[420px] translate-x-0"
                 : "w-full md:w-[420px] translate-x-full",

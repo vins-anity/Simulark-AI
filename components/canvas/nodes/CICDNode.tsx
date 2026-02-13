@@ -15,12 +15,20 @@ export function CICDNode(props: BaseNodeProps) {
       label={label}
       icon={<GitBranch size={16} />}
       logo={logo}
-      className="border-l-[#6366f1]" // Indigo accent
+      className="border-l-brand-blue" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} pipeline: automated</span>
-        <span className="opacity-70">{">"} trigger: push/pr</span>
-        <span className="text-indigo-600/80">{">"} deploy: continuous</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} pipeline: automated</span>
+            <span className="opacity-70">{">"} trigger: push/pr</span>
+            <span className="text-brand-blue">{">"} deploy: continuous</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

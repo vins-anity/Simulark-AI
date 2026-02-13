@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 import { useSimulationStore } from "@/lib/store";
+import { shouldInvertIcon } from "@/lib/icons";
 import { NodeContextMenu } from "./NodeContextMenu";
 import { NodeProperties } from "./NodeProperties";
 
@@ -170,24 +171,24 @@ export function BaseNode({
         onContextMenu={handleContextMenu}
         className={cn(
           "relative flex flex-col transition-all duration-300 ease-out group",
-          "w-72 h-auto rounded-none overflow-hidden",
-          "border-2 border-brand-charcoal bg-white",
+          "w-80 h-auto rounded-none overflow-hidden",
+          "border-2 border-brand-charcoal bg-bg-secondary dark:bg-zinc-800 dark:border-white/20",
           // Normal state - hard brutalist shadow
           !chaosMode &&
-            !isKilled &&
-            "shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] hover:translate-x-[2px] hover:translate-y-[2px]",
+          !isKilled &&
+          "shadow-[3px_3px_0px_0px_var(--shadow-color)] hover:shadow-[1px_1px_0px_0px_var(--shadow-color)] hover:translate-x-[2px] hover:translate-y-[2px]",
           !chaosMode &&
-            !isKilled &&
-            selected &&
-            "border-brand-orange shadow-[3px_3px_0px_0px_#FF5733]",
+          !isKilled &&
+          selected &&
+          "border-brand-orange shadow-[3px_3px_0px_0px_#FF5733]",
           // Chaos mode - active
           chaosMode &&
-            !isKilled &&
-            !isDegraded &&
-            "cursor-crosshair border-brand-charcoal hover:border-red-500",
+          !isKilled &&
+          !isDegraded &&
+          "cursor-crosshair border-brand-charcoal hover:border-red-500",
           // Killed state
           isKilled &&
-            "bg-neutral-100 border-neutral-400 grayscale opacity-75 cursor-not-allowed shadow-none",
+          "bg-bg-tertiary border-neutral-600 grayscale opacity-75 cursor-not-allowed shadow-none",
           // Degraded state
           isDegraded && "border-brand-orange/60",
           // Recovering state
@@ -199,21 +200,21 @@ export function BaseNode({
         <Handle
           type="target"
           position={Position.Top}
-          className="w-3 h-3 border-2 border-brand-charcoal bg-white rounded-none !top-[-6px] z-50"
+          className="w-3 h-3 border-2 border-brand-charcoal bg-bg-secondary rounded-none !top-[-6px] z-50"
         />
         <Handle
           type="source"
           position={Position.Bottom}
-          className="w-3 h-3 border-2 border-brand-charcoal bg-white rounded-none !bottom-[-6px] z-50"
+          className="w-3 h-3 border-2 border-brand-charcoal bg-bg-secondary rounded-none !bottom-[-6px] z-50"
         />
 
         {/* Technical Header Band */}
         <div className="h-2 border-b-2 border-brand-charcoal bg-brand-charcoal/80 flex items-center justify-between px-3">
           <div className="flex gap-1">
-            <div className="w-1.5 h-1.5 bg-white/20" />
-            <div className="w-1.5 h-1.5 bg-white/20" />
+            <div className="w-1.5 h-1.5 bg-bg-secondary/20" />
+            <div className="w-1.5 h-1.5 bg-bg-secondary/20" />
           </div>
-          <span className="font-mono text-[9px] text-white/40 uppercase tracking-[0.2em]">
+          <span className="font-mono text-[9px] text-bg-secondary/40 uppercase tracking-[0.2em]">
             SYSTEM_NODE // ARCH_{id.slice(0, 4)}
           </span>
         </div>
@@ -226,13 +227,16 @@ export function BaseNode({
           </div>
         )}
 
-        <div className="p-4 flex flex-col gap-4">
+        <div className="p-3 flex flex-col gap-3">
           {/* Header: Icon + Title + Tech */}
           <div className="flex items-start gap-4">
             {/* Icon Container - Technical Monochromatic */}
-            <div className="shrink-0 w-12 h-12 border-2 border-brand-charcoal bg-white flex items-center justify-center grayscale group-hover:grayscale-0 transition-all">
+            <div className="shrink-0 w-12 h-12 border-2 border-brand-charcoal bg-bg-secondary dark:bg-stone-200 flex items-center justify-center transition-all">
               {nodeLogo ? (
-                <Icon icon={nodeLogo} className="w-7 h-7 text-brand-charcoal" />
+                <Icon
+                  icon={nodeLogo}
+                  className="w-7 h-7 text-brand-charcoal transition-all"
+                />
               ) : (
                 icon || <Component size={24} className="text-brand-charcoal" />
               )}
@@ -254,7 +258,7 @@ export function BaseNode({
                       if (e.key === "Enter") handleSaveLabel();
                       if (e.key === "Escape") setIsEditingLabel(false);
                     }}
-                    className="font-poppins font-black text-base text-brand-charcoal leading-tight bg-white border-b-2 border-brand-orange focus:outline-none w-full uppercase"
+                    className="font-poppins font-black text-base text-brand-charcoal leading-tight bg-bg-secondary border-b-2 border-brand-orange focus:outline-none w-full uppercase"
                     autoFocus
                   />
                 ) : (
@@ -292,13 +296,13 @@ export function BaseNode({
           </div>
 
           {/* Infrastructure Metrics (Mock Readout) */}
-          <div className="bg-neutral-50 border border-brand-charcoal/5 p-2 font-mono text-[9px] flex items-center justify-between opacity-60">
-            <div className="flex items-center gap-2">
-              <Cpu className="w-3 h-3" />
-              <span>LOAD: {isKilled ? "0.00" : "1.42"}%</span>
+          {data?.description && (
+            <div className="bg-bg-tertiary border border-brand-charcoal/5 p-1.5 font-mono text-[9px] opacity-80 leading-tight">
+              <span className="line-clamp-3" title={data.description as string}>
+                {data.description as string}
+              </span>
             </div>
-            <span>0x{id.slice(-4).toUpperCase()}</span>
-          </div>
+          )}
         </div>
 
         {/* Decorative HUD Corner */}

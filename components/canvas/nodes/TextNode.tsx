@@ -23,7 +23,7 @@ export function TextNode({ id, selected, data }: NodeProps) {
   const text = (data?.label as string) || "Double-click to edit";
   const fontSize = (data?.fontSize as number) || 14;
   const fontWeight = (data?.fontWeight as "normal" | "bold") || "normal";
-  const color = (data?.color as string) || "#1a1a1a";
+  const color = (data?.color as string) || "var(--text-primary)";
   const textAlign = (data?.textAlign as "left" | "center" | "right") || "left";
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export function TextNode({ id, selected, data }: NodeProps) {
         isVisible={selected && isPropertiesOpen}
         offset={10}
       >
-        <div className="bg-white border border-brand-charcoal/20 shadow-lg rounded-lg p-3 min-w-48">
+        <div className="bg-bg-elevated border border-brand-charcoal/20 shadow-lg rounded-lg p-3 min-w-48">
           <div className="text-[9px] uppercase tracking-widest text-brand-charcoal/50 font-mono mb-2">
             Text Properties
           </div>

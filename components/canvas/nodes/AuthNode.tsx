@@ -27,14 +27,22 @@ export function AuthNode(props: BaseNodeProps) {
       label={label}
       icon={<Shield size={16} />}
       logo={logo}
-      className="border-l-[#8b5cf6]" // Purple/Violet accent
+      className="border-l-brand-blue" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">
-          {">"} protocol: {getAuthType()}
-        </span>
-        <span className="opacity-70">{">"} sessions: stateless</span>
-        <span className="text-violet-600/80">{">"} security: active</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">
+              {">"} protocol: {getAuthType()}
+            </span>
+            <span className="opacity-70">{">"} sessions: stateless</span>
+            <span className="text-brand-blue">{">"} security: active</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

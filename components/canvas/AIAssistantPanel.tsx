@@ -95,8 +95,8 @@ function SignalStrengthIndicator({
               isGenerating
                 ? i < activeBars
                   ? "bg-brand-orange"
-                  : "bg-brand-charcoal/10"
-                : "bg-brand-charcoal/10",
+                  : "bg-brand-charcoal/10 dark:bg-border-primary"
+                : "bg-brand-charcoal/10 dark:bg-border-primary",
             )}
             initial={{ height: 2 }}
             animate={{
@@ -154,13 +154,13 @@ function ProcessingSteps({ isGenerating }: { isGenerating: boolean }) {
                 "font-mono text-[8px] uppercase tracking-wider transition-colors",
                 i === currentStep
                   ? "text-brand-orange font-bold"
-                  : "text-brand-charcoal/30",
+                  : "text-brand-charcoal/30 dark:text-text-secondary/50",
               )}
             >
               {step}
             </span>
             {i < steps.length - 1 && (
-              <span className="text-brand-charcoal/20">→</span>
+              <span className="text-brand-charcoal/20 dark:text-border-primary/50">→</span>
             )}
           </div>
         ))}
@@ -666,10 +666,10 @@ export function AIAssistantPanel({
           prev.map((m) =>
             m.id === aiMsgId
               ? {
-                  ...m,
-                  isThinking: false,
-                  content: "❌ No response from server",
-                }
+                ...m,
+                isThinking: false,
+                content: "❌ No response from server",
+              }
               : m,
           ),
         );
@@ -745,12 +745,12 @@ export function AIAssistantPanel({
                     prev.map((m) =>
                       m.id === aiMsgId
                         ? {
-                            ...m,
-                            isThinking: false,
-                            content: isJsonLike
-                              ? "__LOADING__"
-                              : accumulatedContent,
-                          }
+                          ...m,
+                          isThinking: false,
+                          content: isJsonLike
+                            ? "__LOADING__"
+                            : accumulatedContent,
+                        }
                         : m,
                     ),
                   );
@@ -786,12 +786,12 @@ export function AIAssistantPanel({
                 prev.map((m) =>
                   m.id === aiMsgId
                     ? {
-                        ...m,
-                        isThinking: false,
-                        content: isJsonLike
-                          ? "__LOADING__"
-                          : accumulatedContent,
-                      }
+                      ...m,
+                      isThinking: false,
+                      content: isJsonLike
+                        ? "__LOADING__"
+                        : accumulatedContent,
+                    }
                     : m,
                 ),
               );
@@ -870,18 +870,18 @@ export function AIAssistantPanel({
   const currentChat = chats.find((c) => c.id === currentChatId);
 
   return (
-    <div className="flex flex-col h-full bg-white font-sans text-sm overflow-hidden border-l border-brand-charcoal/10">
+    <div className="flex flex-col h-full bg-white dark:bg-bg-secondary font-sans text-sm overflow-hidden border-l border-brand-charcoal/10 dark:border-border-primary/50">
       {/* Terminal Header - Technical HUD */}
-      <div className="h-11 flex-shrink-0 flex items-center justify-between px-3 border-b border-brand-charcoal/10 bg-gradient-to-r from-white to-neutral-50/50">
+      <div className="h-11 flex-shrink-0 flex items-center justify-between px-3 border-b border-brand-charcoal/10 dark:border-border-primary/50 bg-gradient-to-r from-white to-neutral-50/50 dark:from-bg-secondary dark:to-bg-tertiary/50">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-brand-charcoal flex items-center justify-center shadow-sm">
-            <Terminal className="w-3.5 h-3.5 text-white" />
+          <div className="w-7 h-7 bg-brand-charcoal dark:bg-bg-elevated flex items-center justify-center shadow-sm">
+            <Terminal className="w-3.5 h-3.5 text-white dark:text-text-primary" />
           </div>
           <div className="flex flex-col">
-            <span className="font-mono text-[10px] font-black uppercase tracking-[0.12em] text-brand-charcoal">
+            <span className="font-mono text-[10px] font-black uppercase tracking-[0.12em] text-brand-charcoal dark:text-text-primary">
               OPERATOR
             </span>
-            <span className="font-mono text-[8px] text-brand-charcoal/40 uppercase tracking-wider">
+            <span className="font-mono text-[8px] text-brand-charcoal/40 dark:text-text-secondary/50 uppercase tracking-wider">
               v2.4.1
             </span>
           </div>
@@ -892,7 +892,7 @@ export function AIAssistantPanel({
             <button
               type="button"
               onClick={onToggle}
-              className="w-7 h-7 flex items-center justify-center border border-brand-charcoal/15 hover:bg-brand-charcoal hover:text-white text-brand-charcoal/50 transition-all duration-200"
+              className="w-7 h-7 flex items-center justify-center border border-brand-charcoal/15 dark:border-border-primary/50 hover:bg-brand-charcoal hover:text-white dark:hover:bg-bg-elevated dark:hover:text-text-primary text-brand-charcoal/50 dark:text-text-secondary transition-all duration-200"
               title="Close Panel"
             >
               <ChevronRight className="w-4 h-4" />
@@ -902,23 +902,23 @@ export function AIAssistantPanel({
       </div>
 
       {/* Chat Channel Selector */}
-      <div className="flex-shrink-0 bg-neutral-50/80 px-3 py-2 border-b border-brand-charcoal/10">
+      <div className="flex-shrink-0 bg-neutral-50/80 dark:bg-bg-tertiary px-3 py-2 border-b border-brand-charcoal/10 dark:border-border-primary/50">
         <button
           type="button"
           onClick={() => setShowChatList(!showChatList)}
           className="w-full flex items-center justify-between group"
         >
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] text-brand-charcoal/50 uppercase tracking-wider">
+            <span className="font-mono text-[9px] text-brand-charcoal/50 dark:text-text-secondary/50 uppercase tracking-wider">
               Channel:
             </span>
-            <span className="font-mono text-[11px] font-black uppercase tracking-wider text-brand-charcoal group-hover:text-brand-orange transition-colors truncate max-w-[180px]">
+            <span className="font-mono text-[11px] font-black uppercase tracking-wider text-brand-charcoal dark:text-text-primary group-hover:text-brand-orange transition-colors truncate max-w-[180px]">
               {currentChat?.title || "UNSET"}
             </span>
           </div>
           <ChevronDown
             className={cn(
-              "w-4 h-4 text-brand-charcoal/40 transition-transform duration-200",
+              "w-4 h-4 text-brand-charcoal/40 dark:text-text-secondary/50 transition-transform duration-200",
               showChatList && "rotate-180",
             )}
           />
@@ -944,7 +944,7 @@ export function AIAssistantPanel({
                       "w-full text-left font-mono text-[10px] uppercase py-1.5 px-2 hover:bg-brand-orange/10 transition-all rounded-sm",
                       currentChatId === chat.id
                         ? "text-brand-orange font-black bg-brand-orange/5"
-                        : "text-brand-charcoal/60",
+                        : "text-brand-charcoal/60 dark:text-text-secondary",
                     )}
                   >
                     <span className="inline-block w-3">
@@ -961,18 +961,18 @@ export function AIAssistantPanel({
 
       {/* Messages Area - Fixed horizontal overflow */}
       <div
-        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4 bg-white"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4 bg-white dark:bg-bg-secondary"
         ref={messagesEndRef}
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-25 text-center">
-            <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal mb-5 flex items-center justify-center animate-pulse">
+            <div className="w-20 h-20 border-2 border-dashed border-brand-charcoal dark:border-border-primary mb-5 flex items-center justify-center animate-pulse">
               <Bot className="w-10 h-10" />
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed">
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed dark:text-text-secondary">
               Waiting for operator input
             </p>
-            <p className="font-mono text-[9px] text-brand-charcoal/60 mt-1">
+            <p className="font-mono text-[9px] text-brand-charcoal/60 dark:text-text-secondary/60 mt-1">
               [ STANDBY_MODE ]
             </p>
           </div>
@@ -997,14 +997,14 @@ export function AIAssistantPanel({
                   className={cn(
                     "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
                     message.role === "user"
-                      ? "text-brand-charcoal/50"
+                      ? "text-brand-charcoal/50 dark:text-text-secondary/50"
                       : "text-brand-orange",
                   )}
                 >
                   {message.role === "user" ? "[ OPERATOR ]" : "[ SYSTEM ]"}
                 </span>
                 {message.role === "user" && (
-                  <div className="w-1.5 h-1.5 bg-brand-charcoal/30" />
+                  <div className="w-1.5 h-1.5 bg-brand-charcoal/30 dark:bg-text-secondary/30" />
                 )}
               </div>
 
@@ -1014,8 +1014,8 @@ export function AIAssistantPanel({
                   className={cn(
                     "relative group max-w-full",
                     message.role === "user"
-                      ? "bg-brand-charcoal text-white"
-                      : "bg-neutral-50 text-brand-charcoal border border-brand-charcoal/10",
+                      ? "bg-brand-charcoal text-white dark:bg-bg-elevated dark:text-text-primary dark:border dark:border-border-primary"
+                      : "bg-neutral-50 text-brand-charcoal border border-brand-charcoal/10 dark:bg-bg-tertiary dark:text-text-secondary/80 dark:border-border-primary/30",
                     "px-3 py-2.5 shadow-sm",
                     message.role === "user"
                       ? "rounded-tl-xl rounded-bl-xl rounded-br-xl"
@@ -1044,20 +1044,21 @@ export function AIAssistantPanel({
                     ) : (
                       <div
                         className="prose prose-sm max-w-none font-mono text-[10px] leading-relaxed
-                        prose-p:my-1.5 prose-p:text-brand-charcoal/90 prose-p:overflow-wrap-break-word prose-p:word-break-break-word
-                        prose-headings:font-black prose-headings:uppercase prose-headings:tracking-[0.08em] prose-headings:text-brand-charcoal prose-headings:mt-3 prose-headings:mb-2
+                        prose-p:my-1.5 prose-p:text-brand-charcoal/90 dark:prose-p:text-text-secondary
+                        prose-p:overflow-wrap-break-word prose-p:word-break-break-word
+                        prose-headings:font-black prose-headings:uppercase prose-headings:tracking-[0.08em] prose-headings:text-brand-charcoal dark:prose-headings:text-text-primary prose-headings:mt-3 prose-headings:mb-2
                         prose-h1:text-sm prose-h2:text-xs prose-h3:text-[11px]
                         prose-strong:text-brand-orange prose-strong:font-bold
                         prose-ul:my-1.5 prose-ul:space-y-0.5
-                        prose-li:my-0 prose-li:text-brand-charcoal/80
-                        prose-code:text-[9px] prose-code:bg-brand-charcoal/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:break-all
-                        prose-pre:bg-brand-charcoal prose-pre:text-white prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2 prose-pre:overflow-x-auto"
+                        prose-li:my-0 prose-li:text-brand-charcoal/80 dark:prose-li:text-text-secondary/80
+                        prose-code:text-[9px] prose-code:bg-brand-charcoal/10 dark:prose-code:bg-bg-elevated dark:prose-code:text-text-primary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:break-all
+                        prose-pre:bg-brand-charcoal dark:prose-pre:bg-bg-elevated prose-pre:text-white dark:prose-pre:text-text-primary prose-pre:p-2 prose-pre:rounded-lg prose-pre:my-2 prose-pre:overflow-x-auto"
                       >
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     )
                   ) : (
-                    <div className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed uppercase tracking-wide break-all">
+                    <div className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed uppercase tracking-wide break-all dark:text-text-primary">
                       {message.content}
                     </div>
                   )}
@@ -1069,13 +1070,13 @@ export function AIAssistantPanel({
       </div>
 
       {/* Input Area */}
-      <div className="p-2.5 bg-gradient-to-t from-neutral-50 to-white border-t border-brand-charcoal/10">
+      <div className="p-2.5 bg-gradient-to-t from-neutral-50 to-white dark:from-bg-secondary dark:to-bg-tertiary border-t border-brand-charcoal/10 dark:border-border-primary/50">
         <form
           onSubmit={handleSubmit}
-          className="relative flex flex-col gap-1.5 border border-brand-charcoal/20 p-2 bg-white shadow-sm"
+          className="relative flex flex-col gap-1.5 border border-brand-charcoal/20 dark:border-border-primary/50 p-2 bg-white dark:bg-bg-tertiary shadow-sm"
         >
           {/* Top Row: Controls & Model */}
-          <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 pb-1.5 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-between gap-2 border-b border-brand-charcoal/10 dark:border-border-primary/50 pb-1.5 overflow-x-auto scrollbar-hide">
             {/* Mode Selector */}
             <div className="flex gap-1 shrink-0">
               {(["default", "startup", "corporate"] as const).map((mode) => (
@@ -1086,8 +1087,8 @@ export function AIAssistantPanel({
                   className={cn(
                     "px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-all rounded-sm whitespace-nowrap",
                     chatMode === mode
-                      ? "bg-brand-charcoal text-white font-black"
-                      : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5",
+                      ? "bg-brand-charcoal text-white font-black dark:bg-bg-elevated dark:text-text-primary"
+                      : "text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-charcoal/5 dark:text-text-secondary/50 dark:hover:text-text-primary dark:hover:bg-bg-elevated/20",
                   )}
                 >
                   {mode === "corporate" ? "ENTERPRISE" : mode}
@@ -1097,10 +1098,10 @@ export function AIAssistantPanel({
 
             {/* Model Selector */}
             <Select value={model} onValueChange={setModel}>
-              <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 bg-neutral-50 font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal transition-colors gap-2 hover:bg-white hover:border-brand-charcoal/40 [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none shrink-0">
+              <SelectTrigger className="h-6 w-auto min-w-[110px] border border-brand-charcoal/20 dark:border-border-primary/50 bg-neutral-50 dark:bg-bg-elevated font-mono text-[9px] uppercase focus:ring-0 focus:ring-offset-0 px-2 py-0 text-brand-charcoal dark:text-text-primary transition-colors gap-2 hover:bg-white dark:hover:bg-bg-secondary hover:border-brand-charcoal/40 dark:hover:border-border-primary [&>svg]:w-3 [&>svg]:h-3 [&>svg]:opacity-50 rounded-none shrink-0">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-2 border-brand-charcoal font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)]">
+              <SelectContent className="rounded-none border-2 border-brand-charcoal dark:border-border-primary font-mono text-xs shadow-[4px_4px_0px_0px_rgba(26,26,26,0.15)] bg-white dark:bg-bg-elevated dark:text-text-primary">
                 <SelectItem
                   value="glm-4.5-air"
                   className="text-[10px] uppercase"
@@ -1135,7 +1136,7 @@ export function AIAssistantPanel({
                 }
               }}
               placeholder="[ ENTER CMD ]"
-              className="flex-1 bg-transparent border-none p-1.5 font-mono text-[11px] uppercase tracking-wider placeholder:text-brand-charcoal/25 focus:outline-none focus:ring-0 min-h-[36px] max-h-[140px] resize-none leading-relaxed"
+              className="flex-1 bg-transparent border-none p-1.5 font-mono text-[11px] uppercase tracking-wider placeholder:text-brand-charcoal/25 dark:placeholder:text-text-secondary/25 focus:outline-none focus:ring-0 min-h-[36px] max-h-[140px] resize-none leading-relaxed dark:text-text-primary"
               rows={1}
             />
 
@@ -1145,8 +1146,8 @@ export function AIAssistantPanel({
                 disabled={!inputValue.trim() || isGenerating}
                 className={cn(
                   "h-8 px-3 flex items-center justify-center font-mono font-black uppercase text-[9px] tracking-[0.12em] transition-all duration-200",
-                  "border-2 border-brand-charcoal bg-brand-charcoal text-white",
-                  "hover:bg-brand-orange hover:border-brand-orange hover:shadow-md",
+                  "border-2 border-brand-charcoal bg-brand-charcoal text-white dark:border-border-primary dark:bg-bg-elevated dark:text-text-primary",
+                  "hover:bg-brand-orange hover:border-brand-orange hover:shadow-md dark:hover:bg-brand-orange dark:hover:border-brand-orange",
                   "active:scale-95",
                   "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100",
                 )}
@@ -1171,12 +1172,12 @@ export function AIAssistantPanel({
             />
             {isGenerating && (
               <>
-                <div className="h-3 w-px bg-brand-charcoal/10" />
+                <div className="h-3 w-px bg-brand-charcoal/10 dark:bg-border-primary/50" />
                 <ProcessingSteps isGenerating={isGenerating} />
               </>
             )}
           </div>
-          <span className="font-mono text-[8px] text-brand-charcoal/30 uppercase">
+          <span className="font-mono text-[8px] text-brand-charcoal/30 dark:text-text-secondary/30 uppercase">
             {inputValue.length} chars
           </span>
         </div>

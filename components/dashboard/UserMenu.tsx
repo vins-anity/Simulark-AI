@@ -85,7 +85,7 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-64 bg-[#faf9f5] border border-brand-charcoal rounded-none shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-0"
+        className="w-64 bg-bg-primary border border-brand-charcoal rounded-none shadow-[4px_4px_0px_0px_var(--shadow-color)] p-0"
         align="end"
       >
         <DropdownMenuLabel className="font-normal p-4 border-b border-brand-charcoal/10 bg-brand-charcoal/5">

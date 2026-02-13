@@ -15,12 +15,20 @@ export function AutomationNode(props: BaseNodeProps) {
       label={label}
       icon={<Workflow size={16} />}
       logo={logo}
-      className="border-l-[#f97316]" // Orange accent
+      className="border-l-brand-orange" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} triggers: event-based</span>
-        <span className="opacity-70">{">"} execution: async</span>
-        <span className="text-orange-600/80">{">"} status: active</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} triggers: event-based</span>
+            <span className="opacity-70">{">"} execution: async</span>
+            <span className="text-brand-orange">{">"} status: active</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

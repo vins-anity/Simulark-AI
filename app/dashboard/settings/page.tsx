@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/utils/avatar";
+import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
 
 // Module configuration with IDs
 const CONFIG_MODULES = [
@@ -549,12 +550,23 @@ export default function SettingsPage() {
           </div>
         </section>
 
+
+
         {/* Generator Defaults Label */}
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
-            {"// GENERATOR_DEFAULTS"}
-          </span>
-          <div className="flex-1 h-px bg-border-secondary" />
+        <div className="flex items-center justify-between gap-2 mb-4 px-1">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
+              {"// GENERATOR_DEFAULTS"}
+            </span>
+            <div className="w-12 h-px bg-border-secondary" />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
+              INTERFACE THEME
+            </span>
+            <MarketingThemeToggle />
+          </div>
         </div>
 
         {/* Configuration Modules */}

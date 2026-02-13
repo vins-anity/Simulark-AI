@@ -1,9 +1,9 @@
 // Neutral monochrome palette per design guide
 export const CONNECTOR_COLORS = {
-  default: "#1a1a1a", // brand-charcoal
-  active: "#ff4d00", // brand-orange (for selection)
-  inactive: "#b0aea5", // Neutral gray
-  error: "#ef5350", // Keep error red
+  default: "var(--brand-charcoal)", // brand-charcoal
+  active: "var(--brand-orange)", // brand-orange (for selection)
+  inactive: "var(--brand-gray-mid)", // Neutral gray
+  error: "var(--color-error)", // Keep error red
 } as const;
 
 export type AnimationSpeed = "fast" | "medium" | "slow";
@@ -19,37 +19,37 @@ export const PROTOCOL_CONFIG = {
     label: "REST API",
     style: { strokeDasharray: null as unknown as string | null },
     animationSpeed: "medium" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   https: {
     label: "HTTPS",
     style: { strokeDasharray: null as unknown as string | null },
     animationSpeed: "medium" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   graphql: {
     label: "GraphQL",
     style: { strokeDasharray: "5,5" },
     animationSpeed: "medium" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   websocket: {
     label: "Real-Time",
     style: { strokeDasharray: "3,3" },
     animationSpeed: "fast" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   queue: {
     label: "Async Queue",
     style: { strokeDasharray: "8,4" },
     animationSpeed: "slow" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   stream: {
     label: "Data Stream",
     style: { strokeDasharray: "2,2" },
     animationSpeed: "fast" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   database: {
     label: "Query Layer",
@@ -58,25 +58,25 @@ export const PROTOCOL_CONFIG = {
       strokeWidth: 2,
     },
     animationSpeed: "slow" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   cache: {
     label: "Cache Hit",
     style: { strokeDasharray: "4,2" },
     animationSpeed: "fast" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   oauth: {
     label: "OAuth 2.0",
     style: { strokeDasharray: "6,3" },
     animationSpeed: "medium" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
   grpc: {
     label: "gRPC",
     style: { strokeDasharray: "4,2" },
     animationSpeed: "medium" as AnimationSpeed,
-    color: "#1a1a1a",
+    color: "var(--brand-charcoal)",
   },
 } as const;
 

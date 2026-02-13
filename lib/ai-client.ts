@@ -233,20 +233,19 @@ async function callModelStream(
   // Determine reasoning level based on mode and complexity
   let reasoningConfig = {};
   if (config.reasoningParam) {
-    if (mode === "startup") {
-      // Startup/MVP: Disable thinking for speed
+    if (mode === "startup" || mode === "default") {
+      // Startup & Default: Disable thinking for maximum speed
+      // The extensive system prompt provides enough context without needing the model to "think"
       reasoningConfig = { thinking: { type: "disabled" } };
-      console.log(`[AI Client] Reasoning: DISABLED (Startup/MVP mode)`);
-    } else if (mode === "corporate" || complexity === "simple") {
-      // Corporate or simple: Reduced thinking
+      console.log(`[AI Client] Reasoning: DISABLED (Speed optimized)`);
+    } else if (mode === "corporate") {
+      // Corporate: Low thinking for balance
       reasoningConfig = { thinking: { type: "low" } };
-      console.log(
-        `[AI Client] Reasoning: LOW (Corporate mode or simple architecture)`,
-      );
+      console.log(`[AI Client] Reasoning: LOW (Corporate mode)`);
     } else {
-      // Enterprise or complex: Full thinking enabled
+      // Complex/Enterprise: Full thinking enabled
       reasoningConfig = config.reasoningParam;
-      console.log(`[AI Client] Reasoning: ENABLED (Enterprise/Complex mode)`);
+      console.log(`[AI Client] Reasoning: ENABLED (Complex/Enterprise mode)`);
     }
   }
 

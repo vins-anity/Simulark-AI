@@ -96,11 +96,10 @@ function ContractCard({
 
       {/* Card Container */}
       <div
-        className={`h-full border bg-white relative transition-all duration-300 ${
-          contract.popular
+        className={`h-full border bg-bg-secondary relative transition-all duration-300 ${contract.popular
             ? "border-brand-orange"
             : "border-brand-charcoal/10 group-hover:border-brand-charcoal/30"
-        }`}
+          }`}
       >
         {/* Corner Accents */}
         <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-brand-charcoal/20" />
@@ -115,7 +114,7 @@ function ContractCard({
               <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40 block mb-1">
                 REF: {contract.id}
               </span>
-              <h3 className="font-mono text-xl font-bold text-brand-charcoal uppercase tracking-wide">
+              <h3 className="font-mono text-xl font-bold text-text-primary uppercase tracking-wide">
                 {contract.name}
               </h3>
             </div>
@@ -133,7 +132,7 @@ function ContractCard({
           {/* Price Block */}
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-lg text-brand-charcoal/40">$</span>
-            <span className="font-poppins text-5xl font-bold text-brand-charcoal tracking-tight">
+            <span className="font-poppins text-5xl font-bold text-text-primary tracking-tight">
               {contract.price}
             </span>
             <span className="font-mono text-xs uppercase tracking-wider text-brand-charcoal/40">
@@ -159,7 +158,7 @@ function ContractCard({
                 transition={{ delay: index * 0.1 + i * 0.05 }}
               >
                 <div className="w-4 h-4 border border-brand-charcoal/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-2.5 h-2.5 text-brand-charcoal" />
+                  <Check className="w-2.5 h-2.5 text-text-primary" />
                 </div>
                 <span className="text-brand-charcoal/70 text-sm leading-relaxed">
                   {feature}
@@ -192,11 +191,10 @@ function ContractCard({
           {/* CTA Button */}
           <Link href="/auth/signin">
             <Button
-              className={`w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none border-0 transition-all duration-300 ${
-                contract.popular
+              className={`w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none border-0 transition-all duration-300 ${contract.popular
                   ? "bg-brand-charcoal text-white hover:bg-brand-orange"
-                  : "bg-transparent border-2 border-brand-charcoal text-brand-charcoal hover:bg-brand-charcoal hover:text-white"
-              }`}
+                  : "bg-transparent border-2 border-brand-charcoal text-brand-charcoal hover:bg-brand-charcoal hover:text-white dark:text-text-primary dark:border-brand-charcoal/50 dark:hover:bg-brand-charcoal"
+                }`}
               variant={contract.popular ? "default" : "outline"}
             >
               <span className="text-white/40 group-hover:text-white/40">[</span>
@@ -221,14 +219,14 @@ function ContractCard({
 
 export function ResourceContracts() {
   return (
-    <section className="py-32 bg-[#faf9f5] relative overflow-hidden">
+    <section className="py-32 bg-bg-primary relative overflow-hidden">
       {/* Background Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(26,26,26,0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(26,26,26,0.04) 1px, transparent 1px)
+            linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
           `,
           backgroundSize: "80px 80px",
         }}
@@ -245,7 +243,7 @@ export function ResourceContracts() {
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
             // RESOURCE_CONTRACTS
           </span>
-          <h2 className="text-4xl md:text-5xl font-poppins font-bold text-brand-charcoal mb-4">
+          <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
             SERVICE{" "}
             <span className="font-serif italic font-light text-brand-charcoal/50">
               LEVELS

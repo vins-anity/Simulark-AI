@@ -56,3 +56,27 @@ export function getTechIcon(
   // 3. Fallback to type icons
   return TYPE_ICONS[type] || TYPE_ICONS.service;
 }
+
+/**
+ * Check if an icon should be inverted in dark mode (usually for black logos)
+ */
+export function shouldInvertIcon(icon: string): boolean {
+  const ICON_BLOCKLIST = [
+    "logos:nextjs",
+    "logos:nextjs-icon",
+    "logos:vercel",
+    "logos:vercel-icon",
+    "logos:github",
+    "logos:github-icon",
+    "logos:express",
+    "logos:flask",
+    "logos:prisma",
+    "logos:socket.io",
+    "logos:expo",
+    "logos:expo-icon",
+    "logos:threejs",
+    "logos:unity",
+    "logos:unreal",
+  ];
+  return ICON_BLOCKLIST.includes(icon) || ICON_BLOCKLIST.some(i => icon.includes("nextjs") || icon.includes("vercel") || icon.includes("github"));
+}

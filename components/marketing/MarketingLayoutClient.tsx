@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { MarketingThemeToggle } from "./MarketingThemeToggle";
 
 interface MarketingLayoutClientProps {
   children: React.ReactNode;
@@ -83,11 +84,11 @@ export function MarketingLayoutClient({
   // Prevent hydration mismatch by not rendering auth state until mounted
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#faf9f5] selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-brand-charcoal flex flex-col">
+      <div className="min-h-screen bg-bg-primary selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-text-primary flex flex-col">
         {/* Command Bar Header - Skeleton */}
-        <header className="fixed top-0 w-full z-50 border-b border-brand-charcoal/10 bg-[#faf9f5]">
+        <header className="fixed top-0 w-full z-50 border-b border-brand-charcoal/10 bg-bg-primary">
           {/* Status Bar */}
-          <div className="h-6 border-b border-brand-charcoal/5 bg-white/50 flex items-center">
+          <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
             <div className="container mx-auto px-6 flex justify-between items-center">
               <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40">
                 // SYSTEM_READY
@@ -104,7 +105,7 @@ export function MarketingLayoutClient({
           {/* Main Bar */}
           <div className="container mx-auto px-6 h-14 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
+              <div className="w-8 h-8 border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-text-inverse transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
                 <Icon icon="lucide:box" className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
@@ -127,17 +128,16 @@ export function MarketingLayoutClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f5] selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-brand-charcoal flex flex-col">
+    <div className="min-h-screen bg-bg-primary selection:bg-brand-orange/20 selection:text-brand-charcoal font-sans text-text-primary flex flex-col">
       {/* Command Bar Header */}
       <header
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-[#faf9f5]/95 backdrop-blur-sm border-b border-brand-charcoal/10"
-            : "bg-[#faf9f5] border-b border-brand-charcoal/5"
-        }`}
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
+          ? "bg-bg-primary/95 backdrop-blur-sm border-b border-brand-charcoal/10"
+          : "bg-bg-primary border-b border-brand-charcoal/5"
+          }`}
       >
         {/* Status Bar - HUD Style */}
-        <div className="h-6 border-b border-brand-charcoal/5 bg-white/50 flex items-center">
+        <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
           <div className="container mx-auto px-6 flex justify-between items-center">
             <div className="flex items-center gap-6">
               <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40">
@@ -201,10 +201,12 @@ export function MarketingLayoutClient({
                 12ms
               </motion.span>
             </div>
+
           </div>
 
           {/* Right - Auth Actions */}
           <div className="flex items-center gap-4">
+
             {loading ? (
               // Skeleton placeholder during loading
               <div className="flex items-center gap-4">
@@ -250,6 +252,7 @@ export function MarketingLayoutClient({
                 </Link>
               </div>
             )}
+            <MarketingThemeToggle />
           </div>
         </div>
       </header>
@@ -258,7 +261,7 @@ export function MarketingLayoutClient({
       <main className="flex-1 pt-[84px]">{children}</main>
 
       {/* Grid System Footer - Technical Index */}
-      <footer className="bg-white border-t border-brand-charcoal/10 pt-20 pb-10">
+      <footer className="bg-bg-secondary border-t border-brand-charcoal/10 pt-20 pb-10">
         <div className="container mx-auto px-6">
           {/* Main Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20 border-b border-brand-charcoal/5 pb-20">
@@ -283,7 +286,7 @@ export function MarketingLayoutClient({
               </p>
 
               {/* System Status Indicator */}
-              <div className="flex items-center gap-4 p-4 border border-brand-charcoal/10 bg-[#faf9f5]">
+              <div className="flex items-center gap-4 p-4 border border-brand-charcoal/10 bg-bg-tertiary">
                 <span className="w-2 h-2 bg-brand-green rounded-full animate-pulse" />
                 <div>
                   <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40 block">

@@ -1,108 +1,161 @@
-# AGENTS.md - Simulark AI Development Guide
+# AGENTS.md
 
-## Build & Development Commands
+## Developer Guide for Simulark
+
+This document provides essential guidelines for contributing to Simulark.
+
+---
+
+## Quick Start
 
 ```bash
-# Development server (uses Bun runtime)
+# Install dependencies
+bun install
+
+# Start development server
 bun dev
 
-# Production build
+# Build for production
 bun run build
 
-# Linting (Biome)
+# Lint code
 bun run lint
 
-# Auto-fix formatting & imports
+# Auto-fix formatting
 bun run format
 ```
 
-**Important:** This project uses **Bun** as the runtime, not Node.js. Always use `bun` instead of `npm` or `pnpm`.
+> **Note:** This project uses **Bun** as the runtime. Do not use `npm` or `pnpm`.
+
+---
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router) + React 19
-- **Runtime:** Bun
-- **Language:** TypeScript (strict mode)
-- **Styling:** Tailwind CSS v4
-- **UI Components:** Shadcn/UI + Radix UI primitives
-- **Canvas:** XYFlow (React Flow)
-- **State:** Zustand
-- **Database:** Supabase (PostgreSQL)
-- **Auth:** Supabase Auth
-- **Validation:** Valibot
-- **Linting:** Biome (replaces ESLint + Prettier)
-- **AI:** OpenAI SDK with ZhipuAI, OpenRouter, Kimi providers
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router), React 19 |
+| Language | TypeScript (strict mode) |
+| Runtime | Bun |
+| Styling | Tailwind CSS v4 |
+| Canvas | XYFlow (React Flow) |
+| State | Zustand |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth |
+| Validation | Valibot |
+| Linting | Biome |
+| AI | OpenAI SDK with ZhipuAI, OpenRouter, Kimi |
 
-## Code Style Guidelines
+---
 
-### Formatting (enforced by Biome)
-- **Indentation:** 2 spaces (never tabs)
-- **Quotes:** Double quotes for strings
+## Project Structure
+
+```
+simulark-app/
+├── actions/                 # Server Actions
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── auth/              # Authentication
+│   ├── dashboard/         # Protected dashboard
+│   └── projects/          # Project editor
+├── components/
+│   ├── canvas/            # Canvas components
+│   │   ├── nodes/         # Custom nodes
+│   │   └── edges/         # Custom edges
+│   ├── ui/                # Shadcn UI
+│   └── layout/            # Layout components
+├── lib/                   # Utilities
+├── supabase/              # Database migrations
+└── workers/               # Web Workers
+```
+
+---
+
+## Code Standards
+
+### Formatting
+
+- **Indentation:** 2 spaces
+- **Quotes:** Double quotes
 - **Semicolons:** Required
-- **Line width:** Default (80-100 chars)
-- **Trailing commas:** ES5 compatible
+- **Line width:** 80-100 characters
 
 ### Naming Conventions
-- **Components:** PascalCase (e.g., `AIAssistantPanel.tsx`)
-- **Hooks:** camelCase with `use` prefix (e.g., `useChatState.ts`)
-- **Utilities:** camelCase (e.g., `tech-normalizer.ts`)
-- **Types/Interfaces:** PascalCase (e.g., `SubscriptionTier`, `TierFeatures`)
-- **Constants:** UPPER_SNAKE_CASE for true constants
-- **Files:** kebab-case for multi-word files (e.g., `ai-orchestrator.ts`)
 
-### Imports (auto-organized by Biome)
-Order:
+| Type | Convention | Example |
+|------|------------|---------|
+| Components | PascalCase | `FlowEditor.tsx` |
+| Hooks | camelCase + `use` | `useCanvasState.ts` |
+| Utilities | camelCase | `tech-normalizer.ts` |
+| Types/Interfaces | PascalCase | `NodeData` |
+| Constants | UPPER_SNAKE_CASE | `MAX_NODES` |
+
+### Import Order
+
 1. React/Next imports
 2. Third-party libraries
 3. Internal `@/` aliases
 4. Relative imports
 5. Types
 
-```typescript
-import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
-import { Button } from "@/components/ui/button";
-import { useChatStore } from "./store";
-import type { SubscriptionTier } from "@/lib/subscription";
-```
+---
 
-### TypeScript Guidelines
-- **Strict mode enabled** - no `any` types without justification
+## TypeScript Guidelines
+
+- **Strict mode enabled** - Avoid `any` types
 - Use explicit return types on exported functions
 - Prefer `interface` over `type` for object shapes
 - Use discriminated unions for complex state
 - Path alias `@/*` maps to project root
 
-### Component Structure
+---
+
+## Component Structure
+
 ```typescript
 "use client"; // If needed
 
-// Imports
 import { useState } from "react";
 
-// Types
 interface Props {
   projectId: string;
 }
 
-// Component
 export function ComponentName({ projectId }: Props) {
-  // State
-  const [data, setData] = useState();
-  
-  // Effects
-  useEffect(() => {}, []);
-  
-  // Render
-  return <div />;
+  const [data, setData] = useState<string>("");
+
+  return <div>{data}</div>;
 }
 ```
 
-### Error Handling
-- Use typed errors with discriminated unions
-- Log errors with the logger utility: `import { logger } from "@/lib/logger"`
-- Return early for error cases
-- Use try/catch for async operations
+---
+
+## Server Actions
+
+```typescript
+"use server";
+
+export async function actionName(param: string) {
+  // Validate input with Valibot
+  // Perform operation
+  // Return discriminated union
+  return { success: true, data: result };
+  // or
+  return { success: false, error: "message" };
+}
+```
+
+---
+
+## API Routes
+
+- Use Next.js 15+ route handlers
+- Validate with Valibot before processing
+- Return appropriate HTTP status codes
+- Use `export const runtime = "nodejs"` for streaming
+
+---
+
+## Error Handling
 
 ```typescript
 try {
@@ -114,70 +167,32 @@ try {
 }
 ```
 
-### Server Actions (app/actions/)
-- Always include `"use server"` at top
-- Use Valibot for input validation
-- Return discriminated unions: `{ success: true, data } | { success: false, error }`
-- Revalidate paths after mutations
+---
 
-### API Routes (app/api/)
-- Use Next.js 15+ route handlers
-- Validate with Valibot before processing
-- Return appropriate HTTP status codes
-- Use `export const runtime = "nodejs"` for streaming
+## Environment Variables
 
-### Styling (Tailwind)
-- Use Tailwind v4 syntax
-- Prefer utility classes over inline styles
-- Use `cn()` utility for conditional classes
-- Follow mobile-first responsive design
-- Color scheme: `brand-charcoal`, `brand-orange`, `brand-blue`
+Define in [`env.ts`](env.ts) using `@t3-oss/env-nextjs` + Valibot:
 
-### Environment Variables
-- Define in `env.ts` using `@t3-oss/env-nextjs` + Valibot
-- Server vars: add to `server` object
-- Client vars: add to `client` object with `NEXT_PUBLIC_` prefix
-- Never expose secrets in client-side code
-
-## Project Structure
-
-```
-app/           # Next.js App Router
-├── api/       # API routes
-├── auth/      # Auth pages
-├── layout.tsx # Root layout
-└── page.tsx   # Home page
-
-components/    # React components
-├── ui/        # Shadcn components
-├── canvas/    # Flow canvas
-├── layout/    # Layout components
-└── auth/      # Auth components
-
-lib/           # Utilities
-├── supabase/  # Supabase clients
-├── schema/    # Valibot schemas
-└── *.ts       # Utilities
-
-actions/       # Server Actions
-supabase/      # Database migrations
-public/        # Static assets
-workers/       # Web Workers
+```typescript
+export const env = createEnv({
+  server: {
+    API_KEY: string,
+  },
+  client: {
+    NEXT_PUBLIC_SUPABASE_URL: string,
+  },
+});
 ```
 
-## Database (Supabase)
+---
+
+## Database
 
 - Migrations in `supabase/migrations/`
 - Use RLS policies for security
 - Use camelCase in TypeScript, snake_case in SQL
-- Prefer Supabase RPC functions for complex queries
 
-## AI Integration
-
-- AI client abstraction in `lib/ai-client.ts`
-- Supports multiple providers via OpenAI SDK
-- Streaming responses for real-time UI updates
-- Fallback chain for resilience
+---
 
 ## Git Workflow
 
@@ -186,20 +201,16 @@ workers/       # Web Workers
 3. Ensure `bun run build` succeeds
 4. Use conventional commit messages
 
-## Common Issues
-
-- **Bun required:** Don't use npm/pnpm commands
-- **Strict TypeScript:** Avoid `any` types
-- **Biome formatting:** Auto-fixes on save if configured
-- **Import order:** Biome auto-organizes imports
+---
 
 ## Feature Flags
 
-All features are enabled by default. To restrict by tier:
+Configure in environment variables:
+
 ```bash
-ENABLE_ALL_FEATURES=false
+ENABLE_ALL_FEATURES=true
 RESTRICT_FEATURES_BY_TIER=true
-FEATURE_PRIVATE_MODE_TIERS=pro
+FEATURE_CHAOS_ENGINEERING_TIERS=starter,pro
 ```
 
-See `lib/feature-flags.ts` for available flags.
+See [`lib/feature-flags.ts`](lib/feature-flags.ts) for all available flags.

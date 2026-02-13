@@ -32,9 +32,16 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refreshing the auth token
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refreshing the auth token
+  let user = null;
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  } catch (e) {
+    // Ignore invalid refresh token errors
+  }
 
   // Protected routes
   if (

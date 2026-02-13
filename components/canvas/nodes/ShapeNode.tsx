@@ -100,13 +100,13 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
           nodes.map((node) =>
             node.id === id
               ? {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    width: dimensions.width,
-                    height: dimensions.height,
-                  },
-                }
+                ...node,
+                data: {
+                  ...node.data,
+                  width: dimensions.width,
+                  height: dimensions.height,
+                },
+              }
               : node,
           ),
         );
@@ -177,7 +177,7 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
         isVisible={selected && isPropertiesOpen}
         offset={10}
       >
-        <div className="bg-white border border-brand-charcoal/20 shadow-lg rounded-lg p-3 min-w-48 z-50">
+        <div className="bg-bg-elevated border border-brand-charcoal/20 shadow-lg rounded-lg p-3 min-w-48 z-50">
           <div className="text-[9px] uppercase tracking-widest text-brand-charcoal/50 font-mono mb-2">
             Shape Properties
           </div>
@@ -206,9 +206,9 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
                       nodes.map((node) =>
                         node.id === id
                           ? {
-                              ...node,
-                              data: { ...node.data, color: e.target.value },
-                            }
+                            ...node,
+                            data: { ...node.data, color: e.target.value },
+                          }
                           : node,
                       ),
                     )
@@ -219,7 +219,7 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
                   type="text"
                   value={color}
                   readOnly
-                  className="flex-1 h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm bg-zinc-50"
+                  className="flex-1 h-7 px-2 text-xs border border-brand-charcoal/20 rounded-sm bg-bg-secondary"
                 />
               </div>
             </div>
@@ -281,7 +281,7 @@ export function ShapeNode({ id, selected, data }: NodeProps) {
               : dimensions.width,
           height: dimensions.height,
           backgroundColor: color,
-          border: `2px solid ${selected ? "#f97316" : "#a3a3a3"}`,
+          border: `2px solid ${selected ? "var(--brand-orange)" : "var(--brand-gray-mid)"}`,
         }}
       >
         {/* Resize handles - only visible when selected and not circle */}

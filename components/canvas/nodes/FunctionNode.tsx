@@ -15,12 +15,20 @@ export function FunctionNode(props: BaseNodeProps) {
       label={label}
       icon={<Zap size={16} />}
       logo={logo}
-      className="border-l-yellow-400"
+      className="border-l-brand-orange" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} runtime: nodejs18.x</span>
-        <span className="opacity-70">{">"} memory: 128mb</span>
-        <span className="text-brand-orange/80">{">"} status: active</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} runtime: nodejs18.x</span>
+            <span className="opacity-70">{">"} memory: 128mb</span>
+            <span className="text-brand-orange">{">"} status: active</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

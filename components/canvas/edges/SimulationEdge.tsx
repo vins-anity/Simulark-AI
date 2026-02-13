@@ -108,7 +108,7 @@ export function SimulationEdge({
           stroke: isBlocked
             ? CONNECTOR_COLORS.error
             : isCongested
-              ? "#f97316"
+              ? CONNECTOR_COLORS.active
               : baseColor,
           strokeOpacity: isBlocked ? 0.5 : chaosMode ? 0.6 : 0.85,
           strokeDasharray: strokeDasharray,
@@ -177,12 +177,12 @@ export function SimulationEdge({
           className="group cursor-pointer"
         >
           {isBlocked ? (
-            <div className="bg-red-100 text-red-600 px-2 py-1 rounded border border-red-200 font-bold shadow-sm text-xs font-mono">
+            <div className="bg-red-500/10 text-red-500 px-2 py-1 rounded border border-red-500/20 font-bold shadow-sm text-xs font-mono">
               BLOCKED
             </div>
           ) : (
-            <div className="flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-brand-charcoal/10 px-2 py-0.5 rounded-sm shadow-sm hover:border-brand-orange/50 transition-all">
-              <span className="text-[10px] font-mono text-brand-charcoal/70">
+            <div className="flex items-center gap-1 bg-bg-secondary/95 backdrop-blur-sm border border-brand-charcoal/10 px-2 py-0.5 rounded-sm shadow-sm hover:border-brand-orange/50 transition-all">
+              <span className="text-[10px] font-mono text-text-primary/70">
                 {label || protocolLabel}
               </span>
               {isHovered && (

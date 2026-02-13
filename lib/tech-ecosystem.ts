@@ -2913,20 +2913,7 @@ export const TECH_ECOSYSTEM: TechItem[] = [
   },
 
   // AI & Agents
-  {
-    id: "langgraph",
-    label: "LangGraph",
-    icon: "simple-icons:langchain",
-    category: "ai",
-    defaultType: "ai",
-  },
-  {
-    id: "crewai",
-    label: "CrewAI",
-    icon: "fluent-emoji-high-contrast:robot", // Fallback
-    category: "ai",
-    defaultType: "ai",
-  },
+
   {
     id: "pydantic-ai",
     label: "PydanticAI",

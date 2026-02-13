@@ -15,12 +15,20 @@ export function StorageNode(props: BaseNodeProps) {
       label={label}
       icon={<HardDrive size={16} />}
       logo={logo}
-      className="border-l-emerald-400"
+      className="border-l-brand-green" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} type: object-store</span>
-        <span className="opacity-70">{">"} access: private</span>
-        <span className="text-brand-orange/80">{">"} status: available</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} type: object-store</span>
+            <span className="opacity-70">{">"} access: private</span>
+            <span className="text-brand-orange">{">"} status: available</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

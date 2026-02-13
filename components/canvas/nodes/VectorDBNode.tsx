@@ -15,12 +15,20 @@ export function VectorDBNode(props: BaseNodeProps) {
       label={label}
       icon={<Layers size={16} />}
       logo={logo}
-      className="border-l-[#06b6d4]" // Cyan accent
+      className="border-l-brand-blue" // semantic border
     >
       <div className="flex flex-col gap-1">
-        <span className="opacity-70">{">"} type: vector store</span>
-        <span className="opacity-70">{">"} embeddings: high-dim</span>
-        <span className="text-cyan-600/80">{">"} similarity: cosine</span>
+        {props.data?.description ? (
+          <span className="opacity-70 text-[10px] leading-tight line-clamp-3">
+            {">"} {props.data.description as string}
+          </span>
+        ) : (
+          <>
+            <span className="opacity-70">{">"} type: vector store</span>
+            <span className="opacity-70">{">"} embeddings: high-dim</span>
+            <span className="text-brand-blue">{">"} similarity: cosine</span>
+          </>
+        )}
       </div>
     </BaseNode>
   );

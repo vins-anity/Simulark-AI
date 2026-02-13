@@ -126,7 +126,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "h-full bg-bg-primary border-r border-border-primary flex flex-col shrink-0 font-sans fixed md:relative z-40 md:z-0 will-change-[width]",
+          "h-full bg-bg-primary dark:bg-zinc-950 border-r border-border-primary dark:border-white/10 flex flex-col shrink-0 font-sans fixed md:relative z-40 md:z-0 will-change-[width]",
           "transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
           isCollapsed ? "w-[60px]" : "w-56",
         )}
@@ -367,10 +367,10 @@ export function Sidebar() {
                     "flex items-center w-full transition-colors duration-200 group outline-none",
                     isCollapsed
                       ? "justify-center"
-                      : "gap-3 px-2 py-2 hover:bg-bg-tertiary",
+                      : "gap-3 px-2 py-2 hover:bg-bg-tertiary dark:hover:bg-white/5",
                   )}
                 >
-                  <div className="w-8 h-8 bg-brand-charcoal flex items-center justify-center border border-brand-charcoal shrink-0 group-hover:bg-brand-orange group-hover:border-brand-orange transition-colors">
+                  <div className="w-8 h-8 bg-brand-charcoal dark:bg-zinc-800 flex items-center justify-center border border-brand-charcoal dark:border-zinc-700 shrink-0 group-hover:bg-brand-orange group-hover:border-brand-orange transition-colors">
                     <Icon
                       icon="lucide:box"
                       className="w-4 h-4 text-white stroke-[2.5]"
@@ -387,7 +387,7 @@ export function Sidebar() {
                         "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
                     }}
                   >
-                    <span className="font-mono text-xs font-medium text-text-primary truncate w-full text-left">
+                    <span className="font-mono text-xs font-medium text-text-primary dark:text-gray-200 truncate w-full text-left">
                       User Account
                     </span>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -397,7 +397,7 @@ export function Sidebar() {
                           plan === "free" ? "bg-text-muted" : "bg-brand-orange",
                         )}
                       />
-                      <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted">
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted dark:text-gray-500">
                         {planDetails.name} Ticket
                       </span>
                     </div>
@@ -412,7 +412,7 @@ export function Sidebar() {
                       transition: "width 250ms ease, opacity 200ms ease",
                     }}
                   >
-                    <Settings className="w-4 h-4 text-text-muted ml-auto group-hover:text-text-primary transition-colors" />
+                    <Settings className="w-4 h-4 text-text-muted ml-auto group-hover:text-text-primary dark:text-gray-500 dark:group-hover:text-white transition-colors" />
                   </div>
                 </button>
               </DropdownMenuTrigger>

@@ -95,7 +95,7 @@ export function TechCombobox({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between font-mono text-xs h-8 bg-white",
+            "w-full justify-between font-mono text-xs h-8 bg-white dark:bg-bg-elevated dark:text-text-primary border-brand-charcoal/20 dark:border-border-primary/50",
             className,
           )}
         >
@@ -110,11 +110,11 @@ export function TechCombobox({
           <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[240px] p-0" align="start">
-        <div className="flex items-center border-b px-3 pb-2 pt-2">
+      <DropdownMenuContent className="w-[240px] p-0 bg-white dark:bg-bg-elevated border-brand-charcoal/10 dark:border-border-primary/50" align="start">
+        <div className="flex items-center border-b border-brand-charcoal/10 dark:border-border-primary/50 px-3 pb-2 pt-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <input
-            className="flex h-6 w-full rounded-md bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-6 w-full rounded-md bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground dark:placeholder:text-text-secondary/50 text-brand-charcoal dark:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Search framework..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -124,13 +124,13 @@ export function TechCombobox({
         </div>
         <div className="max-h-[300px] overflow-y-auto p-1">
           {categories.length === 0 && (
-            <div className="py-6 text-center text-xs text-muted-foreground">
+            <div className="py-6 text-center text-xs text-muted-foreground dark:text-text-secondary">
               No framework found.
             </div>
           )}
           {categories.map((category) => (
             <DropdownMenuGroup key={category}>
-              <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5 bg-muted/50">
+              <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground dark:text-text-secondary px-2 py-1.5 bg-muted/50 dark:bg-bg-tertiary/50">
                 {category}
               </DropdownMenuLabel>
               {groupedTechs[category].map((tech) => (
@@ -140,7 +140,7 @@ export function TechCombobox({
                     onChange(tech.label, tech);
                     setOpen(false);
                   }}
-                  className="flex items-center gap-2 text-xs"
+                  className="flex items-center gap-2 text-xs text-brand-charcoal dark:text-text-primary hover:bg-brand-charcoal/5 dark:hover:bg-bg-tertiary focus:bg-brand-charcoal/5 dark:focus:bg-bg-tertiary cursor-pointer"
                 >
                   <Icon icon={tech.icon} className="w-4 h-4" />
                   {tech.label}
