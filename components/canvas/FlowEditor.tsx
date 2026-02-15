@@ -535,6 +535,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           edgeTypes={edgeTypes}
           proOptions={{ hideAttribution: true }}
           fitView
+          minZoom={0.1}
           className="drafting-grid-enhanced"
           onNodeClick={(_e, _node) => {
             // Optionally select node on click
