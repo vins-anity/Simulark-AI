@@ -1,159 +1,292 @@
 /**
- * Onboarding types and data structures
+ * Onboarding types - Living Blueprint Design System
+ * Simplified 3-step flow with seamless UX
  */
 
+// ============================================================================
+// Core Data Types
+// ============================================================================
+
 export interface OnboardingData {
+  // Step 1: Profile & Intent (INT-01)
   experienceLevel?: "beginner" | "intermediate" | "expert";
+  projectType?: string;
+  teamContext?: "solo" | "small" | "enterprise";
+
+  // Step 2: Technology Stack (CFG-01)
   techStack: {
-    frontend: string[];
-    backend: string[];
-    database: string[];
-    auth: string[];
     cloud: string[];
+    languages: string[];
+    frameworks: string[];
   };
-  projectTypes: string[];
+
+  // Step 3: Generation Mode (MOD-01)
   defaultMode?: "startup" | "default" | "enterprise";
 }
 
+// ============================================================================
+// Steps Configuration
+// ============================================================================
+
 export const ONBOARDING_STEPS = [
-  { id: "welcome", title: "Welcome" },
-  { id: "experience", title: "Experience" },
-  { id: "techstack", title: "Tech Stack" },
-  { id: "projecttype", title: "Projects" },
-  { id: "mode", title: "Mode" },
-  { id: "complete", title: "Complete" },
+  {
+    id: "welcome",
+    title: "System Initialization",
+    shortTitle: "INIT",
+    badge: "SYS-00",
+    description: "Configure your architecture generator",
+  },
+  {
+    id: "profile",
+    title: "Profile & Intent",
+    shortTitle: "PROFILE",
+    badge: "INT-01",
+    description: "Who you are and what you build",
+  },
+  {
+    id: "techstack",
+    title: "Technology Stack",
+    shortTitle: "CONFIG",
+    badge: "CFG-01",
+    description: "Your preferred technologies",
+  },
+  {
+    id: "mode",
+    title: "Generation Mode",
+    shortTitle: "MODE",
+    badge: "MOD-01",
+    description: "Default complexity level",
+  },
+  {
+    id: "complete",
+    title: "System Ready",
+    shortTitle: "READY",
+    badge: "SYS-01",
+    description: "Configuration complete",
+  },
 ] as const;
 
 export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number]["id"];
 
-// Tech stack options
-export const TECH_STACK_OPTIONS = {
-  frontend: [
-    { id: "react", name: "React", icon: "⚛️" },
-    { id: "vue", name: "Vue", icon: "🟢" },
-    { id: "angular", name: "Angular", icon: "🅰️" },
-    { id: "svelte", name: "Svelte", icon: "🔥" },
-    { id: "nextjs", name: "Next.js", icon: "▲" },
-    { id: "nuxt", name: "Nuxt", icon: "⛰️" },
-    { id: "remix", name: "Remix", icon: "🎸" },
-    { id: "astro", name: "Astro", icon: "🚀" },
-  ],
-  backend: [
-    { id: "nodejs", name: "Node.js", icon: "🟩" },
-    { id: "python", name: "Python", icon: "🐍" },
-    { id: "go", name: "Go", icon: "🐹" },
-    { id: "rust", name: "Rust", icon: "🦀" },
-    { id: "java", name: "Java", icon: "☕" },
-    { id: "dotnet", name: ".NET", icon: "🔷" },
-    { id: "ruby", name: "Ruby", icon: "💎" },
-    { id: "php", name: "PHP", icon: "🐘" },
-  ],
-  database: [
-    { id: "postgresql", name: "PostgreSQL", icon: "🐘" },
-    { id: "mysql", name: "MySQL", icon: "🐬" },
-    { id: "mongodb", name: "MongoDB", icon: "🍃" },
-    { id: "redis", name: "Redis", icon: "🔴" },
-    { id: "supabase", name: "Supabase", icon: "⚡" },
-    { id: "dynamodb", name: "DynamoDB", icon: "📦" },
-    { id: "sqlite", name: "SQLite", icon: "💿" },
-    { id: "elasticsearch", name: "Elastic", icon: "🔍" },
-  ],
-  auth: [
-    { id: "supabase-auth", name: "Supabase Auth", icon: "⚡" },
-    { id: "clerk", name: "Clerk", icon: "🔑" },
-    { id: "auth0", name: "Auth0", icon: "🔒" },
-    { id: "nextauth", name: "NextAuth.js", icon: "▲" },
-    { id: "firebase-auth", name: "Firebase Auth", icon: "🔥" },
-    { id: "custom", name: "Custom/JWT", icon: "🛠️" },
-  ],
-  cloud: [
-    { id: "aws", name: "AWS", icon: "☁️" },
-    { id: "vercel", name: "Vercel", icon: "▲" },
-    { id: "railway", name: "Railway", icon: "🚂" },
-    { id: "gcp", name: "GCP", icon: "☁️" },
-    { id: "azure", name: "Azure", icon: "🔷" },
-    { id: "fly", name: "Fly.io", icon: "🪰" },
-    { id: "digitalocean", name: "DigitalOcean", icon: "🦈" },
-    { id: "heroku", name: "Heroku", icon: "🟣" },
-  ],
-} as const;
+// ============================================================================
+// Step 1: Profile & Intent Options
+// ============================================================================
+
+export const EXPERIENCE_LEVEL_OPTIONS = [
+  {
+    id: "beginner" as const,
+    name: "Beginner",
+    description: "Simple, proven stacks with clear documentation",
+    detail: "Focus on learning-friendly architectures",
+    icon: "ph:plant",
+  },
+  {
+    id: "intermediate" as const,
+    name: "Intermediate",
+    description: "Balanced modern choices with best practices",
+    detail: "Production-ready with moderate complexity",
+    icon: "ph:scales",
+  },
+  {
+    id: "expert" as const,
+    name: "Expert",
+    description: "Cutting-edge patterns and optimizations",
+    detail: "Complex, scalable enterprise architectures",
+    icon: "ph:rocket-launch",
+  },
+] as const;
 
 export const PROJECT_TYPE_OPTIONS = [
-  { id: "saas", name: "SaaS", icon: "☁️", description: "Software as a Service" },
   {
-    id: "ecommerce",
-    name: "E-commerce",
-    icon: "🛒",
-    description: "Online stores & marketplaces",
+    id: "saas",
+    name: "SaaS Platform",
+    description: "Multi-tenant web applications",
+    icon: "ph:cloud",
   },
   {
     id: "api",
     name: "API / Backend",
-    icon: "🔌",
-    description: "REST & GraphQL APIs",
+    description: "REST, GraphQL, or gRPC services",
+    icon: "ph:plugs",
   },
   {
     id: "mobile",
     name: "Mobile App",
-    icon: "📱",
-    description: "iOS & Android apps",
+    description: "iOS & Android with backend",
+    icon: "ph:device-mobile",
   },
   {
-    id: "ai-ml",
+    id: "ecommerce",
+    name: "E-commerce",
+    description: "Online stores & marketplaces",
+    icon: "ph:shopping-cart",
+  },
+  {
+    id: "ai",
     name: "AI / ML",
-    icon: "🤖",
-    description: "Machine learning & AI",
+    description: "Machine learning pipelines",
+    icon: "ph:brain",
   },
   {
     id: "data",
     name: "Data Pipeline",
-    icon: "📊",
-    description: "ETL & data processing",
+    description: "ETL & analytics systems",
+    icon: "ph:chart-bar",
   },
-  { id: "iot", name: "IoT", icon: "🔌", description: "Internet of Things" },
 ] as const;
 
-export const DEFAULT_MODE_OPTIONS = [
+export const TEAM_CONTEXT_OPTIONS = [
   {
-    id: "startup",
-    name: "Startup",
-    icon: "🚀",
-    description: "MVP-focused, cost-optimized",
-    details: "3-5 components • Speed first",
+    id: "solo" as const,
+    name: "Solo Developer",
+    description: "Just me",
+    detail: "Simple, maintainable by one person",
   },
   {
-    id: "default",
-    name: "Default",
-    icon: "⚖️",
-    description: "Balanced approach",
-    details: "4-8 components • Best practices",
+    id: "small" as const,
+    name: "Small Team",
+    description: "2-10 developers",
+    detail: "Collaborative with clear boundaries",
   },
   {
-    id: "enterprise",
+    id: "enterprise" as const,
     name: "Enterprise",
-    icon: "🏢",
-    description: "Full redundancy, compliance-ready",
-    details: "6-15 components • Production grade",
+    description: "10+ developers",
+    detail: "Team collaboration with governance",
   },
 ] as const;
 
-export const EXPERIENCE_LEVEL_OPTIONS = [
+// ============================================================================
+// Step 2: Technology Stack Options - Expanded with Modern Tech
+// ============================================================================
+
+export const TECH_STACK_OPTIONS = {
+  cloud: [
+    { id: "aws", name: "AWS", icon: "logos:aws" },
+    { id: "vercel", name: "Vercel", icon: "logos:vercel-icon" },
+    { id: "railway", name: "Railway", icon: "logos:railway-icon" },
+    { id: "gcp", name: "GCP", icon: "logos:google-cloud" },
+    { id: "azure", name: "Azure", icon: "logos:azure-icon" },
+    { id: "fly", name: "Fly.io", icon: "logos:fly-icon" },
+    { id: "hetzner", name: "Hetzner", icon: "logos:hetzner" },
+    { id: "digitalocean", name: "DigitalOcean", icon: "logos:digital-ocean-icon" },
+    { id: "linode", name: "Linode", icon: "logos:linode" },
+    { id: "cloudflare", name: "Cloudflare", icon: "logos:cloudflare-icon" },
+    { id: "heroku", name: "Heroku", icon: "logos:heroku-icon" },
+    { id: "netlify", name: "Netlify", icon: "logos:netlify-icon" },
+    { id: "render", name: "Render", icon: "logos:render-icon" },
+    { id: "supabase", name: "Supabase", icon: "logos:supabase-icon" },
+    { id: "coolify", name: "Coolify", icon: "logos:coolify-icon" },
+  ],
+  languages: [
+    { id: "typescript", name: "TypeScript", icon: "logos:typescript-icon" },
+    { id: "javascript", name: "JavaScript", icon: "logos:javascript" },
+    { id: "python", name: "Python", icon: "logos:python" },
+    { id: "go", name: "Go", icon: "logos:go" },
+    { id: "rust", name: "Rust", icon: "logos:rust" },
+    { id: "java", name: "Java", icon: "logos:java" },
+    { id: "csharp", name: "C#", icon: "logos:c-sharp" },
+    { id: "ruby", name: "Ruby", icon: "logos:ruby" },
+    { id: "php", name: "PHP", icon: "logos:php" },
+    { id: "bun", name: "Bun", icon: "logos:bun" },
+    { id: "deno", name: "Deno", icon: "logos:deno" },
+    { id: "elixir", name: "Elixir", icon: "logos:elixir" },
+    { id: "kotlin", name: "Kotlin", icon: "logos:kotlin-icon" },
+    { id: "swift", name: "Swift", icon: "logos:swift" },
+    { id: "zig", name: "Zig", icon: "logos:zig" },
+    { id: "c", name: "C", icon: "logos:c" },
+    { id: "cpp", name: "C++", icon: "logos:cpp" },
+    { id: "scala", name: "Scala", icon: "logos:scala" },
+    { id: "haskell", name: "Haskell", icon: "logos:haskell-icon" },
+    { id: "lua", name: "Lua", icon: "logos:lua" },
+  ],
+  frameworks: [
+    // Frontend
+    { id: "nextjs", name: "Next.js", icon: "logos:nextjs-icon" },
+    { id: "react", name: "React", icon: "logos:react" },
+    { id: "vue", name: "Vue", icon: "logos:vue" },
+    { id: "svelte", name: "Svelte", icon: "logos:svelte-icon" },
+    { id: "sveltekit", name: "SvelteKit", icon: "logos:svelte-icon" },
+    { id: "astro", name: "Astro", icon: "logos:astro-icon" },
+    { id: "nuxt", name: "Nuxt", icon: "logos:nuxt-icon" },
+    { id: "remix", name: "Remix", icon: "logos:remix-icon" },
+    { id: "vite", name: "Vite", icon: "logos:vitejs" },
+    { id: "htmx", name: "HTMX", icon: "logos:htmx-icon" },
+    { id: "solid", name: "SolidJS", icon: "logos:solidjs-icon" },
+    { id: "qwik", name: "Qwik", icon: "logos:qwik" },
+    // Backend
+    { id: "fastapi", name: "FastAPI", icon: "logos:fastapi-icon" },
+    { id: "django", name: "Django", icon: "logos:django-icon" },
+    { id: "flask", name: "Flask", icon: "logos:flask" },
+    { id: "spring", name: "Spring", icon: "logos:spring-icon" },
+    { id: "laravel", name: "Laravel", icon: "logos:laravel" },
+    { id: "rails", name: "Rails", icon: "logos:rails" },
+    { id: "gin", name: "Gin", icon: "logos:go" },
+    { id: "fiber", name: "Fiber", icon: "logos:go" },
+    { id: "echo", name: "Echo", icon: "logos:go" },
+    { id: "hono", name: "Hono", icon: "logos:hono" },
+    { id: "elysia", name: "Elysia", icon: "logos:elysia" },
+    { id: "express", name: "Express", icon: "logos:express" },
+    { id: "fastify", name: "Fastify", icon: "logos:fastify-icon" },
+    { id: "nestjs", name: "NestJS", icon: "logos:nestjs" },
+    { id: "adonisjs", name: "AdonisJS", icon: "logos:adonisjs-icon" },
+    { id: "phoenix", name: "Phoenix", icon: "logos:phoenix" },
+    { id: "actix", name: "Actix", icon: "logos:rust" },
+    { id: "axum", name: "Axum", icon: "logos:rust" },
+    { id: "rocket", name: "Rocket", icon: "logos:rust" },
+    // Mobile
+    { id: "flutter", name: "Flutter", icon: "logos:flutter" },
+    { id: "react-native", name: "React Native", icon: "logos:react" },
+    { id: "swiftui", name: "SwiftUI", icon: "logos:swift" },
+    { id: "jetpack-compose", name: "Jetpack Compose", icon: "logos:android-icon" },
+    { id: "expo", name: "Expo", icon: "logos:expo-icon" },
+    // AI/ML
+    { id: "langchain", name: "LangChain", icon: "simple-icons:langchain" },
+    { id: "llamaindex", name: "LlamaIndex", icon: "simple-icons:llamaindex" },
+    { id: "tensorflow", name: "TensorFlow", icon: "logos:tensorflow" },
+    { id: "pytorch", name: "PyTorch", icon: "logos:pytorch-icon" },
+  ],
+} as const;
+
+// ============================================================================
+// Step 3: Generation Mode Options
+// ============================================================================
+
+export const GENERATION_MODE_OPTIONS = [
   {
-    id: "beginner",
-    name: "Beginner",
-    icon: "🌱",
-    description: "I prefer simple, proven technology stacks",
+    id: "startup" as const,
+    name: "Startup",
+    badge: "MVP",
+    description: "MVP-focused, cost-optimized",
+    detail: "3-5 components • Speed first",
+    features: ["Quick deployment", "Minimal complexity", "Cost-effective"],
+    icon: "ph:rocket-launch",
   },
   {
-    id: "intermediate",
-    name: "Intermediate",
-    icon: "⚖️",
-    description: "I want balanced, modern choices",
+    id: "default" as const,
+    name: "Standard",
+    badge: "RECOMMENDED",
+    description: "Balanced approach",
+    detail: "4-8 components • Best practices",
+    features: ["Production-ready", "Scalable design", "Industry standards"],
+    icon: "ph:scales",
   },
   {
-    id: "expert",
-    name: "Expert",
-    icon: "🚀",
-    description: "Show me cutting-edge, complex architectures",
+    id: "enterprise" as const,
+    name: "Enterprise",
+    badge: "PROD",
+    description: "Full redundancy, compliance-ready",
+    detail: "6-15 components • Production grade",
+    features: ["High availability", "Full observability", "Security-first"],
+    icon: "ph:buildings",
   },
 ] as const;
+
+// ============================================================================
+// Helper Types
+// ============================================================================
+
+export type ExperienceLevel = (typeof EXPERIENCE_LEVEL_OPTIONS)[number]["id"];
+export type ProjectType = (typeof PROJECT_TYPE_OPTIONS)[number]["id"];
+export type TeamContext = (typeof TEAM_CONTEXT_OPTIONS)[number]["id"];
+export type GenerationMode = (typeof GENERATION_MODE_OPTIONS)[number]["id"];

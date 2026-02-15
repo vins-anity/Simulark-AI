@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   Activity,
   Box,
@@ -13,11 +13,11 @@ import {
   Terminal,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createProject, getUserProjects } from "@/actions/projects";
-import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
+
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
@@ -72,30 +72,24 @@ function DashboardContent() {
   const [prompt, setPrompt] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [forceOnboarding, setForceOnboarding] = useState(false);
+  const router = useRouter();
 
   // Onboarding integration
   const {
     showOnboarding,
-    onboardingStatus,
     isLoading: onboardingLoading,
-    dismissOnboarding,
-    completeOnboarding,
   } = useOnboarding();
 
-  // Check for manual onboarding trigger
-  const searchParams = useSearchParams();
+  // Redirect to onboarding if needed
   useEffect(() => {
-    if (searchParams.get("onboarding") === "true") {
-      setForceOnboarding(true);
+    if (!onboardingLoading && showOnboarding) {
+      router.push("/onboarding");
     }
-  }, [searchParams]);
+  }, [onboardingLoading, showOnboarding, router]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
-
-  const router = useRouter();
 
   const loadProjects = useCallback(async (page: number) => {
     setLoading(true);
@@ -139,19 +133,25 @@ function DashboardContent() {
     const trimmedPrompt = prompt.trim();
 
     try {
+      // First: Create the project WITHOUT the prompt in storage yet
+      // This prevents stale prompts if creation fails
       const result = await createProject(trimmedPrompt);
+
       if (result.success && result.data) {
-        // Store prompt in sessionStorage for the project page to pick up
-        // Use a longer TTL to handle slow network/navigation delays
-        sessionStorage.setItem(
-          `initial-prompt-${result.data.id}`,
-          trimmedPrompt,
-        );
-        // Also store timestamp to handle stale prompts
-        sessionStorage.setItem(
-          `initial-prompt-${result.data.id}-timestamp`,
-          Date.now().toString(),
-        );
+        // Only store prompt AFTER successful project creation
+        // This ensures the project exists before we try to process
+        const storageKey = `initial-prompt-${result.data.id}`;
+        const timestampKey = `${storageKey}-timestamp`;
+
+        // Store the prompt and metadata
+        sessionStorage.setItem(storageKey, trimmedPrompt);
+        sessionStorage.setItem(timestampKey, Date.now().toString());
+
+        // Store a flag indicating this is a fresh prompt that needs processing
+        sessionStorage.setItem(`${storageKey}-status`, "pending");
+
+        // Clear the input before navigation to prevent confusion if navigation is slow
+        setPrompt("");
 
         // Navigate to the project page
         router.push(`/projects/${result.data.id}`);
@@ -438,24 +438,7 @@ function DashboardContent() {
         </div>
       </footer>
 
-      {/* Onboarding Modal */}
-      <AnimatePresence>
-        {!onboardingLoading &&
-          onboardingStatus &&
-          (showOnboarding || forceOnboarding) && (
-            <OnboardingModal
-              status={onboardingStatus}
-              onComplete={() => {
-                setForceOnboarding(false);
-                completeOnboarding();
-              }}
-              onSkip={() => {
-                setForceOnboarding(false);
-                dismissOnboarding();
-              }}
-            />
-          )}
-      </AnimatePresence>
+      {/* Onboarding Redirect - handled by middleware/layout */}
     </div>
   );
 }

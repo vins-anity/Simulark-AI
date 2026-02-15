@@ -289,6 +289,7 @@ export function AIAssistantPanel({
 
   // Track if initial prompt was already processed to prevent double-processing
   const processedPromptRef = useRef<string | null>(null);
+  const isProcessingRef = useRef<boolean>(false);
 
   // Load initial settings or default mode
   const [chatMode, setChatModeState] = useState<ArchitectureMode>(
@@ -374,8 +375,8 @@ export function AIAssistantPanel({
     // Skip if we've already processed this exact prompt
     if (processedPromptRef.current === initialPrompt) return;
 
-    // Skip if we're already processing
-    if (generationState !== "idle") return;
+    // Skip if we're already processing (using ref for immediate check)
+    if (isProcessingRef.current) return;
 
     // Skip if chats are still loading
     if (isLoadingChats) return;
@@ -384,20 +385,42 @@ export function AIAssistantPanel({
     if (messages.length > 0) {
       // Mark as processed to prevent re-triggering
       processedPromptRef.current = initialPrompt;
+      // Also notify parent that we've "processed" it (by skipping)
+      onInitialPromptProcessed?.();
+      return;
+    }
+
+    // Check if this prompt was already processed (from sessionStorage status)
+    const storageKey = `initial-prompt-${projectId}-status`;
+    const status = sessionStorage.getItem(storageKey);
+    if (status === "completed" || status === "failed") {
+      processedPromptRef.current = initialPrompt;
+      onInitialPromptProcessed?.();
       return;
     }
 
     // Set up the pending prompt and transition to preparing state
     setPendingPrompt(initialPrompt);
     setGenerationState("preparing");
-  }, [initialPrompt, isLoadingChats, messages.length, generationState]);
+  }, [
+    initialPrompt,
+    isLoadingChats,
+    messages.length,
+    projectId,
+    onInitialPromptProcessed,
+  ]);
 
   // Handle the actual processing when in preparing state
   useEffect(() => {
     if (generationState !== "preparing" || !pendingPrompt) return;
 
-    // Mark this prompt as processed to prevent re-triggering
+    // Mark this prompt as being processed
     processedPromptRef.current = pendingPrompt;
+    isProcessingRef.current = true;
+
+    // Update sessionStorage status to processing
+    const statusKey = `initial-prompt-${projectId}-status`;
+    sessionStorage.setItem(statusKey, "processing");
 
     // Small delay to ensure UI is ready and show loading state
     const timeoutId = setTimeout(() => {
@@ -407,6 +430,8 @@ export function AIAssistantPanel({
           setGenerationState("complete");
           setPendingPrompt(null);
           setGenerationError(null);
+          // Mark as completed in sessionStorage
+          sessionStorage.setItem(statusKey, "completed");
           // Notify parent that processing is complete
           onInitialPromptProcessed?.();
         })
@@ -415,19 +440,31 @@ export function AIAssistantPanel({
           setGenerationError(
             error instanceof Error ? error.message : "Generation failed",
           );
+          // Mark as failed in sessionStorage for retry
+          sessionStorage.setItem(statusKey, "failed");
+        })
+        .finally(() => {
+          isProcessingRef.current = false;
         });
-    }, 300);
+    }, 500); // Slightly longer delay for better UX
 
     return () => clearTimeout(timeoutId);
-  }, [generationState, pendingPrompt, onInitialPromptProcessed]);
+  }, [generationState, pendingPrompt, projectId, onInitialPromptProcessed]);
 
   // Retry handler for failed initial prompt
   const handleRetryInitialPrompt = useCallback(() => {
     if (pendingPrompt) {
+      // Reset the processed ref so the effect can trigger again
+      processedPromptRef.current = null;
+      isProcessingRef.current = false;
+      // Reset sessionStorage status
+      const statusKey = `initial-prompt-${projectId}-status`;
+      sessionStorage.setItem(statusKey, "pending");
+      // Reset state
       setGenerationState("preparing");
       setGenerationError(null);
     }
-  }, [pendingPrompt]);
+  }, [pendingPrompt, projectId]);
 
   // Clear generation state when user sends a new message manually
   const handleManualSubmit = async (e: React.FormEvent) => {
@@ -485,6 +522,11 @@ export function AIAssistantPanel({
             ? prefs.customInstructions
             : "";
 
+        const defaultMode = prefs.defaultArchitectureMode as ArchitectureMode;
+        if (defaultMode && ["default", "startup", "corporate"].includes(defaultMode)) {
+           setChatMode(defaultMode);
+        }
+        
         setUserPreferences({
           cloudProviders,
           languages,
@@ -1264,9 +1306,8 @@ export function AIAssistantPanel({
               </SelectTrigger>
               <SelectContent className="font-mono text-[11px]">
                 <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="chaos">Chaos Mode</SelectItem>
-                <SelectItem value="cost">Cost Optimizer</SelectItem>
-                <SelectItem value="expert">Expert Review</SelectItem>
+                <SelectItem value="startup">Startup</SelectItem>
+                <SelectItem value="corporate">Enterprise</SelectItem>
               </SelectContent>
             </Select>
 

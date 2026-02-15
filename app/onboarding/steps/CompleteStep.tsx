@@ -1,42 +1,90 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle, Globe, Layers, Sparkles, Zap } from "lucide-react";
+import { CheckCircle, Cloud, Code, Layers, Zap } from "lucide-react";
 import { type OnboardingData } from "../types";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
 
 interface CompleteStepProps {
   data: OnboardingData;
 }
 
 export function CompleteStep({ data }: CompleteStepProps) {
-  // Get experience label
-  const experienceLabels: Record<string, string> = {
-    beginner: "Beginner 🌱",
-    intermediate: "Intermediate ⚖️",
-    expert: "Expert 🚀",
-  };
-
-  // Get mode label
-  const modeLabels: Record<string, string> = {
-    startup: "🚀 Startup Mode",
-    default: "⚖️ Default Mode",
-    enterprise: "🏢 Enterprise Mode",
-  };
-
-  // Count total tech selections
   const totalTechs = Object.values(data.techStack).flat().length;
 
+  const summaryItems = [
+    {
+      icon: <Zap className="h-4 w-4" />,
+      label: "Experience",
+      value: data.experienceLevel
+        ? data.experienceLevel.charAt(0).toUpperCase() +
+          data.experienceLevel.slice(1)
+        : "Not set",
+      color: "text-amber-600",
+    },
+    {
+      icon: <Layers className="h-4 w-4" />,
+      label: "Mode",
+      value: data.defaultMode
+        ? data.defaultMode.charAt(0).toUpperCase() + data.defaultMode.slice(1)
+        : "Not set",
+      color: "text-blue-600",
+    },
+    {
+      icon: <Code className="h-4 w-4" />,
+      label: "Project Type",
+      value: data.projectType || "Not set",
+      color: "text-emerald-600",
+    },
+    {
+      icon: <Cloud className="h-4 w-4" />,
+      label: "Technologies",
+      value: totalTechs > 0 ? `${totalTechs} selected` : "AI defaults",
+      color: "text-sky-600",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-2xl text-center">
-      {/* Success animation */}
-      <motion.div
-        className="mb-8 flex justify-center"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-      >
+    <motion.div
+      className="w-full max-w-2xl mx-auto text-center"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Badge */}
+      <motion.div variants={itemVariants} className="mb-4">
+        <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-brand-orange">
+          <span className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
+          SYS-01 // System Ready
+        </span>
+      </motion.div>
+
+      {/* Success Animation */}
+      <motion.div variants={itemVariants} className="mb-6 flex justify-center">
         <div className="relative">
-          {/* Glow effect */}
+          {/* Glow */}
           <motion.div
             className="absolute inset-0 -z-10 blur-2xl"
             animate={{
@@ -49,157 +97,105 @@ export function CompleteStep({ data }: CompleteStepProps) {
               ease: "easeInOut",
             }}
           >
-            <div className="h-24 w-24 rounded-full bg-brand-orange/40" />
+            <div className="h-24 w-24 bg-brand-orange/30" />
           </motion.div>
 
           {/* Checkmark */}
           <motion.div
-            className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-orange text-white"
-            initial={{ rotate: -180 }}
-            animate={{ rotate: 0 }}
-            transition={{ delay: 0.2, type: "spring" }}
+            className="flex h-24 w-24 items-center justify-center border-2 border-brand-orange bg-brand-orange text-white"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
           >
             <CheckCircle className="h-12 w-12" />
           </motion.div>
 
-          {/* Sparkles */}
+          {/* Status indicator */}
           <motion.div
-            className="absolute -right-4 -top-4"
-            animate={{
-              rotate: [0, 20, -20, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            className="absolute -bottom-1 -right-1 border border-brand-orange bg-bg-secondary px-2 py-0.5"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
           >
-            <Sparkles className="h-6 w-6 text-yellow-500" />
+            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-orange">
+              OPERATIONAL
+            </span>
           </motion.div>
         </div>
       </motion.div>
 
       {/* Title */}
       <motion.h2
-        className="mb-4 font-mono text-3xl font-bold text-text-primary"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        variants={itemVariants}
+        className="mb-3 font-poppins text-3xl font-bold text-brand-charcoal"
       >
-        You&apos;re all set!
+        Configuration Complete
       </motion.h2>
 
       {/* Description */}
       <motion.p
-        className="mb-8 text-text-secondary"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        variants={itemVariants}
+        className="mb-8 font-lora text-brand-charcoal/60 max-w-md mx-auto"
       >
-        Your preferences have been saved. Here&apos;s a summary of your setup:
+        Your preferences have been saved. The AI will now generate architectures
+        tailored to your stack.
       </motion.p>
 
-      {/* Summary Cards */}
+      {/* Summary Grid */}
       <motion.div
-        className="mb-8 grid gap-4 sm:grid-cols-2"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        variants={itemVariants}
+        className="mb-6 grid gap-2 sm:grid-cols-2"
       >
-        {/* Experience */}
-        <div className="rounded-lg border border-border-primary bg-bg-secondary p-4 text-left">
-          <div className="mb-2 flex items-center gap-2 text-brand-orange">
-            <Zap className="h-4 w-4" />
-            <span className="font-mono text-xs uppercase tracking-wider">
-              Experience
-            </span>
+        {summaryItems.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-center gap-2 border border-brand-charcoal/10 bg-bg-secondary p-3 text-left"
+          >
+            <span className={item.color}>{item.icon}</span>
+            <div>
+              <span className="block font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+                {item.label}
+              </span>
+              <span className="font-mono text-xs font-medium uppercase tracking-wide text-brand-charcoal">
+                {item.value}
+              </span>
+            </div>
           </div>
-          <p className="font-medium text-text-primary">
-            {data.experienceLevel
-              ? experienceLabels[data.experienceLevel]
-              : "Not set"}
-          </p>
-        </div>
-
-        {/* Mode */}
-        <div className="rounded-lg border border-border-primary bg-bg-secondary p-4 text-left">
-          <div className="mb-2 flex items-center gap-2 text-brand-blue">
-            <Layers className="h-4 w-4" />
-            <span className="font-mono text-xs uppercase tracking-wider">
-              Default Mode
-            </span>
-          </div>
-          <p className="font-medium text-text-primary">
-            {data.defaultMode ? modeLabels[data.defaultMode] : "Not set"}
-          </p>
-        </div>
-
-        {/* Project Types */}
-        <div className="rounded-lg border border-border-primary bg-bg-secondary p-4 text-left">
-          <div className="mb-2 flex items-center gap-2 text-brand-green">
-            <Globe className="h-4 w-4" />
-            <span className="font-mono text-xs uppercase tracking-wider">
-              Project Types
-            </span>
-          </div>
-          <p className="font-medium text-text-primary">
-            {data.projectTypes.length > 0
-              ? `${data.projectTypes.length} selected`
-              : "None selected"}
-          </p>
-          <p className="text-xs text-text-muted">
-            {data.projectTypes.join(", ")}
-          </p>
-        </div>
-
-        {/* Tech Stack */}
-        <div className="rounded-lg border border-border-primary bg-bg-secondary p-4 text-left">
-          <div className="mb-2 flex items-center gap-2 text-purple-500">
-            <Sparkles className="h-4 w-4" />
-            <span className="font-mono text-xs uppercase tracking-wider">
-              Technologies
-            </span>
-          </div>
-          <p className="font-medium text-text-primary">
-            {totalTechs > 0 ? `${totalTechs} selected` : "Skipped"}
-          </p>
-          <p className="text-xs text-text-muted">
-            {totalTechs > 0
-              ? "Custom stack configured"
-              : "Will use smart defaults"}
-          </p>
-        </div>
+        ))}
       </motion.div>
 
-      {/* What&apos;s next */}
+      {/* Next Steps */}
       <motion.div
-        className="mb-8 rounded-lg border border-dashed border-brand-orange/50 bg-brand-orange/5 p-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        variants={itemVariants}
+        className="mb-8 border border-dashed border-brand-orange/30 bg-brand-orange/5 p-4"
       >
-        <h3 className="mb-2 font-mono text-sm font-medium text-brand-orange">
-          What&apos;s next?
+        <h3 className="mb-3 font-mono text-xs font-semibold uppercase tracking-wider text-brand-orange">
+          What&apos;s Next?
         </h3>
-        <ul className="space-y-1 text-sm text-text-secondary">
-          <li>🎯 Create your first architecture</li>
-          <li>📚 Browse recommended templates</li>
-          <li>⚙️ Adjust preferences anytime in settings</li>
+        <ul className="space-y-2 text-sm text-brand-charcoal/70">
+          <li className="flex items-center justify-center gap-2">
+            <span className="text-brand-orange">→</span>
+            Create your first architecture
+          </li>
+          <li className="flex items-center justify-center gap-2">
+            <span className="text-brand-orange">→</span>
+            Browse recommended templates
+          </li>
+          <li className="flex items-center justify-center gap-2">
+            <span className="text-brand-orange">→</span>
+            Adjust preferences in Settings anytime
+          </li>
         </ul>
       </motion.div>
 
-      {/* CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <p className="mb-4 text-sm text-text-muted">
-          Click <strong className="text-text-secondary">Go to Dashboard</strong>{" "}
-          to start building
+      {/* Footer */}
+      <motion.div variants={itemVariants}>
+        <p className="text-xs text-brand-charcoal/40 font-mono">
+          Click{" "}
+          <strong className="text-brand-charcoal/70">[ INITIALIZE ]</strong> to
+          start building
         </p>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

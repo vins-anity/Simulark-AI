@@ -1,180 +1,175 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Building2, Check, Rocket, Scale } from "lucide-react";
+import { Check } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
+import { GENERATION_MODE_OPTIONS, type OnboardingData } from "../types";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
 
 interface ModeStepProps {
-  value?: "startup" | "default" | "enterprise";
-  onChange: (value: "startup" | "default" | "enterprise") => void;
+  value?: OnboardingData["defaultMode"];
+  onChange: (value: OnboardingData["defaultMode"]) => void;
 }
-
-const MODES = [
-  {
-    id: "startup" as const,
-    name: "Startup",
-    icon: Rocket,
-    emoji: "🚀",
-    description: "MVP-focused, cost-optimized",
-    details: "3-5 components • Speed first",
-    features: [
-      "Quick deployment",
-      "Minimal complexity",
-      "Cost-effective",
-      "Rapid iteration",
-    ],
-    color: "from-green-500/20 to-emerald-500/20",
-    borderColor: "border-green-500/50",
-  },
-  {
-    id: "default" as const,
-    name: "Default",
-    icon: Scale,
-    emoji: "⚖️",
-    description: "Balanced approach",
-    details: "4-8 components • Best practices",
-    features: [
-      "Moderate complexity",
-      "Production-ready",
-      "Scalable design",
-      "Industry standards",
-    ],
-    color: "from-blue-500/20 to-cyan-500/20",
-    borderColor: "border-blue-500/50",
-  },
-  {
-    id: "enterprise" as const,
-    name: "Enterprise",
-    icon: Building2,
-    emoji: "🏢",
-    description: "Full redundancy, compliance-ready",
-    details: "6-15 components • Production grade",
-    features: [
-      "High availability",
-      "Full observability",
-      "Security-first",
-      "Compliance ready",
-    ],
-    color: "from-purple-500/20 to-pink-500/20",
-    borderColor: "border-purple-500/50",
-  },
-] as const;
 
 export function ModeStep({ value, onChange }: ModeStepProps) {
   return (
-    <div className="mx-auto max-w-4xl">
+    <motion.div
+      className="w-full max-w-4xl mx-auto"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <motion.div
-        className="mb-8 text-center"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h2 className="mb-3 font-mono text-2xl font-bold text-text-primary md:text-3xl">
-          Choose your default generation mode
+      <motion.div variants={itemVariants} className="mb-5 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-orange">
+            MOD-01
+          </span>
+          <span className="font-mono text-[10px] text-brand-charcoal/30">
+            // Generation Mode
+          </span>
+        </div>
+        <h2 className="font-poppins text-xl font-bold text-brand-charcoal md:text-2xl">
+          Choose Your Default Mode
         </h2>
-        <p className="text-text-secondary">
-          This determines the default complexity level for generated
-          architectures
+        <p className="mt-1 text-sm text-brand-charcoal/60 max-w-lg mx-auto">
+          This determines the default complexity level for generated architectures.
         </p>
       </motion.div>
 
-      {/* Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {MODES.map((mode, index) => {
+      {/* Mode Cards */}
+      <motion.div variants={itemVariants} className="grid gap-3 md:grid-cols-3">
+        {GENERATION_MODE_OPTIONS.map((mode) => {
           const isSelected = value === mode.id;
-          const Icon = mode.icon;
 
           return (
-            <motion.button
+            <button
               key={mode.id}
               onClick={() => onChange(mode.id)}
               className={cn(
-                "group relative flex flex-col rounded-xl border-2 p-6 text-left transition-all",
+                "group relative flex flex-col border-2 p-4 text-left transition-all duration-200",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange",
                 isSelected
-                  ? cn("bg-gradient-to-br", mode.color, mode.borderColor)
-                  : "border-border-primary bg-bg-secondary hover:border-border-secondary",
+                  ? "border-brand-orange bg-brand-orange/5"
+                  : "border-brand-charcoal/10 bg-bg-secondary hover:border-brand-charcoal/30",
               )}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.02, y: -4 }}
-              whileTap={{ scale: 0.98 }}
             >
-              {/* Selection badge */}
+              {/* Badge */}
+              <span
+                className={cn(
+                  "absolute -top-2 right-4 font-mono text-[9px] uppercase tracking-wider px-2 py-0.5",
+                  isSelected
+                    ? "bg-brand-orange text-white"
+                    : "bg-brand-charcoal/10 text-brand-charcoal/60",
+                )}
+              >
+                {mode.badge}
+              </span>
+
+              {/* Selection indicator */}
               {isSelected && (
                 <motion.div
-                  className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-orange text-white shadow-lg"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                >
-                  <Check className="h-5 w-5" />
-                </motion.div>
+                  layoutId="mode-indicator"
+                  className="absolute inset-x-0 bottom-0 h-0.5 bg-brand-orange"
+                />
               )}
 
-              {/* Header */}
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-bg-tertiary text-2xl">
-                  {mode.emoji}
+              {/* Icon & Title */}
+              <div className="mb-3 flex items-center gap-2">
+                <span
+                  className={cn(
+                    "flex h-9 w-9 items-center justify-center border",
+                    isSelected
+                      ? "border-brand-orange bg-brand-orange/10"
+                      : "border-brand-charcoal/10 bg-bg-tertiary",
+                  )}
+                >
+                  <Icon
+                    icon={mode.icon}
+                    className="h-5 w-5 text-brand-charcoal"
+                  />
                 </span>
                 <div>
-                  <h3 className="font-mono text-xl font-bold text-text-primary">
+                  <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-brand-charcoal">
                     {mode.name}
                   </h3>
-                  <p className="text-xs text-text-muted">{mode.details}</p>
+                  <p className="text-[10px] text-brand-charcoal/50">
+                    {mode.detail}
+                  </p>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="mb-4 text-sm text-text-secondary">
+              <p className="mb-3 text-xs text-brand-charcoal/70 leading-relaxed">
                 {mode.description}
               </p>
 
               {/* Features */}
-              <ul className="mt-auto space-y-2">
-                {mode.features.map((feature, i) => (
-                  <motion.li
+              <ul className="mt-auto space-y-1.5">
+                {mode.features.map((feature) => (
+                  <li
                     key={feature}
-                    className="flex items-center gap-2 text-sm text-text-secondary"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 + i * 0.05 }}
+                    className="flex items-center gap-2 text-[10px] text-brand-charcoal/60"
                   >
-                    <Icon className="h-3 w-3 text-brand-orange" />
+                    <Check
+                      className={cn(
+                        "h-3 w-3 shrink-0",
+                        isSelected
+                          ? "text-brand-orange"
+                          : "text-brand-charcoal/30",
+                      )}
+                    />
                     {feature}
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
 
-              {/* Hover effect gradient */}
-              <div
-                className={cn(
-                  "absolute inset-0 rounded-xl opacity-0 transition-opacity",
-                  "bg-gradient-to-br",
-                  mode.color,
-                  isSelected ? "opacity-100" : "group-hover:opacity-50",
-                )}
-                style={{ zIndex: -1 }}
-              />
-            </motion.button>
+              {/* Selection bracket */}
+              <div className="mt-3 pt-2 border-t border-brand-charcoal/10">
+                <span
+                  className={cn(
+                    "font-mono text-[10px]",
+                    isSelected ? "text-brand-orange" : "text-brand-charcoal/30",
+                  )}
+                >
+                  {isSelected ? "[ SELECTED ]" : "[ SELECT ]"}
+                </span>
+              </div>
+            </button>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Recommendation hint */}
-      <motion.div
-        className="mt-8 rounded-lg border border-dashed border-border-primary bg-bg-secondary/50 p-4 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
-        <p className="text-sm text-text-muted">
-          <span className="text-brand-orange">💡</span> Recommendation: Start
-          with <strong className="text-text-secondary">Default</strong> mode for
-          most projects. You can always customize individual architectures.
+      <motion.div variants={itemVariants} className="mt-6 text-center">
+        <p className="text-[10px] text-brand-charcoal/50 font-mono">
+          <span className="text-brand-orange">TIP:</span> Start with{" "}
+          <strong className="text-brand-charcoal/70">Standard</strong> for most projects
         </p>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

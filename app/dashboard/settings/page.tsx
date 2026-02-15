@@ -14,11 +14,15 @@ import {
   Rocket,
   Save,
   User,
+  TriangleAlert,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
+import { resetOnboarding } from "@/actions/onboarding";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +65,36 @@ const CONFIG_MODULES = [
     icon: Pencil,
     color: "amber",
   },
+  {
+    id: "CFG-05",
+    key: "generator-defaults",
+    title: "Generator Defaults",
+    subtitle: "Default constraints & architecture mode",
+    icon: Rocket,
+    color: "indigo",
+  },
 ] as const;
+
+const ARCHITECTURE_MODES = [
+  {
+    id: "default",
+    label: "Default (Balanced)",
+    description: "Balanced approach for most use cases",
+    icon: "ph:scales-fill",
+  },
+  {
+    id: "startup",
+    label: "Startup (MVP)",
+    description: "Cost-optimized, speed to market",
+    icon: "ph:rocket-launch-fill",
+  },
+  {
+    id: "corporate",
+    label: "Enterprise",
+    description: "High availability, security, compliance",
+    icon: "ph:buildings-fill",
+  },
+];
 
 const TECH_CATEGORIES = {
   LANGUAGES: [
@@ -164,6 +197,12 @@ const MODULE_COLORS: Record<
     border: "border-amber-500/20",
     text: "text-amber-600",
     icon: "text-amber-500",
+  },
+  indigo: {
+    bg: "bg-indigo-500/5",
+    border: "border-indigo-500/20",
+    text: "text-indigo-600",
+    icon: "text-indigo-500",
   },
 };
 
@@ -327,6 +366,8 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [expandedModule, setExpandedModule] = useState<string | null>("CFG-01");
+  const router = useRouter();
+  const [resetting, setResetting] = useState(false);
 
   // Form State
   const [fullName, setFullName] = useState("");
@@ -336,6 +377,8 @@ export default function SettingsPage() {
   const [architectureTypes, setArchitectureTypes] = useState<string[]>([]);
   const [applicationType, setApplicationType] = useState<string[]>([]);
   const [customInstructions, setCustomInstructions] = useState("");
+  const [defaultArchitectureMode, setDefaultArchitectureMode] =
+    useState<string>("default");
 
   const { TECH_ECOSYSTEM } = require("@/lib/tech-ecosystem");
 
@@ -374,6 +417,8 @@ export default function SettingsPage() {
             setApplicationType(prefs.applicationType);
           if (typeof prefs.customInstructions === "string")
             setCustomInstructions(prefs.customInstructions);
+          if (typeof prefs.defaultArchitectureMode === "string")
+            setDefaultArchitectureMode(prefs.defaultArchitectureMode);
         }
       }
       setLoading(false);
@@ -413,6 +458,7 @@ export default function SettingsPage() {
       architectureTypes,
       applicationType,
       customInstructions,
+      defaultArchitectureMode,
     };
 
     const { error: dbError } = await supabase
@@ -429,6 +475,31 @@ export default function SettingsPage() {
     }
 
     setSaving(false);
+  };
+
+  const handleReset = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to reset your onboarding progress? This will clear your current settings and take you back to the beginning.",
+      )
+    ) {
+      return;
+    }
+
+    setResetting(true);
+    const result = await resetOnboarding();
+
+    if (result.success) {
+      toast.success("Onboarding Reset", {
+        description: "Redirecting to onboarding flow...",
+      });
+      router.push("/onboarding");
+    } else {
+      toast.error("Error", {
+        description: result.error || "Failed to reset onboarding.",
+      });
+      setResetting(false);
+    }
   };
 
   const toggleSelection = (
@@ -505,7 +576,9 @@ export default function SettingsPage() {
             <div className="p-5">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
                 <Avatar className="h-16 w-16 border-2 border-bg-primary shadow-md">
-                  <AvatarImage src={getAvatarUrl(user?.email || "")} />
+                  <AvatarImage 
+                    src={user?.user_metadata?.avatar_url || getAvatarUrl(user?.email || "")} 
+                  />
                   <AvatarFallback className="bg-brand-charcoal text-white text-lg font-poppins">
                     {(fullName || user?.email || "U").charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -578,7 +651,7 @@ export default function SettingsPage() {
 
                 <div className="flex items-center gap-3">
                   <Link
-                    href="/dashboard?onboarding=true"
+                    href="/onboarding"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange hover:bg-brand-orange hover:text-white transition-colors font-mono text-xs uppercase tracking-wider"
                   >
                     <Rocket className="w-4 h-4" />
@@ -740,6 +813,115 @@ export default function SettingsPage() {
               />
             </div>
           </ModuleCard>
+
+          {/* Generator Defaults Module */}
+          <ModuleCard
+            module={CONFIG_MODULES[4]}
+            isExpanded={expandedModule === "CFG-05"}
+            onToggle={() =>
+              setExpandedModule(expandedModule === "CFG-05" ? null : "CFG-05")
+            }
+            selectionCount={1}
+          >
+            <div className="pt-4 space-y-4">
+              <div>
+                <Label className="text-[10px] font-mono uppercase tracking-widest text-text-muted mb-3 block">
+                  Default Architecture Mode
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {ARCHITECTURE_MODES.map((mode) => {
+                    const isSelected = defaultArchitectureMode === mode.id;
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setDefaultArchitectureMode(mode.id)}
+                        className={cn(
+                          "flex flex-col items-start p-3 border text-left transition-all duration-200 relative",
+                          isSelected
+                            ? "bg-brand-orange/5 border-brand-orange"
+                            : "bg-bg-primary border-border-primary hover:border-border-secondary",
+                        )}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon
+                            icon={mode.icon}
+                            className={cn(
+                              "text-lg",
+                              isSelected
+                                ? "text-brand-orange"
+                                : "text-text-secondary",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-xs font-semibold uppercase tracking-wide",
+                              isSelected
+                                ? "text-brand-orange"
+                                : "text-text-primary",
+                            )}
+                          >
+                            {mode.label}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-text-secondary">
+                          {mode.description}
+                        </p>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2">
+                            <Check className="w-3 h-3 text-brand-orange" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </ModuleCard>
+        </section>
+
+        {/* Danger Zone */}
+        <section className="mb-8 border border-red-200 dark:border-red-900/30 bg-red-50/10 dark:bg-red-900/5">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-red-200 dark:border-red-900/30 bg-red-50/20 dark:bg-red-900/10">
+            <TriangleAlert className="w-4 h-4 text-red-600 dark:text-red-400" />
+            <h2 className="font-poppins font-semibold text-sm text-red-700 dark:text-red-400">
+              Danger Zone
+            </h2>
+          </div>
+
+          <div className="p-5">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="font-medium text-sm text-text-primary mb-1">
+                  Reset Onboarding Progress
+                </h3>
+                <p className="text-xs text-text-muted">
+                  This will clear your architecture preferences and restart the
+                  onboarding flow.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleReset}
+                disabled={resetting}
+                className="bg-red-600 hover:bg-red-700 text-white rounded-none h-9 px-4 text-xs uppercase tracking-wider font-mono"
+              >
+                {resetting ? (
+                  <span className="flex items-center gap-2">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    Resetting...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <RotateCcw className="w-3 h-3" />
+                    Reset Onboarding
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
         </section>
 
         {/* Save Button - Fixed at bottom on mobile */}

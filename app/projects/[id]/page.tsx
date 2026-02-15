@@ -83,7 +83,10 @@ export default function ProjectPage({
   const handleInitialPromptProcessed = () => {
     // Only clear sessionStorage AFTER successful processing
     if (id) {
+      // Clear all related sessionStorage items
       sessionStorage.removeItem(`initial-prompt-${id}`);
+      sessionStorage.removeItem(`initial-prompt-${id}-timestamp`);
+      sessionStorage.removeItem(`initial-prompt-${id}-status`);
     }
     // Clear the initial prompt from state to prevent re-processing
     setInitialPrompt(null);

@@ -90,11 +90,11 @@ export function MarketingLayoutClient({
           {/* Status Bar */}
           <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
             <div className="container mx-auto px-6 flex justify-between items-center">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40 dark:text-white/40">
                 // SYSTEM_READY
               </span>
               <div className="flex items-center gap-4">
-                <span className="font-mono text-[9px] text-brand-charcoal/30">
+                <span className="font-mono text-[9px] text-brand-charcoal/30 dark:text-white/30">
                   v0.9.2
                 </span>
                 <span className="w-1 h-1 bg-brand-orange rounded-full animate-pulse" />
@@ -105,14 +105,14 @@ export function MarketingLayoutClient({
           {/* Main Bar */}
           <div className="container mx-auto px-6 h-14 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-text-inverse transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
-                <Icon icon="lucide:box" className="w-4 h-4" />
-              </div>
+            <div className="w-8 h-8 border border-neutral-900 dark:border-white !bg-neutral-900 dark:!bg-transparent flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
+              <Icon icon="lucide:box" className="w-4 h-4" />
+            </div>
               <div className="flex flex-col">
-                <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors">
+                <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors text-brand-charcoal dark:text-white">
                   SIMULARK
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 leading-none mt-0.5">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 dark:text-white/50 leading-none mt-0.5">
                   Architecture Engine
                 </span>
               </div>
@@ -133,28 +133,28 @@ export function MarketingLayoutClient({
       <header
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-bg-primary/95 backdrop-blur-sm border-b border-brand-charcoal/10"
-            : "bg-bg-primary border-b border-brand-charcoal/5"
+            ? "bg-bg-primary/95 backdrop-blur-sm border-b border-brand-charcoal/10 dark:border-white/10"
+            : "bg-bg-primary border-b border-brand-charcoal/5 dark:border-white/5"
         }`}
       >
         {/* Status Bar - HUD Style */}
         <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
           <div className="container mx-auto px-6 flex justify-between items-center">
             <div className="flex items-center gap-6">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40 dark:text-white/40">
                 // SYSTEM_READY
               </span>
               <div className="hidden md:flex items-center gap-4">
-                <span className="font-mono text-[8px] uppercase text-brand-charcoal/30">
+                <span className="font-mono text-[8px] uppercase text-brand-charcoal/30 dark:text-white/30">
                   GRID: 60x60
                 </span>
-                <span className="font-mono text-[8px] uppercase text-brand-charcoal/30">
+                <span className="font-mono text-[8px] uppercase text-brand-charcoal/30 dark:text-white/30">
                   ORIGIN: 0,0
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-mono text-[9px] text-brand-charcoal/30">
+              <span className="font-mono text-[9px] text-brand-charcoal/30 dark:text-white/30">
                 BUILD: v0.9.2
               </span>
               <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-pulse" />
@@ -166,14 +166,14 @@ export function MarketingLayoutClient({
         <div className="container mx-auto px-6 h-14 flex items-center justify-between">
           {/* Logo - Left */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
+            <div className="w-8 h-8 border border-neutral-900 dark:border-white !bg-neutral-900 dark:!bg-transparent flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
               <Icon icon="lucide:box" className="w-4 h-4" />
             </div>
             <div className="flex flex-col">
-              <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors">
+              <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors text-brand-charcoal dark:text-white">
                 SIMULARK
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 leading-none mt-0.5">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 dark:text-white/50 leading-none mt-0.5">
                 Architecture Engine
               </span>
             </div>
@@ -182,20 +182,20 @@ export function MarketingLayoutClient({
           {/* Center - System Info (previously navigation) */}
           <div className="hidden lg:flex items-center gap-8">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30">
+              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30 dark:text-white/30">
                 SYS_STATUS:
               </span>
               <span className="font-mono text-[9px] uppercase text-brand-green">
                 OPERATIONAL
               </span>
             </div>
-            <div className="h-4 w-px bg-brand-charcoal/10" />
+            <div className="h-4 w-px bg-brand-charcoal/10 dark:bg-white/10" />
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30">
+              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30 dark:text-white/30">
                 LATENCY:
               </span>
               <motion.span
-                className="font-mono text-[9px] uppercase text-brand-charcoal/50"
+                className="font-mono text-[9px] uppercase text-brand-charcoal/50 dark:text-white/50"
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
@@ -238,13 +238,13 @@ export function MarketingLayoutClient({
                 <Link href="/auth/signin">
                   <Button
                     size="sm"
-                    className="group bg-brand-charcoal text-white hover:bg-brand-orange hover:text-white rounded-none px-0 h-9 border-0 font-mono uppercase tracking-wider text-[10px] transition-all duration-300"
+                    className="group bg-brand-charcoal text-white dark:bg-transparent dark:text-white dark:border dark:border-white hover:bg-brand-orange hover:text-white rounded-none px-0 h-9 border-0 font-mono uppercase tracking-wider text-[10px] transition-all duration-300"
                   >
-                    <span className="px-3 text-white/40 group-hover:text-white/40">
+                    <span className="px-3 text-white/40 dark:text-white/40 group-hover:text-white/40">
                       [
                     </span>
                     <span className="px-1">INITIALIZE</span>
-                    <span className="px-3 text-white/40 group-hover:text-white/40">
+                    <span className="px-3 text-white/40 dark:text-white/40 group-hover:text-white/40">
                       ]
                     </span>
                   </Button>
@@ -267,7 +267,7 @@ export function MarketingLayoutClient({
             {/* System Info */}
             <div className="col-span-1 md:col-span-2 space-y-8 pr-12">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 border border-brand-charcoal bg-brand-charcoal flex items-center justify-center text-white">
+                <div className="w-8 h-8 border border-neutral-900 dark:border-white !bg-neutral-900 dark:!bg-transparent flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange group-hover:text-white">
                   <Icon icon="lucide:box" className="w-4 h-4" />
                 </div>
                 <div>

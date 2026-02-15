@@ -36,11 +36,12 @@ function TechnicalBackground() {
           >
             <path
               d="M0 60 L60 0"
-              stroke="#1a1a1a"
+              className="stroke-brand-charcoal dark:stroke-white/20"
               strokeWidth="0.5"
               fill="none"
               strokeDasharray="4 8"
             />
+
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#diagonal)" />
@@ -55,16 +56,17 @@ function TechnicalBackground() {
       <div className="absolute bottom-32 left-32 w-3 h-3 bg-brand-orange rounded-full animate-ping opacity-30" />
 
       {/* Technical brackets decoration */}
-      <div className="absolute top-1/4 left-10 text-brand-charcoal/20 font-mono text-xs">
+      <div className="absolute top-1/4 left-10 text-brand-charcoal/20 dark:text-white/20 font-mono text-xs">
         [ SYS-01 ]
       </div>
-      <div className="absolute bottom-1/4 right-10 text-brand-charcoal/20 font-mono text-xs">
+      <div className="absolute bottom-1/4 right-10 text-brand-charcoal/20 dark:text-white/20 font-mono text-xs">
         [ SYS-02 ]
       </div>
 
+
       {/* Dashed timeline */}
-      <div className="absolute left-1/4 top-0 h-full w-px border-l border-dashed border-brand-charcoal/10" />
-      <div className="absolute right-1/4 top-0 h-full w-px border-l border-dashed border-brand-charcoal/10" />
+      <div className="absolute left-1/4 top-0 h-full w-px border-l border-dashed border-brand-charcoal/10 dark:border-white/10" />
+      <div className="absolute right-1/4 top-0 h-full w-px border-l border-dashed border-brand-charcoal/10 dark:border-white/10" />
     </div>
   );
 }
@@ -74,7 +76,7 @@ function ArchitectureDiagram() {
   return (
     <div className="hidden lg:flex flex-col items-center justify-center w-96 h-96 relative">
       {/* Central hub */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-brand-orange rounded-lg bg-brand-sand-light flex items-center justify-center z-10">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 border-brand-orange rounded-lg bg-brand-sand-light dark:bg-neutral-900 flex items-center justify-center z-10">
         <Icon
           icon="lucide:shield-check"
           className="w-8 h-8 text-brand-orange"
@@ -85,10 +87,10 @@ function ArchitectureDiagram() {
       {[0, 60, 120, 180, 240, 300].map((angle, i) => (
         <motion.div
           key={i}
-          className="absolute w-10 h-10 border border-brand-charcoal/30 rounded bg-white/80 flex items-center justify-center"
+          className="absolute w-10 h-10 border border-brand-charcoal/30 dark:border-white/30 rounded bg-white/80 dark:bg-neutral-800/80 flex items-center justify-center"
           style={{
-            top: `calc(50% + ${Math.sin((angle * Math.PI) / 180) * 120}px)`,
-            left: `calc(50% + ${Math.cos((angle * Math.PI) / 180) * 120}px)`,
+            top: `calc(50% + ${(Math.sin((angle * Math.PI) / 180) * 120).toFixed(3)}px)`,
+            left: `calc(50% + ${(Math.cos((angle * Math.PI) / 180) * 120).toFixed(3)}px)`,
             transform: "translate(-50%, -50%)",
           }}
           animate={{
@@ -111,7 +113,7 @@ function ArchitectureDiagram() {
                 "lucide:lock",
               ][i]
             }
-            className="w-5 h-5 text-brand-charcoal/50"
+            className="w-5 h-5 text-brand-charcoal/50 dark:text-white/50"
           />
         </motion.div>
       ))}
@@ -135,7 +137,7 @@ function ArchitectureDiagram() {
 
       {/* Status labels */}
       <div className="absolute -bottom-4 left-0 right-0 text-center">
-        <span className="font-mono text-xs text-brand-charcoal/40 tracking-widest">
+        <span className="font-mono text-xs text-brand-charcoal/40 dark:text-white/40 tracking-widest">
           [ ARCHITECTURE VISUALIZATION ]
         </span>
       </div>
@@ -148,11 +150,11 @@ function SystemStatus() {
   const [status, setStatus] = useState("ONLINE");
 
   return (
-    <div className="flex items-center gap-2 text-xs font-mono text-brand-charcoal/60">
+    <div className="flex items-center gap-2 text-xs font-mono text-brand-charcoal/60 dark:text-white/60">
       <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
       <span>SYSTEM STATUS:</span>
-      <span className="text-brand-charcoal font-semibold">{status}</span>
-      <span className="text-brand-charcoal/30">|</span>
+      <span className="text-brand-charcoal dark:text-white font-semibold">{status}</span>
+      <span className="text-brand-charcoal/30 dark:text-white/30">|</span>
       <span>LATENCY: 12ms</span>
     </div>
   );
@@ -183,7 +185,7 @@ function BrutalistButton({ provider, onClick, loading }: BrutalistButtonProps) {
     <button
       onClick={onClick}
       disabled={loading}
-      className="group relative w-full flex items-center justify-between px-6 py-4 bg-white border-2 border-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="group relative w-full flex items-center justify-between px-6 py-4 bg-white dark:bg-neutral-900 border-2 border-brand-charcoal dark:border-white text-brand-charcoal dark:text-white hover:bg-brand-orange hover:border-brand-orange hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 border border-current flex items-center justify-center">
@@ -244,11 +246,11 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-brand-sand-light relative overflow-hidden flex">
+    <div className="min-h-screen w-full bg-brand-sand-light dark:bg-neutral-950 relative overflow-hidden flex">
       <TechnicalBackground />
 
       {/* Left side - Visual */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative z-10 border-r border-brand-charcoal/10">
+      <div className="hidden lg:flex flex-1 items-center justify-center relative z-10 border-r border-brand-charcoal/10 dark:border-white/10">
         <div className="relative">
           {/* Technical frame */}
           <div className="absolute -top-8 -left-8 w-8 h-8 border-l-2 border-t-2 border-brand-orange" />
@@ -261,7 +263,7 @@ export default function SignInPage() {
 
         {/* Side labels */}
         <div className="absolute left-8 top-1/2 -translate-y-1/2 -rotate-90 origin-center">
-          <span className="font-mono text-xs text-brand-charcoal/30 tracking-[0.3em]">
+          <span className="font-mono text-xs text-brand-charcoal/30 dark:text-white/30 tracking-[0.3em]">
             SIMULARK ENGINE // V1.0
           </span>
         </div>
@@ -274,22 +276,22 @@ export default function SignInPage() {
           <div className="mb-10">
             {/* ID Badge */}
             <div className="flex items-center gap-3 mb-6">
-              <div className="px-2 py-1 bg-brand-charcoal text-white font-mono text-xs">
+              <div className="px-2 py-1 bg-brand-charcoal dark:bg-white text-white dark:text-brand-charcoal font-mono text-xs">
                 MOD-00
               </div>
-              <div className="h-px flex-1 bg-brand-charcoal/20" />
+              <div className="h-px flex-1 bg-brand-charcoal/20 dark:bg-white/20" />
               <SystemStatus />
             </div>
 
             {/* Title */}
-            <h1 className="font-poppins text-4xl sm:text-5xl font-bold text-brand-charcoal tracking-tight mb-3">
+            <h1 className="font-poppins text-4xl sm:text-5xl font-bold text-brand-charcoal dark:text-white tracking-tight mb-3">
               Authentication
               <br />
               Gateway
             </h1>
 
             {/* Subtitle */}
-            <p className="font-lora text-lg text-brand-charcoal/70">
+            <p className="font-lora text-lg text-brand-charcoal/70 dark:text-white/70">
               Secure uplink to your architecture workspace
             </p>
           </div>
@@ -319,7 +321,7 @@ export default function SignInPage() {
           {/* Auth methods */}
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-4">
-              <span className="font-mono text-xs text-brand-charcoal/50 tracking-wider">
+              <span className="font-mono text-xs text-brand-charcoal/50 dark:text-white/50 tracking-wider">
                 // SELECT AUTHENTICATION_METHOD
               </span>
             </div>
@@ -339,35 +341,35 @@ export default function SignInPage() {
 
           {/* Technical separator */}
           <div className="my-8 flex items-center gap-4">
-            <div className="h-px flex-1 bg-brand-charcoal/20" />
-            <span className="font-mono text-xs text-brand-charcoal/40">
+            <div className="h-px flex-1 bg-brand-charcoal/20 dark:bg-white/20" />
+            <span className="font-mono text-xs text-brand-charcoal/40 dark:text-white/40">
               [ ENCRYPTED_CHANNEL ]
             </span>
-            <div className="h-px flex-1 bg-brand-charcoal/20" />
+            <div className="h-px flex-1 bg-brand-charcoal/20 dark:bg-white/20" />
           </div>
 
           {/* Security note */}
           <div className="text-center">
-            <p className="font-mono text-xs text-brand-charcoal/50 mb-4">
+            <p className="font-mono text-xs text-brand-charcoal/50 dark:text-white/50 mb-4">
               All connections use TLS 1.3 encryption
             </p>
 
             <div className="flex items-center justify-center gap-6 text-xs font-mono">
               <Link
                 href="/privacy"
-                className="text-brand-charcoal/60 hover:text-brand-orange transition-colors border-b border-transparent hover:border-brand-orange"
+                className="text-brand-charcoal/60 dark:text-white/60 hover:text-brand-orange transition-colors border-b border-transparent hover:border-brand-orange"
               >
                 / PRIVACY
               </Link>
               <Link
                 href="/terms"
-                className="text-brand-charcoal/60 hover:text-brand-orange transition-colors border-b border-transparent hover:border-brand-orange"
+                className="text-brand-charcoal/60 dark:text-white/60 hover:text-brand-orange transition-colors border-b border-transparent hover:border-brand-orange"
               >
                 / TERMS
               </Link>
               <Link
                 href="/"
-                className="text-brand-charcoal/60 hover:text-brand-orange transition-colors border-b border-transparent hover:border-brand-orange"
+                className="text-brand-charcoal/60 dark:text-white/60 hover:text-brand-orange transition-colors border-b border-transparent hover:border-brand-orange"
               >
                 / RETURN
               </Link>
@@ -375,8 +377,8 @@ export default function SignInPage() {
           </div>
 
           {/* Bottom data */}
-          <div className="mt-12 pt-6 border-t border-brand-charcoal/10">
-            <div className="flex items-center justify-between font-mono text-[10px] text-brand-charcoal/30">
+          <div className="mt-12 pt-6 border-t border-brand-charcoal/10 dark:border-white/10">
+            <div className="flex items-center justify-between font-mono text-[10px] text-brand-charcoal/30 dark:text-white/30">
               <span>SECURE_AUTH_GATEWAY_V2.4</span>
               <span>{new Date().toISOString().split("T")[0]}</span>
             </div>

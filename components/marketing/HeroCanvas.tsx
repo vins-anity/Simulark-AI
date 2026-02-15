@@ -40,6 +40,13 @@ import { StorageNode } from "@/components/canvas/nodes/StorageNode";
 import { cn } from "@/lib/utils";
 
 // ============================================
+// RESPONSIVE CONFIGURATION
+// ============================================
+
+// Use a higher breakpoint to ensure smooth performance on tablets too
+const CANVAS_BREAKPOINT = 1024; // lg breakpoint - disable canvas below this
+
+// ============================================
 // TEMPLATES - 5 Professional Architecture Examples
 // ============================================
 
@@ -607,28 +614,130 @@ const TEMPLATES = {
 
 type TemplateKey = keyof typeof TEMPLATES;
 
-// Mobile fallback component
+// Mobile/Tablet Touch-Friendly Architecture Visualization
 function MobileArchitecturePreview({ template }: { template: TemplateKey }) {
   const templateData = TEMPLATES[template];
   const Icon = templateData.icon;
 
+  // Create a vertical flow layout for mobile
+  const getVerticalLayout = (
+    nodes: typeof templateData.nodes,
+    edges: typeof templateData.edges,
+  ) => {
+    // Group nodes by their approximate layer (based on x position)
+    const layers = new Map<number, typeof nodes>();
+
+    nodes.forEach((node) => {
+      const layer = Math.round(node.position.x / 400);
+      if (!layers.has(layer)) layers.set(layer, []);
+      layers.get(layer)?.push(node);
+    });
+
+    // Sort layers and nodes within layers
+    const sortedLayers = Array.from(layers.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([_, layerNodes]) =>
+        layerNodes.sort((a, b) => a.position.y - b.position.y),
+      );
+
+    return sortedLayers;
+  };
+
+  const layers = useMemo(
+    () => getVerticalLayout(templateData.nodes, templateData.edges),
+    [templateData],
+  );
+
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-bg-secondary">
-      <div
-        className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
-        style={{ backgroundColor: `${templateData.color}20` }}
-      >
-        <Icon className="w-10 h-10" style={{ color: templateData.color }} />
+    <div className="w-full h-full flex flex-col bg-bg-secondary overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4 border-b border-brand-charcoal/10">
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: `${templateData.color}20` }}
+        >
+          <Icon className="w-5 h-5" style={{ color: templateData.color }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-poppins font-semibold text-text-primary truncate">
+            {templateData.label}
+          </h3>
+          <p className="text-xs text-text-secondary truncate">
+            {templateData.description}
+          </p>
+        </div>
       </div>
-      <h3 className="text-lg font-poppins font-semibold text-text-primary mb-2">
-        {templateData.label}
-      </h3>
-      <p className="text-sm text-text-secondary text-center max-w-xs">
-        {templateData.description}
-      </p>
-      <div className="mt-6 grid grid-cols-2 gap-2 text-xs font-mono text-text-muted">
-        <span>{templateData.nodes.length} nodes</span>
-        <span>{templateData.edges.length} connections</span>
+
+      {/* Vertical Flow Visualization */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+        <div className="space-y-4">
+          {layers.map((layer, layerIndex) => (
+            <div key={layerIndex} className="relative">
+              {/* Layer indicator */}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-full bg-brand-charcoal/10 flex items-center justify-center">
+                  <span className="text-[10px] font-mono text-brand-charcoal/60">
+                    L{layerIndex + 1}
+                  </span>
+                </div>
+                <div className="flex-1 h-px bg-brand-charcoal/10" />
+              </div>
+
+              {/* Nodes in this layer */}
+              <div className="space-y-2 pl-3 border-l-2 border-brand-charcoal/10">
+                {layer.map((node) => (
+                  <motion.div
+                    key={node.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-bg-primary border border-brand-charcoal/10 p-3 rounded-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: templateData.color }}
+                      />
+                      <span className="text-xs font-mono font-medium text-text-primary">
+                        {node.data.label}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-text-secondary mt-1 truncate">
+                      {node.data.tech}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className="mt-6 pt-4 border-t border-brand-charcoal/10 grid grid-cols-3 gap-2">
+          <div className="text-center">
+            <div className="text-lg font-mono font-bold text-brand-orange">
+              {templateData.nodes.length}
+            </div>
+            <div className="text-[9px] font-mono text-text-secondary uppercase">
+              Nodes
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-mono font-bold text-brand-orange">
+              {templateData.edges.length}
+            </div>
+            <div className="text-[9px] font-mono text-text-secondary uppercase">
+              Edges
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-mono font-bold text-brand-orange">
+              {layers.length}
+            </div>
+            <div className="text-[9px] font-mono text-text-secondary uppercase">
+              Layers
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -643,10 +752,10 @@ function HeroCanvasInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState(template.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(template.edges);
 
-  // Check for mobile
+  // Check for mobile/tablet - use higher breakpoint for better UX
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < CANVAS_BREAKPOINT);
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -693,25 +802,13 @@ function HeroCanvasInner() {
     [setEdges],
   );
 
+  // Mobile/Tablet View - Touch-optimized architecture visualization
   if (isMobile) {
     return (
-      <div className="w-full h-full bg-bg-primary">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTemplate}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
-            className="w-full h-full"
-          >
-            <MobileArchitecturePreview template={activeTemplate} />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Mobile Template Switcher */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-bg-secondary/90 backdrop-blur-md border border-border-primary p-2 flex justify-around">
+      <div className="w-full h-full bg-bg-primary flex flex-col">
+        {/* Template Tabs - Horizontal Scroll */}
+        <div className="flex-shrink-0 border-b border-brand-charcoal/10 bg-bg-secondary/50">
+          <div className="flex overflow-x-auto scrollbar-hide px-2 py-2 gap-1">
             {(Object.keys(TEMPLATES) as TemplateKey[]).map((key) => {
               const t = TEMPLATES[key];
               const Icon = t.icon;
@@ -722,18 +819,39 @@ function HeroCanvasInner() {
                   key={key}
                   onClick={() => setActiveTemplate(key)}
                   className={cn(
-                    "flex flex-col items-center gap-1 p-2 transition-all",
-                    isActive ? "text-brand-orange" : "text-text-muted",
+                    "flex items-center gap-2 px-3 py-2 rounded-md transition-all whitespace-nowrap min-w-fit",
+                    isActive
+                      ? "bg-brand-charcoal text-white"
+                      : "text-text-secondary hover:bg-bg-tertiary",
                   )}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[9px] font-mono uppercase">
+                  <Icon
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{ color: isActive ? undefined : t.color }}
+                  />
+                  <span className="text-[10px] font-mono uppercase font-medium">
                     {t.label}
                   </span>
                 </button>
               );
             })}
           </div>
+        </div>
+
+        {/* Preview Area */}
+        <div className="flex-1 relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTemplate}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+              className="absolute inset-0"
+            >
+              <MobileArchitecturePreview template={activeTemplate} />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     );

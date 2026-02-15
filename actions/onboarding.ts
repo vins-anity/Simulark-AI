@@ -156,6 +156,10 @@ export async function saveOnboardingProgress(
 // Skip Onboarding
 // ============================================================================
 
+// ============================================================================
+// Skip Onboarding
+// ============================================================================
+
 export async function skipOnboarding(): Promise<{
   success: boolean;
   error?: string;
@@ -170,17 +174,29 @@ export async function skipOnboarding(): Promise<{
       return { success: false, error: "Unauthorized" };
     }
 
-    const { error } = await supabase
+    // Update public user record
+    const { error: dbError } = await supabase
       .from("users")
       .update({
         onboarding_skipped: true,
+        onboarding_completed: true, // Treat skipped as completed for redirection purposes
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", user.id);
 
-    if (error) {
-      console.error("Failed to skip onboarding:", error);
+    if (dbError) {
+      console.error("Failed to skip onboarding (db):", dbError);
       return { success: false, error: "Failed to skip onboarding" };
+    }
+
+    // Sync with Auth Metadata for Middleware
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { onboarding_completed: true },
+    });
+
+    if (authError) {
+      console.error("Failed to sync onboarding status (auth):", authError);
+      // We don't fail the request here as the DB update succeeded
     }
 
     return { success: true };
@@ -226,6 +242,11 @@ export async function completeOnboarding(input: unknown): Promise<{
       architectureTypes: [data.step3.architecturePreference],
       applicationType: [data.step3.applicationType],
       customInstructions: generateCustomInstructions(data),
+      defaultArchitectureMode: data.step3.defaultArchitectureMode as
+        | "default"
+        | "startup"
+        | "corporate"
+        | undefined,
       onboardingMetadata: {
         role: data.step1.role,
         useCase: data.step1.useCase,
@@ -236,7 +257,7 @@ export async function completeOnboarding(input: unknown): Promise<{
     };
 
     // Update user with completed onboarding and preferences
-    const { error } = await supabase
+    const { error: dbError } = await supabase
       .from("users")
       .update({
         onboarding_completed: true,
@@ -247,9 +268,18 @@ export async function completeOnboarding(input: unknown): Promise<{
       })
       .eq("user_id", user.id);
 
-    if (error) {
-      console.error("Failed to complete onboarding:", error);
+    if (dbError) {
+      console.error("Failed to complete onboarding (db):", dbError);
       return { success: false, error: "Failed to save preferences" };
+    }
+
+    // Sync with Auth Metadata for Middleware
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { onboarding_completed: true },
+    });
+
+    if (authError) {
+      console.error("Failed to sync onboarding status (auth):", authError);
     }
 
     // Generate template recommendations
@@ -261,6 +291,57 @@ export async function completeOnboarding(input: unknown): Promise<{
     };
   } catch (err) {
     console.error("Error in completeOnboarding:", err);
+    return { success: false, error: "Internal error" };
+  }
+}
+
+// ============================================================================
+// Reset Onboarding
+// ============================================================================
+
+export async function resetOnboarding(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Reset DB record
+    const { error: dbError } = await supabase
+      .from("users")
+      .update({
+        onboarding_completed: false,
+        onboarding_skipped: false,
+        onboarding_step: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", user.id);
+
+    if (dbError) {
+      console.error("Failed to reset onboarding (db):", dbError);
+      return { success: false, error: "Failed to reset onboarding" };
+    }
+
+    // Reset Auth Metadata
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { onboarding_completed: false },
+    });
+
+    if (authError) {
+      console.error("Failed to reset onboarding status (auth):", authError);
+      return { success: false, error: "Failed to update auth status" };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("Error in resetOnboarding:", err);
     return { success: false, error: "Internal error" };
   }
 }

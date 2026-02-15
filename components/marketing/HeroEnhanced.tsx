@@ -146,8 +146,8 @@ export function HeroEnhanced() {
           <div className="overflow-hidden">
             <motion.h1
               className="text-5xl md:text-7xl lg:text-8xl font-poppins font-bold tracking-tight text-brand-charcoal leading-[0.95]"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
               transition={{
                 duration: 0.8,
                 delay: 0.2,
@@ -157,11 +157,11 @@ export function HeroEnhanced() {
               DESIGN SYSTEMS.
             </motion.h1>
           </div>
-          <div className="overflow-hidden pb-4">
+          <div className="overflow-hidden">
             <motion.h1
               className="text-5xl md:text-7xl lg:text-8xl font-poppins font-bold tracking-tight leading-[0.95]"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
               transition={{
                 duration: 0.8,
                 delay: 0.35,
@@ -252,7 +252,7 @@ export function HeroEnhanced() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-20 w-full max-w-5xl aspect-[16/9] bg-bg-secondary border border-brand-charcoal/20 relative overflow-hidden"
+          className="mt-12 w-full max-w-5xl mx-auto aspect-[16/9] bg-bg-secondary border border-brand-charcoal/20 relative overflow-hidden"
         >
           {/* Interface Header - Technical */}
           <div className="h-8 border-b border-brand-charcoal/10 bg-brand-sand-light flex items-center px-3">

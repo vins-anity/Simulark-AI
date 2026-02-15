@@ -1,12 +1,12 @@
-import { MetadataRoute } from 'next'
- 
+import { MetadataRoute } from "next";
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: '/private/',
+      userAgent: "*",
+      allow: "/",
+      disallow: "/private/",
     },
-    sitemap: 'https://simulark-ai.vercel.app/sitemap.xml',
-  }
+    sitemap: "https://simulark-ai.vercel.app/sitemap.xml",
+  };
 }

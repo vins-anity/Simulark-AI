@@ -1,148 +1,130 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Layers, Shield, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Braces, Layers, Zap } from "lucide-react";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
 
 export function WelcomeStep() {
   return (
     <div className="flex flex-col items-center text-center">
-      {/* Animated Hero */}
-      <div className="relative mb-8">
-        {/* Background glow */}
-        <motion.div
-          className="absolute inset-0 -z-10 blur-3xl"
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <div className="h-32 w-32 rounded-full bg-brand-orange/30" />
+      <motion.div
+        className="w-full max-w-lg"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Badge */}
+        <motion.div variants={itemVariants} className="mb-6">
+          <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-brand-orange">
+            <span className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
+            SYS-00 // System Initialization
+          </span>
         </motion.div>
 
-        {/* Icon grid with animations */}
-        <div className="relative flex h-32 w-32 items-center justify-center">
-          <motion.div
-            className="absolute"
-            animate={{
-              y: [0, -8, 0],
-              rotate: [0, 5, 0, -5, 0],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-            <Layers className="h-16 w-16 text-brand-orange" />
-          </motion.div>
+        {/* Title */}
+        <motion.h1
+          variants={itemVariants}
+          className="mb-4 font-poppins text-3xl font-bold tracking-tight text-brand-charcoal md:text-4xl"
+        >
+          Configure Your
+          <br />
+          <span className="text-brand-orange">Architecture Engine</span>
+        </motion.h1>
 
-          {/* Orbiting elements */}
-          <motion.div
-            className="absolute -right-2 -top-2"
-            animate={{
-              rotate: 360,
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          >
-            <Zap className="h-6 w-6 text-brand-green" />
-          </motion.div>
+        {/* Description */}
+        <motion.p
+          variants={itemVariants}
+          className="mb-8 max-w-md mx-auto font-lora text-base text-brand-charcoal/60"
+        >
+          Set your preferences for AI-generated infrastructure. This takes under
+          a minute and can be changed anytime.
+        </motion.p>
 
-          <motion.div
-            className="absolute -bottom-2 -left-2"
-            animate={{
-              rotate: -360,
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          >
-            <Shield className="h-5 w-5 text-brand-blue" />
-          </motion.div>
-        </div>
-      </div>
+        {/* Feature Cards */}
+        <motion.div
+          variants={itemVariants}
+          className="mb-10 grid gap-3 sm:grid-cols-3"
+        >
+          {[
+            {
+              icon: <Zap className="h-5 w-5" />,
+              title: "Smart",
+              description: "AI-powered",
+            },
+            {
+              icon: <Layers className="h-5 w-5" />,
+              title: "Visual",
+              description: "Interactive",
+            },
+            {
+              icon: <Braces className="h-5 w-5" />,
+              title: "Executable",
+              description: "Production-ready",
+            },
+          ].map((feature) => (
+            <div
+              key={feature.title}
+              className="flex flex-col items-center border border-brand-charcoal/10 bg-bg-secondary p-3 hover:border-brand-orange/30 transition-colors"
+            >
+              <div className="mb-1.5 text-brand-orange">{feature.icon}</div>
+              <h3 className="mb-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-brand-charcoal">
+                {feature.title}
+              </h3>
+              <p className="text-[9px] text-brand-charcoal/50 font-mono uppercase">
+                {feature.description}
+              </p>
+            </div>
+          ))}
+        </motion.div>
 
-      {/* Title */}
-      <motion.h1
-        className="mb-4 font-mono text-3xl font-bold text-text-primary md:text-4xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        Welcome to <span className="text-brand-orange">Simulark</span>
-      </motion.h1>
+        {/* CTA Hint */}
+        <motion.div
+          variants={itemVariants}
+          className="flex items-center justify-center gap-2 text-sm text-brand-charcoal/50"
+        >
+          <span>Click</span>
+          <span className="inline-flex items-center gap-1 border border-brand-orange/30 px-2 py-1 font-mono text-xs uppercase text-brand-orange">
+            <span>[</span>
+            Continue
+            <ArrowRight className="h-3 w-3" />
+            <span>]</span>
+          </span>
+          <span>to begin</span>
+        </motion.div>
 
-      {/* Description */}
-      <motion.p
-        className="mb-8 max-w-md text-text-secondary"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        Let&apos;s configure your architecture generator for better results.
-        This will only take a minute.
-      </motion.p>
-
-      {/* Feature highlights */}
-      <motion.div
-        className="mb-8 grid gap-4 sm:grid-cols-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        {[
-          {
-            icon: <Sparkles className="h-5 w-5" />,
-            title: "Smart",
-            description: "AI-powered recommendations",
-          },
-          {
-            icon: <Layers className="h-5 w-5" />,
-            title: "Visual",
-            description: "Interactive architecture diagrams",
-          },
-          {
-            icon: <Zap className="h-5 w-5" />,
-            title: "Fast",
-            description: "Generate in seconds",
-          },
-        ].map((feature) => (
-          <div
-            key={feature.title}
-            className="flex flex-col items-center rounded-lg border border-border-primary bg-bg-secondary p-4"
-          >
-            <div className="mb-2 text-brand-orange">{feature.icon}</div>
-            <h3 className="mb-1 font-mono text-sm font-medium text-text-primary">
-              {feature.title}
-            </h3>
-            <p className="text-xs text-text-muted">{feature.description}</p>
+        {/* Technical Footer */}
+        <motion.div
+          variants={itemVariants}
+          className="mt-8 pt-4 border-t border-brand-charcoal/10"
+        >
+          <div className="flex justify-center gap-6 font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40">
+            <span>EST_TIME: 60s</span>
+            <span>STEPS: 3</span>
+            <span>REVERSIBLE</span>
           </div>
-        ))}
-      </motion.div>
-
-      {/* CTA hint */}
-      <motion.div
-        className="flex items-center gap-2 text-sm text-text-muted"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        <span>Click</span>
-        <span className="inline-flex items-center gap-1 rounded bg-brand-orange/10 px-2 py-1 font-mono text-xs text-brand-orange">
-          Next
-          <ArrowRight className="h-3 w-3" />
-        </span>
-        <span>to get started</span>
+        </motion.div>
       </motion.div>
     </div>
   );
