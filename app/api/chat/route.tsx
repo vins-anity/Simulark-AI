@@ -261,6 +261,11 @@ export async function POST(req: NextRequest) {
       maxOutputTokens: 4000,
     });
 
+    logger.info("Stream started", {
+      systemPromptLength: systemPrompt.length,
+      userMessage: lastMessageContent.substring(0, 50),
+    });
+
     // Create custom stream that transforms to legacy format for frontend compatibility
     const encoder = new TextEncoder();
     let accumulatedText = "";
@@ -275,6 +280,7 @@ export async function POST(req: NextRequest) {
             switch (part.type) {
               case "text-delta": {
                 accumulatedText += part.text;
+                // logger.debug("Text delta received", { len: part.text.length });
                 // Send content chunk in legacy format
                 controller.enqueue(
                   encoder.encode(
@@ -343,6 +349,7 @@ export async function POST(req: NextRequest) {
                 logger.info("Generation completed", {
                   messageLength: accumulatedText.length,
                   hasArchitecture: !!architectureData,
+                  fullResponseSnapshot: accumulatedText.substring(0, 200) + "..."
                 });
 
                 controller.close();

@@ -924,10 +924,11 @@ export function AIAssistantPanel({
                           setStreamProgress(100);
                         }
                       }
-                    } catch (_e) {
-                      // JSON not complete yet
-                    }
+                    } catch (e) {
+                    // Ignore incomplete JSON chunks or parse errors from stream
+                    console.error("Error parsing stream line:", line, e);
                   }
+                }
 
                   setMessages((prev) =>
                     prev.map((m) =>
@@ -984,6 +985,7 @@ export function AIAssistantPanel({
                 ),
               );
             } else if (json.type === "result" && json.data) {
+              console.log("Received architecture result:", json.data);
               lastGeneratedData = json.data;
               onGenerationSuccess(json.data);
               setStreamProgress(100);
