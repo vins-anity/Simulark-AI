@@ -62,6 +62,13 @@ export const ApplicationType = {
   MULTI_PLATFORM: "multi-platform",
 } as const;
 
+// Architecture modes aligned with prompt engineering
+export const ArchitectureMode = {
+  DEFAULT: "default",
+  STARTUP: "startup",
+  ENTERPRISE: "enterprise",
+} as const;
+
 // ============================================================================
 // Valibot Schemas
 // ============================================================================
@@ -132,7 +139,7 @@ export interface UserPreferences {
   architectureTypes: string[];
   applicationType: string[];
   customInstructions: string;
-  defaultArchitectureMode?: "default" | "startup" | "corporate";
+  defaultArchitectureMode?: typeof ArchitectureMode[keyof typeof ArchitectureMode];
   onboardingMetadata?: {
     role: string;
     useCase: string;

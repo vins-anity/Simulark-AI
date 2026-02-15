@@ -4,13 +4,17 @@ import { motion, type Variants } from "framer-motion";
 import {
   Activity,
   Box,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Database,
   Layout,
   Loader2,
   Plus,
+  Cpu,
   Sparkles,
   Terminal,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,7 +24,17 @@ import { createProject, getUserProjects } from "@/actions/projects";
 
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
+import {
+  type ArchitectureMode,
+  MODE_CONSTRAINTS,
+} from "@/lib/prompt-engineering";
 import type { Project } from "@/lib/schema/graph";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +52,9 @@ const PROMPT_EXAMPLES = [
   "Scalable video streaming backend with transcoding workers",
   "AI-powered supply chain optimizer with forecasting models",
 ];
+
+// Define available models for Mission Control
+import { AVAILABLE_MODELS } from "@/lib/ai-models";
 
 // Animation variants
 const containerVariants: Variants = {
@@ -71,6 +88,10 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [prompt, setPrompt] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
+  
+  const [selectedMode, setSelectedMode] = useState<ArchitectureMode>("enterprise");
+  const [selectedModel, setSelectedModel] = useState<string>(AVAILABLE_MODELS[0].id);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -133,27 +154,22 @@ function DashboardContent() {
     const trimmedPrompt = prompt.trim();
 
     try {
-      // First: Create the project WITHOUT the prompt in storage yet
-      // This prevents stale prompts if creation fails
-      const result = await createProject(trimmedPrompt);
+      // Create project with metadata (mode & model)
+      const result = await createProject(trimmedPrompt, "Generic", {
+        mode: selectedMode,
+        model: selectedModel,
+      });
 
       if (result.success && result.data) {
-        // Only store prompt AFTER successful project creation
-        // This ensures the project exists before we try to process
+        // Store prompt and metadata for picking up in project view
         const storageKey = `initial-prompt-${result.data.id}`;
         const timestampKey = `${storageKey}-timestamp`;
 
-        // Store the prompt and metadata
         sessionStorage.setItem(storageKey, trimmedPrompt);
         sessionStorage.setItem(timestampKey, Date.now().toString());
-
-        // Store a flag indicating this is a fresh prompt that needs processing
         sessionStorage.setItem(`${storageKey}-status`, "pending");
 
-        // Clear the input before navigation to prevent confusion if navigation is slow
         setPrompt("");
-
-        // Navigate to the project page
         router.push(`/projects/${result.data.id}`);
       } else {
         toast.error(result.error || "Failed to create project");
@@ -163,14 +179,21 @@ function DashboardContent() {
       toast.error("Failed to execute command");
       setIsExecuting(false);
     }
-    // Note: We don't reset isExecuting on success because we're navigating away
   };
 
   const handleCreateNew = async () => {
     setIsExecuting(true);
     try {
       const timestamp = new Date().toLocaleTimeString();
-      const result = await createProject(`Untitled Operations ${timestamp}`);
+      // Pass metadata even for blank projects so default settings persist
+      const result = await createProject(
+        `Untitled Operations ${timestamp}`,
+        "Generic",
+        {
+          mode: selectedMode,
+          model: selectedModel,
+        },
+      );
       if (result.success && result.data) {
         router.push(`/projects/${result.data.id}`);
       } else {
@@ -184,6 +207,17 @@ function DashboardContent() {
   };
 
   const totalPages = Math.ceil(totalProjects / ITEMS_PER_PAGE);
+
+  const getModeIcon = (mode: ArchitectureMode) => {
+    switch (mode) {
+      case "enterprise":
+        return <Database size={14} />;
+      case "startup":
+        return <Zap size={14} />;
+      default:
+        return <Box size={14} />;
+    }
+  };
 
   return (
     <div className="flex-1 w-full min-h-screen bg-brand-sand-light dark:bg-zinc-950 flex flex-col transition-colors duration-300">
@@ -243,11 +277,86 @@ function DashboardContent() {
 
             <div className="bg-white dark:bg-zinc-900 border-2 border-brand-charcoal dark:border-zinc-700 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] transition-all flex flex-col overflow-hidden">
               <div className="bg-brand-charcoal/5 dark:bg-white/5 border-b border-brand-charcoal dark:border-zinc-700 px-4 py-1.5 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
-                <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none">
-                  {isExecuting
-                    ? "UPLINK_STATION:TRANSMITTING"
-                    : "UPLINK_STATION:IDLE"}
-                </span>
+                <div className="flex items-center gap-6">
+                  <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none">
+                    {isExecuting
+                      ? "UPLINK_STATION:TRANSMITTING"
+                      : "UPLINK_STATION:IDLE"}
+                  </span>
+                  
+                  {/* Mode Selector */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-brand-charcoal dark:text-gray-200 uppercase tracking-wider hover:text-brand-orange transition-colors focus:outline-none">
+                        <span className="text-brand-charcoal/40 dark:text-gray-500">MODE:</span>
+                        <span className="flex items-center gap-1">
+                          {getModeIcon(selectedMode)}
+                          {selectedMode}
+                        </span>
+                        <ChevronDown size={10} className="opacity-50" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
+                      className="w-48 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0"
+                    >
+                      {(["enterprise", "startup", "default"] as ArchitectureMode[]).map((mode) => (
+                        <DropdownMenuItem
+                          key={mode}
+                          onClick={() => setSelectedMode(mode)}
+                          className={cn(
+                            "flex flex-col items-start gap-1 px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
+                            selectedMode === mode && "bg-brand-charcoal/5 dark:bg-white/5"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
+                             {getModeIcon(mode)} {mode}
+                          </div>
+                          <span className="text-[9px] text-brand-charcoal/60 dark:text-gray-400 leading-tight">
+                            {MODE_CONSTRAINTS[mode].focus}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                   {/* Model Selector */}
+                   <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-brand-charcoal dark:text-gray-200 uppercase tracking-wider hover:text-brand-orange transition-colors focus:outline-none">
+                         <span className="text-brand-charcoal/40 dark:text-gray-500">MODEL:</span>
+                         <span className="flex items-center gap-1">
+                          <Cpu size={14} />
+                           {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name || "UNKNOWN"}
+                         </span>
+                         <ChevronDown size={10} className="opacity-50" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                       align="start"
+                       className="w-56 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0"
+                    >
+                      {AVAILABLE_MODELS.map((model) => (
+                         <DropdownMenuItem
+                            key={model.id}
+                            onClick={() => setSelectedModel(model.id)}
+                            className={cn(
+                              "flex items-center justify-between px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
+                               selectedModel === model.id && "bg-brand-charcoal/5 dark:bg-white/5"
+                            )}
+                         >
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
+                               {model.name}
+                            </span>
+                             <span className="text-[8px] font-mono text-brand-charcoal/40 dark:text-gray-500 uppercase">
+                               {model.provider}
+                             </span>
+                         </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                   </DropdownMenu>
+
+                </div>
                 <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none hidden sm:block">
                   COORD_X:40.71/Y:-74.00
                 </span>

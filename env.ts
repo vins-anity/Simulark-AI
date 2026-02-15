@@ -8,6 +8,7 @@ export const env = createEnv({
     KIMI_API_KEY: optional(string()), // Optional to not break dev if missing immediately
     KIMI_BASE_URL: optional(string()), // Support for .cn endpoint
     OPENROUTER_API_KEY: optional(string()),
+    NVIDIA_API_KEY: optional(string()),
 
     // Supabase
     SUPABASE_SERVICE_ROLE_KEY: optional(string()),
@@ -58,6 +59,7 @@ export const env = createEnv({
     KIMI_API_KEY: process.env.KIMI_API_KEY,
     KIMI_BASE_URL: process.env.KIMI_BASE_URL,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+    NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     FREE_TIER_DAILY_LIMIT: process.env.FREE_TIER_DAILY_LIMIT,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,

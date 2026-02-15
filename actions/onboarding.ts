@@ -245,7 +245,7 @@ export async function completeOnboarding(input: unknown): Promise<{
       defaultArchitectureMode: data.step3.defaultArchitectureMode as
         | "default"
         | "startup"
-        | "corporate"
+        | "enterprise"
         | undefined,
       onboardingMetadata: {
         role: data.step1.role,

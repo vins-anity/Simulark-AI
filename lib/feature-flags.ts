@@ -93,7 +93,7 @@ export const FEATURES: Record<FeatureName, FeatureConfig> = {
   },
   enterpriseMode: {
     name: "enterpriseMode",
-    description: "Enterprise mode with corporate archetype",
+    description: "Enterprise mode with enterprise archetype",
     defaultEnabled: true,
     envVarName: "FEATURE_ENTERPRISE_MODE_TIERS",
   },

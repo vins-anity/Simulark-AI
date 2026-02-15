@@ -20,6 +20,8 @@ import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 export const maxDuration = 120; // 2 minutes for complex generations
 export const runtime = "nodejs";
 
+import OpenAI from "openai"; // Import standard OpenAI SDK
+
 // Initialize providers
 const zhipu = createZhipu({
   apiKey: env.ZHIPU_API_KEY,
@@ -35,34 +37,57 @@ const kimi = createOpenAI({
   apiKey: env.KIMI_API_KEY,
 });
 
-type ProviderType = "zhipu" | "kimi" | "openrouter";
+// NVIDIA (GLM-5) - Direct OpenAI Client
+// We use the official OpenAI SDK to bypass Vercel AI SDK issues with NVIDIA's API
+const nvidiaClient = new OpenAI({
+  baseURL: "https://integrate.api.nvidia.com/v1",
+  apiKey: env.NVIDIA_API_KEY,
+});
+
+type ProviderType = "zhipu" | "kimi" | "openrouter" | "nvidia";
 
 function getProvider(modelId?: string): {
   provider: ProviderType;
   model: string;
 } {
   // Map modelId to provider
+  // NVIDIA models (starts with nvidia:)
+  if (modelId?.startsWith("nvidia:")) {
+    return { provider: "nvidia", model: modelId.replace("nvidia:", "") };
+  }
+
   // GLM models from Zhipu (bigmodel.cn) - starts with glm-
   if (modelId?.startsWith("glm-")) {
     return { provider: "zhipu", model: modelId };
   }
+
   // GLM models from OpenRouter (Z.AI) - starts with z-ai/
-  if (modelId?.startsWith("z-ai/")) {
+  if (modelId?.startsWith("z-ai/") && !modelId.includes("glm5")) {
     return { provider: "openrouter", model: modelId };
   }
-  if (modelId?.includes("kimi") || modelId?.includes("moonshot")) {
-    return { provider: "kimi", model: modelId };
+
+  // Standalone Kimi
+  if (modelId?.startsWith("kimi:") || modelId?.startsWith("moonshot:")) {
+    const cleanId = modelId.split(":")[1] || "kimi-k2.5";
+    return { provider: "kimi", model: cleanId };
   }
+
   if (
     modelId?.includes("deepseek") ||
     modelId?.includes("gemini") ||
-    modelId?.includes("claude")
+    modelId?.includes("claude") ||
+    modelId?.includes("minimax") // Non-nvidia minimax
   ) {
     return { provider: "openrouter", model: modelId };
   }
 
-  // Default to Zhipu
-  return { provider: "zhipu", model: "glm-4.7-flash" };
+  // Legacy NVIDIA fallback
+  if (modelId?.includes("glm5") || modelId?.includes("nvidia")) {
+    return { provider: "nvidia", model: "z-ai/glm5" };
+  }
+
+  // Default to GLM-5 (NVIDIA)
+  return { provider: "nvidia", model: "z-ai/glm5" };
 }
 
 export async function POST(req: NextRequest) {
@@ -217,53 +242,132 @@ export async function POST(req: NextRequest) {
     const { provider: providerType, model: effectiveModel } =
       getProvider(modelId);
 
-    // Select the appropriate provider instance
-    let model:
-      | ReturnType<typeof zhipu>
-      | ReturnType<typeof kimi>
-      | ReturnType<typeof openrouter.chat>;
-    switch (providerType) {
-      case "zhipu":
-        model = zhipu(effectiveModel);
-        break;
-      case "kimi":
-        model = kimi(effectiveModel);
-        break;
-      case "openrouter":
-        model = openrouter.chat(effectiveModel);
-        break;
-      default:
-        model = zhipu(effectiveModel);
+    // Select the appropriate provider instance helpers
+    const getModelInstance = (pType: ProviderType, mName: string) => {
+      switch (pType) {
+        case "zhipu":
+          return zhipu(mName);
+        case "kimi":
+          return kimi(mName);
+        case "openrouter":
+          return openrouter.chat(mName);
+        default:
+          return zhipu(mName);
+      }
+    };
+
+    let result: any;
+    let fallbackToZhipu = false;
+
+    // Direct OpenAI SDK path for NVIDIA
+    if (providerType === "nvidia") {
+        try {
+            logger.info("Using direct NVIDIA client", { model: effectiveModel });
+            // Tweak parameters based on the model
+            let chat_template_kwargs: any = { enable_thinking: true, clear_thinking: false };
+            let extra_body: any = {};
+
+            if (effectiveModel.includes("minimax")) {
+              // MiniMax M2.1 recommendations: top_k=40, temperature=1.0
+              chat_template_kwargs = undefined;
+              extra_body = { top_k: 40 };
+            } else if (effectiveModel.includes("kimi")) {
+              // Kimi K2.5 recommendations: thinking=true, temperature=1.0
+              chat_template_kwargs = { thinking: true };
+            }
+
+            const completion = await nvidiaClient.chat.completions.create({
+                model: effectiveModel, // e.g. "minimaxai/minimax-m2.1"
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    ...messages.map(m => ({
+                        role: m.role as "user" | "assistant" | "system",
+                        content: m.parts.map(p => p.type === 'text' ? p.text : '').join('')
+                    }))
+                ],
+                temperature: 1.0, // Updated to 1.0 as recommended for these agentic models
+                stream: true,
+                ...(chat_template_kwargs ? { chat_template_kwargs } : {}),
+                ...extra_body,
+            } as any) as any;
+
+            // Create an async iterable that mimics ai-sdk's fullStream
+            const generator = async function* () {
+                let usage = { promptTokens: 0, completionTokens: 0 };
+                
+                for await (const chunk of completion) {
+                    const content = chunk.choices[0]?.delta?.content;
+                    // @ts-ignore - NVIDIA specific field
+                    const reasoning = chunk.choices[0]?.delta?.reasoning_content;
+
+                    if (reasoning) {
+                        yield { type: "reasoning-delta", text: reasoning };
+                    }
+                    if (content) {
+                        yield { type: "text-delta", text: content };
+                    }
+                    
+                    if (chunk.usage) {
+                        usage = {
+                            promptTokens: chunk.usage.prompt_tokens || 0,
+                            completionTokens: chunk.usage.completion_tokens || 0
+                        };
+                    }
+                }
+                
+                // Simulating the finish event which is expected by the consumer loop
+                yield { 
+                    type: "finish", 
+                    finishReason: "stop",
+                    usage: { ...usage, totalTokens: usage.promptTokens + usage.completionTokens }
+                };
+            };
+
+            result = { fullStream: generator() };
+
+        } catch (error: any) {
+            logger.error("NVIDIA Direct API Error", error);
+             // Fallback logic for NVIDIA/GLM-5 Rate Limits or Errors
+            if (
+                error?.status === 429 ||
+                error?.message?.includes("429") ||
+                error?.statusCode === 429 ||
+                 error?.status === 404 // Also fallback on 404 just in case
+            ) {
+                logger.warn(
+                    "GLM-5 (NVIDIA) failed. Falling back to GLM-4.7 (Zhipu)",
+                );
+                fallbackToZhipu = true;
+            } else {
+                throw error;
+            }
+        }
     }
 
-    // Determine reasoning level based on mode and complexity
-    const reasoningLevel =
-      mode === "startup"
-        ? "disabled"
-        : mode === "corporate" || complexity === "complex"
-          ? "enabled"
-          : "low";
+    if (providerType !== "nvidia" || fallbackToZhipu) {
+      // Standard AI SDK path
+      try {
+            const fallbackModel = fallbackToZhipu ? "glm-4.7-flash" : effectiveModel;
+            const fallbackProvider = fallbackToZhipu ? "zhipu" : providerType;
 
-    logger.debug("Provider configuration", {
-      provider: providerType,
-      model: effectiveModel,
-      mode,
-      complexity,
-      reasoningLevel,
-    });
-
-    // Stream text with conversation history
-    const result = streamText({
-      model,
-      system: systemPrompt,
-      messages: await convertToModelMessages(messages),
-      temperature: 0.7,
-      maxOutputTokens: 4000,
-    });
+            // Stream text with conversation history
+            result = streamText({
+                model: getModelInstance(fallbackProvider as ProviderType, fallbackModel),
+                system: systemPrompt,
+                messages: await convertToModelMessages(messages),
+                temperature: 0.7,
+                maxOutputTokens: 131072,
+            });
+       } catch (error: any) {
+           // For now assuming Zhipu fallback won't fail with same error
+           throw error;
+       }
+    }
 
     logger.info("Stream started", {
       systemPromptLength: systemPrompt.length,
       userMessage: lastMessageContent.substring(0, 50),
+      provider: providerType,
     });
 
     // Create custom stream that transforms to legacy format for frontend compatibility
@@ -297,7 +401,9 @@ export async function POST(req: NextRequest) {
                   try {
                     const jsonMatch = accumulatedText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
-                      const parsed = JSON.parse(jsonMatch[0]);
+                      // clean potential markdown formatting from the match
+                      const cleanJson = jsonMatch[0].replace(/```json\n?|```/g, "");
+                      const parsed = JSON.parse(cleanJson);
                       if (parsed.nodes && parsed.edges) {
                         architectureData = {
                           ...parsed,
@@ -332,6 +438,57 @@ export async function POST(req: NextRequest) {
                 break;
               }
               case "finish": {
+                // Fallback: If we haven't extracted architecture yet, try one last time with the full text
+                if (!architectureData) {
+                  try {
+                    // 1. Try to extract specific markdown code block first (most reliable)
+                    const codeBlockMatch = accumulatedText.match(/```json\n([\s\S]*?)\n```/);
+                    if (codeBlockMatch) {
+                        try {
+                            const parsed = JSON.parse(codeBlockMatch[1]);
+                            if (parsed.nodes && parsed.edges) {
+                                architectureData = {
+                                  ...parsed,
+                                  nodes: enrichNodesWithTech(parsed.nodes),
+                                };
+                            }
+                        } catch (e) {
+                            logger.warn("Failed to parse markedown code block", { error: String(e) });
+                        }
+                    }
+
+                    // 2. If no code block or parse failed, try finding the largest JSON object
+                    if (!architectureData) {
+                    const jsonMatch = accumulatedText.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                      // Attempt to clean any potential leftover markdown if match was too greedy
+                      const cleanJson = jsonMatch[0].replace(/```json\n?|```/g, "");
+                      const parsed = JSON.parse(cleanJson);
+                      if (parsed.nodes && parsed.edges) {
+                        architectureData = {
+                          ...parsed,
+                          nodes: enrichNodesWithTech(parsed.nodes),
+                        };
+                      }
+                    }
+                    }
+                    
+                    if (architectureData) {
+                         // Send result in legacy format if found
+                        controller.enqueue(
+                          encoder.encode(
+                            `${JSON.stringify({
+                              type: "result",
+                              data: architectureData,
+                            })}\n`,
+                          ),
+                        );
+                    }
+                  } catch (e) {
+                    logger.warn("Failed to parse architecture in finish step", { error: String(e) });
+                  }
+                }
+
                 // Save to database if chatId provided
                 if (chatId) {
                   try {

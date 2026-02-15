@@ -11,7 +11,7 @@ const logger = createLogger("architecture-validator");
 const MODE_CONSTRAINTS = {
   startup: { min: 3, max: 5 },
   default: { min: 4, max: 8 },
-  corporate: { min: 6, max: 15 },
+  enterprise: { min: 6, max: 15 },
 };
 
 // Full-stack frameworks that include backend capabilities
@@ -313,7 +313,7 @@ const noDuplicateAuthRule: ValidationRule = {
  * Checks against mode constraints (startup: 3-5, default: 4-8, corporate: 6-15)
  */
 function createComponentCountRule(
-  mode: "startup" | "default" | "corporate",
+  mode: "startup" | "default" | "enterprise",
 ): ValidationRule {
   const constraints = MODE_CONSTRAINTS[mode];
 
@@ -388,7 +388,7 @@ const isolatedNodesRule: ValidationRule = {
  * Corporate mode must have: monitoring, load balancer/gateway if multiple services
  */
 function createRequiredComponentsRule(
-  mode: "startup" | "default" | "corporate",
+  mode: "startup" | "default" | "enterprise",
 ): ValidationRule {
   return {
     id: `required-components-${mode}`,
@@ -396,7 +396,7 @@ function createRequiredComponentsRule(
     check(nodes, _edges) {
       const issues: ValidationIssue[] = [];
 
-      if (mode !== "corporate") {
+      if (mode !== "enterprise") {
         return issues;
       }
 
@@ -408,7 +408,7 @@ function createRequiredComponentsRule(
         issues.push({
           id: "issue-missing-monitoring",
           type: "warning",
-          message: "Corporate architecture should include monitoring",
+          message: "Enterprise architecture should include monitoring",
           affectedNodes: nodes.map((n) => n.id),
           suggestion:
             "Add a monitoring solution like Prometheus, Grafana, or Datadog",
@@ -672,7 +672,7 @@ export const DEFAULT_VALIDATION_RULES: ValidationRule[] = [
 
 // Get validation rules for a specific mode
 function getValidationRules(
-  mode: "startup" | "default" | "corporate",
+  mode: "startup" | "default" | "enterprise",
 ): ValidationRule[] {
   return [
     ...DEFAULT_VALIDATION_RULES,
@@ -696,7 +696,7 @@ export interface ValidationResult {
 export function validateArchitecture(
   nodes: any[],
   edges: any[],
-  mode: "startup" | "default" | "corporate" = "default",
+  mode: "startup" | "default" | "enterprise" = "default",
   options: {
     autoFix?: boolean;
     rules?: ValidationRule[];
@@ -773,7 +773,7 @@ export function validateArchitecture(
 export function isValidArchitecture(
   nodes: any[],
   edges: any[],
-  mode: "startup" | "default" | "corporate" = "default",
+  mode: "startup" | "default" | "enterprise" = "default",
 ): boolean {
   const result = validateArchitecture(nodes, edges, mode);
   return result.valid;

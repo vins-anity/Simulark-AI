@@ -9,6 +9,7 @@ import { TEMPLATE_GRAPHS } from "@/lib/templates";
 export async function createProject(
   name: string,
   provider: string = "Generic",
+  metadata?: Record<string, any>,
 ) {
   const supabase = await createClient();
   const {
@@ -25,6 +26,7 @@ export async function createProject(
       user_id: user.id,
       name,
       provider,
+      metadata: metadata || {},
       nodes: [],
       edges: [],
     })

@@ -105,7 +105,7 @@ const COMPLEXITY_INDICATORS: Record<ComplexityLevel, string[]> = {
 };
 
 // Mode-specific constraints
-export type ArchitectureMode = "default" | "startup" | "corporate";
+export type ArchitectureMode = "default" | "startup" | "enterprise";
 
 export const MODE_CONSTRAINTS: Record<
   ArchitectureMode,
@@ -122,7 +122,7 @@ export const MODE_CONSTRAINTS: Record<
   }
 > = {
   default: {
-    maxComponents: 8,
+    maxComponents: 10,
     minComponents: 4,
     preferFullStack: false,
     requireCDN: true,
@@ -145,8 +145,8 @@ export const MODE_CONSTRAINTS: Record<
       "Startup MVP - Ship fast, validate ideas, minimize costs. Use managed services with free tiers.",
     focus: "Speed to market, cost optimization, rapid iteration",
   },
-  corporate: {
-    maxComponents: 15,
+  enterprise: {
+    maxComponents: 20,
     minComponents: 6,
     preferFullStack: false,
     requireCDN: true,
@@ -171,6 +171,8 @@ const _INCOMPATIBLE_PAIRS: Array<[string[], string[]]> = [
   [FRAMEWORK_GROUPS.fullstack, FRAMEWORK_GROUPS.backend], // Next.js + Express
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.backend], // Laravel + Express
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.fullstack], // Laravel + Next.js
+  [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.fullstack], // Laravel + Next.js
+
 ];
 
 // Architecture detection patterns
@@ -578,7 +580,7 @@ CONSTRAINTS:
 - Focus on SPEED and COST (use managed services, avoid self-hosted)
 - Single database is fine (no need for separate cache layer for small apps)
 - Simple auth solution (Clerk, Supabase Auth, not self-hosted)`;
-  } else if (mode === "corporate") {
+  } else if (mode === "enterprise") {
     guidelines += `
 - REQUIRE full redundancy and failover
 - Include monitoring/observability (Datadog, New Relic, or Grafana)
@@ -949,7 +951,7 @@ function getTechRecommendations(
   };
 
   if (mode === "startup") return startupTechs[type];
-  if (mode === "corporate") return corporateTechs[type];
+  if (mode === "enterprise") return corporateTechs[type];
   return defaultTechs[type];
 }
 

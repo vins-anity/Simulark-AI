@@ -37,7 +37,7 @@ export const SendMessageSchema = v.object({
     v.union([
       v.literal("default"),
       v.literal("startup"),
-      v.literal("corporate"),
+      v.literal("enterprise"),
     ]),
   ),
 });
@@ -50,7 +50,7 @@ export const GenerateRequestSchema = v.object({
     v.union([
       v.literal("default"),
       v.literal("startup"),
-      v.literal("corporate"),
+      v.literal("enterprise"),
     ]),
   ),
 

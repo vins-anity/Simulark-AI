@@ -13,7 +13,10 @@ export type AIProvider =
   | "kimi"
   | "google"
   | "minimax"
-  | "anthropic";
+  | "anthropic"
+  | "nvidia"
+  | "minimax_nvidia"
+  | "kimi_nvidia";
 
 import { env } from "@/lib/env";
 
@@ -23,6 +26,7 @@ interface ProviderConfig {
   model: string;
   reasoningParam?: Record<string, unknown>; // Optional now
   responseFormat?: { type: "json_object" }; // Expanded to support JSON mode
+  extraParams?: Record<string, unknown>; // Added for model-specific parameters like top_k or thinking
 }
 
 const PROVIDERS: Record<AIProvider, ProviderConfig> = {
@@ -63,6 +67,25 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
     apiKey: env.OPENROUTER_API_KEY,
     model: "anthropic/claude-3-opus",
   },
+  nvidia: {
+    baseURL: "https://integrate.api.nvidia.com/v1",
+    apiKey: env.NVIDIA_API_KEY,
+    model: "z-ai/glm5",
+    // NVIDIA specific: enable thinking
+    reasoningParam: { enable_thinking: true, clear_thinking: false }, 
+  },
+  minimax_nvidia: {
+    baseURL: "https://integrate.api.nvidia.com/v1",
+    apiKey: env.NVIDIA_API_KEY,
+    model: "minimaxai/minimax-m2.1",
+    extraParams: { top_k: 40 },
+  },
+  kimi_nvidia: {
+    baseURL: "https://integrate.api.nvidia.com/v1",
+    apiKey: env.NVIDIA_API_KEY,
+    model: "moonshotai/kimi-k2.5",
+    extraParams: { chat_template_kwargs: { thinking: true } },
+  },
 };
 
 export function createAIClient(provider: AIProvider = "zhipu") {
@@ -92,7 +115,7 @@ export function createAIClient(provider: AIProvider = "zhipu") {
 export async function generateArchitectureStream(
   prompt: string,
   modelId?: string,
-  mode: ArchitectureMode = "corporate",
+  mode: ArchitectureMode = "enterprise",
   currentNodes: any[] = [],
   currentEdges: any[] = [],
 ) {
@@ -100,8 +123,12 @@ export async function generateArchitectureStream(
     console.log(
       `[AI Client] Generating with selected model: ${modelId} in mode: ${mode}`,
     );
+
+    // Normalize modelId to lowercase for robust matching
+    const id = modelId.toLowerCase();
+
     // Map modelId to provider
-    if (modelId === "glm-4.7-flash") {
+    if (id.includes("zhipu") || id === "glm-4.7-flash") {
       return await callModelStream(
         "zhipu",
         prompt,
@@ -109,7 +136,31 @@ export async function generateArchitectureStream(
         currentNodes,
         currentEdges,
       );
-    } else if (modelId === "deepseek-ai") {
+    } else if (id.includes("nvidia:minimax")) {
+      return await callModelStream(
+        "minimax_nvidia",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+      );
+    } else if (id.includes("nvidia:kimi") || id.includes("nvidia:moonshot")) {
+      return await callModelStream(
+        "kimi_nvidia",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+      );
+    } else if (id.includes("nvidia") || id.includes("glm5")) {
+      return await callModelStream(
+        "nvidia",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+      );
+    } else if (id === "deepseek-ai") {
       return await callModelStream(
         "openrouter",
         prompt,
@@ -117,7 +168,7 @@ export async function generateArchitectureStream(
         currentNodes,
         currentEdges,
       );
-    } else if (modelId?.includes("glm-4.5-air")) {
+    } else if (id.includes("glm-4.5-air")) {
       // New GLM 4.5 Air model from Z.AI via OpenRouter (free)
       return await callModelStream(
         "openrouter",
@@ -127,9 +178,9 @@ export async function generateArchitectureStream(
         currentEdges,
       );
     } else if (
-      modelId === "kimi-k2.5" ||
-      modelId?.includes("moonshot") ||
-      modelId?.includes("kimi")
+      id === "kimi-k2.5" ||
+      id.includes("moonshot") ||
+      id.includes("kimi")
     ) {
       return await callModelStream(
         "kimi",
@@ -138,7 +189,7 @@ export async function generateArchitectureStream(
         currentNodes,
         currentEdges,
       );
-    } else if (modelId?.includes("gemini")) {
+    } else if (id.includes("gemini") || id.includes("google")) {
       return await callModelStream(
         "google",
         prompt,
@@ -146,7 +197,7 @@ export async function generateArchitectureStream(
         currentNodes,
         currentEdges,
       );
-    } else if (modelId?.includes("minimax")) {
+    } else if (id.includes("minimax")) {
       return await callModelStream(
         "minimax",
         prompt,
@@ -154,7 +205,7 @@ export async function generateArchitectureStream(
         currentNodes,
         currentEdges,
       );
-    } else if (modelId?.includes("claude")) {
+    } else if (id.includes("claude") || id.includes("anthropic")) {
       return await callModelStream(
         "anthropic",
         prompt,
@@ -207,7 +258,7 @@ export async function generateArchitectureStream(
 async function callModelStream(
   provider: AIProvider,
   prompt: string,
-  mode: ArchitectureMode = "corporate",
+  mode: ArchitectureMode = "enterprise",
   currentNodes: any[] = [],
   currentEdges: any[] = [],
 ) {
@@ -238,10 +289,10 @@ async function callModelStream(
       // The extensive system prompt provides enough context without needing the model to "think"
       reasoningConfig = { thinking: { type: "disabled" } };
       console.log(`[AI Client] Reasoning: DISABLED (Speed optimized)`);
-    } else if (mode === "corporate") {
-      // Corporate: Low thinking for balance
+    } else if (mode === "enterprise") {
+      // Enterprise: Low thinking for balance
       reasoningConfig = { thinking: { type: "low" } };
-      console.log(`[AI Client] Reasoning: LOW (Corporate mode)`);
+      console.log(`[AI Client] Reasoning: LOW (Enterprise mode)`);
     } else {
       // Complex/Enterprise: Full thinking enabled
       reasoningConfig = config.reasoningParam;
@@ -266,6 +317,7 @@ async function callModelStream(
         stream: true,
         ...reasoningConfig,
         response_format: config.responseFormat,
+        ...(config.extraParams ? { extra_body: config.extraParams } : {}),
       });
     },
     "Architecture Generation",

@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/utils/avatar";
+import { AVAILABLE_MODELS } from "@/lib/ai-models";
 
 // Module configuration with IDs
 const CONFIG_MODULES = [
@@ -89,7 +90,7 @@ const ARCHITECTURE_MODES = [
     icon: "ph:rocket-launch-fill",
   },
   {
-    id: "corporate",
+    id: "enterprise",
     label: "Enterprise",
     description: "High availability, security, compliance",
     icon: "ph:buildings-fill",
@@ -379,6 +380,10 @@ export default function SettingsPage() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [defaultArchitectureMode, setDefaultArchitectureMode] =
     useState<string>("default");
+  
+  // Initialize with the first available model ID
+  // We'll update this from user preferences in useEffect
+  const [defaultModel, setDefaultModel] = useState<string>("nvidia:z-ai/glm5");
 
   const { TECH_ECOSYSTEM } = require("@/lib/tech-ecosystem");
 
@@ -418,7 +423,13 @@ export default function SettingsPage() {
           if (typeof prefs.customInstructions === "string")
             setCustomInstructions(prefs.customInstructions);
           if (typeof prefs.defaultArchitectureMode === "string")
-            setDefaultArchitectureMode(prefs.defaultArchitectureMode);
+            setDefaultArchitectureMode(
+              prefs.defaultArchitectureMode === "corporate"
+                ? "enterprise"
+                : prefs.defaultArchitectureMode,
+            );
+          if (typeof prefs.defaultModel === "string")
+            setDefaultModel(prefs.defaultModel);
         }
       }
       setLoading(false);
@@ -459,6 +470,7 @@ export default function SettingsPage() {
       applicationType,
       customInstructions,
       defaultArchitectureMode,
+      defaultModel,
     };
 
     const { error: dbError } = await supabase

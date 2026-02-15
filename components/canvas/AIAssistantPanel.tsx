@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { AVAILABLE_MODELS } from "@/lib/ai-models";
 import {
   addMessage,
   createChat as createChatAction,
@@ -297,8 +298,9 @@ export function AIAssistantPanel({
   );
 
   // Settings / Preferences
+  // Settings / Preferences
   const [model, setModelState] = useState(
-    (initialMetadata?.model as string) || "glm-4.7-flash",
+    (initialMetadata?.model as string) || "nvidia:z-ai/glm5",
   );
 
   const [userPreferences, setUserPreferences] = useState<{
@@ -522,9 +524,20 @@ export function AIAssistantPanel({
             ? prefs.customInstructions
             : "";
 
-        const defaultMode = prefs.defaultArchitectureMode as ArchitectureMode;
-        if (defaultMode && ["default", "startup", "corporate"].includes(defaultMode)) {
+        let defaultMode = prefs.defaultArchitectureMode as ArchitectureMode;
+        
+        // Migrate legacy corporate mode
+        if ((defaultMode as string) === "corporate") {
+          defaultMode = "enterprise";
+        }
+
+        if (defaultMode && ["default", "startup", "enterprise"].includes(defaultMode)) {
            setChatMode(defaultMode);
+        }
+
+        // Set default model if not already set by project metadata
+        if (prefs.defaultModel && !initialMetadata?.model) {
+          setModelState(prefs.defaultModel);
         }
         
         setUserPreferences({
@@ -786,6 +799,9 @@ export function AIAssistantPanel({
 
     // Create a placeholder message for AI (outside try block so catch can access it)
     const aiMsgId = (Date.now() + 1).toString();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 30s connection timeout
+
     setMessages((prev) => [
       ...prev,
       {
@@ -796,6 +812,15 @@ export function AIAssistantPanel({
         reasoning: "",
       },
     ]);
+
+    let streamWatchdog: NodeJS.Timeout | null = null;
+    const resetWatchdog = () => {
+      if (streamWatchdog) clearTimeout(streamWatchdog);
+      streamWatchdog = setTimeout(() => {
+        console.warn("[Watchdog] Stream stalled for 15s. Aborting.");
+        controller.abort();
+      }, 15000);
+    };
 
     try {
       let accumulatedContent = "";
@@ -813,6 +838,7 @@ export function AIAssistantPanel({
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           messages: conversationMessages, // Full conversation history!
           chatId,
@@ -824,6 +850,9 @@ export function AIAssistantPanel({
           userPreferences,
         }),
       });
+
+      clearTimeout(timeoutId); // Connection established, clear initial timeout
+      resetWatchdog(); // Start stream watchdog
 
       // Check for error responses (validation, rate limit, etc.)
       if (!response.ok) {
@@ -878,6 +907,7 @@ export function AIAssistantPanel({
 
       while (true) {
         const { done, value } = await reader.read();
+        resetWatchdog(); // Got some data, reset watchdog
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
@@ -936,9 +966,7 @@ export function AIAssistantPanel({
                         ? {
                             ...m,
                             isThinking: false,
-                            content: isJsonLike
-                              ? "__LOADING__"
-                              : accumulatedContent,
+                            content: accumulatedContent,
                           }
                         : m,
                     ),
@@ -977,9 +1005,7 @@ export function AIAssistantPanel({
                     ? {
                         ...m,
                         isThinking: false,
-                        content: isJsonLike
-                          ? "__LOADING__"
-                          : accumulatedContent,
+                        content: accumulatedContent,
                       }
                     : m,
                 ),
@@ -1033,9 +1059,13 @@ export function AIAssistantPanel({
 
       await saveMessage(chatId, finalAiMessage);
     } catch (err: any) {
-      console.error(err);
-      const errorMessage = err?.message || "Generation failed";
-      toast.error(errorMessage);
+      if (streamWatchdog) clearTimeout(streamWatchdog);
+      console.error("Error processing message:", err);
+      
+      const isAbortError = err.name === 'AbortError';
+      const errorMessage = isAbortError 
+        ? "Request timed out. The model might be overloaded or the connection was lost."
+        : (err?.message || "Generation failed");
 
       // Update the AI message to show the error instead of removing it
       setMessages((prev) =>
@@ -1045,10 +1075,15 @@ export function AIAssistantPanel({
             : m,
         ),
       );
+      
+      toast.error(errorMessage, {
+        description: isAbortError ? "Tip: Try a faster model like GLM-4.7 Flash." : undefined,
+      });
 
-      // Re-throw for the initial prompt handling
-      throw err;
+      // Re-throw for the initial prompt handling if it's not an abort (which we handle above)
+      if (!isAbortError) throw err;
     } finally {
+      if (streamWatchdog) clearTimeout(streamWatchdog);
       setIsGenerating(false);
       clearInterval(progressInterval);
       setStreamProgress(0);
@@ -1309,7 +1344,7 @@ export function AIAssistantPanel({
               <SelectContent className="font-mono text-[11px]">
                 <SelectItem value="default">Default</SelectItem>
                 <SelectItem value="startup">Startup</SelectItem>
-                <SelectItem value="corporate">Enterprise</SelectItem>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1318,11 +1353,11 @@ export function AIAssistantPanel({
                 <SelectValue placeholder="MODEL" />
               </SelectTrigger>
               <SelectContent className="font-mono text-[11px]">
-                <SelectItem value="glm-4.7-flash">GLM-4.7-Flash</SelectItem>
-                <SelectItem value="glm-4.7-air">GLM-4.7-Air</SelectItem>
-                <SelectItem value="glm-4.7-plus">GLM-4.7-Plus</SelectItem>
-                <SelectItem value="kimi-k2">Kimi-K2</SelectItem>
-                <SelectItem value="deepseek-v3">DeepSeek-V3</SelectItem>
+                {AVAILABLE_MODELS.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name} {m.id.includes("glm5") ? "🔥" : ""}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

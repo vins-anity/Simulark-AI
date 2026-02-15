@@ -9,65 +9,49 @@ import { env } from "./env";
  * Format: "provider:model-id"
  */
 export const AVAILABLE_MODELS = {
+  // NVIDIA - GLM-5 (Default)
+  "nvidia:z-ai/glm5": {
+    name: "GLM-5",
+    provider: "nvidia",
+    description: "State-of-the-art 744B MoE model",
+    supportsTools: true,
+    supportsStreaming: true,
+  },
+
   // Zhipu (BigModel) - GLM models
   "zhipu:glm-4.7-flash": {
     name: "GLM-4.7 Flash",
     provider: "zhipu",
-    description: "Fast and efficient for most tasks",
+    description: "Fast and efficient fallback",
     supportsTools: true,
     supportsStreaming: true,
   },
-
-  // OpenRouter - Free GLM models
-  "openrouter:z-ai/glm-4.5-air:free": {
-    name: "GLM-4.5 Air (Free)",
-    provider: "openrouter",
-    description: "Free tier GLM model via OpenRouter",
-    supportsTools: true,
-    supportsStreaming: true,
-  },
-
-  // Kimi (Moonshot AI)
-  "kimi:kimi-k2.5": {
-    name: "Kimi K2.5",
-    provider: "kimi",
-    description: "Advanced reasoning and long context",
-    supportsTools: true,
-    supportsStreaming: true,
-  },
-
-  // OpenRouter - Other models
-  "openrouter:deepseek-ai": {
-    name: "DeepSeek AI",
-    provider: "openrouter",
-    description: "Open source reasoning model",
-    supportsTools: true,
-    supportsStreaming: true,
-  },
-
-  "openrouter:google/gemini-3-pro-preview": {
-    name: "Gemini 3 Pro",
-    provider: "openrouter",
-    description: "Google's latest multimodal model",
-    supportsTools: true,
-    supportsStreaming: true,
-  },
-
-  "openrouter:anthropic/claude-3-opus": {
-    name: "Claude 3 Opus",
-    provider: "openrouter",
-    description: "Anthropic's most capable model",
-    supportsTools: true,
-    supportsStreaming: true,
-  },
-
-  "openrouter:minimax/minimax-m2.1": {
+  
+  // NVIDIA - MiniMax and Kimi
+  "nvidia:minimaxai/minimax-m2.1": {
     name: "MiniMax M2.1",
-    provider: "openrouter",
-    description: "Chinese multimodal model",
+    provider: "nvidia",
+    description: "Next-gen MoE for speed and reasoning",
     supportsTools: true,
     supportsStreaming: true,
   },
+  "nvidia:moonshotai/kimi-k2.5": {
+    name: "Kimi K2.5",
+    provider: "nvidia",
+    description: "Multi-modal model with 15T tokens",
+    supportsTools: true,
+    supportsStreaming: true,
+  },
+
+  // Legacy/Other models commented out for now
+  /*
+  "openrouter:z-ai/glm-4.5-air:free": { ... },
+  "kimi:kimi-k2.5": { ... },
+  "openrouter:deepseek-ai": { ... },
+  "openrouter:google/gemini-3-pro-preview": { ... },
+  "openrouter:anthropic/claude-3-opus": { ... },
+  "openrouter:minimax/minimax-m2.1": { ... },
+  */
 } as const;
 
 export type ModelId = keyof typeof AVAILABLE_MODELS;
@@ -84,6 +68,11 @@ const openrouter = createOpenRouter({
 const kimi = createOpenAI({
   baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
   apiKey: env.KIMI_API_KEY,
+});
+
+const nvidia = createOpenAI({
+  baseURL: "https://integrate.api.nvidia.com/v1",
+  apiKey: env.NVIDIA_API_KEY,
 });
 
 /**
@@ -109,6 +98,8 @@ export function getModel(modelId: ModelId | string): LanguageModel {
       return openrouter.chat(modelName);
     case "kimi":
       return kimi(modelName);
+    case "nvidia":
+      return nvidia(modelName);
     default:
       // Default to Zhipu
       console.warn(`Unknown provider: ${provider}, defaulting to Zhipu`);
