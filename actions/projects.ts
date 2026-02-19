@@ -77,6 +77,7 @@ export async function updateProjectName(projectId: string, name: string) {
 export async function saveProject(
   projectId: string,
   graph: Partial<ArchitectureGraph> & { metadata?: Record<string, unknown> },
+  shouldRevalidate: boolean = true,
 ) {
   const supabase = await createClient();
   const {
@@ -147,7 +148,9 @@ export async function saveProject(
     return { success: false, error: error.message };
   }
 
-  revalidatePath(`/project/${projectId}`);
+  if (shouldRevalidate) {
+    revalidatePath(`/projects/${projectId}`);
+  }
   return { success: true, data };
 }
 

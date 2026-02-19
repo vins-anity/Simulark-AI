@@ -1,4 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
+import { generateMermaidCode } from "@/lib/utils";
 
 export interface SkillGenerationOptions {
   projectName: string;
@@ -9,51 +10,118 @@ export interface SkillGenerationOptions {
 
 export interface GeneratedSkill {
   skillMd: string;
-  schemasMd?: string;
+  files: Record<string, string>;
   metadata: {
     name: string;
     description: string;
+    version: string;
     createdAt: string;
+    nodeCount: number;
+    edgeCount: number;
   };
 }
 
+interface ArchitectureAnalysis {
+  entryPoints: Node[];
+  databases: Node[];
+  services: Node[];
+  infrastructure: Node[];
+  antiPatterns: string[];
+}
+
+function toKebabCase(input: string): string {
+  const normalized = input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+  return normalized || "architecture-skill";
+}
+
+function quoteYaml(value: string): string {
+  return JSON.stringify(value);
+}
+
+function getNodeLabel(node: Node): string {
+  const label = node.data?.label;
+  if (typeof label === "string" && label.trim().length > 0) {
+    return label.trim();
+  }
+  return node.id;
+}
+
+function getNodeDescription(node: Node): string {
+  const description = node.data?.description;
+  if (typeof description === "string" && description.trim().length > 0) {
+    return description.trim();
+  }
+
+  const type = node.type || "component";
+  return `${type} component in the architecture.`;
+}
+
 /**
- * Analyzes diagram nodes to detect architecture patterns
+ * Analyzes diagram nodes to detect architecture patterns.
  */
-function analyzeArchitecture(nodes: Node[], edges: Edge[]) {
-  // Detect entry points (Gateway, LoadBalancer)
+function analyzeArchitecture(
+  nodes: Node[],
+  edges: Edge[],
+): ArchitectureAnalysis {
   const entryPoints = nodes.filter(
-    (n) => n.type === "gateway" || n.type === "loadbalancer",
+    (node) => node.type === "gateway" || node.type === "loadbalancer",
   );
 
-  // Detect databases
-  const databases = nodes.filter((n) => n.type === "database");
-
-  // Detect services
-  const services = nodes.filter((n) => n.type === "service");
-
-  // Detect caches/queues
-  const infrastructure = nodes.filter(
-    (n) => n.type === "cache" || n.type === "queue",
+  const databases = nodes.filter(
+    (node) =>
+      node.type === "database" ||
+      node.type === "storage" ||
+      node.type === "vector-db",
   );
 
-  // Detect anti-patterns (direct client->database connections)
+  const services = nodes.filter((node) =>
+    ["service", "frontend", "backend", "function", "ai"].includes(
+      node.type || "",
+    ),
+  );
+
+  const infrastructure = nodes.filter((node) =>
+    ["cache", "queue", "messaging", "monitoring", "security", "auth"].includes(
+      node.type || "",
+    ),
+  );
+
   const antiPatterns: string[] = [];
 
-  // Check for direct database access (no gateway in between)
-  const dbConnections = edges.filter((e) => {
-    const target = nodes.find((n) => n.id === e.target);
-    return target?.type === "database";
+  // Direct non-service -> datastore links are usually unsafe in this model.
+  const dbConnections = edges.filter((edge) => {
+    const target = nodes.find((node) => node.id === edge.target);
+    return target
+      ? ["database", "storage", "vector-db"].includes(target.type || "")
+      : false;
   });
 
-  dbConnections.forEach((edge) => {
-    const source = nodes.find((n) => n.id === edge.source);
-    if (source && source.type !== "service") {
+  for (const edge of dbConnections) {
+    const source = nodes.find((node) => node.id === edge.source);
+    if (!source) continue;
+
+    const allowedSource = ["service", "backend", "function", "ai"].includes(
+      source.type || "",
+    );
+
+    if (!allowedSource) {
       antiPatterns.push(
-        `Direct connection from ${source.data.label || source.type} to database detected`,
+        `Direct connection from ${getNodeLabel(source)} to data store detected`,
       );
     }
-  });
+  }
+
+  if (entryPoints.length === 0) {
+    antiPatterns.push(
+      "No explicit ingress layer detected (gateway/load balancer)",
+    );
+  }
 
   return {
     entryPoints,
@@ -65,129 +133,139 @@ function analyzeArchitecture(nodes: Node[], edges: Edge[]) {
 }
 
 /**
- * Generates architecture rules based on diagram patterns
+ * Generates architecture rules based on diagram patterns.
  */
-function generateArchitectureRules(nodes: Node[], edges: Edge[]): string[] {
-  const { entryPoints, databases, services } = analyzeArchitecture(
-    nodes,
-    edges,
-  );
+function generateArchitectureRules(
+  nodes: Node[],
+  analysis: ArchitectureAnalysis,
+): string[] {
   const rules: string[] = [];
 
-  // Rule: Always use gateway for external access
-  if (entryPoints.length > 0) {
-    const gatewayNames = entryPoints
-      .map((n) => n.data?.label || "API Gateway")
-      .join(" or ");
+  if (analysis.entryPoints.length > 0) {
+    const gatewayNames = analysis.entryPoints.map(getNodeLabel).join(" or ");
     rules.push(`ALWAYS route external requests through ${gatewayNames}`);
   }
 
-  // Rule: Never access database directly from clients
-  if (databases.length > 0) {
-    rules.push("NEVER access databases directly from client applications");
+  if (analysis.databases.length > 0) {
+    rules.push("NEVER allow direct client access to data stores");
+    rules.push("ALWAYS enforce schema migrations and backward compatibility");
   }
 
-  // Rule: Use services for business logic
-  if (services.length > 0) {
-    rules.push("ALWAYS implement business logic within dedicated services");
+  if (analysis.services.length > 0) {
+    rules.push("ALWAYS keep business logic in service or function boundaries");
+  }
+
+  const hasQueue = nodes.some((node) =>
+    ["queue", "messaging"].includes(node.type || ""),
+  );
+  if (hasQueue) {
+    rules.push(
+      "ALWAYS implement retry and dead-letter handling for async flows",
+    );
+  }
+
+  const hasMonitoring = nodes.some((node) => node.type === "monitoring");
+  if (hasMonitoring) {
+    rules.push("ALWAYS emit metrics, traces, and logs for critical paths");
   }
 
   return rules;
 }
 
 /**
- * Generates service catalog from nodes
+ * Generates service catalog from nodes.
  */
 function generateServiceCatalog(nodes: Node[]): string {
-  const servicesByType: Record<string, Node[]> = {};
+  const header =
+    "| Component | Type | Tech | Description |\n| --- | --- | --- | --- |";
+  const rows = nodes.map((node) => {
+    const tech = typeof node.data?.tech === "string" ? node.data.tech : "-";
+    const type = node.type || "unknown";
 
-  nodes.forEach((node) => {
-    if (!servicesByType[node.type || "unknown"]) {
-      servicesByType[node.type || "unknown"] = [];
-    }
-    servicesByType[node.type || "unknown"].push(node);
+    return `| ${getNodeLabel(node)} | ${type} | ${tech} | ${getNodeDescription(node)} |`;
   });
 
-  let catalog = "";
-
-  // Organize by type priority
-  const typeOrder = [
-    "gateway",
-    "loadbalancer",
-    "service",
-    "database",
-    "cache",
-    "queue",
-  ];
-
-  typeOrder.forEach((type) => {
-    const nodes = servicesByType[type];
-    if (!nodes || nodes.length === 0) return;
-
-    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
-    catalog += `\n### ${typeLabel}${nodes.length > 1 ? "s" : ""}\n\n`;
-
-    nodes.forEach((node) => {
-      const name = node.data?.label || `Unnamed ${type}`;
-      const desc = node.data?.description || `${typeLabel} component`;
-      catalog += `- **${name}**: ${desc}\n`;
-    });
-  });
-
-  return catalog;
+  return [header, ...rows].join("\n");
 }
 
 /**
- * Traces data flow patterns through the architecture
+ * Traces representative data-flow paths through the architecture.
  */
 function generateDataFlowPatterns(nodes: Node[], edges: Edge[]): string {
-  const { entryPoints } = analyzeArchitecture(nodes, edges);
+  const entries = nodes.filter((node) =>
+    ["gateway", "loadbalancer", "client"].includes(node.type || ""),
+  );
 
-  if (entryPoints.length === 0) {
-    return "No clear entry points detected. Components interact peer-to-peer.";
+  if (entries.length === 0) {
+    return "No clear entry points detected. Components appear to interact peer-to-peer.";
   }
 
-  let flows = "";
+  const lines: string[] = [];
 
-  // Trace from each entry point
-  entryPoints.forEach((entry) => {
-    const entryName: string = (entry.data?.label as string) || "Gateway";
-    flows += `\n**From ${entryName}:**\n`;
+  for (const entry of entries.slice(0, 3)) {
+    const entryLabel = getNodeLabel(entry);
+    lines.push(`### From ${entryLabel}`);
 
     const visited = new Set<string>();
     const queue: Array<{ id: string; path: string[] }> = [
-      { id: entry.id, path: [entryName] },
+      { id: entry.id, path: [entryLabel] },
     ];
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (visited.has(current.id)) continue;
+      const current = queue.shift();
+      if (!current || visited.has(current.id)) continue;
       visited.add(current.id);
 
-      const outgoingEdges = edges.filter((e) => e.source === current.id);
+      const outgoing = edges.filter((edge) => edge.source === current.id);
+      for (const edge of outgoing) {
+        const target = nodes.find((node) => node.id === edge.target);
+        if (!target) continue;
 
-      outgoingEdges.forEach((edge) => {
-        const target = nodes.find((n) => n.id === edge.target);
-        if (!target) return;
+        const targetLabel = getNodeLabel(target);
+        const nextPath = [...current.path, targetLabel];
 
-        const targetName: string =
-          (target.data?.label as string) || target.type || "Unknown";
-        const newPath = [...current.path, targetName];
-
-        if (outgoingEdges.length === 1 || target.type === "database") {
-          flows += `- ${newPath.join(" → ")}\n`;
+        if (
+          outgoing.length === 1 ||
+          ["database", "storage"].includes(target.type || "")
+        ) {
+          lines.push(`- ${nextPath.join(" -> ")}`);
         }
 
-        queue.push({ id: target.id, path: newPath });
-      });
+        queue.push({ id: target.id, path: nextPath });
+      }
     }
-  });
 
-  return flows;
+    lines.push("");
+  }
+
+  return lines.join("\n").trim();
+}
+
+function generateReadme(projectName: string): string {
+  return `# ${projectName} Skill Package
+
+This package was generated by Simulark and is ready for import into coding agents that support \
+\`SKILL.md\` conventions.
+
+## Package Contents
+
+- \`SKILL.md\`: Core architecture guidance and usage instructions
+- \`manifest.json\`: Metadata for versioning and tooling
+- \`references/architecture.json\`: Raw architecture graph snapshot
+- \`references/diagram.mmd\`: Mermaid representation for quick visualization
+- \`references/service-catalog.md\`: Component inventory and descriptions
+- \`references/data-flows.md\`: Key request/data paths
+
+## Suggested Workflow
+
+1. Load \`SKILL.md\` in your coding assistant
+2. Review \`references/diagram.mmd\` and \`references/data-flows.md\`
+3. Use the service catalog and flow references during implementation and reviews
+`;
 }
 
 /**
- * Main function to generate SKILL.md content
+ * Main function to generate SKILL.md content and references.
  */
 export function generateSkillContent(
   options: SkillGenerationOptions,
@@ -195,34 +273,47 @@ export function generateSkillContent(
   const { projectName, projectDescription, nodes, edges } = options;
 
   const analysis = analyzeArchitecture(nodes, edges);
-  const rules = generateArchitectureRules(nodes, edges);
+  const rules = generateArchitectureRules(nodes, analysis);
   const catalog = generateServiceCatalog(nodes);
   const dataFlows = generateDataFlowPatterns(nodes, edges);
+  const mermaid = generateMermaidCode(nodes, edges);
 
-  // Generate skill name (kebab-case)
-  const skillName = projectName.toLowerCase().replace(/\s+/g, "-");
-
-  // Generate description
-  const componentTypes = new Set(
-    nodes.map((n) => n.type).filter((t): t is string => t !== undefined),
+  const skillName = toKebabCase(projectName);
+  const componentTypes = Array.from(
+    new Set(
+      nodes
+        .map((node) => node.type)
+        .filter((type): type is string => Boolean(type)),
+    ),
   );
-  const componentList = Array.from(componentTypes)
-    .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
-    .join(", ");
 
-  const description = `Expert on the ${projectName} architecture. Use when building services, understanding data flows, or validating code against the approved system design. Covers ${componentList}.`;
+  const componentList =
+    componentTypes.length > 0
+      ? componentTypes
+          .map((type) => type[0].toUpperCase() + type.slice(1))
+          .join(", ")
+      : "architecture components";
 
-  // Build SKILL.md content
+  const description =
+    `Expert on the ${projectName} architecture. ` +
+    "Use when implementing features, reviewing design changes, and validating operational safety. " +
+    `Covers ${componentList}.`;
+
   const systemOverview =
     projectDescription ||
-    `${projectName} is a ${componentTypes.has("gateway") ? "microservices-based" : "distributed"} architecture with ${nodes.length} components.`;
+    `${projectName} contains ${nodes.length} components and ${edges.length} connections.`;
+
+  const antiPatternSection =
+    analysis.antiPatterns.length > 0
+      ? analysis.antiPatterns.map((item) => `- ${item}`).join("\n")
+      : "- No obvious anti-patterns detected from current graph topology.";
 
   const skillMd = `---
-name: ${skillName}
-description: ${description}
+name: ${quoteYaml(skillName)}
+description: ${quoteYaml(description)}
 ---
 
-# ${projectName} Architecture
+# ${projectName} Architecture Skill
 
 ## System Overview
 
@@ -230,62 +321,85 @@ ${systemOverview}
 
 ## Architecture Rules
 
-${rules.length > 0 ? rules.map((r) => `- ${r}`).join("\n") : "No specific rules detected."}
+${rules.length > 0 ? rules.map((rule) => `- ${rule}`).join("\n") : "- No strict rules detected."}
+
+## Anti-Patterns to Avoid
+
+${antiPatternSection}
 
 ## Service Catalog
+
 ${catalog}
 
 ## Data Flow Patterns
+
 ${dataFlows}
 
 ## When to Use This Skill
 
 Load this skill when:
-- Implementing new services for ${projectName}
-- Validating code changes against architecture patterns
-- Understanding component interactions and data flows
-- Onboarding new developers to the ${projectName} system
+- Implementing new services or modifying service boundaries
+- Reviewing pull requests for architecture compliance
+- Planning incident response and resilience hardening
+- Preparing architecture reviews before release
 `;
 
-  // Generate schemas.md if databases exist
-  let schemasMd: string | undefined;
-  if (analysis.databases.length > 0) {
-    schemasMd = `# Database Schemas\n\n`;
-    analysis.databases.forEach((db) => {
-      const name = db.data?.label || "Database";
-      const desc = db.data?.description || "No schema description provided";
-      schemasMd += `## ${name}\n\n${desc}\n\n`;
-    });
-  }
+  const architectureSnapshot = {
+    generatedAt: new Date().toISOString(),
+    projectName,
+    nodes: nodes.map((node) => ({
+      id: node.id,
+      type: node.type,
+      data: node.data,
+      position: node.position,
+    })),
+    edges: edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      data: edge.data,
+    })),
+  };
+
+  const metadata = {
+    name: skillName,
+    description,
+    version: "1.1.0",
+    createdAt: new Date().toISOString(),
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+  };
 
   return {
     skillMd,
-    schemasMd,
-    metadata: {
-      name: skillName,
-      description,
-      createdAt: new Date().toISOString(),
+    files: {
+      "README.md": generateReadme(projectName),
+      "manifest.json": JSON.stringify(metadata, null, 2),
+      "references/architecture.json": JSON.stringify(
+        architectureSnapshot,
+        null,
+        2,
+      ),
+      "references/diagram.mmd": mermaid,
+      "references/service-catalog.md": `# Service Catalog\n\n${catalog}\n`,
+      "references/data-flows.md": `# Data Flows\n\n${dataFlows}\n`,
     },
+    metadata,
   };
 }
 
 /**
- * Creates a downloadable ZIP file with the skill package
+ * Creates a downloadable ZIP file with the skill package.
  */
 export async function packageSkill(skill: GeneratedSkill): Promise<Blob> {
-  // Use JSZip for browser-side ZIP creation
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
-  // Add SKILL.md
   zip.file("SKILL.md", skill.skillMd);
 
-  // Add schemas.md if it exists
-  if (skill.schemasMd) {
-    const referencesFolder = zip.folder("references");
-    referencesFolder?.file("schemas.md", skill.schemasMd);
+  for (const [path, content] of Object.entries(skill.files)) {
+    zip.file(path, content);
   }
 
-  // Generate ZIP blob
-  return await zip.generateAsync({ type: "blob" });
+  return zip.generateAsync({ type: "blob" });
 }

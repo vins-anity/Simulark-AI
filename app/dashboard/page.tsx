@@ -7,11 +7,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Cpu,
   Database,
   Layout,
   Loader2,
   Plus,
-  Cpu,
   Sparkles,
   Terminal,
   Zap,
@@ -32,11 +32,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
 import {
-  type ArchitectureMode,
+  ArchitectureMode,
   MODE_CONSTRAINTS,
 } from "@/lib/prompt-engineering";
 import type { Project } from "@/lib/schema/graph";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { getUserPreferences, updateUserPreferences } from "@/actions/users";
+
 
 const ITEMS_PER_PAGE = 3;
 
@@ -88,18 +91,18 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [prompt, setPrompt] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
-  
-  const [selectedMode, setSelectedMode] = useState<ArchitectureMode>("enterprise");
-  const [selectedModel, setSelectedModel] = useState<string>(AVAILABLE_MODELS[0].id);
+
+  const [selectedMode, setSelectedMode] =
+    useState<ArchitectureMode>("enterprise");
+  const [selectedModel, setSelectedModel] = useState<string>(
+    AVAILABLE_MODELS[0].id,
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   // Onboarding integration
-  const {
-    showOnboarding,
-    isLoading: onboardingLoading,
-  } = useOnboarding();
+  const { showOnboarding, isLoading: onboardingLoading } = useOnboarding();
 
   // Redirect to onboarding if needed
   useEffect(() => {
@@ -111,6 +114,34 @@ function DashboardContent() {
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
+
+  // Load user default preferences
+  useEffect(() => {
+    async function loadPrefs() {
+      const result = await getUserPreferences();
+      if (result.success && result.preferences) {
+        if (result.preferences.defaultMode) {
+          setSelectedMode(result.preferences.defaultMode);
+        } else if (result.preferences.defaultArchitectureMode) {
+          setSelectedMode(result.preferences.defaultArchitectureMode);
+        }
+        if (result.preferences.defaultModel) {
+          setSelectedModel(result.preferences.defaultModel);
+        }
+      }
+    }
+    loadPrefs();
+  }, []);
+
+  const handleModeChange = (mode: ArchitectureMode) => {
+    setSelectedMode(mode);
+    updateUserPreferences({ defaultMode: mode });
+  };
+
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    updateUserPreferences({ defaultModel: modelId });
+  };
 
   const loadProjects = useCallback(async (page: number) => {
     setLoading(true);
@@ -154,8 +185,13 @@ function DashboardContent() {
     const trimmedPrompt = prompt.trim();
 
     try {
+      // Shorten project name with futuristic prefix
+      const projectName = trimmedPrompt.length > 40
+        ? `MANIFEST // ${trimmedPrompt.substring(0, 40).toUpperCase()}...`
+        : `MANIFEST // ${trimmedPrompt.toUpperCase()}`;
+
       // Create project with metadata (mode & model)
-      const result = await createProject(trimmedPrompt, "Generic", {
+      const result = await createProject(projectName, "Generic", {
         mode: selectedMode,
         model: selectedModel,
       });
@@ -283,34 +319,43 @@ function DashboardContent() {
                       ? "UPLINK_STATION:TRANSMITTING"
                       : "UPLINK_STATION:IDLE"}
                   </span>
-                  
+
                   {/* Mode Selector */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-brand-charcoal dark:text-gray-200 uppercase tracking-wider hover:text-brand-orange transition-colors focus:outline-none">
-                        <span className="text-brand-charcoal/40 dark:text-gray-500">MODE:</span>
+                        <span className="text-brand-charcoal/40 dark:text-gray-500">
+                          MODE:
+                        </span>
                         <span className="flex items-center gap-1">
                           {getModeIcon(selectedMode)}
-                          {selectedMode}
+                          {selectedMode === "default" ? "Balanced" : selectedMode}
                         </span>
                         <ChevronDown size={10} className="opacity-50" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="start"
-                      className="w-48 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0"
+                      className="w-48 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0 z-50"
                     >
-                      {(["enterprise", "startup", "default"] as ArchitectureMode[]).map((mode) => (
+                      {(
+                        [
+                          "enterprise",
+                          "startup",
+                          "default",
+                        ] as ArchitectureMode[]
+                      ).map((mode) => (
                         <DropdownMenuItem
                           key={mode}
-                          onClick={() => setSelectedMode(mode)}
+                          onClick={() => handleModeChange(mode)}
                           className={cn(
                             "flex flex-col items-start gap-1 px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
-                            selectedMode === mode && "bg-brand-charcoal/5 dark:bg-white/5"
+                            selectedMode === mode &&
+                              "bg-brand-charcoal/5 dark:bg-white/5",
                           )}
                         >
                           <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
-                             {getModeIcon(mode)} {mode}
+                            {getModeIcon(mode)} {mode === "default" ? "Balanced" : mode}
                           </div>
                           <span className="text-[9px] text-brand-charcoal/60 dark:text-gray-400 leading-tight">
                             {MODE_CONSTRAINTS[mode].focus}
@@ -320,42 +365,47 @@ function DashboardContent() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                   {/* Model Selector */}
-                   <DropdownMenu>
+                  <div className="h-4 w-px bg-border-primary" />
+
+                  {/* Model Selector */}
+                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-brand-charcoal dark:text-gray-200 uppercase tracking-wider hover:text-brand-orange transition-colors focus:outline-none">
-                         <span className="text-brand-charcoal/40 dark:text-gray-500">MODEL:</span>
-                         <span className="flex items-center gap-1">
+                        <span className="text-brand-charcoal/40 dark:text-gray-500">
+                          MODEL:
+                        </span>
+                        <span className="flex items-center gap-1">
                           <Cpu size={14} />
-                           {AVAILABLE_MODELS.find(m => m.id === selectedModel)?.name || "UNKNOWN"}
-                         </span>
-                         <ChevronDown size={10} className="opacity-50" />
+                          {AVAILABLE_MODELS.find((m) => m.id === selectedModel)
+                            ?.name || "UNKNOWN"}
+                        </span>
+                        <ChevronDown size={10} className="opacity-50" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
-                       align="start"
-                       className="w-56 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0"
+                      align="start"
+                      className="w-56 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0 z-50"
                     >
                       {AVAILABLE_MODELS.map((model) => (
-                         <DropdownMenuItem
-                            key={model.id}
-                            onClick={() => setSelectedModel(model.id)}
-                            className={cn(
-                              "flex items-center justify-between px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
-                               selectedModel === model.id && "bg-brand-charcoal/5 dark:bg-white/5"
-                            )}
-                         >
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
-                               {model.name}
-                            </span>
-                             <span className="text-[8px] font-mono text-brand-charcoal/40 dark:text-gray-500 uppercase">
-                               {model.provider}
-                             </span>
-                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          key={model.id}
+                          onClick={() => handleModelChange(model.id)}
+                          className={cn(
+                            "flex items-center justify-between px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
+                            selectedModel === model.id &&
+                              "bg-brand-charcoal/5 dark:bg-white/5",
+                          )}
+                        >
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
+                            {model.name}
+                          </span>
+                          <span className="text-[8px] font-mono text-brand-charcoal/40 dark:text-gray-500 uppercase">
+                            {model.provider}
+                          </span>
+                        </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
-                   </DropdownMenu>
-
+                  </DropdownMenu>
                 </div>
                 <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none hidden sm:block">
                   COORD_X:40.71/Y:-74.00

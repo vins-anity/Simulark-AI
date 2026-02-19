@@ -85,4 +85,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
+  skipValidation:
+    process.env.NODE_ENV === "test" ||
+    process.env.SKIP_ENV_VALIDATION === "true",
 });

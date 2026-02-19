@@ -1,4 +1,11 @@
 import { create } from "zustand";
+import type { StressPlannerMetaInput } from "@/lib/schema/api";
+import type {
+  StressRunMetric,
+  StressRunStreamEvent,
+  StressRunVerdict,
+} from "@/lib/stress-runner";
+import type { StressScenario } from "@/lib/stress-testing-plan";
 
 export type ViewMode = "fullstack";
 export type NodeStatus = "active" | "killed" | "degraded" | "recovering";
@@ -10,6 +17,14 @@ export type FailureType =
   | "packet_loss"
   | "cascade_failure"
   | "resource_exhaustion";
+export type StressRunStatus =
+  | "idle"
+  | "planning"
+  | "running"
+  | "paused"
+  | "aborted"
+  | "completed"
+  | "error";
 
 export interface FailureEvent {
   id: string;
@@ -29,24 +44,74 @@ interface SimulationMetrics {
   throughput: number; // req/s
 }
 
+export interface StressScenarioPlan {
+  assumptions: string[];
+  scenarios: StressScenario[];
+  markdown: string;
+  source?: "ai" | "fallback";
+  warning?: string;
+  plannerMeta?: StressPlannerMetaInput;
+}
+
+export interface StressTimelineItem {
+  id: string;
+  type: "stage" | "incident" | "message";
+  message: string;
+  severity?: "low" | "medium" | "high" | "critical";
+  nodeIds?: string[];
+  edgeIds?: string[];
+  timestamp: number;
+}
+
+const DEFAULT_SIMULATION_METRICS: SimulationMetrics = {
+  availability: 100,
+  latency: 45,
+  errorRate: 0.1,
+  throughput: 1250,
+};
+
+function createTimelineItem(
+  item: Omit<StressTimelineItem, "id" | "timestamp"> &
+    Partial<Pick<StressTimelineItem, "timestamp">>,
+): StressTimelineItem {
+  return {
+    ...item,
+    id: `stress-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    timestamp: item.timestamp ?? Date.now(),
+  };
+}
+
 interface SimulationState {
   viewMode: ViewMode;
   chaosMode: boolean;
+  stressMode: boolean;
 
-  // Map of node ID to status
+  // Chaos maps
   nodeStatus: Record<string, NodeStatus>;
-
-  // Map of edge ID to status
   edgeStatus: Record<string, EdgeStatus>;
 
-  // Failure history
+  // Chaos history and metrics
   failureEvents: FailureEvent[];
-
-  // Current metrics
   metrics: SimulationMetrics;
 
-  // Actions
+  // Stress mode state
+  scenarioPlan: StressScenarioPlan | null;
+  plannerMode: "auto" | "manual";
+  plannerModelId: string;
+  selectedScenarioId: string | null;
+  runStatus: StressRunStatus;
+  runProgress: number;
+  runTimeline: StressTimelineItem[];
+  runMetrics: StressRunMetric[];
+  runVerdict: StressRunVerdict | null;
+  stressHotNodes: string[];
+  stressHotEdges: string[];
+  nodeSpecOverrides: Record<string, Record<string, unknown>>;
+
+  // Common actions
   setViewMode: (mode: ViewMode) => void;
+
+  // Chaos actions
   setChaosMode: (enabled: boolean) => void;
   toggleNodeStatus: (nodeId: string) => void;
   killNode: (nodeId: string) => void;
@@ -58,41 +123,62 @@ interface SimulationState {
   resolveFailure: (eventId: string) => void;
   resetSimulation: () => void;
   getAffectedNodes: (nodeId: string) => string[];
+
+  // Stress actions
+  setStressMode: (enabled: boolean) => void;
+  setScenarioPlan: (plan: StressScenarioPlan | null) => void;
+  setPlannerMode: (mode: "auto" | "manual") => void;
+  setPlannerModelId: (modelId: string) => void;
+  selectScenario: (scenarioId: string | null) => void;
+  setNodeSpecOverride: (nodeId: string, patch: Record<string, unknown>) => void;
+  setStressPlanning: () => void;
+  startStressRun: () => void;
+  pauseStressRun: () => void;
+  abortStressRun: () => void;
+  resetStressRun: () => void;
+  processStressEvent: (event: StressRunStreamEvent) => void;
+  addStressTimelineMessage: (
+    message: string,
+    severity?: "low" | "medium" | "high" | "critical",
+  ) => void;
 }
 
 export const useSimulationStore = create<SimulationState>((set, get) => ({
   viewMode: "fullstack",
   chaosMode: false,
+  stressMode: false,
   nodeStatus: {},
   edgeStatus: {},
   failureEvents: [],
-  metrics: {
-    availability: 100,
-    latency: 45,
-    errorRate: 0.1,
-    throughput: 1250,
-  },
+  metrics: DEFAULT_SIMULATION_METRICS,
+  scenarioPlan: null,
+  plannerMode: "auto",
+  plannerModelId: "auto",
+  selectedScenarioId: null,
+  runStatus: "idle",
+  runProgress: 0,
+  runTimeline: [],
+  runMetrics: [],
+  runVerdict: null,
+  stressHotNodes: [],
+  stressHotEdges: [],
+  nodeSpecOverrides: {},
 
   setViewMode: (mode) => set({ viewMode: mode }),
 
   setChaosMode: (enabled) => {
     if (!enabled) {
-      // Reset everything when disabling chaos mode
       set({
         chaosMode: false,
         nodeStatus: {},
         edgeStatus: {},
         failureEvents: [],
-        metrics: {
-          availability: 100,
-          latency: 45,
-          errorRate: 0.1,
-          throughput: 1250,
-        },
+        metrics: DEFAULT_SIMULATION_METRICS,
       });
-    } else {
-      set({ chaosMode: true });
+      return;
     }
+
+    set({ chaosMode: true, stressMode: false });
   },
 
   toggleNodeStatus: (nodeId) => {
@@ -106,7 +192,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       },
     }));
 
-    // Add failure event if node is killed
     if (newStatus === "killed") {
       get().addFailureEvent({
         nodeId,
@@ -134,9 +219,9 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       resolved: false,
     });
 
-    // Update metrics
     const killedCount =
-      Object.values(get().nodeStatus).filter((s) => s === "killed").length + 1;
+      Object.values(get().nodeStatus).filter((status) => status === "killed")
+        .length + 1;
     const totalNodes = Object.keys(get().nodeStatus).length || 1;
     const availability = Math.max(0, 100 - (killedCount / totalNodes) * 100);
 
@@ -157,7 +242,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       },
     }));
 
-    // Simulate recovery time
     setTimeout(() => {
       set((state) => ({
         nodeStatus: {
@@ -166,12 +250,11 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         },
       }));
 
-      // Resolve related failure events
       const events = get().failureEvents.filter(
-        (e) => e.nodeId === nodeId && !e.resolved,
+        (event) => event.nodeId === nodeId && !event.resolved,
       );
-      for (const e of events) {
-        get().resolveFailure(e.id);
+      for (const event of events) {
+        get().resolveFailure(event.id);
       }
     }, 2000);
   },
@@ -245,7 +328,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   addFailureEvent: (event) => {
     const newEvent: FailureEvent = {
       ...event,
-      id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `event-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       timestamp: Date.now(),
     };
 
@@ -256,8 +339,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
   resolveFailure: (eventId) => {
     set((state) => ({
-      failureEvents: state.failureEvents.map((e) =>
-        e.id === eventId ? { ...e, resolved: true } : e,
+      failureEvents: state.failureEvents.map((event) =>
+        event.id === eventId ? { ...event, resolved: true } : event,
       ),
     }));
   },
@@ -268,17 +351,284 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       nodeStatus: {},
       edgeStatus: {},
       failureEvents: [],
-      metrics: {
-        availability: 100,
-        latency: 45,
-        errorRate: 0.1,
-        throughput: 1250,
-      },
+      metrics: DEFAULT_SIMULATION_METRICS,
+      stressMode: false,
+      scenarioPlan: null,
+      plannerMode: "auto",
+      plannerModelId: "auto",
+      selectedScenarioId: null,
+      runStatus: "idle",
+      runProgress: 0,
+      runTimeline: [],
+      runMetrics: [],
+      runVerdict: null,
+      stressHotNodes: [],
+      stressHotEdges: [],
+      nodeSpecOverrides: {},
     }),
 
   getAffectedNodes: (_nodeId) => {
-    // Simple cascade detection - return nodes that would be affected
-    // In a real implementation, this would use the graph structure
     return [];
   },
+
+  setStressMode: (enabled) => {
+    if (!enabled) {
+      set({
+        stressMode: false,
+        runStatus: "idle",
+        runProgress: 0,
+        runTimeline: [],
+        runMetrics: [],
+        runVerdict: null,
+        stressHotNodes: [],
+        stressHotEdges: [],
+        nodeSpecOverrides: {},
+        plannerMode: "auto",
+        plannerModelId: "auto",
+      });
+      return;
+    }
+
+    set({
+      stressMode: true,
+      chaosMode: false,
+    });
+  },
+
+  setScenarioPlan: (plan) =>
+    set((state) => ({
+      scenarioPlan: plan,
+      runStatus: state.runStatus === "planning" ? "idle" : state.runStatus,
+      selectedScenarioId: plan?.scenarios.some(
+        (scenario) => scenario.id === state.selectedScenarioId,
+      )
+        ? state.selectedScenarioId
+        : (plan?.scenarios[0]?.id ?? null),
+      runTimeline: plan
+        ? [
+            ...state.runTimeline,
+            createTimelineItem({
+              type: "message",
+              message: `Scenario plan ready (${plan.scenarios.length} scenarios).`,
+              severity: "low",
+            }),
+          ]
+        : state.runTimeline,
+    })),
+
+  setPlannerMode: (mode) =>
+    set((state) => ({
+      plannerMode: mode,
+      plannerModelId:
+        mode === "auto"
+          ? "auto"
+          : state.plannerModelId === "auto"
+            ? "nvidia:z-ai/glm5"
+            : state.plannerModelId,
+    })),
+
+  setPlannerModelId: (modelId) => set({ plannerModelId: modelId }),
+
+  selectScenario: (scenarioId) => set({ selectedScenarioId: scenarioId }),
+
+  setNodeSpecOverride: (nodeId, patch) =>
+    set((state) => ({
+      nodeSpecOverrides: {
+        ...state.nodeSpecOverrides,
+        [nodeId]: {
+          ...(state.nodeSpecOverrides[nodeId] || {}),
+          ...patch,
+        },
+      },
+    })),
+
+  setStressPlanning: () =>
+    set((state) => ({
+      runStatus: "planning",
+      runProgress: 0,
+      runVerdict: null,
+      runMetrics: [],
+      runTimeline: [
+        ...state.runTimeline,
+        createTimelineItem({
+          type: "stage",
+          message:
+            state.plannerMode === "manual"
+              ? `Generating stress scenarios with model ${state.plannerModelId}...`
+              : "Generating stress scenarios with AI planner chain...",
+          severity: "low",
+        }),
+      ],
+    })),
+
+  startStressRun: () =>
+    set((state) => ({
+      runStatus: "running",
+      runProgress: 0,
+      runMetrics: [],
+      runVerdict: null,
+      stressHotNodes: [],
+      stressHotEdges: [],
+      runTimeline: [
+        ...state.runTimeline,
+        createTimelineItem({
+          type: "stage",
+          message: "Stress run started.",
+          severity: "low",
+        }),
+      ],
+    })),
+
+  pauseStressRun: () =>
+    set((state) => ({
+      runStatus: state.runStatus === "running" ? "paused" : state.runStatus,
+      runTimeline:
+        state.runStatus === "running"
+          ? [
+              ...state.runTimeline,
+              createTimelineItem({
+                type: "stage",
+                message: "Stress run paused.",
+                severity: "medium",
+              }),
+            ]
+          : state.runTimeline,
+    })),
+
+  abortStressRun: () =>
+    set((state) => ({
+      runStatus: state.runStatus === "running" ? "aborted" : state.runStatus,
+      stressHotNodes: [],
+      stressHotEdges: [],
+      runTimeline:
+        state.runStatus === "running"
+          ? [
+              ...state.runTimeline,
+              createTimelineItem({
+                type: "stage",
+                message: "Stress run aborted by user.",
+                severity: "high",
+              }),
+            ]
+          : state.runTimeline,
+    })),
+
+  resetStressRun: () =>
+    set({
+      runStatus: "idle",
+      runProgress: 0,
+      runTimeline: [],
+      runMetrics: [],
+      runVerdict: null,
+      stressHotNodes: [],
+      stressHotEdges: [],
+    }),
+
+  processStressEvent: (event) => {
+    if (event.type === "progress") {
+      set((state) => ({
+        runProgress: event.data.progress,
+        runStatus:
+          event.data.stage === "complete" ? "completed" : state.runStatus,
+        runTimeline:
+          state.runTimeline.length > 0 &&
+          state.runTimeline[state.runTimeline.length - 1].message ===
+            `Stage: ${event.data.stage}`
+            ? state.runTimeline
+            : [
+                ...state.runTimeline,
+                createTimelineItem({
+                  type: "stage",
+                  message: `Stage: ${event.data.stage}`,
+                  severity: "low",
+                }),
+              ],
+      }));
+      return;
+    }
+
+    if (event.type === "metric") {
+      set((state) => ({
+        runMetrics: [...state.runMetrics, event.data],
+        runProgress: Math.max(state.runProgress, event.data.progress),
+        stressHotNodes: event.data.hotNodes,
+        stressHotEdges: event.data.hotEdges,
+      }));
+      return;
+    }
+
+    if (event.type === "event") {
+      set((state) => ({
+        runTimeline: [
+          ...state.runTimeline,
+          createTimelineItem({
+            type: "incident",
+            message: event.data.message,
+            severity: event.data.severity,
+            nodeIds: event.data.nodeIds,
+            edgeIds: event.data.edgeIds,
+            timestamp: event.data.timestamp,
+          }),
+        ],
+      }));
+      return;
+    }
+
+    if (event.type === "verdict") {
+      set((state) => ({
+        runVerdict: event.data,
+        runTimeline: [
+          ...state.runTimeline,
+          createTimelineItem({
+            type: "message",
+            message: `Verdict: ${event.data.status.toUpperCase()} (${event.data.score}/100)`,
+            severity: event.data.status === "pass" ? "low" : "high",
+          }),
+        ],
+      }));
+      return;
+    }
+
+    if (event.type === "done") {
+      set((state) => ({
+        runStatus: "completed",
+        runProgress: 100,
+        runTimeline: [
+          ...state.runTimeline,
+          createTimelineItem({
+            type: "stage",
+            message: `Run complete in ${event.data.durationMs}ms with ${event.data.eventCount} incidents.`,
+            severity: "low",
+          }),
+        ],
+      }));
+      return;
+    }
+
+    if (event.type === "error") {
+      set((state) => ({
+        runStatus: "error",
+        runTimeline: [
+          ...state.runTimeline,
+          createTimelineItem({
+            type: "message",
+            message: event.data.message,
+            severity: "critical",
+          }),
+        ],
+      }));
+    }
+  },
+
+  addStressTimelineMessage: (message, severity = "low") =>
+    set((state) => ({
+      runTimeline: [
+        ...state.runTimeline,
+        createTimelineItem({
+          type: "message",
+          message,
+          severity,
+        }),
+      ],
+    })),
 }));

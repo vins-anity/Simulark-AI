@@ -3,6 +3,7 @@ import {
   buildEnhancedSystemPrompt,
   detectArchitectureType,
   detectComplexity,
+  normalizeArchitectureMode,
   validatePrompt,
 } from "../lib/prompt-engineering";
 
@@ -318,7 +319,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build a web app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(prompt).toContain("web-app");
@@ -337,11 +338,11 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(startup).toContain("MODE: STARTUP");
-      expect(corporate).toContain("MODE: CORPORATE");
+      expect(corporate).toContain("MODE: ENTERPRISE");
     });
 
     it("should include complexity guidelines", () => {
@@ -349,7 +350,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build a simple todo app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(prompt).toContain("COMPLEXITY");
@@ -360,7 +361,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(prompt).toContain("FRAMEWORK COMPATIBILITY");
@@ -383,7 +384,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(prompt).toContain("POSITIONING");
@@ -394,7 +395,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(prompt).toContain("JSON");
@@ -419,21 +420,21 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build web app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       const aiPipeline = buildEnhancedSystemPrompt({
         userInput: "Build AI system",
         architectureType: "ai-pipeline",
         detectedIntent: "Architecture: ai-pipeline",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       const microservices = buildEnhancedSystemPrompt({
         userInput: "Build microservices",
         architectureType: "microservices",
         detectedIntent: "Architecture: microservices",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       expect(webApp).toContain("Web Application");
@@ -453,13 +454,23 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
-      expect(startup).toContain("MINIMUM COMPONENTS: 3");
-      expect(startup).toContain("MAXIMUM COMPONENTS: 5");
-      expect(corporate).toContain("MINIMUM COMPONENTS: 4");
-      expect(corporate).toContain("MAXIMUM COMPONENTS: 8");
+      expect(startup).toContain("- Minimum components: 3");
+      expect(startup).toContain("- Maximum components: 5");
+      expect(corporate).toContain("- Minimum components: 6");
+      expect(corporate).toContain("- Maximum components: 20");
+    });
+  });
+
+  describe("Mode Normalization", () => {
+    it("should map legacy corporate mode to enterprise", () => {
+      expect(normalizeArchitectureMode("corporate")).toBe("enterprise");
+    });
+
+    it("should fallback invalid modes to default", () => {
+      expect(normalizeArchitectureMode("invalid-mode")).toBe("default");
     });
   });
 });

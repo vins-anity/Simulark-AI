@@ -106,6 +106,7 @@ const COMPLEXITY_INDICATORS: Record<ComplexityLevel, string[]> = {
 
 // Mode-specific constraints
 export type ArchitectureMode = "default" | "startup" | "enterprise";
+export type LegacyArchitectureMode = ArchitectureMode | "corporate";
 
 export const MODE_CONSTRAINTS: Record<
   ArchitectureMode,
@@ -159,6 +160,26 @@ export const MODE_CONSTRAINTS: Record<
   },
 };
 
+/**
+ * Normalize requested mode (including legacy aliases) into a supported mode.
+ */
+export function normalizeArchitectureMode(
+  mode?: string | null,
+): ArchitectureMode {
+  if (!mode) return "default";
+
+  const normalized = mode.toLowerCase();
+  if (normalized === "corporate") {
+    return "enterprise";
+  }
+
+  if (normalized in MODE_CONSTRAINTS) {
+    return normalized as ArchitectureMode;
+  }
+
+  return "default";
+}
+
 // Framework compatibility rules
 const FRAMEWORK_GROUPS = {
   fullstack: ["nextjs", "nuxt", "sveltekit", "remix", "blitz"],
@@ -172,7 +193,6 @@ const _INCOMPATIBLE_PAIRS: Array<[string[], string[]]> = [
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.backend], // Laravel + Express
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.fullstack], // Laravel + Next.js
   [FRAMEWORK_GROUPS.traditional, FRAMEWORK_GROUPS.fullstack], // Laravel + Next.js
-
 ];
 
 // Architecture detection patterns
@@ -976,7 +996,8 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
   const detection = detectArchitectureType(userInput);
 
   // Get constraints
-  const modeConstraints = MODE_CONSTRAINTS[mode];
+  const effectiveMode = normalizeArchitectureMode(mode);
+  const modeConstraints = MODE_CONSTRAINTS[effectiveMode];
   const countAdjustment = getComponentCountAdjustment(
     operationType || "create",
   );
@@ -1085,14 +1106,14 @@ INSTRUCTION: Build upon or modify the previous architecture based on this conver
 
   // Skip complexity-based component limits for now
   const componentGuidelines = `COMPONENT GUIDELINES:
-${getModeConstraints(context.mode)}
+${getModeConstraints(effectiveMode)}
 ${getComplexityGuidelines(complexity)}
 
 ${getFrameworkCompatibilityRules()}`;
 
   let techRecommendations = getTechRecommendations(
     detection.type,
-    context.mode,
+    effectiveMode,
     complexity,
   );
 

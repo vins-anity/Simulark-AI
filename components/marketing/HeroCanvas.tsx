@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 // ============================================
 
 // Use a higher breakpoint to ensure smooth performance on tablets too
-const CANVAS_BREAKPOINT = 1024; // lg breakpoint - disable canvas below this
+const CANVAS_BREAKPOINT = 768; // md breakpoint - disable canvas below this
 
 // ============================================
 // TEMPLATES - 5 Professional Architecture Examples

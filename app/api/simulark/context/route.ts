@@ -16,14 +16,24 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { data: project, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("nodes, edges, user_id")
     .eq("id", projectId)
     .single();
 
   if (error || !project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+  if (project.user_id !== user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Parse JSON columns

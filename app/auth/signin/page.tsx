@@ -41,7 +41,6 @@ function TechnicalBackground() {
               fill="none"
               strokeDasharray="4 8"
             />
-
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#diagonal)" />
@@ -62,7 +61,6 @@ function TechnicalBackground() {
       <div className="absolute bottom-1/4 right-10 text-brand-charcoal/20 dark:text-white/20 font-mono text-xs">
         [ SYS-02 ]
       </div>
-
 
       {/* Dashed timeline */}
       <div className="absolute left-1/4 top-0 h-full w-px border-l border-dashed border-brand-charcoal/10 dark:border-white/10" />
@@ -153,7 +151,9 @@ function SystemStatus() {
     <div className="flex items-center gap-2 text-xs font-mono text-brand-charcoal/60 dark:text-white/60">
       <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
       <span>SYSTEM STATUS:</span>
-      <span className="text-brand-charcoal dark:text-white font-semibold">{status}</span>
+      <span className="text-brand-charcoal dark:text-white font-semibold">
+        {status}
+      </span>
       <span className="text-brand-charcoal/30 dark:text-white/30">|</span>
       <span>LATENCY: 12ms</span>
     </div>

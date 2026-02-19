@@ -105,9 +105,9 @@ export function MarketingLayoutClient({
           {/* Main Bar */}
           <div className="container mx-auto px-6 h-14 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 border border-neutral-900 dark:border-white !bg-neutral-900 dark:!bg-transparent flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
-              <Icon icon="lucide:box" className="w-4 h-4" />
-            </div>
+              <div className="w-8 h-8 border border-neutral-900 dark:border-white !bg-neutral-900 dark:!bg-transparent flex items-center justify-center text-white transition-all duration-300 group-hover:bg-brand-orange group-hover:border-brand-orange">
+                <Icon icon="lucide:box" className="w-4 h-4" />
+              </div>
               <div className="flex flex-col">
                 <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors text-brand-charcoal dark:text-white">
                   SIMULARK

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { generateContext } from "@/lib/bridge/context-engine";
 import type { ArchitectureGraph } from "@/lib/schema/graph"; // Use valid schema
+import { createClient } from "@/lib/supabase/server";
 
 // Mock data for now, in real app we fetch from DB
 const _mockGraph: ArchitectureGraph = {
@@ -13,17 +14,35 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }, // In Next.js 15, params is a Promise
 ) {
   const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  // TODO: Fetch graph from Supabase using `id`
-  console.log(`Fetching context for project: ${id}`);
+  const { data: project, error } = await supabase
+    .from("projects")
+    .select("nodes, edges, user_id")
+    .eq("id", id)
+    .single();
 
-  // For MVP, return a mock or empty graph response transformed into JSON context
-  // validArchitectureGraph is required by generateContext, so we'd normally parse db result
-  // returning simple JSON for now
+  if (error || !project) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+  if (project.user_id !== user.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const graph: ArchitectureGraph = {
+    nodes: Array.isArray(project.nodes) ? project.nodes : [],
+    edges: Array.isArray(project.edges) ? project.edges : [],
+  };
 
   return NextResponse.json({
     id,
-    context: generateContext({ nodes: [], edges: [] }, "json"), // Return empty graph context
+    context: generateContext(graph, "json"),
     timestamp: new Date().toISOString(),
   });
 }

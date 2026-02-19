@@ -1,7 +1,6 @@
 "use client";
 
-import { Icon } from "@iconify/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowDown,
   ArrowRight,
@@ -10,20 +9,17 @@ import {
   Circle,
   Download,
   FileCode,
-  FileDown,
   GitBranch,
   Grid3X3,
   Image as ImageIcon,
-  LayoutGrid,
   List,
   Move,
-  RotateCcw,
+  ShieldAlert,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { updateProjectName } from "@/actions/projects";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import type { LayoutAlgorithm } from "@/lib/layout";
 import type { Project } from "@/lib/schema/graph";
 import { useSimulationStore } from "@/lib/store";
@@ -67,7 +62,14 @@ export function WorkstationHeader({
   onAutolayout,
   onLayoutAlgorithm,
 }: WorkstationHeaderProps) {
-  const { chaosMode, setChaosMode } = useSimulationStore();
+  const {
+    chaosMode,
+    setChaosMode,
+    stressMode,
+    setStressMode,
+    runStatus,
+    runProgress,
+  } = useSimulationStore();
   const [currentLayoutIndex, setCurrentLayoutIndex] = useState(0);
   const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
 
@@ -116,6 +118,16 @@ export function WorkstationHeader({
 
   const currentLayout = LAYOUT_ALGORITHMS[currentLayoutIndex];
   const LayoutIcon = currentLayout.icon;
+  const stressLabel =
+    runStatus === "running" || runStatus === "planning"
+      ? `STRESS:${Math.round(runProgress)}%`
+      : runStatus === "paused"
+        ? "STRESS:PAUSED"
+        : runStatus === "completed"
+          ? "STRESS:DONE"
+          : runStatus === "error"
+            ? "STRESS:ERROR"
+            : "STRESS_TEST";
 
   if (!project) {
     return (
@@ -138,7 +150,7 @@ export function WorkstationHeader({
 
         {/* Project Identity */}
         <div className="flex flex-col ml-2">
-          <span className="font-mono text-[8px] text-brand-charcoal/20 uppercase tracking-[0.3em] mb-0.5">
+          <span className="hidden md:block font-mono text-[8px] text-brand-charcoal/20 uppercase tracking-[0.3em] mb-0.5">
             PROJECT_STATION // ARCH_DRAFT
           </span>
           <div className="flex items-center gap-3">
@@ -170,9 +182,28 @@ export function WorkstationHeader({
         <div className="h-10 w-px bg-brand-charcoal/10 mx-4" />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 shrink-0">
         {/* Layout Algorithm Controls moved here */}
         <div className="flex items-center gap-1 mr-2 scale-[0.9] origin-right">
+          <div className="flex items-center border border-brand-charcoal/10">
+            <Button
+              variant="ghost"
+              onClick={() => onAutolayout("DOWN")}
+              className="h-8 w-8 rounded-none p-0 text-brand-charcoal/50 hover:text-white hover:bg-brand-charcoal"
+              title="[ AUTO_LAYOUT ] Top to Bottom"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => onAutolayout("RIGHT")}
+              className="h-8 w-8 rounded-none p-0 text-brand-charcoal/50 hover:text-white hover:bg-brand-charcoal border-l border-brand-charcoal/10"
+              title="[ AUTO_LAYOUT ] Left to Right"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
           <Button
             variant="ghost"
             onClick={handleLayoutRotate}
@@ -234,6 +265,10 @@ export function WorkstationHeader({
           </DropdownMenu>
         </div>
 
+        <div className="px-2 py-1 border border-brand-charcoal/10 font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+          {saving ? "SYNC:SAVING" : "SYNC:READY"}
+        </div>
+
         {/* Chaos Toggle moved here */}
         <Button
           variant="ghost"
@@ -252,6 +287,23 @@ export function WorkstationHeader({
             )}
           />
           <span>{chaosMode ? "CHAOS_MODE:ON" : "SYSTEM_SIM"}</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          onClick={() => setStressMode(!stressMode)}
+          title="Stress Test: AI planner + deterministic simulation for resilience risk"
+          className={cn(
+            "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
+            stressMode
+              ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-400"
+              : "bg-bg-elevated border-brand-charcoal/10 text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950",
+          )}
+        >
+          <ShieldAlert
+            className={cn("w-3.5 h-3.5", stressMode && "animate-pulse")}
+          />
+          <span>{stressLabel}</span>
         </Button>
 
         {/* File Operations moved here */}

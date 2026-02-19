@@ -1,14 +1,14 @@
 "use client";
 
+import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 import {
   EXPERIENCE_LEVEL_OPTIONS,
+  type OnboardingData,
   PROJECT_TYPE_OPTIONS,
   TEAM_CONTEXT_OPTIONS,
-  type OnboardingData,
 } from "../types";
 
 const containerVariants = {

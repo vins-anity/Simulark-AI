@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { getProject, saveProject } from "@/actions/projects";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,14 +38,18 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { nodes, edges } = await request.json();
-
-    if (!nodes || !edges) {
+    const payloadSchema = v.object({
+      nodes: v.array(v.any()),
+      edges: v.array(v.any()),
+    });
+    const parsed = v.safeParse(payloadSchema, await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Nodes and edges are required" },
+        { error: "Invalid architecture payload" },
         { status: 400 },
       );
     }
+    const { nodes, edges } = parsed.output;
 
     const result = await saveProject(id, { nodes, edges });
     if (result.success) {

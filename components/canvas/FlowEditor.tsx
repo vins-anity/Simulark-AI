@@ -25,6 +25,7 @@ import { Redo2, Undo2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { saveProject } from "@/actions/projects";
+import { calculateGraphExportBounds } from "@/lib/canvas-export";
 import { useGraphHistory } from "@/lib/history-store";
 import { useCanvasShortcuts } from "@/lib/keyboard-shortcuts";
 import {
@@ -57,12 +58,49 @@ import { ShapeNode } from "./nodes/ShapeNode";
 import { StorageNode } from "./nodes/StorageNode";
 import { TextNode } from "./nodes/TextNode";
 import { VectorDBNode } from "./nodes/VectorDBNode";
+import { StressTestPanel } from "./StressTestPanel";
 
 interface FlowEditorProps {
   initialNodes?: any[];
   initialEdges?: any[];
   projectId: string;
   onViewportChange?: (viewport: { x: number; y: number; zoom: number }) => void;
+}
+
+function serializeGraphForSave(nodes: any[], edges: any[]): string {
+  const stableNodes = nodes
+    .map((node) => ({
+      id: node.id,
+      type: node.type,
+      position: node.position,
+      data: node.data,
+      style: node.style,
+      parentId: node.parentId,
+      extent: node.extent,
+      sourcePosition: node.sourcePosition,
+      targetPosition: node.targetPosition,
+      zIndex: node.zIndex,
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const stableEdges = edges
+    .map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      type: edge.type,
+      data: edge.data,
+      label: edge.label,
+      animated: edge.animated,
+      style: edge.style,
+      sourceHandle: edge.sourceHandle,
+      targetHandle: edge.targetHandle,
+      markerStart: edge.markerStart,
+      markerEnd: edge.markerEnd,
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  return JSON.stringify({ nodes: stableNodes, edges: stableEdges });
 }
 
 const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
@@ -73,8 +111,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const { fitView, getNodes, getEdges, zoomIn, zoomOut } = useReactFlow();
-    const { chaosMode } = useSimulationStore();
+    const { chaosMode, stressMode } = useSimulationStore();
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSavedSnapshotRef = useRef<string>("");
     const isInitializedRef = useRef(false);
     const isUndoRedoRef = useRef(false);
     const { resolvedTheme } = useTheme();
@@ -94,6 +133,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       if (initialNodes.length > 0 || initialEdges.length > 0) {
         pushState({ nodes: initialNodes, edges: initialEdges }, "initial");
       }
+      lastSavedSnapshotRef.current = serializeGraphForSave(
+        initialNodes,
+        initialEdges,
+      );
     }, [initialEdges, initialNodes, pushState]);
 
     // Track changes and push to history (debounced)
@@ -166,7 +209,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
     // Handle save
     const handleSave = useCallback(async () => {
       try {
+        const snapshot = serializeGraphForSave(nodes, edges);
         await saveProject(projectId, { nodes, edges });
+        lastSavedSnapshotRef.current = snapshot;
         toast.success("Project saved");
       } catch (_error) {
         toast.error("Failed to save");
@@ -174,23 +219,116 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
     }, [projectId, nodes, edges]);
 
     // Handle export
-    const handleExport = useCallback(async () => {
-      // Export as PNG by default
-      const element = document.querySelector(".react-flow") as HTMLElement;
-      if (!element) return;
+    const exportGraphFile = useCallback(
+      async (format: "png" | "pdf" | "svg") => {
+        const flowRoot = document.querySelector(".react-flow") as HTMLElement;
+        const viewport = flowRoot?.querySelector(
+          ".react-flow__viewport",
+        ) as HTMLElement;
 
-      const { toPng } = await import("html-to-image");
-      const bgColor = resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5";
-      const dataUrl = await toPng(element, {
-        cacheBust: true,
-        backgroundColor: bgColor,
-      });
-      const link = document.createElement("a");
-      link.download = `architecture-${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
-      toast.success("Exported as PNG");
-    }, [resolvedTheme]);
+        if (!flowRoot || !viewport) {
+          toast.error("Could not find canvas to export");
+          return;
+        }
+
+        const currentNodes = getNodes();
+        if (currentNodes.length === 0) {
+          toast.error("No nodes to export");
+          return;
+        }
+
+        const bgColor = resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5";
+        const bounds = calculateGraphExportBounds(currentNodes, 50);
+        const width = Math.ceil(bounds.width);
+        const height = Math.ceil(bounds.height);
+
+        const exportRoot = document.createElement("div");
+        exportRoot.style.position = "fixed";
+        exportRoot.style.left = "-100000px";
+        exportRoot.style.top = "0";
+        exportRoot.style.width = `${width}px`;
+        exportRoot.style.height = `${height}px`;
+        exportRoot.style.overflow = "hidden";
+        exportRoot.style.backgroundColor = bgColor;
+        exportRoot.style.pointerEvents = "none";
+        exportRoot.style.zIndex = "-1";
+
+        const viewportClone = viewport.cloneNode(true) as HTMLElement;
+        viewportClone.style.transformOrigin = "0 0";
+        viewportClone.style.transform = `translate(${bounds.translateX}px, ${bounds.translateY}px) scale(1)`;
+        viewportClone.style.width = "100%";
+        viewportClone.style.height = "100%";
+
+        exportRoot.appendChild(viewportClone);
+        document.body.appendChild(exportRoot);
+
+        try {
+          const { toPng, toSvg } = await import("html-to-image");
+
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve());
+          });
+
+          switch (format) {
+            case "png": {
+              const dataUrl = await toPng(exportRoot, {
+                cacheBust: true,
+                backgroundColor: bgColor,
+                width,
+                height,
+                pixelRatio: 2,
+              });
+              const link = document.createElement("a");
+              link.download = `architecture-${Date.now()}.png`;
+              link.href = dataUrl;
+              link.click();
+              toast.success("PNG exported successfully!");
+              break;
+            }
+            case "svg": {
+              const dataUrl = await toSvg(exportRoot, {
+                cacheBust: true,
+                backgroundColor: bgColor,
+                width,
+                height,
+              });
+              const link = document.createElement("a");
+              link.download = `architecture-${Date.now()}.svg`;
+              link.href = dataUrl;
+              link.click();
+              toast.success("SVG exported successfully!");
+              break;
+            }
+            case "pdf": {
+              const { jsPDF } = await import("jspdf");
+              const dataUrl = await toPng(exportRoot, {
+                cacheBust: true,
+                backgroundColor: bgColor,
+                width,
+                height,
+                pixelRatio: 2,
+              });
+              const pdf = new jsPDF({
+                orientation: width > height ? "landscape" : "portrait",
+                unit: "px",
+                format: [width, height],
+              });
+              pdf.addImage(dataUrl, "PNG", 0, 0, width, height);
+              pdf.save(`architecture-${Date.now()}.pdf`);
+              toast.success("PDF exported successfully!");
+              break;
+            }
+          }
+        } finally {
+          exportRoot.remove();
+        }
+      },
+      [getNodes, resolvedTheme],
+    );
+
+    const handleExport = useCallback(async () => {
+      await exportGraphFile("png");
+    }, [exportGraphFile]);
 
     // Setup keyboard shortcuts
     useCanvasShortcuts({
@@ -220,8 +358,14 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           return;
         }
 
+        const snapshot = serializeGraphForSave(nodes, edges);
+        if (snapshot === lastSavedSnapshotRef.current) {
+          return;
+        }
+
         try {
           await saveProject(projectId, { nodes, edges });
+          lastSavedSnapshotRef.current = snapshot;
         } catch (error) {
           console.error("[FlowEditor] Auto-save failed:", error);
           toast.error("Failed to save changes. Please try again.");
@@ -320,126 +464,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           navigator.clipboard.writeText(mermaidCode);
           toast.success("Mermaid code copied to clipboard!");
         } else {
-          const element = document.querySelector(".react-flow") as HTMLElement;
-          if (!element) return;
-
-          // Get all nodes to calculate the full bounds
-          const nodes = getNodes();
-          if (nodes.length === 0) {
-            toast.error("No nodes to export");
-            return;
-          }
-
-          // Calculate bounding box of all nodes
-          const padding = 50;
-          let minX = Infinity;
-          let minY = Infinity;
-          let maxX = -Infinity;
-          let maxY = -Infinity;
-
-          nodes.forEach((node) => {
-            const x = node.position.x;
-            const y = node.position.y;
-            const width = node.measured?.width || 200;
-            const height = node.measured?.height || 100;
-
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + width);
-            maxY = Math.max(maxY, y + height);
-          });
-
-          const width = maxX - minX + padding * 2;
-          const height = maxY - minY + padding * 2;
-
-          const { toPng, toSvg } = await import("html-to-image");
-          const bgColor = resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5";
-
-          switch (format) {
-            case "png": {
-              const dataUrl = await toPng(element, {
-                cacheBust: true,
-                backgroundColor: bgColor,
-                width,
-                height,
-                style: {
-                  transform: `translate(${-minX + padding}px, ${-minY + padding}px)`,
-                },
-                filter: (node) => {
-                  // Filter out any UI overlays
-                  if (
-                    node.classList?.contains("react-flow__panel") ||
-                    node.classList?.contains("react-flow__attribution")
-                  ) {
-                    return false;
-                  }
-                  return true;
-                },
-              });
-              const link = document.createElement("a");
-              link.download = `architecture-${Date.now()}.png`;
-              link.href = dataUrl;
-              link.click();
-              toast.success("PNG exported successfully!");
-              break;
-            }
-            case "svg": {
-              const dataUrl = await toSvg(element, {
-                cacheBust: true,
-                backgroundColor: bgColor,
-                width,
-                height,
-                style: {
-                  transform: `translate(${-minX + padding}px, ${-minY + padding}px)`,
-                },
-                filter: (node) => {
-                  if (
-                    node.classList?.contains("react-flow__panel") ||
-                    node.classList?.contains("react-flow__attribution")
-                  ) {
-                    return false;
-                  }
-                  return true;
-                },
-              });
-              const link = document.createElement("a");
-              link.download = `architecture-${Date.now()}.svg`;
-              link.href = dataUrl;
-              link.click();
-              toast.success("SVG exported successfully!");
-              break;
-            }
-            case "pdf": {
-              const { jsPDF } = await import("jspdf");
-              const dataUrl = await toPng(element, {
-                cacheBust: true,
-                backgroundColor: bgColor,
-                width,
-                height,
-                style: {
-                  transform: `translate(${-minX + padding}px, ${-minY + padding}px)`,
-                },
-                filter: (node) => {
-                  if (
-                    node.classList?.contains("react-flow__panel") ||
-                    node.classList?.contains("react-flow__attribution")
-                  ) {
-                    return false;
-                  }
-                  return true;
-                },
-              });
-              const pdf = new jsPDF({
-                orientation: width > height ? "landscape" : "portrait",
-                unit: "px",
-                format: [width, height],
-              });
-              pdf.addImage(dataUrl, "PNG", 0, 0, width, height);
-              pdf.save(`architecture-${Date.now()}.pdf`);
-              toast.success("PDF exported successfully!");
-              break;
-            }
-          }
+          await exportGraphFile(format);
         }
       },
       zoomIn: () => {
@@ -521,6 +546,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         className={cn(
           "h-full w-full relative group transition-colors duration-500 font-sans",
           chaosMode && "bg-black/90",
+          stressMode && !chaosMode && "bg-amber-950/5",
         )}
       >
         <ReactFlow
@@ -546,7 +572,13 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
             id="dots"
             gap={20}
             size={1}
-            color={chaosMode ? "#330000" : "var(--canvas-dot)"}
+            color={
+              chaosMode
+                ? "#330000"
+                : stressMode
+                  ? "rgba(217,119,6,0.3)"
+                  : "var(--canvas-dot)"
+            }
             className="transition-colors duration-500"
           />
 
@@ -587,6 +619,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
 
         {/* Chaos Mode Panel */}
         <ChaosModePanel />
+        <StressTestPanel />
       </div>
     );
   },

@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { createProject, getUserProjects } from "@/actions/projects";
+import { CreateProjectSchema } from "@/lib/schema/api";
 
 /**
  * GET /api/projects
@@ -29,14 +31,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, provider } = body;
-
-    if (!name) {
+    const parsed = v.safeParse(CreateProjectSchema, body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Project name is required" },
+        { error: "Invalid project payload" },
         { status: 400 },
       );
     }
+    const { name, provider } = parsed.output;
 
     const result = await createProject(name, provider);
     if (result.success) {

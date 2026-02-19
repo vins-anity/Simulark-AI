@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 // Types
@@ -92,7 +91,6 @@ export async function createChat(
     return { error: error.message };
   }
 
-  revalidatePath(`/projects/${projectId}`);
   return { chat: data };
 }
 
@@ -130,7 +128,6 @@ export async function deleteChat(
     return { error: error.message };
   }
 
-  revalidatePath(`/projects/${projectId}`);
   return {};
 }
 

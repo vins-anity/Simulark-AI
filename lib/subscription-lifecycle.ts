@@ -14,6 +14,32 @@ export interface SubscriptionState {
 }
 
 const GRACE_PERIOD_DAYS = 3;
+let hasLoggedInvalidSupabaseKey = false;
+
+function isInvalidSupabaseKeyError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const message = String((error as { message?: unknown }).message || "");
+  const hint = String((error as { hint?: unknown }).hint || "");
+
+  return (
+    message.toLowerCase().includes("invalid api key") ||
+    hint.toLowerCase().includes("supabase") ||
+    hint.toLowerCase().includes("service_role")
+  );
+}
+
+function logInvalidSupabaseKeyWarningOnce(): void {
+  if (hasLoggedInvalidSupabaseKey) {
+    return;
+  }
+  hasLoggedInvalidSupabaseKey = true;
+  console.warn(
+    "[Subscription Lifecycle] Invalid Supabase API key detected. Falling back to free-tier assumptions.",
+  );
+}
 
 /**
  * Get subscription state for a user
@@ -39,6 +65,10 @@ export async function getSubscriptionState(
       .single();
 
     if (error || !data) {
+      if (isInvalidSupabaseKeyError(error)) {
+        logInvalidSupabaseKeyWarningOnce();
+        return null;
+      }
       console.error(
         "[Subscription Lifecycle] Error fetching subscription:",
         error,
@@ -48,6 +78,10 @@ export async function getSubscriptionState(
 
     return calculateSubscriptionState(data);
   } catch (error) {
+    if (isInvalidSupabaseKeyError(error)) {
+      logInvalidSupabaseKeyWarningOnce();
+      return null;
+    }
     console.error("[Subscription Lifecycle] Error:", error);
     return null;
   }
@@ -159,6 +193,10 @@ export async function processExpiredSubscriptions(): Promise<{
       .eq("manual_override", false);
 
     if (fetchError) {
+      if (isInvalidSupabaseKeyError(fetchError)) {
+        logInvalidSupabaseKeyWarningOnce();
+        return result;
+      }
       console.error(
         "[Subscription Lifecycle] Error fetching expired subscriptions:",
         fetchError,
@@ -212,6 +250,10 @@ export async function processExpiredSubscriptions(): Promise<{
 
     return result;
   } catch (error) {
+    if (isInvalidSupabaseKeyError(error)) {
+      logInvalidSupabaseKeyWarningOnce();
+      return result;
+    }
     console.error(
       "[Subscription Lifecycle] Error in processExpiredSubscriptions:",
       error,
@@ -256,6 +298,10 @@ export async function sendExpiryReminders(): Promise<{
       .lte("subscription_expires_at", endOfDay);
 
     if (fetchError) {
+      if (isInvalidSupabaseKeyError(fetchError)) {
+        logInvalidSupabaseKeyWarningOnce();
+        return result;
+      }
       console.error(
         "[Subscription Lifecycle] Error fetching expiring subscriptions:",
         fetchError,
@@ -274,6 +320,10 @@ export async function sendExpiryReminders(): Promise<{
 
     return result;
   } catch (error) {
+    if (isInvalidSupabaseKeyError(error)) {
+      logInvalidSupabaseKeyWarningOnce();
+      return result;
+    }
     console.error(
       "[Subscription Lifecycle] Error in sendExpiryReminders:",
       error,

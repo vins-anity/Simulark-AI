@@ -1,8 +1,8 @@
 "use client";
 
+import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
 import { GENERATION_MODE_OPTIONS, type OnboardingData } from "../types";
 
@@ -56,7 +56,8 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
           Choose Your Default Mode
         </h2>
         <p className="mt-1 text-sm text-brand-charcoal/60 max-w-lg mx-auto">
-          This determines the default complexity level for generated architectures.
+          This determines the default complexity level for generated
+          architectures.
         </p>
       </motion.div>
 
@@ -167,7 +168,8 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
       <motion.div variants={itemVariants} className="mt-6 text-center">
         <p className="text-[10px] text-brand-charcoal/50 font-mono">
           <span className="text-brand-orange">TIP:</span> Start with{" "}
-          <strong className="text-brand-charcoal/70">Standard</strong> for most projects
+          <strong className="text-brand-charcoal/70">Standard</strong> for most
+          projects
         </p>
       </motion.div>
     </motion.div>

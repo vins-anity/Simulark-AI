@@ -10,12 +10,12 @@ import {
   Copy,
   Loader2,
   RotateCcw,
+  Square,
   Terminal,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import { AVAILABLE_MODELS } from "@/lib/ai-models";
 import {
   addMessage,
   createChat as createChatAction,
@@ -25,7 +25,7 @@ import {
   getProjectChats,
   updateChatTitle as updateChatTitleAction,
 } from "@/actions/chats";
-
+import { updateUserPreferences } from "@/actions/users";
 import {
   Select,
   SelectContent,
@@ -33,9 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AVAILABLE_MODELS } from "@/lib/ai-models";
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { cn } from "@/lib/utils";
 import { StreamingMessage } from "./StreamingMessage";
+import { ResourceExhaustionModal } from "@/components/subscription/ResourceExhaustionModal";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -58,6 +60,35 @@ interface Message {
   isThinking?: boolean;
 }
 
+function isLikelyArchitecturePayload(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+
+  return (
+    (trimmed.startsWith("{") || trimmed.startsWith("```")) &&
+    (trimmed.includes('"nodes"') || trimmed.includes('"edges"'))
+  );
+}
+
+function extractArchitectureFromText(text: string): {
+  nodes: any[];
+  edges: any[];
+} | null {
+  if (!text.includes('"nodes"') || !text.includes('"edges"')) {
+    return null;
+  }
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  if (!parsed || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+    return null;
+  }
+
+  return parsed as { nodes: any[]; edges: any[] };
+}
+
 interface Chat {
   id: string;
   project_id: string;
@@ -70,6 +101,15 @@ type GenerationState =
   | "idle"
   | "preparing"
   | "generating"
+  | "complete"
+  | "error";
+
+type StreamStage =
+  | "analyzing"
+  | "connecting"
+  | "thinking"
+  | "generating"
+  | "validating"
   | "complete"
   | "error";
 
@@ -127,53 +167,58 @@ function SignalStrengthIndicator({
 }
 
 // Processing steps indicator
-function ProcessingSteps({ isGenerating }: { isGenerating: boolean }) {
-  const steps = ["ANALYZING", "PLANNING", "GENERATING", "VALIDATING"];
-
-  const [currentStep, setCurrentStep] = useState(0);
-
-  useEffect(() => {
-    if (!isGenerating) {
-      setCurrentStep(0);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev + 1) % steps.length);
-    }, 1500);
-
-    return () => clearInterval(interval);
-  }, [isGenerating]);
+function ProcessingSteps({
+  isGenerating,
+  stage,
+}: {
+  isGenerating: boolean;
+  stage: StreamStage;
+}) {
+  const steps = [
+    { label: "ANALYZING", stage: "analyzing" as const },
+    { label: "CONNECTING", stage: "connecting" as const },
+    { label: "THINKING", stage: "thinking" as const },
+    { label: "GENERATING", stage: "generating" as const },
+    { label: "VALIDATING", stage: "validating" as const },
+  ];
 
   if (!isGenerating) return null;
 
+  const currentIndex = Math.max(
+    0,
+    steps.findIndex((step) => step.stage === stage),
+  );
+
   return (
     <div className="flex items-center gap-2 overflow-hidden">
-      <motion.div
-        className="flex items-center gap-1"
-        animate={{ x: [0, -20] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-      >
-        {steps.map((step, i) => (
-          <div key={step} className="flex items-center gap-1 shrink-0">
-            <span
-              className={cn(
-                "font-mono text-[8px] uppercase tracking-wider transition-colors",
-                i === currentStep
-                  ? "text-brand-orange font-bold"
-                  : "text-brand-charcoal/30 dark:text-text-secondary/50",
-              )}
-            >
-              {step}
-            </span>
-            {i < steps.length - 1 && (
-              <span className="text-brand-charcoal/20 dark:text-border-primary/50">
-                →
+      <div className="flex items-center gap-1">
+        {steps.map((step, i) => {
+          const isCompleted = i < currentIndex;
+          const isActive = i === currentIndex;
+
+          return (
+            <div key={step.stage} className="flex items-center gap-1 shrink-0">
+              <span
+                className={cn(
+                  "font-mono text-[8px] uppercase tracking-wider transition-colors",
+                  isActive
+                    ? "text-brand-orange font-bold"
+                    : isCompleted
+                      ? "text-brand-charcoal/70 dark:text-text-secondary/80"
+                      : "text-brand-charcoal/30 dark:text-text-secondary/50",
+                )}
+              >
+                {step.label}
               </span>
-            )}
-          </div>
-        ))}
-      </motion.div>
+              {i < steps.length - 1 && (
+                <span className="text-brand-charcoal/20 dark:text-border-primary/50">
+                  →
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -271,9 +316,12 @@ export function AIAssistantPanel({
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamProgress, setStreamProgress] = useState(0);
+  const [streamStage, setStreamStage] = useState<StreamStage>("analyzing");
   const [showChatList, setShowChatList] = useState(false);
   const [_isThinkingOpen, _setIsThinkingOpen] = useState(true);
+  const [suggestionChips, setSuggestionChips] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollSentinelRef = useRef<HTMLDivElement>(null);
 
   // Chat state
   const [chats, setChats] = useState<Chat[]>([]);
@@ -292,10 +340,20 @@ export function AIAssistantPanel({
   const processedPromptRef = useRef<string | null>(null);
   const isProcessingRef = useRef<boolean>(false);
 
+  // Abort controller ref for stop generation + navigation cleanup
+  const abortControllerRef = useRef<AbortController | null>(null);
+  // Guard to prevent loadMessages from overwriting streaming state
+  const skipLoadMessagesRef = useRef<boolean>(false);
+
   // Load initial settings or default mode
   const [chatMode, setChatModeState] = useState<ArchitectureMode>(
     (initialMetadata?.mode as ArchitectureMode) || "default",
   );
+
+  // Rate limit / Quota state
+  const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
+  const [quotaResetAt, setQuotaResetAt] = useState<string | null>(null);
+  const [quotaLimit, setQuotaLimit] = useState<number>(15);
 
   // Settings / Preferences
   // Settings / Preferences
@@ -327,22 +385,40 @@ export function AIAssistantPanel({
     }
   };
 
+  const updateStreamProgress = (
+    nextProgress: number,
+    nextStage?: StreamStage,
+  ) => {
+    setStreamProgress((prev) => {
+      const clamped = Math.max(0, Math.min(100, Math.round(nextProgress)));
+      return Math.max(prev, clamped);
+    });
+    if (nextStage) {
+      setStreamStage(nextStage);
+    }
+  };
+
   // Wrappers to persist on change
   const setChatMode = (mode: ArchitectureMode) => {
     setChatModeState(mode);
-    // Save to metadata (we only save metadata here, not nodes/edges)
+    // Save preference to project
     import("@/actions/projects").then(({ saveProject }) => {
-      saveProject(projectId, { metadata: { ...initialMetadata, mode, model } });
+      saveProject(projectId, { metadata: { ...initialMetadata, mode, model } }, false);
     });
+    // Sync to global user preferences
+    updateUserPreferences({ defaultMode: mode });
   };
 
   const setModel = (newModel: string) => {
     setModelState(newModel);
+    // Save preference to project
     import("@/actions/projects").then(({ saveProject }) => {
       saveProject(projectId, {
         metadata: { ...initialMetadata, mode: chatMode, model: newModel },
-      });
+      }, false);
     });
+    // Sync to global user preferences
+    updateUserPreferences({ defaultModel: newModel });
   };
 
   // Load chats on mount
@@ -353,8 +429,13 @@ export function AIAssistantPanel({
   }, []);
 
   // Load messages when current chat changes
+  // Guard: skip when processMessage just set currentChatId mid-stream
   useEffect(() => {
     if (currentChatId) {
+      if (skipLoadMessagesRef.current) {
+        skipLoadMessagesRef.current = false;
+        return; // Don't overwrite streaming state
+      }
       loadMessages(currentChatId);
     } else {
       setMessages([]);
@@ -362,12 +443,17 @@ export function AIAssistantPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChatId]);
 
-  // Scroll to bottom on new messages
+  // Abort stream on unmount (e.g. navigating to dashboard)
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
-    }
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
+
+  // Scroll to bottom on new messages — uses a sentinel div for reliable behaviour
+  useEffect(() => {
+    scrollSentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, isGenerating]);
 
   // Reliable initial prompt processing with state machine
   useEffect(() => {
@@ -468,6 +554,12 @@ export function AIAssistantPanel({
     }
   }, [pendingPrompt, projectId]);
 
+  // Stop generation handler
+  const handleStopGeneration = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
   // Clear generation state when user sends a new message manually
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -524,22 +616,29 @@ export function AIAssistantPanel({
             ? prefs.customInstructions
             : "";
 
-        let defaultMode = prefs.defaultArchitectureMode as ArchitectureMode;
-        
+        let finalMode = (prefs.defaultMode || prefs.defaultArchitectureMode) as ArchitectureMode;
+
         // Migrate legacy corporate mode
-        if ((defaultMode as string) === "corporate") {
-          defaultMode = "enterprise";
+        if ((finalMode as string) === "corporate") {
+          finalMode = "enterprise";
         }
 
-        if (defaultMode && ["default", "startup", "enterprise"].includes(defaultMode)) {
-           setChatMode(defaultMode);
+        if (
+          finalMode &&
+          ["default", "startup", "enterprise"].includes(finalMode)
+        ) {
+          setChatModeState(finalMode);
+        }
+
+        if (prefs.defaultModel) {
+          setModelState(prefs.defaultModel);
         }
 
         // Set default model if not already set by project metadata
         if (prefs.defaultModel && !initialMetadata?.model) {
           setModelState(prefs.defaultModel);
         }
-        
+
         setUserPreferences({
           cloudProviders,
           languages,
@@ -666,8 +765,8 @@ export function AIAssistantPanel({
     }
   };
 
-  // Dynamic architecture summary generator - parses LLM response data
-  const generateArchitectureSummary = (data: {
+  // Generates a short, punchy conversational response and smart follow-up chips
+  const generateConversationalResponse = (data: {
     nodes: any[];
     edges: any[];
     analysis?: string;
@@ -676,85 +775,60 @@ export function AIAssistantPanel({
     const nodeCount = data.nodes?.length || 0;
     const edgeCount = data.edges?.length || 0;
 
-    // Group by service type with better categorization
-    const categories = {
-      compute:
-        data.nodes?.filter((n) =>
-          ["service", "function", "ai"].includes(n.type),
-        ) || [],
-      data:
-        data.nodes?.filter((n) =>
-          ["database", "cache", "storage", "vector-db"].includes(n.type),
-        ) || [],
-      messaging:
-        data.nodes?.filter((n) => ["queue", "messaging"].includes(n.type)) ||
-        [],
-      gateway:
-        data.nodes?.filter((n) =>
-          ["gateway", "loadbalancer", "client"].includes(n.type),
-        ) || [],
-      infrastructure:
-        data.nodes?.filter((n) =>
-          ["auth", "payment", "monitoring", "cicd", "security"].includes(
-            n.type,
-          ),
-        ) || [],
-    };
-
-    // Extract unique technologies
     const techs = Array.from(
-      new Set(data.nodes?.map((n) => n.data?.tech).filter(Boolean) || []),
+      new Set(data.nodes?.map((n: any) => n.data?.tech).filter(Boolean) || []),
+    ) as string[];
+
+    const hasDataLayer = data.nodes?.some((n: any) =>
+      ["database", "cache", "storage", "vector-db"].includes(n.type),
+    );
+    const hasGateway = data.nodes?.some((n: any) =>
+      ["gateway", "loadbalancer"].includes(n.type),
+    );
+    const hasQueue = data.nodes?.some((n: any) =>
+      ["queue", "messaging"].includes(n.type),
     );
 
-    // Build dynamic summary
-    let summary = `## Architecture Analysis\n\n`;
-    summary += `**Overview**: ${nodeCount} components connected by ${edgeCount} data flows\n\n`;
+    // Edge counts to find most connected node
+    const edgeCounts = new Map<string, number>();
+    for (const edge of data.edges || []) {
+      if (edge.source) edgeCounts.set(edge.source, (edgeCounts.get(edge.source) || 0) + 1);
+      if (edge.target) edgeCounts.set(edge.target, (edgeCounts.get(edge.target) || 0) + 1);
+    }
+    const busiest = data.nodes
+      ?.map((n: any) => ({ label: n.data?.label || n.id, count: edgeCounts.get(n.id) || 0 }))
+      .sort((a: any, b: any) => b.count - a.count)[0];
 
-    // Add category breakdown
-    const categoryNames: Record<string, string> = {
-      compute: "Compute Layer",
-      data: "Data Layer",
-      messaging: "Messaging",
-      gateway: "Gateway Layer",
-      infrastructure: "Infrastructure",
-    };
+    // Hook line — sharp opener
+    const stackSnippet = techs.slice(0, 3).join(", ");
+    let hook = `Architecture deployed — **${nodeCount} nodes**, **${edgeCount} connections**`;
+    if (stackSnippet) hook += `, running on ${stackSnippet}`;
+    hook += ".";
 
-    for (const [key, nodes] of Object.entries(categories)) {
-      if (nodes.length > 0) {
-        const techList = Array.from(
-          new Set(nodes.map((n) => n.data?.tech).filter(Boolean)),
-        ).join(", ");
-        summary += `**${categoryNames[key]}**: ${nodes.length} component${nodes.length !== 1 ? "s" : ""}${techList ? ` (${techList})` : ""}\n\n`;
-      }
+    // Insight line — one interesting design decision
+    let insight = "";
+    if (hasQueue) {
+      insight = "I routed async workloads through a message queue to keep your services decoupled and independently scalable.";
+    } else if (hasGateway && hasDataLayer) {
+      insight = `${busiest?.label ?? "Your core service"} is the most connected node — it's your critical path, worth adding redundancy there.`;
+    } else if (hasDataLayer) {
+      insight = "Data persistence is isolated from compute — good for independent scaling and disaster recovery.";
+    } else {
+      insight = "The architecture is live on the canvas. Click any node to inspect its config or ask me to elaborate.";
     }
 
-    // Add technology stack summary
-    if (techs.length > 0) {
-      summary += `**Technology Stack**: ${techs.join(", ")}\n\n`;
-    }
+    const response = `${hook}\n\n${insight}`;
 
-    // Add analysis from LLM if available
-    if (data.analysis) {
-      summary += `## Design Rationale\n\n${data.analysis}\n\n`;
-    }
+    // Smart follow-up chips
+    const chips: string[] = [];
+    if (busiest?.label) chips.push(`Explain the ${busiest.label}`);
+    if (hasDataLayer) chips.push("How does this scale to 10M users?");
+    else chips.push("What's the weakest point in this architecture?");
+    if (hasQueue) chips.push("Add a dead-letter queue for error handling");
+    else if (hasGateway) chips.push("Add rate limiting to the gateway");
+    else chips.push("Add monitoring and observability");
 
-    // Add recommendations from LLM if available
-    if (data.recommendations && data.recommendations.length > 0) {
-      summary += `## Recommendations\n\n`;
-      for (const rec of data.recommendations) {
-        summary += `- ${rec}\n`;
-      }
-      summary += "\n";
-    }
-
-    // Add next steps
-    summary += `## Next Steps\n\n`;
-    summary += `- Review components on the canvas\n`;
-    summary += `- Click any node to configure properties\n`;
-    summary += `- Use **Autofix** to optimize layout\n`;
-    summary += `- Enable **Chaos Mode** to test resilience\n`;
-
-    return summary;
+    return { response, chips };
   };
 
   const processMessage = async (content: string) => {
@@ -769,15 +843,8 @@ export function AIAssistantPanel({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsGenerating(true);
-    setStreamProgress(0);
-
-    // Progress simulation
-    const progressInterval = setInterval(() => {
-      setStreamProgress((prev) => {
-        if (prev >= 90) return prev;
-        return prev + Math.random() * 15;
-      });
-    }, 500);
+    setStreamProgress(5);
+    setStreamStage("analyzing");
 
     // Save user message to database
     let chatId = currentChatId;
@@ -788,10 +855,12 @@ export function AIAssistantPanel({
           defaultChatResult.error || "Failed to retrieve chat session",
         );
         setIsGenerating(false);
-        clearInterval(progressInterval);
         return;
       }
       chatId = defaultChatResult.chat.id;
+      // Prevent the currentChatId effect from triggering loadMessages
+      // which would overwrite our streaming message state
+      skipLoadMessagesRef.current = true;
       setCurrentChatId(chatId);
     }
 
@@ -800,7 +869,8 @@ export function AIAssistantPanel({
     // Create a placeholder message for AI (outside try block so catch can access it)
     const aiMsgId = (Date.now() + 1).toString();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 30s connection timeout
+    abortControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s connection timeout
 
     setMessages((prev) => [
       ...prev,
@@ -822,11 +892,12 @@ export function AIAssistantPanel({
       }, 15000);
     };
 
-    try {
-      let accumulatedContent = "";
-      let accumulatedReasoning = "";
-      let lastGeneratedData: any = null; // Capture generated data
+    let accumulatedContent = "";
+    let accumulatedReasoning = "";
+    let lastGeneratedData: any = null; // Capture generated data
+    let showingArchitectureProgress = false;
 
+    try {
       // NEW: Include conversation history for context-aware AI
       const conversationMessages = [...messages, userMessage].map((m) => ({
         id: m.id,
@@ -851,8 +922,23 @@ export function AIAssistantPanel({
         }),
       });
 
+      updateStreamProgress(15, "connecting");
       clearTimeout(timeoutId); // Connection established, clear initial timeout
       resetWatchdog(); // Start stream watchdog
+
+      if (response.status === 429) {
+        const errorData = await response.json();
+        setQuotaResetAt(errorData.resetAt || null);
+        setQuotaLimit(errorData.limit || 15);
+        setIsQuotaModalOpen(true);
+        
+        // Cleanup the placeholder AI message
+        setMessages((prev) => prev.filter((m) => m.id !== aiMsgId));
+        setIsGenerating(false);
+        clearTimeout(timeoutId);
+        if (streamWatchdog) clearTimeout(streamWatchdog);
+        return;
+      }
 
       // Check for error responses (validation, rate limit, etc.)
       if (!response.ok) {
@@ -872,7 +958,6 @@ export function AIAssistantPanel({
         );
         toast.error(errorMessage);
         setIsGenerating(false);
-        clearInterval(progressInterval);
         setStreamProgress(0);
         return; // Exit gracefully instead of throwing
       }
@@ -892,7 +977,6 @@ export function AIAssistantPanel({
         );
         toast.error("No response from server");
         setIsGenerating(false);
-        clearInterval(progressInterval);
         setStreamProgress(0);
         return;
       }
@@ -928,51 +1012,49 @@ export function AIAssistantPanel({
               for (const part of json.parts) {
                 if (part.type === "text" && part.text) {
                   accumulatedContent += part.text;
+                  updateStreamProgress(
+                    Math.min(
+                      88,
+                      40 + Math.floor(accumulatedContent.length / 120),
+                    ),
+                    "generating",
+                  );
+                  showingArchitectureProgress =
+                    showingArchitectureProgress ||
+                    isLikelyArchitecturePayload(accumulatedContent);
 
-                  // Check if content contains architecture JSON
-                  const isJsonLike =
-                    accumulatedContent.trim().startsWith("{") ||
-                    accumulatedContent.trim().startsWith("```") ||
-                    accumulatedContent.includes('"nodes"');
-
-                  // Try to extract and apply architecture if complete JSON found
-                  if (
-                    accumulatedContent.includes('"nodes"') &&
-                    accumulatedContent.includes('"edges"')
-                  ) {
+                  if (!lastGeneratedData) {
                     try {
-                      const jsonMatch = accumulatedContent.match(/\{[\s\S]*\}/);
-                      if (jsonMatch) {
-                        const parsed = JSON.parse(jsonMatch[0]);
-                        if (
-                          parsed.nodes &&
-                          parsed.edges &&
-                          !lastGeneratedData
-                        ) {
-                          lastGeneratedData = parsed;
-                          onGenerationSuccess(parsed);
-                          setStreamProgress(100);
-                        }
+                      const parsed =
+                        extractArchitectureFromText(accumulatedContent);
+                      if (parsed) {
+                        lastGeneratedData = parsed;
+                        onGenerationSuccess(parsed);
+                        updateStreamProgress(95, "validating");
                       }
-                    } catch (e) {
-                    // Ignore incomplete JSON chunks or parse errors from stream
-                    console.error("Error parsing stream line:", line, e);
+                    } catch {
+                      // Ignore incomplete JSON chunks or parse errors while streaming
+                    }
                   }
-                }
 
+                  // Always keep isThinking:true while streaming — never let it flip mid-stream
+                  // (prevents the StreamingMessage from flickering away on non-JSON chunks)
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === aiMsgId
-                        ? {
-                            ...m,
-                            isThinking: false,
-                            content: accumulatedContent,
-                          }
+                        ? { ...m, isThinking: true }
                         : m,
                     ),
                   );
                 } else if (part.type === "reasoning" && part.text) {
                   accumulatedReasoning += part.text;
+                  updateStreamProgress(
+                    Math.min(
+                      78,
+                      28 + Math.floor(accumulatedReasoning.length / 140),
+                    ),
+                    "thinking",
+                  );
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === aiMsgId
@@ -987,6 +1069,13 @@ export function AIAssistantPanel({
             // Handle legacy format for backward compatibility
             if (json.type === "reasoning" && json.data) {
               accumulatedReasoning += json.data;
+              updateStreamProgress(
+                Math.min(
+                  78,
+                  28 + Math.floor(accumulatedReasoning.length / 140),
+                ),
+                "thinking",
+              );
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === aiMsgId
@@ -996,47 +1085,98 @@ export function AIAssistantPanel({
               );
             } else if (json.type === "content" && json.data) {
               accumulatedContent += json.data;
-              const isJsonLike =
-                accumulatedContent.trim().startsWith("{") ||
-                accumulatedContent.trim().startsWith("```");
+              updateStreamProgress(
+                Math.min(88, 40 + Math.floor(accumulatedContent.length / 120)),
+                "generating",
+              );
+              showingArchitectureProgress =
+                showingArchitectureProgress ||
+                isLikelyArchitecturePayload(accumulatedContent);
+
+              if (!lastGeneratedData) {
+                try {
+                  const parsed =
+                    extractArchitectureFromText(accumulatedContent);
+                  if (parsed) {
+                    lastGeneratedData = parsed;
+                    onGenerationSuccess(parsed);
+                    updateStreamProgress(95, "validating");
+                  }
+                } catch {
+                  // Ignore parse errors during stream.
+                }
+              }
+
+              // Always keep isThinking:true while streaming — prevents flicker
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === aiMsgId
-                    ? {
-                        ...m,
-                        isThinking: false,
-                        content: accumulatedContent,
-                      }
-                    : m,
+                  m.id === aiMsgId ? { ...m, isThinking: true } : m,
                 ),
               );
             } else if (json.type === "result" && json.data) {
               console.log("Received architecture result:", json.data);
               lastGeneratedData = json.data;
               onGenerationSuccess(json.data);
-              setStreamProgress(100);
+              updateStreamProgress(95, "validating");
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === aiMsgId
+                    ? {
+                        ...m,
+                        isThinking: true,
+                        content:
+                          "Architecture generated. Preparing explanation...",
+                      }
+                    : m,
+                ),
+              );
+            } else if (json.type === "error" && json.data) {
+              const streamError =
+                typeof json.data === "string"
+                  ? json.data
+                  : "Generation stream failed";
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === aiMsgId
+                    ? { ...m, isThinking: false, content: `❌ ${streamError}` }
+                    : m,
+                ),
+              );
+              toast.error(streamError);
+            } else if (json.type === "progress" && json.data) {
+              const progressPayload = json.data as {
+                progress?: number;
+                stage?: StreamStage;
+              };
+
+              if (typeof progressPayload.progress === "number") {
+                updateStreamProgress(
+                  progressPayload.progress,
+                  progressPayload.stage,
+                );
+              }
             }
-          } catch (e) {
-            console.debug("Skipping incomplete JSON line", e);
+          } catch {
+            // Ignore incomplete lines until the next chunk completes them.
           }
         }
       }
 
       // Construct Final Message
       let finalContent = accumulatedContent;
+      let newChips: string[] = [];
 
-      // If we have generated data, prioritize the structured summary logic
+      // If we have generated data, use punchy conversational response + chips
       if (lastGeneratedData) {
-        finalContent = generateArchitectureSummary(lastGeneratedData);
+        const { response, chips } = generateConversationalResponse(lastGeneratedData);
+        finalContent = response;
+        newChips = chips;
       } else if (
         accumulatedContent.includes('"nodes"') ||
         accumulatedContent.trim().startsWith("{") ||
         accumulatedContent.trim().startsWith("```")
       ) {
-        // Fallback if result type missing but content has JSON/Code
-        // This prevents showing the raw verbose JSON
-        finalContent =
-          "I've drafted the architecture. Check the canvas for details.";
+        finalContent = "Architecture drafted — check the canvas for the full layout.";
       } else if (!accumulatedContent) {
         finalContent = "I couldn't generate a response.";
       }
@@ -1056,41 +1196,56 @@ export function AIAssistantPanel({
             : m,
         ),
       );
+      setSuggestionChips(newChips);
+      updateStreamProgress(100, "complete");
 
       await saveMessage(chatId, finalAiMessage);
     } catch (err: any) {
       if (streamWatchdog) clearTimeout(streamWatchdog);
-      console.error("Error processing message:", err);
-      
-      const isAbortError = err.name === 'AbortError';
-      const errorMessage = isAbortError 
-        ? "Request timed out. The model might be overloaded or the connection was lost."
-        : (err?.message || "Generation failed");
 
-      // Update the AI message to show the error instead of removing it
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === aiMsgId
-            ? { ...m, isThinking: false, content: `❌ ${errorMessage}` }
-            : m,
-        ),
-      );
+      const isAbortError = err.name === "AbortError";
       
-      toast.error(errorMessage, {
-        description: isAbortError ? "Tip: Try a faster model like GLM-4.7 Flash." : undefined,
-      });
+      // Only log and toast if it's NOT a manual abort
+      if (!isAbortError) {
+        console.error("Error processing message:", err);
+        const errorMessage = err?.message || "Generation failed";
 
-      // Re-throw for the initial prompt handling if it's not an abort (which we handle above)
+        // Update the AI message to show the error
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? { ...m, isThinking: false, content: `❌ ${errorMessage}` }
+              : m,
+          ),
+        );
+
+        toast.error(errorMessage);
+      } else {
+        // For AbortError, just stop the UI state cleanly without "Error" UI
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsgId
+              ? { ...m, isThinking: false, content: accumulatedContent + " [Stopped by user]" }
+              : m,
+          ),
+        );
+      }
+
+      setStreamStage(isAbortError ? "complete" : "error");
+
+      // Re-throw for the initial prompt handling if it's not an abort
       if (!isAbortError) throw err;
     } finally {
       if (streamWatchdog) clearTimeout(streamWatchdog);
+      abortControllerRef.current = null;
       setIsGenerating(false);
-      clearInterval(progressInterval);
       setStreamProgress(0);
+      setStreamStage("analyzing");
     }
   };
 
   const currentChat = chats.find((c) => c.id === currentChatId);
+
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-bg-secondary font-sans text-sm overflow-hidden border-l border-brand-charcoal/10 dark:border-border-primary/50">
@@ -1259,8 +1414,13 @@ export function AIAssistantPanel({
               )}
             >
               {message.role === "assistant" &&
-              message.content === "__LOADING__" ? (
-                <StreamingMessage isGenerating={true} />
+              (message.isThinking ||
+                isLikelyArchitecturePayload(message.content)) ? (
+                <StreamingMessage
+                  isGenerating={true}
+                  reasoning={message.reasoning}
+                  streamProgress={streamProgress}
+                />
               ) : (
                 <div
                   className={cn(
@@ -1280,7 +1440,7 @@ export function AIAssistantPanel({
                   <details className="group">
                     <summary className="flex items-center gap-1.5 cursor-pointer font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40 dark:text-text-secondary/50 hover:text-brand-orange transition-colors select-none">
                       <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
-                      Chain of Thought
+                      Generation Notes
                     </summary>
                     <div className="mt-2 p-2 bg-neutral-50 dark:bg-bg-primary/50 text-[11px] text-brand-charcoal/70 dark:text-text-secondary/70 font-mono rounded border border-brand-charcoal/5 dark:border-border-primary/20">
                       {message.reasoning}
@@ -1301,6 +1461,42 @@ export function AIAssistantPanel({
             </div>
           </motion.div>
         ))}
+
+        {/* Suggestion Chips — shown after generation, cleared on next submit */}
+        <AnimatePresence>
+          {suggestionChips.length > 0 && !isGenerating && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col gap-1.5 pl-1"
+            >
+              {suggestionChips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => {
+                    setSuggestionChips([]);
+                    setInputValue(chip);
+                    // Auto-submit after a tick so inputValue is set
+                    setTimeout(() => {
+                      processMessage(chip);
+                      setInputValue("");
+                    }, 0);
+                  }}
+                  className="text-left font-mono text-[10px] px-2.5 py-1.5 border border-brand-charcoal/15 dark:border-border-primary/40 text-brand-charcoal/60 dark:text-text-secondary/70 hover:border-brand-orange/60 hover:text-brand-orange dark:hover:text-brand-orange hover:bg-brand-orange/5 transition-all duration-150 max-w-[95%] truncate"
+                >
+                  <span className="text-brand-orange/50 mr-1.5">›</span>
+                  {chip}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Scroll sentinel */}
+        <div ref={scrollSentinelRef} className="h-1" />
       </div>
 
       {/* Input Area */}
@@ -1320,7 +1516,10 @@ export function AIAssistantPanel({
                     isGenerating={isGenerating}
                     streamProgress={streamProgress}
                   />
-                  <ProcessingSteps isGenerating={isGenerating} />
+                  <ProcessingSteps
+                    isGenerating={isGenerating}
+                    stage={streamStage}
+                  />
                 </div>
                 <div className="h-0.5 bg-brand-charcoal/5 dark:bg-border-primary/30 overflow-hidden">
                   <motion.div
@@ -1368,6 +1567,9 @@ export function AIAssistantPanel({
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") setSuggestionChips([]);
+              }}
               placeholder={
                 isGenerating
                   ? "PROCESSING..."
@@ -1378,17 +1580,24 @@ export function AIAssistantPanel({
               disabled={isGenerating || generationState === "preparing"}
               className="w-full h-11 pl-4 pr-12 bg-neutral-50 dark:bg-bg-tertiary border border-brand-charcoal/15 dark:border-border-primary/50 text-brand-charcoal dark:text-text-primary placeholder:text-brand-charcoal/30 dark:placeholder:text-text-secondary/30 text-[13px] font-mono focus:outline-none focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <button
-              type="submit"
-              disabled={!inputValue.trim() || isGenerating}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-brand-charcoal dark:bg-bg-elevated text-white dark:text-text-primary hover:bg-brand-orange dark:hover:bg-brand-orange disabled:opacity-30 disabled:hover:bg-brand-charcoal dark:disabled:hover:bg-bg-elevated transition-colors"
-            >
-              {isGenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
+            {isGenerating ? (
+              <button
+                type="button"
+                onClick={handleStopGeneration}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                title="Stop generation"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!inputValue.trim()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-brand-charcoal dark:bg-bg-elevated text-white dark:text-text-primary hover:bg-brand-orange dark:hover:bg-brand-orange disabled:opacity-30 disabled:hover:bg-brand-charcoal dark:disabled:hover:bg-bg-elevated transition-colors"
+              >
                 <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
+              </button>
+            )}
           </form>
         </div>
       </div>

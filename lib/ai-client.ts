@@ -72,7 +72,7 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
     apiKey: env.NVIDIA_API_KEY,
     model: "z-ai/glm5",
     // NVIDIA specific: enable thinking
-    reasoningParam: { enable_thinking: true, clear_thinking: false }, 
+    reasoningParam: { enable_thinking: true, clear_thinking: false },
   },
   minimax_nvidia: {
     baseURL: "https://integrate.api.nvidia.com/v1",

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { getCachedResponse } from "@/lib/ai-cache";
 import { generateArchitectureStream } from "@/lib/ai-client";
 import {
@@ -7,8 +8,12 @@ import {
   validateArchitecture,
 } from "@/lib/architecture-validator";
 import { createLogger } from "@/lib/logger";
-import { validatePrompt } from "@/lib/prompt-engineering";
+import {
+  normalizeArchitectureMode,
+  validatePrompt,
+} from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { GenerateRequestSchema } from "@/lib/schema/api";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
@@ -52,8 +57,28 @@ export async function POST(req: NextRequest) {
     userLogger.info("Generation request started");
 
     // Parse body early
-    const body = await req.json();
-    const { prompt, model, mode, currentNodes, currentEdges } = body;
+    const rawBody = await req.json();
+    const body =
+      rawBody?.mode === "corporate"
+        ? { ...rawBody, mode: "enterprise" }
+        : rawBody;
+    const parsedBody = v.safeParse(GenerateRequestSchema, body);
+    if (!parsedBody.success) {
+      userLogger.warn("Invalid generation request payload");
+      return NextResponse.json(
+        { error: "Invalid request payload" },
+        { status: 400 },
+      );
+    }
+
+    const {
+      prompt,
+      model,
+      mode,
+      currentNodes = [],
+      currentEdges = [],
+    } = parsedBody.output;
+    const normalizedMode = normalizeArchitectureMode(mode);
 
     // Rate Limiting Check (New DB-based logic)
     const rateLimitResult = await checkRateLimit(user.id);
@@ -67,6 +92,7 @@ export async function POST(req: NextRequest) {
         {
           error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
           resetAt: rateLimitResult.reset,
+          limit: rateLimitResult.limit,
         },
         {
           status: 429,
@@ -117,7 +143,7 @@ export async function POST(req: NextRequest) {
     }>({
       prompt,
       model,
-      mode,
+      mode: normalizedMode,
       userId: user.id,
     });
 
@@ -132,13 +158,13 @@ export async function POST(req: NextRequest) {
 
     userLogger.info("Starting generation", {
       model: model || "auto",
-      mode: mode || "default",
+      mode: normalizedMode,
       promptLength: prompt.length,
     });
     const stream = await generateArchitectureStream(
       prompt,
       model,
-      mode,
+      normalizedMode,
       currentNodes,
       currentEdges,
     );
@@ -238,7 +264,7 @@ export async function POST(req: NextRequest) {
                 const validationResult = validateArchitecture(
                   enrichedNodes,
                   parsed.edges,
-                  mode || "default",
+                  normalizedMode,
                   { autoFix: true },
                 );
 
@@ -308,7 +334,7 @@ export async function POST(req: NextRequest) {
                   const validationResult = validateArchitecture(
                     enrichedNodes,
                     parsed.edges,
-                    mode || "default",
+                    normalizedMode,
                     { autoFix: true },
                   );
 

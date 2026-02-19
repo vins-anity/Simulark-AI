@@ -15,7 +15,11 @@ import { ModeStep } from "./steps/ModeStep";
 import { ProfileStep } from "./steps/ProfileStep";
 import { TechStackStep } from "./steps/TechStackStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
-import { ONBOARDING_STEPS, type OnboardingData, type OnboardingStepId } from "./types";
+import {
+  ONBOARDING_STEPS,
+  type OnboardingData,
+  type OnboardingStepId,
+} from "./types";
 
 // ============================================================================
 // Animation Variants
@@ -122,7 +126,8 @@ export default function OnboardingPage() {
   const currentStep = ONBOARDING_STEPS[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === ONBOARDING_STEPS.length - 1;
-  const progressPercent = ((currentStepIndex + 1) / ONBOARDING_STEPS.length) * 100;
+  const progressPercent =
+    ((currentStepIndex + 1) / ONBOARDING_STEPS.length) * 100;
 
   const handleNext = async () => {
     if (isLastStep) {
@@ -131,18 +136,18 @@ export default function OnboardingPage() {
       try {
         // Map to valid schema values
         const roleMap: Record<string, string> = {
-          "beginner": "student",
-          "intermediate": "software-engineer",
-          "expert": "architect",
+          beginner: "student",
+          intermediate: "software-engineer",
+          expert: "architect",
         };
-        
+
         const useCaseMap: Record<string, string> = {
-          "saas": "saas",
-          "api": "api-backend",
-          "mobile": "mobile-app",
-          "ecommerce": "ecommerce",
-          "ai": "ai-ml",
-          "data": "data-pipeline",
+          saas: "saas",
+          api: "api-backend",
+          mobile: "mobile-app",
+          ecommerce: "ecommerce",
+          ai: "ai-ml",
+          data: "data-pipeline",
           "api-backend": "api-backend",
           "mobile-app": "mobile-app",
           "ai-ml": "ai-ml",
@@ -150,14 +155,16 @@ export default function OnboardingPage() {
         };
 
         const experienceLevelMap: Record<string, string> = {
-          "beginner": "beginner",
-          "intermediate": "intermediate",
-          "expert": "advanced",
+          beginner: "beginner",
+          intermediate: "intermediate",
+          expert: "advanced",
         };
 
         const result = await completeOnboarding({
           step1: {
-            role: roleMap[data.experienceLevel || "intermediate"] || "software-engineer",
+            role:
+              roleMap[data.experienceLevel || "intermediate"] ||
+              "software-engineer",
             useCase: useCaseMap[data.projectType || "saas"] || "saas",
             teamSize: data.teamContext || "small",
           },
@@ -165,20 +172,25 @@ export default function OnboardingPage() {
             cloudProviders: data.techStack.cloud,
             languages: [...data.techStack.languages],
             frameworks: data.techStack.frameworks,
-            experienceLevel: experienceLevelMap[data.experienceLevel || "intermediate"] as "beginner" | "intermediate" | "advanced",
+            experienceLevel: experienceLevelMap[
+              data.experienceLevel || "intermediate"
+            ] as "beginner" | "intermediate" | "advanced",
           },
           step3: {
             architecturePreference:
               data.defaultMode === "enterprise"
                 ? "microservices"
                 : data.defaultMode === "startup"
-                ? "serverless"
-                : "not-sure",
-            applicationType: data.projectType === "mobile" ? "mobile" : "web-app",
+                  ? "serverless"
+                  : "not-sure",
+            applicationType:
+              data.projectType === "mobile" ? "mobile" : "web-app",
             includeServices: {
               auth: true,
               database: true,
-              cdn: data.techStack.cloud.includes("vercel") || data.techStack.cloud.includes("aws"),
+              cdn:
+                data.techStack.cloud.includes("vercel") ||
+                data.techStack.cloud.includes("aws"),
               monitoring: data.defaultMode === "enterprise",
               cicd: data.defaultMode === "enterprise",
             },
@@ -200,7 +212,10 @@ export default function OnboardingPage() {
     }
 
     // Save progress to server for non-final steps
-    if (currentStepIndex > 0 && currentStepIndex < ONBOARDING_STEPS.length - 1) {
+    if (
+      currentStepIndex > 0 &&
+      currentStepIndex < ONBOARDING_STEPS.length - 1
+    ) {
       setIsSaving(true);
       try {
         await saveOnboardingProgress({
@@ -356,8 +371,8 @@ export default function OnboardingPage() {
                   idx === currentStepIndex
                     ? "text-brand-orange"
                     : idx < currentStepIndex
-                    ? "text-brand-charcoal/60 hover:text-brand-charcoal cursor-pointer"
-                    : "text-brand-charcoal/20"
+                      ? "text-brand-charcoal/60 hover:text-brand-charcoal cursor-pointer"
+                      : "text-brand-charcoal/20"
                 }`}
               >
                 {step.shortTitle}
@@ -410,8 +425,7 @@ export default function OnboardingPage() {
                   onClick={handleSkip}
                   className="font-mono text-xs uppercase tracking-wider text-brand-charcoal/40 hover:text-brand-charcoal/60 transition-colors hidden sm:flex items-center gap-1"
                 >
-                  <SkipForward className="h-3.5 w-3.5" />
-                  [ SKIP ]
+                  <SkipForward className="h-3.5 w-3.5" />[ SKIP ]
                 </button>
               )}
 
@@ -451,7 +465,7 @@ export default function OnboardingPage() {
 // Helper function to get step data for server
 function getStepDataForServer(
   stepId: OnboardingStepId,
-  data: OnboardingData
+  data: OnboardingData,
 ): Record<string, unknown> {
   switch (stepId) {
     case "welcome":

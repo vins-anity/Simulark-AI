@@ -12,25 +12,26 @@ import {
   LayoutGrid,
   Pencil,
   Rocket,
-  Save,
-  User,
-  TriangleAlert,
   RotateCcw,
+  Save,
+  TriangleAlert,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
 import { resetOnboarding } from "@/actions/onboarding";
+import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AVAILABLE_MODELS } from "@/lib/ai-models";
 import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/utils/avatar";
-import { AVAILABLE_MODELS } from "@/lib/ai-models";
+import { getUserPreferences, updateUserPreferences } from "@/actions/users";
 
 // Module configuration with IDs
 const CONFIG_MODULES = [
@@ -380,7 +381,7 @@ export default function SettingsPage() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [defaultArchitectureMode, setDefaultArchitectureMode] =
     useState<string>("default");
-  
+
   // Initialize with the first available model ID
   // We'll update this from user preferences in useEffect
   const [defaultModel, setDefaultModel] = useState<string>("nvidia:z-ai/glm5");
@@ -402,18 +403,13 @@ export default function SettingsPage() {
         setUser(user);
         setFullName(user.user_metadata?.full_name || "");
 
-        const { data: profile } = await supabase
-          .from("users")
-          .select("preferences")
-          .eq("user_id", user.id)
-          .single();
-
-        if (profile?.preferences) {
-          const prefs = profile.preferences as any;
+        const result = await getUserPreferences();
+        if (result.success && result.preferences) {
+          const prefs = result.preferences;
           if (Array.isArray(prefs.cloudProviders))
             setCloudProviders(prefs.cloudProviders);
-          else if (prefs.cloudProvider)
-            setCloudProviders([prefs.cloudProvider]);
+          else if (prefs.cloudProviders)
+            setCloudProviders(prefs.cloudProviders as any);
           if (Array.isArray(prefs.languages)) setLanguages(prefs.languages);
           if (Array.isArray(prefs.frameworks)) setFrameworks(prefs.frameworks);
           if (Array.isArray(prefs.architectureTypes))
@@ -422,14 +418,21 @@ export default function SettingsPage() {
             setApplicationType(prefs.applicationType);
           if (typeof prefs.customInstructions === "string")
             setCustomInstructions(prefs.customInstructions);
-          if (typeof prefs.defaultArchitectureMode === "string")
+          
+          // Prioritize defaultMode for new sync logic
+          if (prefs.defaultMode) {
+            setDefaultArchitectureMode(prefs.defaultMode);
+          } else if (prefs.defaultArchitectureMode) {
             setDefaultArchitectureMode(
-              prefs.defaultArchitectureMode === "corporate"
+               (prefs.defaultArchitectureMode as string) === "corporate"
                 ? "enterprise"
-                : prefs.defaultArchitectureMode,
+                : prefs.defaultArchitectureMode as string,
             );
-          if (typeof prefs.defaultModel === "string")
+          }
+
+          if (prefs.defaultModel) {
             setDefaultModel(prefs.defaultModel);
+          }
         }
       }
       setLoading(false);
@@ -469,20 +472,17 @@ export default function SettingsPage() {
       architectureTypes,
       applicationType,
       customInstructions,
-      defaultArchitectureMode,
+      defaultMode: defaultArchitectureMode as any,
       defaultModel,
     };
 
-    const { error: dbError } = await supabase
-      .from("users")
-      .update({ preferences, updated_at: new Date().toISOString() })
-      .eq("user_id", user.id);
+    const result = await updateUserPreferences(preferences);
 
-    if (dbError) {
-      toast.error("Error", { description: "Failed to update preferences." });
+    if (!result.success) {
+      toast.error("Error", { description: result.error || "Failed to update preferences." });
     } else {
       toast.success("Configuration Saved", {
-        description: "System parameters updated.",
+        description: "System parameters updated globally.",
       });
     }
 
@@ -588,8 +588,11 @@ export default function SettingsPage() {
             <div className="p-5">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
                 <Avatar className="h-16 w-16 border-2 border-bg-primary shadow-md">
-                  <AvatarImage 
-                    src={user?.user_metadata?.avatar_url || getAvatarUrl(user?.email || "")} 
+                  <AvatarImage
+                    src={
+                      user?.user_metadata?.avatar_url ||
+                      getAvatarUrl(user?.email || "")
+                    }
                   />
                   <AvatarFallback className="bg-brand-charcoal text-white text-lg font-poppins">
                     {(fullName || user?.email || "U").charAt(0).toUpperCase()}
@@ -881,6 +884,51 @@ export default function SettingsPage() {
                         </p>
                         {isSelected && (
                           <div className="absolute top-2 right-2">
+                            <Check className="w-3 h-3 text-brand-orange" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Label className="text-[10px] font-mono uppercase tracking-widest text-text-muted mb-3 block">
+                  Default AI Intelligence Model
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {AVAILABLE_MODELS.map((m) => {
+                    const isSelected = defaultModel === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setDefaultModel(m.id)}
+                        className={cn(
+                          "flex items-center gap-3 p-3 border text-left transition-all duration-200 relative",
+                          isSelected
+                            ? "bg-brand-orange/5 border-brand-orange"
+                            : "bg-bg-primary border-border-primary hover:border-border-secondary",
+                        )}
+                      >
+                        <div className={cn(
+                          "w-1 h-3 shrink-0",
+                          m.id.includes("nvidia") ? "bg-green-500" : "bg-blue-500"
+                        )} />
+                        <div className="flex flex-col min-w-0">
+                          <span className={cn(
+                            "text-xs font-bold uppercase tracking-wider truncate",
+                            isSelected ? "text-brand-orange" : "text-text-primary"
+                          )}>
+                            {m.name}
+                          </span>
+                          <span className="text-[9px] text-text-muted font-mono uppercase">
+                            {m.provider}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <div className="ml-auto">
                             <Check className="w-3 h-3 text-brand-orange" />
                           </div>
                         )}

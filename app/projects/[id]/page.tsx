@@ -3,6 +3,7 @@
 import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { getProject, saveProject } from "@/actions/projects";
 import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
@@ -76,7 +77,7 @@ export default function ProjectPage({
     }
     // Persist to database
     if (id && data.nodes && data.edges) {
-      await saveProject(id, { nodes: data.nodes, edges: data.edges });
+      await saveProject(id, { nodes: data.nodes, edges: data.edges }, false);
     }
   };
 
@@ -105,7 +106,6 @@ export default function ProjectPage({
   };
 
   const handleExportSkill = async () => {
-    // ... (existing export skill logic)
     if (!flowEditorRef.current || !project) return;
 
     try {
@@ -126,22 +126,36 @@ export default function ProjectPage({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate skill");
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Failed to generate skill" }));
+        throw new Error(errorData.error || "Failed to generate skill");
       }
 
       // Download the ZIP file
       const blob = await response.blob();
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const match = contentDisposition?.match(/filename="([^"]+)"/);
+      const filename =
+        match?.[1] ||
+        `${project.name.toLowerCase().replace(/\s+/g, "-")}-skill.zip`;
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${project.name.toLowerCase().replace(/\s+/g, "-")}-skill.zip`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.success("Skill package exported");
     } catch (error) {
       console.error("Error exporting skill:", error);
-      alert("Failed to export skill. Please try again.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to export skill. Please try again.",
+      );
     }
   };
 
@@ -255,6 +269,7 @@ export default function ProjectPage({
             )}
           >
             <AIAssistantPanel
+              key={id}
               projectId={id}
               onGenerationSuccess={handleGenerationSuccess}
               isResizable={false}

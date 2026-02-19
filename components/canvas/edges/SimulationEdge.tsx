@@ -43,7 +43,8 @@ export function SimulationEdge({
     borderRadius: 10,
   });
 
-  const { nodeStatus, chaosMode } = useSimulationStore();
+  const { nodeStatus, chaosMode, stressMode, stressHotEdges } =
+    useSimulationStore();
   const { setEdges } = useReactFlow();
   const [isHovered, setIsHovered] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -56,6 +57,7 @@ export function SimulationEdge({
   const baseColor = chaosMode ? "#e4e4e7" : CONNECTOR_COLORS.default;
   const isQueue = protocol === "queue";
   const isCongested = (data?.congestion as boolean) || false;
+  const isStressHot = stressMode && stressHotEdges.includes(id);
   const label = (data?.label as string) || "";
   const protocolLabel = getProtocolLabel(protocol);
   const animationDuration = getAnimationDuration(protocol);
@@ -87,7 +89,11 @@ export function SimulationEdge({
             ...style,
             strokeWidth:
               ((protocolConfig.style as any)?.strokeWidth || 1.5) + 4,
-            stroke: isCongested ? CONNECTOR_COLORS.error : baseColor,
+            stroke: isStressHot
+              ? "#f59e0b"
+              : isCongested
+                ? CONNECTOR_COLORS.error
+                : baseColor,
             strokeOpacity: 0.1,
             filter: "blur(2px)",
           }}
@@ -107,9 +113,11 @@ export function SimulationEdge({
           strokeWidth: (protocolConfig.style as any)?.strokeWidth || 1.5,
           stroke: isBlocked
             ? CONNECTOR_COLORS.error
-            : isCongested
-              ? CONNECTOR_COLORS.active
-              : baseColor,
+            : isStressHot
+              ? "#f59e0b"
+              : isCongested
+                ? CONNECTOR_COLORS.active
+                : baseColor,
           strokeOpacity: isBlocked ? 0.5 : chaosMode ? 0.6 : 0.85,
           strokeDasharray: strokeDasharray,
         }}
@@ -121,7 +129,13 @@ export function SimulationEdge({
           {/* Single particle with speed based on protocol */}
           <circle
             r={isQueue ? 4 : 2.5}
-            fill={isCongested ? CONNECTOR_COLORS.error : baseColor}
+            fill={
+              isStressHot
+                ? "#f59e0b"
+                : isCongested
+                  ? CONNECTOR_COLORS.error
+                  : baseColor
+            }
           >
             <animateMotion
               dur={`${animationDuration}ms`}
@@ -149,7 +163,13 @@ export function SimulationEdge({
           width="6"
           height="6"
           fill="transparent"
-          stroke={isCongested ? CONNECTOR_COLORS.error : baseColor}
+          stroke={
+            isStressHot
+              ? "#f59e0b"
+              : isCongested
+                ? CONNECTOR_COLORS.error
+                : baseColor
+          }
           strokeWidth="1.5"
           x="-3"
           y="-3"
@@ -183,7 +203,8 @@ export function SimulationEdge({
           ) : (
             <div className="flex items-center gap-1 bg-bg-secondary/95 backdrop-blur-sm border border-brand-charcoal/10 px-2 py-0.5 rounded-sm shadow-sm hover:border-brand-orange/50 transition-all">
               <span className="text-[10px] font-mono text-text-primary/70">
-                {label || protocolLabel}
+                {label ||
+                  (isStressHot ? `${protocolLabel} • HOT` : protocolLabel)}
               </span>
               {isHovered && (
                 <Pencil className="w-2.5 h-2.5 text-brand-orange opacity-0 group-hover:opacity-100 transition-opacity" />

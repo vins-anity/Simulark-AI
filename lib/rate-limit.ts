@@ -25,73 +25,61 @@ export async function checkRateLimit(userId: string) {
   // Safety check: if plan doesn't have a limit defined, default to 30 (Free)
   const dailyLimit = plan.daily_limit ?? 30;
 
-  // 2. Get User's Current Usage for Today
-  const today = new Date().toISOString().split("T")[0];
+  // 2. Atomically check and increment today's usage in SQL.
+  const { data, error: usageError } = await supabase.rpc(
+    "check_and_increment_daily_usage",
+    {
+      p_user_id: userId,
+      p_daily_limit: dailyLimit,
+    },
+  );
 
-  const { data: usageData, error: usageError } = await supabase
-    .from("user_usages")
-    .select("generation_count, date")
-    .eq("user_id", userId)
-    .single();
-
-  let currentCount = 0;
-
-  // Handle case where no record exists yet
-  if (!usageData) {
-    currentCount = 0;
-  } else if (usageData.date !== today) {
-    // Record exists but from previous day - reset logic handled by upsert below
-    currentCount = 0;
-  } else {
-    currentCount = usageData.generation_count;
-  }
-
-  // 3. Check Limit
-  if (currentCount >= dailyLimit) {
-    logger.warn("Rate limit exceeded", {
-      userId,
-      tier,
-      currentCount,
-      dailyLimit,
-    });
+  if (usageError) {
+    logger.error("Failed to atomically check usage", usageError, { userId });
+    // Keep service available if usage tracking fails.
     return {
-      allowed: false,
+      allowed: true,
       limit: dailyLimit,
-      remaining: 0,
-      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(), // Midnight tonight
+      remaining: Math.max(0, dailyLimit - 1),
+      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
     };
   }
 
-  // 4. Increment Usage (Optimistic)
-  // We use upsert to handle both new rows and updates, and date rollovers
-  const { error: updateError } = await supabase.from("user_usages").upsert(
-    {
-      user_id: userId,
-      date: today,
-      generation_count: currentCount + 1,
-      last_updated: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (updateError) {
-    logger.error("Failed to update usage", updateError, { userId });
-    // If we can't write usage, we might want to still allow it but log error
-    // Or fail close. For now, allow but log.
+  const usage = Array.isArray(data) ? data[0] : data;
+  if (!usage) {
+    logger.error("Usage RPC returned empty result", undefined, { userId });
+    return {
+      allowed: true,
+      limit: dailyLimit,
+      remaining: Math.max(0, dailyLimit - 1),
+      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+    };
   }
 
-  logger.debug("Rate limit check passed", {
-    userId,
-    tier,
-    currentCount: currentCount + 1,
-    dailyLimit,
-    remaining: dailyLimit - (currentCount + 1),
-  });
+  if (!usage.allowed) {
+    logger.warn("Rate limit exceeded", {
+      userId,
+      tier,
+      currentCount: usage.current_count,
+      dailyLimit,
+    });
+  } else {
+    logger.debug("Rate limit check passed", {
+      userId,
+      tier,
+      currentCount: usage.current_count,
+      dailyLimit,
+      remaining: usage.remaining,
+    });
+  }
 
   return {
-    allowed: true,
+    allowed: Boolean(usage.allowed),
     limit: dailyLimit,
-    remaining: dailyLimit - (currentCount + 1),
-    reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+    remaining: Number(usage.remaining ?? 0),
+    reset:
+      typeof usage.reset_at === "string"
+        ? usage.reset_at
+        : new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
   };
 }

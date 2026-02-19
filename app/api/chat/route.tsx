@@ -2,7 +2,9 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { createZhipu } from "zhipu-ai-provider";
+import { validateArchitecture } from "@/lib/architecture-validator";
 import { env } from "@/lib/env";
 import { detectOperation } from "@/lib/intent-detector";
 import { logger } from "@/lib/logger";
@@ -11,6 +13,7 @@ import {
   buildEnhancedSystemPrompt,
   detectArchitectureType,
   detectComplexity,
+  normalizeArchitectureMode,
   validatePrompt,
 } from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -45,6 +48,51 @@ const nvidiaClient = new OpenAI({
 });
 
 type ProviderType = "zhipu" | "kimi" | "openrouter" | "nvidia";
+
+const MessagePartSchema = v.object({
+  type: v.string(),
+  text: v.optional(v.string()),
+});
+
+const RawMessageSchema = v.object({
+  id: v.optional(v.string()),
+  role: v.union([
+    v.literal("user"),
+    v.literal("assistant"),
+    v.literal("system"),
+  ]),
+  content: v.optional(v.string()),
+  parts: v.optional(v.array(MessagePartSchema)),
+  createdAt: v.optional(v.union([v.string(), v.date()])),
+});
+
+const ChatRequestSchema = v.object({
+  messages: v.array(RawMessageSchema),
+  chatId: v.optional(v.string()),
+  mode: v.optional(
+    v.union([
+      v.literal("default"),
+      v.literal("startup"),
+      v.literal("enterprise"),
+      v.literal("corporate"),
+    ]),
+  ),
+  model: v.optional(v.string()),
+  currentNodes: v.optional(v.array(v.unknown())),
+  currentEdges: v.optional(v.array(v.unknown())),
+  projectId: v.optional(v.string()),
+  userPreferences: v.optional(v.record(v.string(), v.unknown())),
+});
+
+interface StreamArchitecturePayload {
+  nodes: unknown[];
+  edges: unknown[];
+  validation: {
+    valid: boolean;
+    issues: unknown[];
+    appliedFixes: unknown[];
+  };
+}
 
 function getProvider(modelId?: string): {
   provider: ProviderType;
@@ -109,6 +157,7 @@ export async function POST(req: NextRequest) {
         {
           error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
           resetAt: rateLimitResult.reset,
+          limit: rateLimitResult.limit,
         },
         { status: 429 },
       );
@@ -116,28 +165,24 @@ export async function POST(req: NextRequest) {
 
     // Parse request body with conversation history
     const body = await req.json();
-    const {
-      messages: rawMessages,
-      chatId,
-      mode = "default",
-      model: modelId,
-      currentNodes = [],
-      currentEdges = [],
-      projectId,
-      userPreferences,
-    } = body;
-
-    // Validate messages
-    if (
-      !rawMessages ||
-      !Array.isArray(rawMessages) ||
-      rawMessages.length === 0
-    ) {
+    const parsedBody = v.safeParse(ChatRequestSchema, body);
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { error: "Messages are required" },
+        { error: "Invalid request payload" },
         { status: 400 },
       );
     }
+    const {
+      messages: rawMessages,
+      chatId,
+      mode,
+      model: modelId,
+      currentNodes = [],
+      currentEdges = [],
+      projectId: _projectId,
+      userPreferences,
+    } = parsedBody.output;
+    const normalizedMode = normalizeArchitectureMode(mode);
 
     // Convert to UIMessage format and limit to last 10 messages
     const messages: UIMessage[] = rawMessages
@@ -202,7 +247,7 @@ export async function POST(req: NextRequest) {
 
     logger.info("Starting generation", {
       model: modelId || "auto",
-      mode: mode || "default",
+      mode: normalizedMode,
       complexity,
       architectureType: detection.type,
       messageCount: messages.length,
@@ -231,7 +276,7 @@ export async function POST(req: NextRequest) {
       detectedIntent: `Architecture: ${detection.type}, Complexity: ${complexity}`,
       currentNodes,
       currentEdges,
-      mode: (mode || "default") as ArchitectureMode,
+      mode: normalizedMode,
 
       conversationHistory,
       operationType,
@@ -261,107 +306,112 @@ export async function POST(req: NextRequest) {
 
     // Direct OpenAI SDK path for NVIDIA
     if (providerType === "nvidia") {
-        try {
-            logger.info("Using direct NVIDIA client", { model: effectiveModel });
-            // Tweak parameters based on the model
-            let chat_template_kwargs: any = { enable_thinking: true, clear_thinking: false };
-            let extra_body: any = {};
+      try {
+        logger.info("Using direct NVIDIA client", { model: effectiveModel });
+        // Tweak parameters based on the model
+        let chat_template_kwargs: any = {
+          enable_thinking: true,
+          clear_thinking: false,
+        };
+        let extra_body: any = {};
 
-            if (effectiveModel.includes("minimax")) {
-              // MiniMax M2.1 recommendations: top_k=40, temperature=1.0
-              chat_template_kwargs = undefined;
-              extra_body = { top_k: 40 };
-            } else if (effectiveModel.includes("kimi")) {
-              // Kimi K2.5 recommendations: thinking=true, temperature=1.0
-              chat_template_kwargs = { thinking: true };
-            }
-
-            const completion = await nvidiaClient.chat.completions.create({
-                model: effectiveModel, // e.g. "minimaxai/minimax-m2.1"
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    ...messages.map(m => ({
-                        role: m.role as "user" | "assistant" | "system",
-                        content: m.parts.map(p => p.type === 'text' ? p.text : '').join('')
-                    }))
-                ],
-                temperature: 1.0, // Updated to 1.0 as recommended for these agentic models
-                stream: true,
-                ...(chat_template_kwargs ? { chat_template_kwargs } : {}),
-                ...extra_body,
-            } as any) as any;
-
-            // Create an async iterable that mimics ai-sdk's fullStream
-            const generator = async function* () {
-                let usage = { promptTokens: 0, completionTokens: 0 };
-                
-                for await (const chunk of completion) {
-                    const content = chunk.choices[0]?.delta?.content;
-                    // @ts-ignore - NVIDIA specific field
-                    const reasoning = chunk.choices[0]?.delta?.reasoning_content;
-
-                    if (reasoning) {
-                        yield { type: "reasoning-delta", text: reasoning };
-                    }
-                    if (content) {
-                        yield { type: "text-delta", text: content };
-                    }
-                    
-                    if (chunk.usage) {
-                        usage = {
-                            promptTokens: chunk.usage.prompt_tokens || 0,
-                            completionTokens: chunk.usage.completion_tokens || 0
-                        };
-                    }
-                }
-                
-                // Simulating the finish event which is expected by the consumer loop
-                yield { 
-                    type: "finish", 
-                    finishReason: "stop",
-                    usage: { ...usage, totalTokens: usage.promptTokens + usage.completionTokens }
-                };
-            };
-
-            result = { fullStream: generator() };
-
-        } catch (error: any) {
-            logger.error("NVIDIA Direct API Error", error);
-             // Fallback logic for NVIDIA/GLM-5 Rate Limits or Errors
-            if (
-                error?.status === 429 ||
-                error?.message?.includes("429") ||
-                error?.statusCode === 429 ||
-                 error?.status === 404 // Also fallback on 404 just in case
-            ) {
-                logger.warn(
-                    "GLM-5 (NVIDIA) failed. Falling back to GLM-4.7 (Zhipu)",
-                );
-                fallbackToZhipu = true;
-            } else {
-                throw error;
-            }
+        if (effectiveModel.includes("minimax")) {
+          // MiniMax M2.1 recommendations: top_k=40, temperature=1.0
+          chat_template_kwargs = undefined;
+          extra_body = { top_k: 40 };
+        } else if (effectiveModel.includes("kimi")) {
+          // Kimi K2.5 recommendations: thinking=true, temperature=1.0
+          chat_template_kwargs = { thinking: true };
         }
+
+        const completion = (await nvidiaClient.chat.completions.create({
+          model: effectiveModel, // e.g. "minimaxai/minimax-m2.1"
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages.map((m) => ({
+              role: m.role as "user" | "assistant" | "system",
+              content: m.parts
+                .map((p) => (p.type === "text" ? p.text : ""))
+                .join(""),
+            })),
+          ],
+          temperature: 1.0, // Updated to 1.0 as recommended for these agentic models
+          stream: true,
+          ...(chat_template_kwargs ? { chat_template_kwargs } : {}),
+          ...extra_body,
+        } as any)) as any;
+
+        // Create an async iterable that mimics ai-sdk's fullStream
+        const generator = async function* () {
+          let usage = { promptTokens: 0, completionTokens: 0 };
+
+          for await (const chunk of completion) {
+            const delta = chunk.choices[0]?.delta as
+              | { content?: string; reasoning_content?: string }
+              | undefined;
+            const content = delta?.content;
+            const reasoning = delta?.reasoning_content;
+
+            if (reasoning) {
+              yield { type: "reasoning-delta", text: reasoning };
+            }
+            if (content) {
+              yield { type: "text-delta", text: content };
+            }
+
+            if (chunk.usage) {
+              usage = {
+                promptTokens: chunk.usage.prompt_tokens || 0,
+                completionTokens: chunk.usage.completion_tokens || 0,
+              };
+            }
+          }
+
+          // Simulating the finish event which is expected by the consumer loop
+          yield {
+            type: "finish",
+            finishReason: "stop",
+            usage: {
+              ...usage,
+              totalTokens: usage.promptTokens + usage.completionTokens,
+            },
+          };
+        };
+
+        result = { fullStream: generator() };
+      } catch (error: any) {
+        logger.error("NVIDIA Direct API Error", error);
+        // Fallback logic for NVIDIA/GLM-5 Rate Limits or Errors
+        if (
+          error?.status === 429 ||
+          error?.message?.includes("429") ||
+          error?.statusCode === 429 ||
+          error?.status === 404 // Also fallback on 404 just in case
+        ) {
+          logger.warn("GLM-5 (NVIDIA) failed. Falling back to GLM-4.7 (Zhipu)");
+          fallbackToZhipu = true;
+        } else {
+          throw error;
+        }
+      }
     }
 
     if (providerType !== "nvidia" || fallbackToZhipu) {
       // Standard AI SDK path
-      try {
-            const fallbackModel = fallbackToZhipu ? "glm-4.7-flash" : effectiveModel;
-            const fallbackProvider = fallbackToZhipu ? "zhipu" : providerType;
+      const fallbackModel = fallbackToZhipu ? "glm-4.7-flash" : effectiveModel;
+      const fallbackProvider = fallbackToZhipu ? "zhipu" : providerType;
 
-            // Stream text with conversation history
-            result = streamText({
-                model: getModelInstance(fallbackProvider as ProviderType, fallbackModel),
-                system: systemPrompt,
-                messages: await convertToModelMessages(messages),
-                temperature: 0.7,
-                maxOutputTokens: 131072,
-            });
-       } catch (error: any) {
-           // For now assuming Zhipu fallback won't fail with same error
-           throw error;
-       }
+      // Stream text with conversation history
+      result = streamText({
+        model: getModelInstance(
+          fallbackProvider as ProviderType,
+          fallbackModel,
+        ),
+        system: systemPrompt,
+        messages: await convertToModelMessages(messages),
+        temperature: 0.7,
+        maxOutputTokens: 131072,
+      });
     }
 
     logger.info("Stream started", {
@@ -374,16 +424,92 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     let accumulatedText = "";
     let accumulatedReasoning = "";
-    let architectureData: any = null;
+    let architectureData: StreamArchitecturePayload | null = null;
+
+    const buildArchitecturePayload = (
+      parsed: Record<string, unknown>,
+    ): StreamArchitecturePayload | null => {
+      if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+        return null;
+      }
+
+      const enrichedNodes = enrichNodesWithTech(parsed.nodes);
+      const validationResult = validateArchitecture(
+        enrichedNodes,
+        parsed.edges,
+        normalizedMode as ArchitectureMode,
+        { autoFix: true },
+      );
+
+      return {
+        nodes: validationResult.fixed?.nodes || enrichedNodes,
+        edges: validationResult.fixed?.edges || parsed.edges,
+        validation: {
+          valid: validationResult.valid,
+          issues: validationResult.issues,
+          appliedFixes: validationResult.appliedFixes,
+        },
+      };
+    };
 
     const customStream = new ReadableStream({
       async start(controller) {
+        let lastProgress = 0;
+        let firstReasoningSeen = false;
+        let firstContentSeen = false;
+
+        const emitProgress = (
+          progress: number,
+          stage:
+            | "analyzing"
+            | "connecting"
+            | "thinking"
+            | "generating"
+            | "validating"
+            | "complete",
+          detail?: string,
+        ) => {
+          const nextProgress = Math.min(
+            100,
+            Math.max(lastProgress, Math.round(progress)),
+          );
+          if (nextProgress === lastProgress && stage !== "complete") {
+            return;
+          }
+          lastProgress = nextProgress;
+          controller.enqueue(
+            encoder.encode(
+              `${JSON.stringify({
+                type: "progress",
+                data: { progress: nextProgress, stage, detail },
+              })}\n`,
+            ),
+          );
+        };
+
         try {
+          emitProgress(8, "analyzing", "Prompt validated and context prepared");
+          emitProgress(18, "connecting", "Connecting to model provider");
+
           // Process the stream
           for await (const part of result.fullStream) {
             switch (part.type) {
               case "text-delta": {
                 accumulatedText += part.text;
+                if (!firstContentSeen) {
+                  firstContentSeen = true;
+                  emitProgress(42, "generating", "Model started generating");
+                }
+
+                const contentProgress = Math.min(
+                  88,
+                  42 + Math.floor(accumulatedText.length / 120),
+                );
+                emitProgress(
+                  contentProgress,
+                  "generating",
+                  "Building architecture response",
+                );
                 // logger.debug("Text delta received", { len: part.text.length });
                 // Send content chunk in legacy format
                 controller.enqueue(
@@ -402,13 +528,21 @@ export async function POST(req: NextRequest) {
                     const jsonMatch = accumulatedText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                       // clean potential markdown formatting from the match
-                      const cleanJson = jsonMatch[0].replace(/```json\n?|```/g, "");
+                      const cleanJson = jsonMatch[0].replace(
+                        /```json\n?|```/g,
+                        "",
+                      );
                       const parsed = JSON.parse(cleanJson);
-                      if (parsed.nodes && parsed.edges) {
-                        architectureData = {
-                          ...parsed,
-                          nodes: enrichNodesWithTech(parsed.nodes),
-                        };
+                      const payload = buildArchitecturePayload(
+                        parsed as Record<string, unknown>,
+                      );
+                      if (payload) {
+                        architectureData = payload;
+                        emitProgress(
+                          95,
+                          "validating",
+                          "Validating generated architecture",
+                        );
                         // Send result in legacy format
                         controller.enqueue(
                           encoder.encode(
@@ -428,6 +562,20 @@ export async function POST(req: NextRequest) {
               }
               case "reasoning-delta": {
                 accumulatedReasoning += part.text;
+                if (!firstReasoningSeen) {
+                  firstReasoningSeen = true;
+                  emitProgress(30, "thinking", "Model is reasoning");
+                }
+
+                const reasoningProgress = Math.min(
+                  78,
+                  30 + Math.floor(accumulatedReasoning.length / 140),
+                );
+                emitProgress(
+                  reasoningProgress,
+                  "thinking",
+                  "Analyzing architecture trade-offs",
+                );
                 // Send reasoning chunk in legacy format
                 controller.enqueue(
                   encoder.encode(
@@ -442,50 +590,64 @@ export async function POST(req: NextRequest) {
                 if (!architectureData) {
                   try {
                     // 1. Try to extract specific markdown code block first (most reliable)
-                    const codeBlockMatch = accumulatedText.match(/```json\n([\s\S]*?)\n```/);
+                    const codeBlockMatch = accumulatedText.match(
+                      /```json\n([\s\S]*?)\n```/,
+                    );
                     if (codeBlockMatch) {
-                        try {
-                            const parsed = JSON.parse(codeBlockMatch[1]);
-                            if (parsed.nodes && parsed.edges) {
-                                architectureData = {
-                                  ...parsed,
-                                  nodes: enrichNodesWithTech(parsed.nodes),
-                                };
-                            }
-                        } catch (e) {
-                            logger.warn("Failed to parse markedown code block", { error: String(e) });
+                      try {
+                        const parsed = JSON.parse(codeBlockMatch[1]);
+                        const payload = buildArchitecturePayload(
+                          parsed as Record<string, unknown>,
+                        );
+                        if (payload) {
+                          architectureData = payload;
                         }
+                      } catch (e) {
+                        logger.warn("Failed to parse markedown code block", {
+                          error: String(e),
+                        });
+                      }
                     }
 
                     // 2. If no code block or parse failed, try finding the largest JSON object
                     if (!architectureData) {
-                    const jsonMatch = accumulatedText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                      // Attempt to clean any potential leftover markdown if match was too greedy
-                      const cleanJson = jsonMatch[0].replace(/```json\n?|```/g, "");
-                      const parsed = JSON.parse(cleanJson);
-                      if (parsed.nodes && parsed.edges) {
-                        architectureData = {
-                          ...parsed,
-                          nodes: enrichNodesWithTech(parsed.nodes),
-                        };
+                      const jsonMatch = accumulatedText.match(/\{[\s\S]*\}/);
+                      if (jsonMatch) {
+                        // Attempt to clean any potential leftover markdown if match was too greedy
+                        const cleanJson = jsonMatch[0].replace(
+                          /```json\n?|```/g,
+                          "",
+                        );
+                        const parsed = JSON.parse(cleanJson);
+                        const payload = buildArchitecturePayload(
+                          parsed as Record<string, unknown>,
+                        );
+                        if (payload) {
+                          architectureData = payload;
+                        }
                       }
                     }
-                    }
-                    
+
                     if (architectureData) {
-                         // Send result in legacy format if found
-                        controller.enqueue(
-                          encoder.encode(
-                            `${JSON.stringify({
-                              type: "result",
-                              data: architectureData,
-                            })}\n`,
-                          ),
-                        );
+                      emitProgress(
+                        95,
+                        "validating",
+                        "Validating generated architecture",
+                      );
+                      // Send result in legacy format if found
+                      controller.enqueue(
+                        encoder.encode(
+                          `${JSON.stringify({
+                            type: "result",
+                            data: architectureData,
+                          })}\n`,
+                        ),
+                      );
                     }
                   } catch (e) {
-                    logger.warn("Failed to parse architecture in finish step", { error: String(e) });
+                    logger.warn("Failed to parse architecture in finish step", {
+                      error: String(e),
+                    });
                   }
                 }
 
@@ -506,9 +668,10 @@ export async function POST(req: NextRequest) {
                 logger.info("Generation completed", {
                   messageLength: accumulatedText.length,
                   hasArchitecture: !!architectureData,
-                  fullResponseSnapshot: accumulatedText.substring(0, 200) + "..."
+                  fullResponseSnapshot: `${accumulatedText.substring(0, 200)}...`,
                 });
 
+                emitProgress(100, "complete", "Generation complete");
                 controller.close();
                 break;
               }

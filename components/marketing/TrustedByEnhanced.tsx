@@ -35,7 +35,7 @@ const integrations = [
 
 export function TrustedByEnhanced() {
   return (
-    <section className="py-10 border-y border-brand-charcoal/10 bg-bg-primary relative overflow-hidden">
+    <section className="py-10 border-y border-brand-charcoal/10 bg-bg-primary relative overflow-hidden z-20">
       {/* Technical Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-50"
@@ -74,8 +74,8 @@ export function TrustedByEnhanced() {
           <div className="hidden lg:block w-px h-12 bg-brand-charcoal/10" />
 
           {/* Integration List */}
-          <div className="flex-1 overflow-hidden">
-            <div className="flex flex-wrap justify-center lg:justify-start gap-x-8 gap-y-4">
+          <div className="flex-1 w-full lg:w-auto overflow-hidden">
+            <div className="flex flex-wrap justify-center lg:justify-start gap-x-8 gap-y-6">
               {integrations.map((integration, index) => (
                 <motion.div
                   key={integration.id}

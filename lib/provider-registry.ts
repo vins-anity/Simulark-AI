@@ -26,7 +26,7 @@ export const AVAILABLE_MODELS = {
     supportsTools: true,
     supportsStreaming: true,
   },
-  
+
   // NVIDIA - MiniMax and Kimi
   "nvidia:minimaxai/minimax-m2.1": {
     name: "MiniMax M2.1",

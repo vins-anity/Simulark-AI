@@ -89,7 +89,8 @@ export const OnboardingStep2Schema = v.object({
 export const OnboardingStep3Schema = v.object({
   architecturePreference: v.picklist(Object.values(ArchitecturePreference)),
   applicationType: v.picklist(Object.values(ApplicationType)),
-  defaultArchitectureMode: v.optional(v.string()), // "default" | "startup" | "corporate"
+  defaultMode: v.optional(v.string()), // "default" | "startup" | "enterprise"
+  defaultModel: v.optional(v.string()),
   includeServices: v.object({
     auth: v.boolean(),
     database: v.boolean(),
@@ -139,7 +140,9 @@ export interface UserPreferences {
   architectureTypes: string[];
   applicationType: string[];
   customInstructions: string;
-  defaultArchitectureMode?: typeof ArchitectureMode[keyof typeof ArchitectureMode];
+  defaultArchitectureMode?: (typeof ArchitectureMode)[keyof typeof ArchitectureMode];
+  defaultMode?: (typeof ArchitectureMode)[keyof typeof ArchitectureMode];
+  defaultModel?: string;
   onboardingMetadata?: {
     role: string;
     useCase: string;

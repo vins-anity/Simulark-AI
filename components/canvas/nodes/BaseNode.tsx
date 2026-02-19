@@ -11,6 +11,7 @@ import {
 import { clsx } from "clsx";
 import {
   Activity,
+  CircleHelp,
   Component,
   Cpu,
   Database,
@@ -62,8 +63,13 @@ export function BaseNode({
 }: BaseNodeProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nodeData = data as any;
-  const { viewMode, chaosMode, nodeStatus, toggleNodeStatus } =
-    useSimulationStore();
+  const {
+    chaosMode,
+    stressMode,
+    stressHotNodes,
+    nodeStatus,
+    toggleNodeStatus,
+  } = useSimulationStore();
   const { setNodes, getNodes } = useReactFlow();
   const nodeLabel = nodeData?.label || label || "Node";
   // Check for logo (direct), techIcon (from enrichment), or fallback
@@ -76,9 +82,11 @@ export function BaseNode({
   } | null>(null);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editedLabel, setEditedLabel] = useState(nodeLabel);
+  const [showGuide, setShowGuide] = useState(false);
   const isKilled = nodeStatus[id] === "killed";
   const isDegraded = nodeStatus[id] === "degraded";
   const isRecovering = nodeStatus[id] === "recovering";
+  const isStressHot = stressMode && stressHotNodes.includes(id);
 
   // Click vs Drag detection
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
@@ -205,9 +213,41 @@ export function BaseNode({
           isDegraded && "border-brand-orange/60",
           // Recovering state
           isRecovering && "border-brand-green/60 animate-pulse",
+          isStressHot &&
+            !chaosMode &&
+            "border-amber-500 shadow-[0_0_0_1px_rgba(245,158,11,0.35)]",
           className,
         )}
       >
+        <button
+          type="button"
+          className="nodrag nopan absolute top-8 left-2 z-20 h-5 w-5 border border-brand-charcoal/20 bg-bg-secondary/95 text-brand-charcoal/60 hover:text-brand-charcoal flex items-center justify-center"
+          title="Node usage guide"
+          onClick={(event) => {
+            event.stopPropagation();
+            setShowGuide((current) => !current);
+          }}
+        >
+          <CircleHelp className="w-3 h-3" />
+        </button>
+
+        {showGuide && (
+          <div className="nodrag nopan absolute top-8 left-8 z-20 max-w-[220px] border border-brand-charcoal/20 bg-bg-secondary/95 px-2 py-1.5 shadow-sm">
+            <p className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50 mb-1">
+              Node Controls
+            </p>
+            <p className="text-[10px] leading-tight text-brand-charcoal/70">
+              Click to open properties, drag to move, double-click title to
+              rename, right-click for actions.
+            </p>
+            {chaosMode && (
+              <p className="text-[10px] leading-tight text-red-600 mt-1">
+                Chaos mode: click node to inject failure.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Handles for edges - Technical Crosshairs */}
         <Handle
           type="target"
@@ -236,6 +276,13 @@ export function BaseNode({
           <div className="absolute top-8 right-2 flex items-center gap-1.5 px-2 py-1 bg-red-600 text-white text-[9px] font-mono font-bold uppercase tracking-wider rounded-none z-20 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Skull className="w-3 h-3" />
             CRITICAL_FAILURE
+          </div>
+        )}
+
+        {isStressHot && !isKilled && (
+          <div className="absolute top-8 right-2 flex items-center gap-1.5 px-2 py-1 bg-amber-500 text-black text-[9px] font-mono font-bold uppercase tracking-wider rounded-none z-20 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <Activity className="w-3 h-3" />
+            STRESS_HOTSPOT
           </div>
         )}
 
@@ -299,10 +346,14 @@ export function BaseNode({
               <span
                 className={cn(
                   "text-[10px] font-bold uppercase",
-                  isKilled ? "text-red-500" : "text-brand-green",
+                  isKilled
+                    ? "text-red-500"
+                    : isStressHot
+                      ? "text-amber-500"
+                      : "text-brand-green",
                 )}
               >
-                {isKilled ? "OFFLINE" : "STABLE"}
+                {isKilled ? "OFFLINE" : isStressHot ? "STRESSED" : "STABLE"}
               </span>
             </div>
           </div>

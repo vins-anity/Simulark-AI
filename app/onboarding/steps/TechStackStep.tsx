@@ -1,11 +1,11 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { Icon } from "@iconify/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, ChevronUp, Sparkles, Wand2 } from "lucide-react";
 import { useState } from "react";
-import { Icon } from "@iconify/react";
 import { cn } from "@/lib/utils";
-import { TECH_STACK_OPTIONS, type OnboardingData } from "../types";
+import { type OnboardingData, TECH_STACK_OPTIONS } from "../types";
 
 const containerVariants = {
   hidden: { opacity: 0 },

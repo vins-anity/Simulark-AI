@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
     // Check for onboarding completion
     // We check user_metadata first as it's available on the session user
     const onboardingCompleted = user.user_metadata?.onboarding_completed;
-    
+
     // If onboarding is NOT completed, redirect to onboarding page
     if (!onboardingCompleted) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
@@ -76,7 +76,7 @@ export async function updateSession(request: NextRequest) {
 
   // Onboarding route (redirect to dashboard if already completed)
   if (request.nextUrl.pathname.startsWith("/onboarding")) {
-    if (user && user.user_metadata?.onboarding_completed) {
+    if (user?.user_metadata?.onboarding_completed) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

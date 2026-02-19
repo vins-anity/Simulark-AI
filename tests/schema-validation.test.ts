@@ -10,9 +10,15 @@ import {
   type CreateProjectInput,
   CreateProjectSchema,
   EmailSchema,
+  ExportSkillRequestSchema,
   type GenerateRequestInput,
   GenerateRequestSchema,
   NonEmptyStringSchema,
+  StressPlannerMetaSchema,
+  StressTestPlanRequestSchema,
+  StressTestPlanResponseSchema,
+  StressTestRunEventSchema,
+  StressTestRunRequestSchema,
   UuidSchema,
 } from "../lib/schema/api";
 import {
@@ -386,6 +392,251 @@ describe("API Schema Validation", () => {
 
       const result = v.safeParse(GenerateRequestSchema, minimalInput);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("ExportSkillRequest Schema", () => {
+    it("should validate valid skill export payload", () => {
+      const validInput = {
+        projectName: "My Architecture",
+        projectDescription: "Export test",
+        nodes: [{ id: "gateway", type: "gateway", data: { label: "Gateway" } }],
+        edges: [],
+      };
+
+      const result = v.safeParse(ExportSkillRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject empty node arrays", () => {
+      const invalidInput = {
+        projectName: "My Architecture",
+        nodes: [],
+        edges: [],
+      };
+
+      const result = v.safeParse(ExportSkillRequestSchema, invalidInput);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("StressTestPlanRequest Schema", () => {
+    it("should validate stress-test plan payload", () => {
+      const validInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [{ id: "edge-1", source: "service-1", target: "service-1" }],
+      };
+
+      const result = v.safeParse(StressTestPlanRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it("should validate plannerConfig in auto mode", () => {
+      const validInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [],
+        plannerConfig: {
+          mode: "auto",
+        },
+      };
+
+      const result = v.safeParse(StressTestPlanRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it("should validate plannerConfig in manual mode with modelId", () => {
+      const validInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [],
+        plannerConfig: {
+          mode: "manual",
+          modelId: "nvidia:z-ai/glm5",
+        },
+      };
+
+      const result = v.safeParse(StressTestPlanRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject manual plannerConfig without modelId", () => {
+      const invalidInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [],
+        plannerConfig: {
+          mode: "manual",
+        },
+      };
+
+      const result = v.safeParse(StressTestPlanRequestSchema, invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it("should reject payload without nodes", () => {
+      const invalidInput = {
+        nodes: [],
+        edges: [],
+      };
+
+      const result = v.safeParse(StressTestPlanRequestSchema, invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it("keeps backwards compatibility without plannerConfig", () => {
+      const validInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [],
+      };
+
+      const result = v.safeParse(StressTestPlanRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("Stress planner response metadata schemas", () => {
+    it("should validate planner metadata payload", () => {
+      const plannerMeta = {
+        providerUsed: "kimi",
+        modelUsed: "nvidia:moonshotai/kimi-k2.5",
+        attempts: [
+          {
+            modelId: "nvidia:z-ai/glm5",
+            ok: false,
+            reasonCode: "auth_failed",
+          },
+          {
+            modelId: "nvidia:moonshotai/kimi-k2.5",
+            ok: true,
+          },
+        ],
+        warningCode: "partial_failover",
+        warning: "Primary planner failed. Switched to backup model.",
+      };
+
+      const result = v.safeParse(StressPlannerMetaSchema, plannerMeta);
+      expect(result.success).toBe(true);
+    });
+
+    it("should validate stress plan response with plannerMeta", () => {
+      const responsePayload = {
+        type: "stress-test-plan",
+        data: {
+          assumptions: ["A"],
+          scenarios: [
+            {
+              id: "traffic-spike",
+              type: "traffic-spike",
+              name: "Traffic Spike",
+              objective: "Objective",
+              targets: ["gateway"],
+              loadProfile: {
+                baselineRps: 100,
+                peakRps: 800,
+                rampSeconds: 90,
+                holdSeconds: 300,
+              },
+              passCriteria: ["Latency under threshold"],
+            },
+          ],
+          markdown: "# Plan",
+          source: "ai",
+          plannerMeta: {
+            providerUsed: "nvidia",
+            modelUsed: "nvidia:z-ai/glm5",
+            attempts: [{ modelId: "nvidia:z-ai/glm5", ok: true }],
+          },
+        },
+      };
+
+      const result = v.safeParse(StressTestPlanResponseSchema, responsePayload);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("StressTestRunRequest Schema", () => {
+    it("should validate stress-test run payload", () => {
+      const validInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [{ id: "edge-1", source: "service-1", target: "service-1" }],
+        scenario: {
+          id: "traffic-spike",
+          type: "traffic-spike",
+          name: "Traffic Spike",
+          objective: "Validate resilience under peak load",
+          targets: ["API"],
+          loadProfile: {
+            baselineRps: 100,
+            peakRps: 800,
+            rampSeconds: 90,
+            holdSeconds: 300,
+          },
+          passCriteria: ["Latency remains under threshold"],
+        },
+        seed: 42,
+        nodeSpecOverrides: {
+          "service-1": { replicas: 3, cpu: "1 vCPU" },
+        },
+      };
+
+      const result = v.safeParse(StressTestRunRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject stress-test run payload without scenario", () => {
+      const invalidInput = {
+        nodes: [{ id: "service-1", type: "service", data: { label: "API" } }],
+        edges: [],
+      };
+
+      const result = v.safeParse(StressTestRunRequestSchema, invalidInput);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("StressTestRunEvent Schema", () => {
+    it("should validate progress event", () => {
+      const event = {
+        type: "progress",
+        data: {
+          progress: 55,
+          stage: "running",
+        },
+      };
+      const result = v.safeParse(StressTestRunEventSchema, event);
+      expect(result.success).toBe(true);
+    });
+
+    it("should validate verdict event", () => {
+      const event = {
+        type: "verdict",
+        data: {
+          status: "pass",
+          score: 82,
+          violatedCriteria: [],
+          bottlenecks: ["API"],
+          recommendations: ["Scale API replicas"],
+          summary: "System remained resilient",
+        },
+      };
+      const result = v.safeParse(StressTestRunEventSchema, event);
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject invalid stress event", () => {
+      const event = {
+        type: "metric",
+        data: {
+          step: 1,
+          progress: 20,
+          availability: 98,
+          latency: 120,
+          errorRate: 0.5,
+          // throughput missing
+          hotNodes: [],
+          hotEdges: [],
+        },
+      };
+      const result = v.safeParse(StressTestRunEventSchema, event);
+      expect(result.success).toBe(false);
     });
   });
 

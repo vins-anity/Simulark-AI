@@ -169,7 +169,11 @@ export const TECH_STACK_OPTIONS = {
     { id: "azure", name: "Azure", icon: "logos:azure-icon" },
     { id: "fly", name: "Fly.io", icon: "logos:fly-icon" },
     { id: "hetzner", name: "Hetzner", icon: "logos:hetzner" },
-    { id: "digitalocean", name: "DigitalOcean", icon: "logos:digital-ocean-icon" },
+    {
+      id: "digitalocean",
+      name: "DigitalOcean",
+      icon: "logos:digital-ocean-icon",
+    },
     { id: "linode", name: "Linode", icon: "logos:linode" },
     { id: "cloudflare", name: "Cloudflare", icon: "logos:cloudflare-icon" },
     { id: "heroku", name: "Heroku", icon: "logos:heroku-icon" },
@@ -238,7 +242,11 @@ export const TECH_STACK_OPTIONS = {
     { id: "flutter", name: "Flutter", icon: "logos:flutter" },
     { id: "react-native", name: "React Native", icon: "logos:react" },
     { id: "swiftui", name: "SwiftUI", icon: "logos:swift" },
-    { id: "jetpack-compose", name: "Jetpack Compose", icon: "logos:android-icon" },
+    {
+      id: "jetpack-compose",
+      name: "Jetpack Compose",
+      icon: "logos:android-icon",
+    },
     { id: "expo", name: "Expo", icon: "logos:expo-icon" },
     // AI/ML
     { id: "langchain", name: "LangChain", icon: "simple-icons:langchain" },
