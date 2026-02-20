@@ -3,6 +3,7 @@
 import { ArrowRight, Check } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { requestUpgrade } from "@/actions/upgrade";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,11 +38,19 @@ export function UpgradeModal({
     e.preventDefault();
     setIsLoading(true);
 
-    // TODO: Replace with actual backend call (e.g. loops.so, resend, or supabase function)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const emailInput = ((e.currentTarget as HTMLFormElement).elements.namedItem("email") as HTMLInputElement)?.value;
+    
+    const result = await requestUpgrade(planName, emailInput);
 
     setIsLoading(false);
+    
+    if (!result.success) {
+      toast.error("Upgrade Request Failed", {
+        description: result.error || "Please try again later.",
+      });
+      return;
+    }
+
     setOpen(false);
 
     toast.success("Request Received", {

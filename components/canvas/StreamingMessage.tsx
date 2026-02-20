@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 interface StreamingMessageProps {
   isGenerating: boolean;
   reasoning?: string;
+  content?: string;
   streamProgress?: number;
 }
 
@@ -105,6 +106,7 @@ function parseLogLines(reasoning: string): LogLine[] {
 export function StreamingMessage({
   isGenerating,
   reasoning,
+  content,
   streamProgress = 0,
 }: StreamingMessageProps) {
   const [cursor, setCursor] = useState(true);
@@ -153,8 +155,15 @@ export function StreamingMessage({
 
   const progress = Math.max(5, streamProgress);
 
+  // Determine what to show after the $ prompt
+  // We prioritize the latest reasoning if it's currently thinking,
+  // or the latest content if it's currently generating.
+  const activeStreamChunk = content 
+    ? content.split('\n').filter(Boolean).pop()?.slice(-60) 
+    : reasoning?.split('\n').filter(Boolean).pop()?.slice(-60);
+
   return (
-    <div className="w-full border border-brand-charcoal/12 dark:border-border-primary/40 bg-neutral-50 dark:bg-bg-primary font-mono">
+    <div className="w-full border border-brand-charcoal/12 dark:border-border-primary/40 bg-neutral-50 dark:bg-bg-primary font-mono shrink-0">
       {/* Terminal chrome bar */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-brand-charcoal/8 dark:border-border-primary/30 bg-neutral-100/70 dark:bg-bg-tertiary/50">
         <div className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse" />
@@ -223,9 +232,14 @@ export function StreamingMessage({
           ))}
         </AnimatePresence>
 
-        {/* Blinking cursor line */}
+        {/* Blinking cursor line with real-time trace */}
         <div className="flex items-center gap-1 text-[10px] text-brand-charcoal/30 dark:text-text-secondary/30 pt-0.5">
           <span className="text-brand-orange/50">$</span>
+          {activeStreamChunk && (
+            <span className="text-brand-charcoal/40 dark:text-text-secondary/40 opacity-70 italic">
+              {activeStreamChunk}
+            </span>
+          )}
           <motion.span
             animate={{ opacity: cursor ? 1 : 0 }}
             className="w-1.5 h-3 bg-brand-orange/50 inline-block align-middle"

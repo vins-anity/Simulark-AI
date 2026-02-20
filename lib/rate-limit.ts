@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const logger = createLogger("rate-limit");
 
-export async function checkRateLimit(userId: string) {
+export async function checkRateLimit(userId: string, modelId?: string) {
   const supabase = await createClient(); // Use server client
 
   // 1. Get User's Subscription Tier
@@ -16,14 +16,17 @@ export async function checkRateLimit(userId: string) {
 
   if (userError) {
     logger.error("Failed to fetch user tier", userError, { userId });
-    // Fail open or closed? Let's fail safe to free tier limits if we can't read
   }
 
   const tier = userData?.subscription_tier || "free";
   const plan = getPlanDetails(tier);
 
-  // Safety check: if plan doesn't have a limit defined, default to 30 (Free)
-  const dailyLimit = plan.daily_limit ?? 30;
+  // Determine the limit: use model-specific limit if provided, otherwise global daily_limit
+  let dailyLimit = plan.daily_limit ?? 30;
+  if (modelId && plan.tierFeatures.modelDailyLimits?.[modelId]) {
+    dailyLimit = plan.tierFeatures.modelDailyLimits[modelId];
+  }
+
 
   // 2. Atomically check and increment today's usage in SQL.
   const { data, error: usageError } = await supabase.rpc(
@@ -82,4 +85,39 @@ export async function checkRateLimit(userId: string) {
         ? usage.reset_at
         : new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
   };
+}
+
+export async function checkIPRateLimit(ip: string, limit: number = 30) {
+  if (!ip || ip === "127.0.0.1" || ip === "::1") {
+    return { allowed: true, limit, remaining: limit, reset: "" };
+  }
+
+  const redis = (await import("@/lib/redis")).default;
+  const today = new Date().toISOString().split("T")[0];
+  const key = `ratelimit:ip:${ip}:${today}`;
+
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, 86400); // 24 hours
+    }
+
+    const remaining = Math.max(0, limit - count);
+    const allowed = count <= limit;
+
+    if (!allowed) {
+      logger.warn("IP Rate limit exceeded", { ip, count, limit });
+    }
+
+    return {
+      allowed,
+      limit,
+      remaining,
+      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+    };
+  } catch (error) {
+    logger.error("Redis IP rate limit error", error as Error, { ip });
+    // Fail open if redis is down
+    return { allowed: true, limit, remaining: 1, reset: "" };
+  }
 }

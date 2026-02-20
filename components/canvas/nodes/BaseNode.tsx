@@ -46,8 +46,11 @@ type BaseNodeData = {
   label?: string;
   tech?: string;
   techLabel?: string;
+  techIcon?: string;
   logo?: string;
   tier?: string;
+  serviceType?: string;
+  description?: string;
   [key: string]: unknown;
 };
 
@@ -61,8 +64,7 @@ export function BaseNode({
   label,
   type,
 }: BaseNodeProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nodeData = data as any;
+  const nodeData = data as BaseNodeData;
   const {
     chaosMode,
     stressMode,

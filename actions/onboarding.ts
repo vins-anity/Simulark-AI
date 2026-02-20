@@ -6,6 +6,8 @@ import {
   CompleteOnboardingSchema,
   generateSmartDefaults,
   type OnboardingData,
+  type OnboardingStep2,
+  type OnboardingStep3,
   recommendTemplates,
   SaveOnboardingProgressSchema,
   type UserPreferences,
@@ -122,8 +124,7 @@ export async function saveOnboardingProgress(
     };
 
     // If step 1, generate and return smart defaults
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let smartDefaults: any;
+    let smartDefaults: Partial<OnboardingStep2 & OnboardingStep3> | undefined;
     if (step === 1 && data && typeof data === "object" && "role" in data) {
       smartDefaults = generateSmartDefaults(
         data as Parameters<typeof generateSmartDefaults>[0],
@@ -242,11 +243,19 @@ export async function completeOnboarding(input: unknown): Promise<{
       architectureTypes: [data.step3.architecturePreference],
       applicationType: [data.step3.applicationType],
       customInstructions: generateCustomInstructions(data),
-      defaultArchitectureMode: data.step3.defaultArchitectureMode as
+      defaultMode: (data.step3.defaultMode ||
+        data.step3.defaultArchitectureMode) as
         | "default"
         | "startup"
         | "enterprise"
         | undefined,
+      defaultArchitectureMode: (data.step3.defaultArchitectureMode ||
+        data.step3.defaultMode) as
+        | "default"
+        | "startup"
+        | "enterprise"
+        | undefined,
+      defaultModel: data.step3.defaultModel,
       onboardingMetadata: {
         role: data.step1.role,
         useCase: data.step1.useCase,

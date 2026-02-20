@@ -4,12 +4,56 @@ import type { LanguageModel } from "ai";
 import { createZhipu } from "zhipu-ai-provider";
 import { env } from "./env";
 
+export interface ModelInfo {
+  name: string;
+  provider: string;
+  description: string;
+  supportsTools: boolean;
+  supportsStreaming: boolean;
+  badge?: "hot_tag" | "double_hot_tag" | "balance_tag";
+  dailyLimit?: number;
+  tooltipOverview?: string;
+}
+
 /**
  * Available models with their providers
  * Format: "provider:model-id"
  */
-export const AVAILABLE_MODELS = {
-  // NVIDIA - GLM-5 (Default)
+export const AVAILABLE_MODELS: Record<string, ModelInfo> = {
+  // ── Alibaba Cloud Qwen (shown first in UI) ──────────────────────────────
+  // Ordered: hot → balance → flash, then free-tier others below
+
+  "qwen:qwen3-max": {
+    name: "Qwen3 Max",
+    provider: "qwen",
+    description: "Most powerful Qwen — ideal for complex, multi-step enterprise tasks",
+    supportsTools: true,
+    supportsStreaming: true,
+    badge: "double_hot_tag",
+    dailyLimit: 30,
+    tooltipOverview: "Flagship reasoning model. Native Thinking mode for deep architectural analysis. Best for Enterprise mode.",
+  },
+  "qwen:qwen3.5-plus": {
+    name: "Qwen3.5 Plus",
+    provider: "qwen",
+    description: "Balanced model — performs on par with Qwen3 Max at a fraction of the cost",
+    supportsTools: true,
+    supportsStreaming: true,
+    badge: "hot_tag",
+    dailyLimit: 30,
+    tooltipOverview: "1M token context. Supports text, image & video. Great balance of quality and speed for Startup mode.",
+  },
+  "qwen:qwen-flash": {
+    name: "Qwen Flash",
+    provider: "qwen",
+    description: "Fastest and lowest-cost Qwen model — ideal for simple tasks",
+    supportsTools: true,
+    supportsStreaming: true,
+    dailyLimit: 30,
+    tooltipOverview: "1M token context. Qwen3-series. Blazing fast JSON graph generation for rapid prototyping.",
+  },
+
+  // ── Other free-tier models ───────────────────────────────────────────────
   "nvidia:z-ai/glm5": {
     name: "GLM-5",
     provider: "nvidia",
@@ -17,8 +61,6 @@ export const AVAILABLE_MODELS = {
     supportsTools: true,
     supportsStreaming: true,
   },
-
-  // Zhipu (BigModel) - GLM models
   "zhipu:glm-4.7-flash": {
     name: "GLM-4.7 Flash",
     provider: "zhipu",
@@ -26,8 +68,6 @@ export const AVAILABLE_MODELS = {
     supportsTools: true,
     supportsStreaming: true,
   },
-
-  // NVIDIA - MiniMax and Kimi
   "nvidia:minimaxai/minimax-m2.1": {
     name: "MiniMax M2.1",
     provider: "nvidia",
@@ -42,44 +82,24 @@ export const AVAILABLE_MODELS = {
     supportsTools: true,
     supportsStreaming: true,
   },
-
-  // Legacy/Other models commented out for now
-  /*
-  "openrouter:z-ai/glm-4.5-air:free": { ... },
-  "kimi:kimi-k2.5": { ... },
-  "openrouter:deepseek-ai": { ... },
-  "openrouter:google/gemini-3-pro-preview": { ... },
-  "openrouter:anthropic/claude-3-opus": { ... },
-  "openrouter:minimax/minimax-m2.1": { ... },
-  */
-} as const;
+};
 
 export type ModelId = keyof typeof AVAILABLE_MODELS;
-
-// Initialize individual providers
-const zhipu = createZhipu({
-  apiKey: env.ZHIPU_API_KEY,
-});
-
-const openrouter = createOpenRouter({
-  apiKey: env.OPENROUTER_API_KEY,
-});
-
-const kimi = createOpenAI({
-  baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
-  apiKey: env.KIMI_API_KEY,
-});
-
-const nvidia = createOpenAI({
-  baseURL: "https://integrate.api.nvidia.com/v1",
-  apiKey: env.NVIDIA_API_KEY,
-});
 
 /**
  * Provider registry for unified model access
  * Note: We use custom getModel function instead of createProviderRegistry
  * to avoid ProviderV3 interface requirements
  */
+
+// Lazy initialization of providers to prevent client-side evaluation of server-side env vars
+const providers = {
+  zhipu: null as any,
+  openrouter: null as any,
+  kimi: null as any,
+  nvidia: null as any,
+  qwen: null as any,
+};
 
 /**
  * Get a language model by ID
@@ -93,17 +113,25 @@ export function getModel(modelId: ModelId | string): LanguageModel {
 
   switch (provider) {
     case "zhipu":
-      return zhipu(modelName);
+      if (!providers.zhipu) providers.zhipu = createZhipu({ apiKey: env.ZHIPU_API_KEY });
+      return providers.zhipu(modelName);
     case "openrouter":
-      return openrouter.chat(modelName);
+      if (!providers.openrouter) providers.openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
+      return providers.openrouter.chat(modelName);
     case "kimi":
-      return kimi(modelName);
+      if (!providers.kimi) providers.kimi = createOpenAI({ baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1", apiKey: env.KIMI_API_KEY });
+      return providers.kimi(modelName);
     case "nvidia":
-      return nvidia(modelName);
+      if (!providers.nvidia) providers.nvidia = createOpenAI({ baseURL: "https://integrate.api.nvidia.com/v1", apiKey: env.NVIDIA_API_KEY });
+      return providers.nvidia(modelName);
+    case "qwen":
+      if (!providers.qwen) providers.qwen = createOpenAI({ baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", apiKey: env.QWEN_API_KEY });
+      return providers.qwen(modelName);
     default:
       // Default to Zhipu
       console.warn(`Unknown provider: ${provider}, defaulting to Zhipu`);
-      return zhipu("glm-4.7-flash");
+      if (!providers.zhipu) providers.zhipu = createZhipu({ apiKey: env.ZHIPU_API_KEY });
+      return providers.zhipu("glm-4.7-flash");
   }
 }
 
@@ -120,7 +148,7 @@ export function getModelInfo(modelId: string) {
       description: "Model information not available",
       supportsTools: false,
       supportsStreaming: false,
-    }
+    } as ModelInfo
   );
 }
 
@@ -177,6 +205,12 @@ export function getProviderConfig(provider: string) {
         baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
         apiKey: env.KIMI_API_KEY,
         defaultModel: "kimi-k2.5",
+      };
+    case "qwen":
+      return {
+        baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        apiKey: env.QWEN_API_KEY,
+        defaultModel: "qwen3-coder-flash",
       };
     default:
       return null;

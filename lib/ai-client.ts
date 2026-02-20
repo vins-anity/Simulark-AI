@@ -16,7 +16,8 @@ export type AIProvider =
   | "anthropic"
   | "nvidia"
   | "minimax_nvidia"
-  | "kimi_nvidia";
+  | "kimi_nvidia"
+  | "qwen";
 
 import { env } from "@/lib/env";
 
@@ -85,6 +86,12 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
     apiKey: env.NVIDIA_API_KEY,
     model: "moonshotai/kimi-k2.5",
     extraParams: { chat_template_kwargs: { thinking: true } },
+  },
+  qwen: {
+    baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    apiKey: env.QWEN_API_KEY,
+    model: "qwen-flash", 
+    // Qwen3-series - fast and capable. Route.tsx handles model-specific overrides.
   },
 };
 
@@ -208,6 +215,14 @@ export async function generateArchitectureStream(
     } else if (id.includes("claude") || id.includes("anthropic")) {
       return await callModelStream(
         "anthropic",
+        prompt,
+        mode,
+        currentNodes,
+        currentEdges,
+      );
+    } else if (id.includes("qwen")) {
+      return await callModelStream(
+        "qwen",
         prompt,
         mode,
         currentNodes,

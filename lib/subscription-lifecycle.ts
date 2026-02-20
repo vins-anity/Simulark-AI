@@ -309,10 +309,12 @@ export async function sendExpiryReminders(): Promise<{
       return result;
     }
 
-    // TODO: Integrate with email service (e.g., SendGrid, Resend)
+    // TODO: Integrate with actual email service (e.g., SendGrid, Resend)
+    const logger = require("@/lib/logger").createLogger("subscription-lifecycle");
     for (const user of expiringUsers || []) {
-      console.log(
-        `[Subscription Lifecycle] Would send expiry reminder to ${user.email}`,
+      logger.info(
+        `Would send expiry reminder to ${user.email}`,
+        { userId: user.user_id }
       );
       // await sendEmail(user.email, 'subscription_expiring', { ... });
       result.reminded++;

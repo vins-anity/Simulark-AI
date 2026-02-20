@@ -19,6 +19,7 @@ export interface TierFeatures {
   chaosEngineering: boolean;
   autoLayouts: boolean;
   enterpriseMode: boolean;
+  modelDailyLimits?: Record<string, number>;
 }
 
 export interface RateLimitConfig {
@@ -39,7 +40,10 @@ export const SUBSCRIPTION_PLANS = {
       "Standard Node Library",
       "Community Support",
       "Public Exports (PDF, PNG, SVG, Mermaid, Agent Skills)",
-      "GLM-4.7-Flash (30x Daily Limit)",
+      "GLM-4.7-Flash (Default Option)",
+      "Qwen3 Max (30x Daily)",
+      "Qwen3.5 Plus (30x Daily)",
+      "Qwen Flash (30x Daily)",
     ],
     daily_limit: 15,
     rateLimits: {
@@ -49,7 +53,13 @@ export const SUBSCRIPTION_PLANS = {
     } as RateLimitConfig,
     tierFeatures: {
       maxProjects: 3,
-      allowedModels: ["GLM-4.7-Flash"],
+      allowedModels: [
+        "nvidia:z-ai/glm5", 
+        "zhipu:glm-4.7-flash",
+        "qwen:qwen3-max",
+        "qwen:qwen3.5-plus",
+        "qwen:qwen-flash"
+      ],
       privateMode: false,
       commercialRights: false,
       prioritySupport: false,
@@ -59,6 +69,11 @@ export const SUBSCRIPTION_PLANS = {
       chaosEngineering: false,
       autoLayouts: false,
       enterpriseMode: false,
+      modelDailyLimits: {
+        "qwen:qwen3-max": 30,
+        "qwen:qwen3.5-plus": 30,
+        "qwen:qwen-flash": 30,
+      }
     } as TierFeatures,
   },
   starter: {
@@ -85,7 +100,15 @@ export const SUBSCRIPTION_PLANS = {
     } as RateLimitConfig,
     tierFeatures: {
       maxProjects: Infinity,
-      allowedModels: ["GLM-4.7-Flash", "Kimi-k2.5", "Gemini-3.0", "Minimax"],
+      allowedModels: [
+        "nvidia:z-ai/glm5", 
+        "zhipu:glm-4.7-flash", 
+        "nvidia:moonshotai/kimi-k2.5", 
+        "nvidia:minimaxai/minimax-m2.1",
+        "qwen:qwen3-max",
+        "qwen:qwen3.5-plus",
+        "qwen:qwen-flash"
+      ],
       privateMode: false,
       commercialRights: false,
       prioritySupport: true,
@@ -121,11 +144,14 @@ export const SUBSCRIPTION_PLANS = {
     tierFeatures: {
       maxProjects: Infinity,
       allowedModels: [
-        "GLM-4.7-Flash",
-        "Kimi-k2.5",
-        "Gemini-3.0",
-        "Minimax",
-        "Claude-Opus-4.5",
+        "nvidia:z-ai/glm5", 
+        "zhipu:glm-4.7-flash", 
+        "nvidia:moonshotai/kimi-k2.5", 
+        "nvidia:minimaxai/minimax-m2.1",
+        "qwen:qwen3-max",
+        "qwen:qwen3.5-plus",
+        "qwen:qwen-flash",
+        "openrouter:anthropic/claude-3-opus",
       ],
       privateMode: true,
       commercialRights: true,

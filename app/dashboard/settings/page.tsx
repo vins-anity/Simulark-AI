@@ -33,7 +33,6 @@ import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/utils/avatar";
 import { getUserPreferences, updateUserPreferences } from "@/actions/users";
 
-// Module configuration with IDs
 const CONFIG_MODULES = [
   {
     id: "CFG-01",
@@ -41,7 +40,6 @@ const CONFIG_MODULES = [
     title: "Technology Stack",
     subtitle: "Cloud providers, languages & frameworks",
     icon: Cpu,
-    color: "blue",
   },
   {
     id: "CFG-02",
@@ -49,7 +47,6 @@ const CONFIG_MODULES = [
     title: "Application Type",
     subtitle: "Web, mobile, API, CLI, or library",
     icon: LayoutGrid,
-    color: "green",
   },
   {
     id: "CFG-03",
@@ -57,7 +54,6 @@ const CONFIG_MODULES = [
     title: "Architecture Patterns",
     subtitle: "Monolith, microservices, serverless",
     icon: FileText,
-    color: "purple",
   },
   {
     id: "CFG-04",
@@ -65,7 +61,6 @@ const CONFIG_MODULES = [
     title: "Custom Instructions",
     subtitle: "System prompt guidance & constraints",
     icon: Pencil,
-    color: "amber",
   },
   {
     id: "CFG-05",
@@ -73,7 +68,6 @@ const CONFIG_MODULES = [
     title: "Generator Defaults",
     subtitle: "Default constraints & architecture mode",
     icon: Rocket,
-    color: "indigo",
   },
 ] as const;
 
@@ -171,42 +165,7 @@ const TECH_CATEGORIES = {
   ],
 };
 
-// Color configurations
-const MODULE_COLORS: Record<
-  string,
-  { bg: string; border: string; text: string; icon: string }
-> = {
-  blue: {
-    bg: "bg-blue-500/5",
-    border: "border-blue-500/20",
-    text: "text-blue-600",
-    icon: "text-blue-500",
-  },
-  green: {
-    bg: "bg-green-500/5",
-    border: "border-green-500/20",
-    text: "text-green-600",
-    icon: "text-green-500",
-  },
-  purple: {
-    bg: "bg-purple-500/5",
-    border: "border-purple-500/20",
-    text: "text-purple-600",
-    icon: "text-purple-500",
-  },
-  amber: {
-    bg: "bg-amber-500/5",
-    border: "border-amber-500/20",
-    text: "text-amber-600",
-    icon: "text-amber-500",
-  },
-  indigo: {
-    bg: "bg-indigo-500/5",
-    border: "border-indigo-500/20",
-    text: "text-indigo-600",
-    icon: "text-indigo-500",
-  },
-};
+
 
 // Module Card Component
 function ModuleCard({
@@ -222,14 +181,13 @@ function ModuleCard({
   children: React.ReactNode;
   selectionCount?: number;
 }) {
-  const colors = MODULE_COLORS[module.color];
   const IconComponent = module.icon;
 
   return (
     <div
       className={cn(
-        "border border-border-primary bg-bg-secondary transition-all duration-300",
-        isExpanded && "shadow-md",
+        "border border-border-primary bg-bg-secondary transition-all duration-300 relative",
+        isExpanded ? "shadow-md z-10" : "hover:-translate-y-1 hover:shadow-sm"
       )}
     >
       {/* Card Header */}
@@ -240,43 +198,30 @@ function ModuleCard({
       >
         <div className="flex items-center gap-4">
           {/* Icon Container */}
-          <div
-            className={cn(
-              "w-11 h-11 flex items-center justify-center border",
-              colors.bg,
-              colors.border,
-            )}
-          >
-            <IconComponent className={cn("w-5 h-5", colors.icon)} />
+          <div className="w-11 h-11 flex items-center justify-center border border-border-primary bg-bg-primary text-text-primary">
+            <IconComponent className="w-5 h-5" />
           </div>
 
           {/* Title Section */}
           <div className="flex flex-col items-start text-left">
             <div className="flex items-center gap-2">
-              <h3 className="font-poppins font-semibold text-sm text-text-primary">
+              <h3 className="font-poppins font-semibold text-sm text-text-primary uppercase tracking-wide">
                 {module.title}
               </h3>
               {/* ID Badge */}
-              <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted px-1.5 py-0.5 bg-bg-tertiary border border-border-secondary">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-brand-orange px-1.5 py-0.5 border border-brand-orange/30 bg-brand-orange/5">
                 {module.id}
               </span>
             </div>
-            <p className="text-xs text-text-muted mt-0.5">{module.subtitle}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-lora italic">{module.subtitle}</p>
           </div>
         </div>
 
         {/* Right Side: Selection Count + Chevron */}
         <div className="flex items-center gap-3">
           {selectionCount !== undefined && selectionCount > 0 && (
-            <span
-              className={cn(
-                "font-mono text-[10px] px-2 py-0.5 border",
-                colors.bg,
-                colors.border,
-                colors.text,
-              )}
-            >
-              {selectionCount} selected
+            <span className="font-mono text-[10px] px-2 py-0.5 border border-border-primary bg-bg-primary text-text-primary uppercase tracking-widest">
+              [ {selectionCount} DATA_PTS ]
             </span>
           )}
           <motion.div
@@ -550,28 +495,35 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-bg-primary pb-20">
-      {/* Header */}
-      <header className="border-b border-border-primary bg-bg-secondary">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">
-                  {"// SYSTEM_CONFIG"}
-                </span>
-              </div>
-              <h1 className="text-3xl font-poppins font-bold tracking-tight text-text-primary">
+      {/* Command Bar Header */}
+      <header className="sticky top-0 z-50 glass-card border-b border-border-primary">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-brand-orange animate-pulse-soft rounded-full" />
+              <h1 className="text-xl font-poppins font-bold tracking-tight text-text-primary uppercase">
                 Configuration
               </h1>
-              <p className="text-text-secondary mt-2 font-lora">
-                Manage profile and AI generator defaults
-              </p>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted ml-2 hidden sm:inline-block">
+                {"// SYSTEM_CONFIG"}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted hidden sm:inline-block">
+                SYS_STATUS: ONLINE
+              </span>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 pt-8">
+      <main className="max-w-4xl mx-auto px-6 pt-10">
+        <div className="mb-6">
+          <p className="text-text-secondary font-lora text-sm md:text-base border-l-2 border-brand-orange pl-4 italic">
+            "Manage profile parameters and artificial intelligence generator defaults to align with monolithic infrastructure constraints."
+          </p>
+        </div>
         {/* Profile Module */}
         <section className="mb-8">
           <div className="border border-border-primary bg-bg-secondary">
@@ -614,69 +566,13 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="w-full md:w-auto md:ml-auto">
-                  <Button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full md:w-auto bg-transparent border border-brand-charcoal text-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-white transition-all duration-200 rounded-none px-5 h-10"
-                  >
-                    {saving ? (
-                      <span className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-charcoal/20 border-t-brand-charcoal" />
-                        Saving
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Save className="w-4 h-4" />
-                        Save Changes
-                      </span>
-                    )}
-                  </Button>
-                </div>
+
               </div>
             </div>
           </div>
         </section>
 
-        {/* Onboarding Settings */}
-        <section className="mb-8">
-          <div className="border border-border-primary bg-bg-secondary">
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-border-primary bg-bg-tertiary">
-              <Rocket className="w-4 h-4 text-text-muted" />
-              <h2 className="font-poppins font-semibold text-sm text-text-primary">
-                Onboarding
-              </h2>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted px-1.5 py-0.5 bg-bg-secondary border border-border-secondary ml-auto">
-                ONB-00
-              </span>
-            </div>
 
-            <div className="p-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-medium text-sm text-text-primary mb-1">
-                    Getting Started Guide
-                  </h3>
-                  <p className="text-xs text-text-muted">
-                    Complete the onboarding flow to personalize your AI
-                    architecture recommendations
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/onboarding"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange hover:bg-brand-orange hover:text-white transition-colors font-mono text-xs uppercase tracking-wider"
-                  >
-                    <Rocket className="w-4 h-4" />
-                    Restart Onboarding
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Generator Defaults Label */}
         <div className="flex items-center justify-between gap-2 mb-4 px-1">
@@ -942,23 +838,26 @@ export default function SettingsPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className="mb-8 border border-red-200 dark:border-red-900/30 bg-red-50/10 dark:bg-red-900/5">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-red-200 dark:border-red-900/30 bg-red-50/20 dark:bg-red-900/10">
-            <TriangleAlert className="w-4 h-4 text-red-600 dark:text-red-400" />
-            <h2 className="font-poppins font-semibold text-sm text-red-700 dark:text-red-400">
-              Danger Zone
+        <section className="mb-8 border-2 border-red-500 bg-red-500/5 relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-red-500/20 bg-red-500/10">
+            <TriangleAlert className="w-4 h-4 text-red-500" />
+            <h2 className="font-poppins font-semibold text-sm text-red-500 tracking-wide">
+              CRITICAL ACTION
             </h2>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-red-500 px-1.5 py-0.5 border border-red-500/30 ml-auto bg-red-500/5">
+              // SYS-RESET
+            </span>
           </div>
 
           <div className="p-5">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
-                <h3 className="font-medium text-sm text-text-primary mb-1">
-                  Reset Onboarding Progress
+                <h3 className="font-mono text-xs tracking-wider font-bold text-text-primary mb-1 uppercase">
+                  Purge Onboarding State
                 </h3>
-                <p className="text-xs text-text-muted">
-                  This will clear your architecture preferences and restart the
-                  onboarding flow.
+                <p className="text-xs text-text-muted font-lora">
+                  Executing this protocol will clear your architecture preferences and restart the initialization sequence.
                 </p>
               </div>
               <Button
@@ -966,17 +865,17 @@ export default function SettingsPage() {
                 variant="destructive"
                 onClick={handleReset}
                 disabled={resetting}
-                className="bg-red-600 hover:bg-red-700 text-white rounded-none h-9 px-4 text-xs uppercase tracking-wider font-mono"
+                className="bg-red-500 hover:bg-red-600 text-white rounded-none h-10 px-4 text-xs uppercase tracking-wider font-mono border-2 border-transparent hover:border-white/20 transition-all shrink-0"
               >
                 {resetting ? (
                   <span className="flex items-center gap-2">
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                    Resetting...
+                    [ PURGING... ]
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <RotateCcw className="w-3 h-3" />
-                    Reset Onboarding
+                    [ INITIATE RESET ]
                   </span>
                 )}
               </Button>
@@ -990,17 +889,17 @@ export default function SettingsPage() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="bg-transparent border border-brand-charcoal text-brand-charcoal hover:bg-brand-charcoal hover:text-white transition-all duration-200 rounded-none px-6 h-11"
+            className="bg-brand-orange border border-brand-orange text-white hover:bg-brand-charcoal hover:border-brand-charcoal transition-all duration-300 rounded-none px-6 h-12 font-mono text-sm tracking-widest uppercase shadow-md hover:shadow-lg"
           >
             {saving ? (
-              <span className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-charcoal/20 border-t-brand-charcoal" />
-                Saving Configuration...
+              <span className="flex items-center gap-3">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                [ UPLINKING DATA... ]
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-3">
                 <Save className="w-4 h-4" />
-                Save All Changes
+                [ TRANSMIT CONFIG ]
               </span>
             )}
           </Button>

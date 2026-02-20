@@ -33,7 +33,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AVAILABLE_MODELS } from "@/lib/ai-models";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { AVAILABLE_MODELS } from "@/lib/provider-registry";
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { cn } from "@/lib/utils";
 import { StreamingMessage } from "./StreamingMessage";
@@ -358,7 +364,7 @@ export function AIAssistantPanel({
   // Settings / Preferences
   // Settings / Preferences
   const [model, setModelState] = useState(
-    (initialMetadata?.model as string) || "nvidia:z-ai/glm5",
+    (initialMetadata?.model as string) || "qwen:qwen3.5-plus",
   );
 
   const [userPreferences, setUserPreferences] = useState<{
@@ -1107,10 +1113,12 @@ export function AIAssistantPanel({
                 }
               }
 
-              // Always keep isThinking:true while streaming — prevents flicker
+              // Update the message content in real-time so it can be passed to UI
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === aiMsgId ? { ...m, isThinking: true } : m,
+                  m.id === aiMsgId
+                    ? { ...m, content: accumulatedContent, isThinking: true }
+                    : m,
                 ),
               );
             } else if (json.type === "result" && json.data) {
@@ -1419,6 +1427,7 @@ export function AIAssistantPanel({
                 <StreamingMessage
                   isGenerating={true}
                   reasoning={message.reasoning}
+                  content={message.content}
                   streamProgress={streamProgress}
                 />
               ) : (
@@ -1551,12 +1560,50 @@ export function AIAssistantPanel({
               <SelectTrigger className="w-full h-8 text-[11px] font-mono uppercase tracking-wider bg-neutral-50 dark:bg-bg-tertiary border-brand-charcoal/10 dark:border-border-primary/50 focus:ring-brand-orange/20">
                 <SelectValue placeholder="MODEL" />
               </SelectTrigger>
-              <SelectContent className="font-mono text-[11px]">
-                {AVAILABLE_MODELS.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name} {m.id.includes("glm5") ? "🔥" : ""}
-                  </SelectItem>
-                ))}
+              <SelectContent className="font-mono text-[11px] max-w-[300px]">
+                <TooltipProvider delayDuration={100}>
+                  {Object.entries(AVAILABLE_MODELS).map(([id, m]) => (
+                    <Tooltip key={id}>
+                      <TooltipTrigger asChild>
+                        <div className="w-full">
+                          <SelectItem
+                            value={id}
+                            className="flex items-center justify-between group"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{m.name}</span>
+                              {m.badge === "hot_tag" && (
+                                <span className="text-brand-orange ml-1">🔥</span>
+                              )}
+                              {m.badge === "double_hot_tag" && (
+                                <span className="text-brand-orange ml-1">🔥🔥</span>
+                              )}
+                              {m.badge === "balance_tag" && (
+                                <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 py-0.5 rounded ml-1 uppercase border border-blue-500/20 leading-none">
+                                  Balance
+                                </span>
+                              )}
+                              {m.dailyLimit && (
+                                <span className="text-[9px] text-text-secondary/50 ml-1">
+                                  ({m.dailyLimit}x)
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="center" className="max-w-[200px] border-brand-charcoal/10 font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap">
+                        <div className="font-bold text-brand-orange mb-1">{m.name}</div>
+                        {m.description}
+                        {m.tooltipOverview && (
+                          <div className="mt-1.5 pt-1.5 border-t border-border-primary/50 text-text-secondary">
+                            {m.tooltipOverview}
+                          </div>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </TooltipProvider>
               </SelectContent>
             </Select>
           </div>
@@ -1601,6 +1648,13 @@ export function AIAssistantPanel({
           </form>
         </div>
       </div>
+
+      <ResourceExhaustionModal 
+        isOpen={isQuotaModalOpen} 
+        onClose={() => setIsQuotaModalOpen(false)}
+        resetAt={quotaResetAt}
+        limit={quotaLimit}
+      />
     </div>
   );
 }

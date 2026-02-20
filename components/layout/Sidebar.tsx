@@ -137,75 +137,30 @@ export function Sidebar() {
             isCollapsed ? "px-2 py-3" : "px-3 py-4",
           )}
         >
-          {/* Navigation */}
-          <nav className="space-y-1 flex-1">
-            {/* Collapse Toggle - First Item */}
+          {/* Top Collapse Toggle */}
+          <div className={cn("flex items-center mb-2 mt-1", isCollapsed ? "justify-center" : "justify-start px-1")}>
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={toggleSidebar}
-                    className={cn(
-                      "flex items-center transition-colors duration-200 group relative overflow-hidden hover:bg-bg-tertiary",
-                      isCollapsed
-                        ? "justify-center p-2 mx-auto w-9 h-9 rounded-sm"
-                        : "gap-2 px-3 py-2",
-                    )}
+                    className="p-1 text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
                   >
                     <ChevronLeft
                       className={cn(
-                        "shrink-0 transition-transform duration-300 w-4 h-4 text-text-muted group-hover:text-text-primary",
+                        "w-4 h-4 transition-transform duration-300",
                         isCollapsed ? "rotate-180" : "",
                       )}
                     />
-                    <span
-                      className={cn(
-                        "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap text-text-secondary group-hover:text-text-primary overflow-hidden",
-                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                      )}
-                      style={{
-                        transition:
-                          "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
-                      }}
-                    >
-                      Collapse
-                    </span>
                   </button>
                 </TooltipTrigger>
               </Tooltip>
             </TooltipProvider>
+          </div>
 
-            {/* Home Link */}
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/"
-                    className={cn(
-                      "flex items-center transition-colors duration-200 group relative overflow-hidden hover:bg-bg-tertiary text-text-secondary hover:text-text-primary",
-                      isCollapsed
-                        ? "justify-center p-2 mx-auto w-9 h-9 rounded-sm"
-                        : "gap-2 px-3 py-2",
-                    )}
-                  >
-                    <Icon icon="lucide:home" className="shrink-0 w-4 h-4" />
-                    <span
-                      className={cn(
-                        "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap overflow-hidden",
-                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                      )}
-                      style={{
-                        transition:
-                          "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
-                      }}
-                    >
-                      Home
-                    </span>
-                  </Link>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+          {/* Navigation */}
+          <nav className="space-y-1 flex-1">
 
             <div
               className={cn(
@@ -356,6 +311,40 @@ export function Sidebar() {
               </TooltipProvider>
             </div>
           </nav>
+
+          {/* Bottom Actions Utilities */}
+          <div className="px-2 space-y-1 pb-4">
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/"
+                    className={cn(
+                      "flex items-center transition-colors duration-200 group relative overflow-hidden text-text-muted hover:text-text-primary hover:bg-bg-tertiary",
+                      isCollapsed
+                        ? "justify-center p-2 mx-auto w-9 h-9 rounded-sm"
+                        : "gap-2 px-3 py-2",
+                    )}
+                  >
+                    <Icon icon="lucide:arrow-left-to-line" className="shrink-0 w-4 h-4" />
+                    <span
+                      className={cn(
+                        "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap overflow-hidden",
+                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                      )}
+                      style={{
+                        transition:
+                          "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                      }}
+                    >
+                      Exit Area
+                    </span>
+                  </Link>
+                </TooltipTrigger>
+              </Tooltip>
+            </TooltipProvider>
+
+          </div>
 
           {/* User Section */}
           <div className="mt-auto pt-6 border-t border-border-primary">

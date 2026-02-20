@@ -90,6 +90,7 @@ export const OnboardingStep3Schema = v.object({
   architecturePreference: v.picklist(Object.values(ArchitecturePreference)),
   applicationType: v.picklist(Object.values(ApplicationType)),
   defaultMode: v.optional(v.string()), // "default" | "startup" | "enterprise"
+  defaultArchitectureMode: v.optional(v.string()),
   defaultModel: v.optional(v.string()),
   includeServices: v.object({
     auth: v.boolean(),

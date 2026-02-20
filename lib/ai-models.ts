@@ -1,7 +1,22 @@
 export const AVAILABLE_MODELS = [
+  // Qwen first (matching provider-registry UI order)
+  {
+    id: "qwen:qwen3-max",
+    name: "QWEN3 MAX",
+    provider: "QWEN",
+  },
+  {
+    id: "qwen:qwen3.5-plus",
+    name: "QWEN3.5 PLUS",
+    provider: "QWEN",
+  },
+  {
+    id: "qwen:qwen-flash",
+    name: "QWEN FLASH",
+    provider: "QWEN",
+  },
+  // Other free-tier models
   { id: "nvidia:z-ai/glm5", name: "GLM-5", provider: "NVIDIA" },
-  // { id: "anthropic/claude-3-opus", name: "CLIMB-3 OPUS", provider: "Anthropic" },
-  // { id: "google/gemini-3-pro-preview", name: "GEMINI-3 PRO", provider: "Google" },
   {
     id: "zhipu:glm-4.7-flash",
     name: "GLM-4.7 FLASH",
@@ -18,5 +33,6 @@ export const AVAILABLE_MODELS = [
     provider: "NVIDIA",
   },
 ] as const;
+
 
 export type AIModelId = (typeof AVAILABLE_MODELS)[number]["id"];

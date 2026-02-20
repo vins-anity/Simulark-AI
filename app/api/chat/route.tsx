@@ -16,7 +16,7 @@ import {
   normalizeArchitectureMode,
   validatePrompt,
 } from "@/lib/prompt-engineering";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkIPRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
@@ -47,7 +47,13 @@ const nvidiaClient = new OpenAI({
   apiKey: env.NVIDIA_API_KEY,
 });
 
-type ProviderType = "zhipu" | "kimi" | "openrouter" | "nvidia";
+// Qwen - Alibaba Cloud
+const qwenClient = createOpenAI({
+  baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+  apiKey: env.QWEN_API_KEY,
+});
+
+type ProviderType = "zhipu" | "kimi" | "openrouter" | "nvidia" | "qwen";
 
 const MessagePartSchema = v.object({
   type: v.string(),
@@ -129,6 +135,11 @@ function getProvider(modelId?: string): {
     return { provider: "openrouter", model: modelId };
   }
 
+  // Qwen Models
+  if (modelId?.includes("qwen")) {
+    return { provider: "qwen", model: modelId.replace("qwen:", "") };
+  }
+
   // Legacy NVIDIA fallback
   if (modelId?.includes("glm5") || modelId?.includes("nvidia")) {
     return { provider: "nvidia", model: "z-ai/glm5" };
@@ -150,19 +161,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Rate limiting
-    const rateLimitResult = await checkRateLimit(user.id);
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        {
-          error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
-          resetAt: rateLimitResult.reset,
-          limit: rateLimitResult.limit,
-        },
-        { status: 429 },
-      );
-    }
-
     // Parse request body with conversation history
     const body = await req.json();
     const parsedBody = v.safeParse(ChatRequestSchema, body);
@@ -170,6 +168,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Invalid request payload" },
         { status: 400 },
+      );
+    }
+
+    const { model: requestedModelId } = parsedBody.output;
+
+    // IP-based rate limiting (prevent account-switching abuse)
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+    const ipRateLimitResult = await checkIPRateLimit(ip);
+    if (!ipRateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: `Daily limit reached for your network. Upgrade or wait until reset.`,
+          resetAt: ipRateLimitResult.reset,
+          limit: ipRateLimitResult.limit,
+        },
+        { status: 429 },
+      );
+    }
+
+    // Rate limiting (now model-aware)
+    const rateLimitResult = await checkRateLimit(user.id, requestedModelId);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: `Daily limit reached for this model. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
+          resetAt: rateLimitResult.reset,
+          limit: rateLimitResult.limit,
+        },
+        { status: 429 },
       );
     }
     const {
@@ -296,6 +323,8 @@ export async function POST(req: NextRequest) {
           return kimi(mName);
         case "openrouter":
           return openrouter.chat(mName);
+        case "qwen":
+          return qwenClient.chat(mName);
         default:
           return zhipu(mName);
       }
@@ -402,6 +431,18 @@ export async function POST(req: NextRequest) {
       const fallbackProvider = fallbackToZhipu ? "zhipu" : providerType;
 
       // Stream text with conversation history
+      // Qwen3-series models support enable_thinking — configure per model
+      const qwenProviderOptions = fallbackProvider === "qwen"
+        ? {
+            openai: {
+              // Qwen3-series models support enable_thinking
+              extra_body: {
+                enable_thinking: true,
+              },
+            },
+          }
+        : undefined;
+
       result = streamText({
         model: getModelInstance(
           fallbackProvider as ProviderType,
@@ -410,7 +451,9 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages: await convertToModelMessages(messages),
         temperature: 0.7,
-        maxOutputTokens: 131072,
+        // Dashscope (Qwen) hard cap for standard models is 32768, but we let it be default if possible or cap at max supported
+        maxOutputTokens: fallbackProvider === "qwen" ? 32768 : 131072,
+        ...(qwenProviderOptions ? { providerOptions: qwenProviderOptions } : {}),
       });
     }
 
@@ -583,6 +626,21 @@ export async function POST(req: NextRequest) {
                       "\n",
                   ),
                 );
+                break;
+              }
+              case "unknown": {
+                // Handle potential unmapped Dashscope-specific fields (reasoning_content)
+                // if they come through as unknown parts in the stream
+                const unknownPart = part as any;
+                if (unknownPart.delta?.reasoning_content) {
+                  const text = unknownPart.delta.reasoning_content;
+                  accumulatedReasoning += text;
+                  controller.enqueue(
+                    encoder.encode(
+                      JSON.stringify({ type: "reasoning", data: text }) + "\n",
+                    ),
+                  );
+                }
                 break;
               }
               case "finish": {
