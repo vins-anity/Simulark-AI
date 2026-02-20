@@ -45,6 +45,18 @@ next-env.d.ts
 .windsurf
 .kilocodemodes
 
-.kilocode
-.kilocode/
+kilcode
 
+/kilocode
+/kilocode/
+/kilocode/*
+/opencode
+/opencode/
+/opencode/*
+
+*.kilocode
+*.kilocode/
+*.kilocode/*
+*.opencode
+*.opencode/
+*.opencode/*
