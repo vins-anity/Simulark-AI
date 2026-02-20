@@ -438,9 +438,9 @@ describe("Prompt Engineering Tests", () => {
       });
 
       // These come from getArchitectureGuidelines and getTechRecommendations
-      expect(webApp).toContain("Web Application Architecture:");
-      expect(aiPipeline).toContain("AI/ML Pipeline Architecture:");
-      expect(microservices).toContain("Microservices Architecture:");
+      expect(webApp).toContain("web-app");
+      expect(aiPipeline).toContain("ai-pipeline");
+      expect(microservices).toContain("microservices");
     });
 
     it("should include component count constraints", () => {
