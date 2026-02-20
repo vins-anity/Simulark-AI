@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronLeft,
   Circle,
+  CircleHelp,
   Download,
   FileCode,
   GitBranch,
@@ -305,6 +306,38 @@ export function WorkstationHeader({
           />
           <span>{stressLabel}</span>
         </Button>
+
+        {/* Workspace Guide */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2"
+            >
+              <CircleHelp className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline-block">[ GUIDE ]</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-64 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated whitespace-normal z-50"
+          >
+            <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
+              WORKSPACE_CONTROLS
+            </div>
+            <div className="p-4 text-brand-charcoal dark:text-text-primary flex flex-col gap-3 leading-relaxed">
+              <p>
+                <strong>Interact:</strong> Click nodes to open properties, drag to move, and double-click the title to rename.
+              </p>
+              <p>
+                <strong>Tech Stacks:</strong> Modify node tech stacks and services manually inside the properties panel.
+              </p>
+              <p>
+                <strong>Layout:</strong> Use the Autolayout controls in the header to organize the architecture automatically.
+              </p>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* File Operations moved here */}
         <DropdownMenu>

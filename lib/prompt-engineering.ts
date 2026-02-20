@@ -1249,6 +1249,7 @@ You MUST return a complete JSON object with BOTH nodes AND edges arrays. Without
 
 REQUIRED JSON STRUCTURE:
 {
+  "analysis": "Brief 1-2 sentence insight explaining the most interesting design decision or trade-off made in this architecture",
   "nodes": [
     {
       "id": "unique-id",

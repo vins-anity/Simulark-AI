@@ -25,6 +25,7 @@ export default function ProjectPage({
   const [id, setId] = useState<string | null>(null);
   const flowEditorRef = useRef<FlowEditorRef | null>(null);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  const [isGeneratingArch, setIsGeneratingArch] = useState(false);
 
   // Terminal State
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
@@ -193,7 +194,7 @@ export default function ProjectPage({
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex h-full relative">
           {/* Canvas Area */}
-          <div className="flex-1 relative bg-bg-secondary">
+          <div className="flex-1 relative bg-bg-secondary z-0">
             {/* Architectural Blueprint Background */}
             <div
               className="absolute inset-0 opacity-[0.012] pointer-events-none"
@@ -211,6 +212,63 @@ export default function ProjectPage({
                 backgroundSize: "100px 100px",
               }}
             />
+
+            {/* AI Generation Overlay */}
+            {isGeneratingArch && (
+              <div
+                className={cn(
+                  "absolute inset-0 z-50 flex items-center justify-center transition-all duration-700",
+                  "bg-white/5 dark:bg-black/5 backdrop-blur-[12px]",
+                  isTerminalOpen ? "md:pr-[420px]" : "",
+                )}
+              >
+                {/* Wavy flowy background blobs */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div
+                    className="absolute top-[40%] left-[35%] w-96 h-96 bg-brand-orange/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[80px] opacity-70 animate-pulse origin-center"
+                    style={{ animationDuration: "4s" }}
+                  />
+                  <div
+                    className="absolute top-[30%] right-[35%] w-80 h-80 bg-blue-400/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[80px] opacity-60 animate-pulse origin-center"
+                    style={{ animationDuration: "5s", animationDelay: "1s" }}
+                  />
+                </div>
+
+                {/* Minimalist Loader */}
+                <div className="relative flex flex-col items-center gap-6 z-10 p-8 rounded-3xl bg-white/5 dark:bg-black/5 backdrop-blur-md border border-brand-charcoal/5 dark:border-white/5 shadow-2xl">
+                  <div className="relative flex items-center justify-center w-16 h-16">
+                    <div
+                      className="absolute inset-0 border-t-2 border-brand-orange rounded-full animate-spin"
+                      style={{ animationDuration: "1.5s" }}
+                    />
+                    <div
+                      className="absolute inset-1 border-r-2 border-brand-charcoal/40 dark:border-white/30 rounded-full animate-spin"
+                      style={{
+                        animationDuration: "2s",
+                        animationDirection: "reverse",
+                      }}
+                    />
+                    <div
+                      className="absolute inset-2 border-b-2 border-brand-orange/50 rounded-full animate-spin"
+                      style={{ animationDuration: "1s" }}
+                    />
+                    <Icon
+                      icon="lucide:sparkles"
+                      className="w-4 h-4 text-brand-charcoal dark:text-white/80 animate-pulse"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <h3 className="font-mono text-xs font-semibold tracking-[0.2em] text-brand-charcoal dark:text-text-primary uppercase">
+                      Synthesizing Architecture
+                    </h3>
+                    <p className="font-mono text-[10px] text-brand-charcoal/50 dark:text-text-secondary/60">
+                      Computing spatial layout & patterns
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <FlowEditor
               ref={flowEditorRef}
@@ -280,6 +338,8 @@ export default function ProjectPage({
               isOpen={isTerminalOpen}
               onToggle={() => setIsTerminalOpen(!isTerminalOpen)}
               onInitialPromptProcessed={handleInitialPromptProcessed}
+              onGenerationStart={() => setIsGeneratingArch(true)}
+              onGenerationEnd={() => setIsGeneratingArch(false)}
             />
           </div>
         </div>

@@ -56,6 +56,8 @@ interface AIAssistantPanelProps {
   isOpen?: boolean;
   onToggle?: () => void;
   onInitialPromptProcessed?: () => void;
+  onGenerationStart?: () => void;
+  onGenerationEnd?: () => void;
 }
 
 interface Message {
@@ -317,6 +319,8 @@ export function AIAssistantPanel({
   isOpen = true,
   onToggle,
   onInitialPromptProcessed,
+  onGenerationStart,
+  onGenerationEnd,
 }: AIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -795,8 +799,7 @@ export function AIAssistantPanel({
     if (stackSnippet) hook += `, running on ${stackSnippet}`;
     hook += ".";
 
-    // Extract a brief, meaningful chunk from the reasoning string
-    // If we have generated reasoning, clean it up and show the first paragraph or two
+    // Extract a brief, meaningful chunk from the reasoning string, OR use the explicit analysis payload field
     let insight = "";
     if (reasoningStr && reasoningStr.trim().length > 0) {
       const cleanReasoning = reasoningStr.replace(/<think>|<\/think>/g, "").trim();
@@ -805,6 +808,8 @@ export function AIAssistantPanel({
       insight = firstParagraphLabel.slice(0, 300);
       if (cleanReasoning.length > 300) insight += "...";
       insight = `\n\n> *${insight.trim()}*`;
+    } else if (data.analysis && data.analysis.trim().length > 0) {
+      insight = `\n\n> *${data.analysis.trim()}*`;
     }
 
     let response = `${hook}${insight}`;
@@ -831,6 +836,8 @@ export function AIAssistantPanel({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsGenerating(true);
+    if (onGenerationStart) onGenerationStart();
+    
     setStreamProgress(5);
     setStreamStage("analyzing");
 
@@ -1243,6 +1250,7 @@ export function AIAssistantPanel({
       setIsGenerating(false);
       setStreamProgress(0);
       setStreamStage("analyzing");
+      if (onGenerationEnd) onGenerationEnd();
     }
   };
 

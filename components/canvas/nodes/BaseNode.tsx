@@ -1,9 +1,11 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import * as React from "react";
 import {
   Handle,
   type NodeProps,
+  type Node,
   NodeToolbar,
   Position,
   useReactFlow,
@@ -31,16 +33,6 @@ export function cn(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
-export type BaseNodeProps = NodeProps & {
-  children?: React.ReactNode;
-  className?: string;
-  icon?: React.ReactNode;
-  label?: string;
-  logo?: string; // Iconify icon string
-  techLabel?: string; // e.g. "Next.js 14", "Postgres 16"
-  tier?: string; // e.g. "Serverless", "vCPU 2"
-};
-
 // Type for the data prop
 type BaseNodeData = {
   label?: string;
@@ -52,6 +44,16 @@ type BaseNodeData = {
   serviceType?: string;
   description?: string;
   [key: string]: unknown;
+};
+
+export type BaseNodeProps = NodeProps<Node<BaseNodeData, string>> & {
+  children?: React.ReactNode;
+  className?: string;
+  icon?: React.ReactNode;
+  label?: string;
+  logo?: string; // Iconify icon string
+  techLabel?: string; // e.g. "Next.js 14", "Postgres 16"
+  tier?: string; // e.g. "Serverless", "vCPU 2"
 };
 
 export function BaseNode({
@@ -79,13 +81,8 @@ export function BaseNode({
   const nodeLogo = logo || nodeData?.logo || nodeData?.techIcon || null;
   const nodeTechLabel = nodeData?.techLabel || null;
 
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [editedLabel, setEditedLabel] = useState(nodeLabel);
-  const [showGuide, setShowGuide] = useState(false);
   const isKilled = nodeStatus[id] === "killed";
   const isDegraded = nodeStatus[id] === "degraded";
   const isRecovering = nodeStatus[id] === "recovering";
@@ -125,11 +122,6 @@ export function BaseNode({
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY });
-  };
 
   const handleEditLabel = () => {
     setIsEditingLabel(true);
@@ -191,7 +183,6 @@ export function BaseNode({
       <div
         onPointerDown={handlePointerDown}
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         className={cn(
           "relative flex flex-col transition-all duration-300 ease-out group",
           "w-80 h-auto rounded-none overflow-hidden",
@@ -222,35 +213,6 @@ export function BaseNode({
           className,
         )}
       >
-        <button
-          type="button"
-          className="nodrag nopan absolute top-[12px] right-2 z-20 h-5 w-5 border border-brand-charcoal/20 bg-bg-secondary/95 text-brand-charcoal/60 hover:text-brand-charcoal flex items-center justify-center"
-          title="Node usage guide"
-          onClick={(event) => {
-            event.stopPropagation();
-            setShowGuide((current) => !current);
-          }}
-        >
-          <CircleHelp className="w-3 h-3" />
-        </button>
-
-        {showGuide && (
-          <div className="nodrag nopan absolute top-8 right-8 z-20 max-w-[220px] border border-brand-charcoal/20 bg-bg-secondary/95 px-2 py-1.5 shadow-sm">
-            <p className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50 mb-1">
-              Node Controls
-            </p>
-            <p className="text-[10px] leading-tight text-brand-charcoal/70">
-              Click to open properties, drag to move, double-click title to
-              rename, right-click for actions.
-            </p>
-            {chaosMode && (
-              <p className="text-[10px] leading-tight text-red-600 mt-1">
-                Chaos mode: click node to inject failure.
-              </p>
-            )}
-          </div>
-        )}
-
         {/* Handles for edges - Technical Crosshairs */}
         <Handle
           type="target"
@@ -308,7 +270,7 @@ export function BaseNode({
             <div className="flex flex-col min-w-0 flex-1">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
-                  {nodeTechLabel || (nodeData?.tech as string) || "GENERIC_SRV"}
+                  {(nodeTechLabel as string) || (nodeData?.tech as string) || "GENERIC_SRV"}
                 </span>
                 {isEditingLabel ? (
                   <input
@@ -327,9 +289,9 @@ export function BaseNode({
                   <h3
                     className="font-poppins font-black text-base text-brand-charcoal leading-none cursor-text truncate uppercase tracking-tighter"
                     onDoubleClick={handleEditLabel}
-                    title={nodeLabel}
+                    title={nodeLabel as string}
                   >
-                    {nodeLabel}
+                    {nodeLabel as string}
                   </h3>
                 )}
               </div>
@@ -362,9 +324,9 @@ export function BaseNode({
           </div>
 
           {/* Infrastructure Metrics and Justification */}
-          {(nodeData?.description || nodeData?.justification) && (
+          {!!(nodeData?.description || nodeData?.justification) && (
             <div className="bg-bg-tertiary border border-brand-charcoal/5 p-1.5 font-mono text-[9px] opacity-80 leading-tight flex flex-col gap-1.5 mt-1">
-              {nodeData?.description && (
+              {!!nodeData?.description && (
                 <span
                   className="font-bold text-brand-charcoal dark:text-text-primary uppercase"
                   title={nodeData.description as string}
@@ -372,7 +334,7 @@ export function BaseNode({
                   {">"} {nodeData.description as string}
                 </span>
               )}
-              {nodeData?.justification && (
+              {!!nodeData?.justification && (
                 <span
                   className="italic opacity-70"
                   title={nodeData.justification as string}
@@ -387,17 +349,6 @@ export function BaseNode({
         {/* Decorative HUD Corner */}
         <div className="absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-brand-charcoal opacity-20 group-hover:opacity-100 transition-opacity" />
       </div>
-
-      {contextMenu && (
-        <NodeContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onEdit={handleEditLabel}
-          onDuplicate={handleDuplicate}
-          onDelete={handleDelete}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
     </>
   );
 }
