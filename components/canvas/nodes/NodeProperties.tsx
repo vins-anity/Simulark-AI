@@ -32,6 +32,9 @@ const SERVICE_TYPES: Record<string, { label: string; icon: any }> = {
   queue: { label: "QUEUE", icon: Box },
   cache: { label: "CACHE", icon: Database },
   ai: { label: "AI MODEL", icon: Cpu },
+  external: { label: "EXTERNAL API", icon: Globe },
+  saas: { label: "SAAS", icon: Globe },
+  "third-party": { label: "3RD PARTY", icon: Globe },
 };
 
 export function NodeProperties({

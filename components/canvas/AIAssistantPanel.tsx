@@ -771,13 +771,17 @@ export function AIAssistantPanel({
     }
   };
 
-  // Generates a short, punchy conversational response and smart follow-up chips
-  const generateConversationalResponse = (data: {
-    nodes: any[];
-    edges: any[];
-    analysis?: string;
-    recommendations?: string[];
-  }) => {
+  // Generates a conversational response using the AI's actual reasoning
+  const generateConversationalResponse = (
+    data: {
+      nodes: any[];
+      edges: any[];
+      analysis?: string;
+      recommendations?: string[];
+    },
+    reasoningStr?: string,
+    usage?: { promptTokens: number; completionTokens: number; totalTokens: number } | null
+  ) => {
     const nodeCount = data.nodes?.length || 0;
     const edgeCount = data.edges?.length || 0;
 
@@ -785,54 +789,32 @@ export function AIAssistantPanel({
       new Set(data.nodes?.map((n: any) => n.data?.tech).filter(Boolean) || []),
     ) as string[];
 
-    const hasDataLayer = data.nodes?.some((n: any) =>
-      ["database", "cache", "storage", "vector-db"].includes(n.type),
-    );
-    const hasGateway = data.nodes?.some((n: any) =>
-      ["gateway", "loadbalancer"].includes(n.type),
-    );
-    const hasQueue = data.nodes?.some((n: any) =>
-      ["queue", "messaging"].includes(n.type),
-    );
-
-    // Edge counts to find most connected node
-    const edgeCounts = new Map<string, number>();
-    for (const edge of data.edges || []) {
-      if (edge.source) edgeCounts.set(edge.source, (edgeCounts.get(edge.source) || 0) + 1);
-      if (edge.target) edgeCounts.set(edge.target, (edgeCounts.get(edge.target) || 0) + 1);
-    }
-    const busiest = data.nodes
-      ?.map((n: any) => ({ label: n.data?.label || n.id, count: edgeCounts.get(n.id) || 0 }))
-      .sort((a: any, b: any) => b.count - a.count)[0];
-
     // Hook line — sharp opener
     const stackSnippet = techs.slice(0, 3).join(", ");
     let hook = `Architecture deployed — **${nodeCount} nodes**, **${edgeCount} connections**`;
     if (stackSnippet) hook += `, running on ${stackSnippet}`;
     hook += ".";
 
-    // Insight line — one interesting design decision
+    // Extract a brief, meaningful chunk from the reasoning string
+    // If we have generated reasoning, clean it up and show the first paragraph or two
     let insight = "";
-    if (hasQueue) {
-      insight = "I routed async workloads through a message queue to keep your services decoupled and independently scalable.";
-    } else if (hasGateway && hasDataLayer) {
-      insight = `${busiest?.label ?? "Your core service"} is the most connected node — it's your critical path, worth adding redundancy there.`;
-    } else if (hasDataLayer) {
-      insight = "Data persistence is isolated from compute — good for independent scaling and disaster recovery.";
-    } else {
-      insight = "The architecture is live on the canvas. Click any node to inspect its config or ask me to elaborate.";
+    if (reasoningStr && reasoningStr.trim().length > 0) {
+      const cleanReasoning = reasoningStr.replace(/<think>|<\/think>/g, "").trim();
+      const firstParagraphLabel = cleanReasoning.split("\\n\\n")[0];
+      // Limit the length to be readable
+      insight = firstParagraphLabel.slice(0, 300);
+      if (cleanReasoning.length > 300) insight += "...";
+      insight = `\n\n> *${insight.trim()}*`;
     }
 
-    const response = `${hook}\n\n${insight}`;
+    let response = `${hook}${insight}`;
+    if (usage) {
+      const total = usage.totalTokens || (usage.promptTokens + usage.completionTokens);
+      response += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
+    }
 
-    // Smart follow-up chips
+    // Removed suggestion chips as requested
     const chips: string[] = [];
-    if (busiest?.label) chips.push(`Explain the ${busiest.label}`);
-    if (hasDataLayer) chips.push("How does this scale to 10M users?");
-    else chips.push("What's the weakest point in this architecture?");
-    if (hasQueue) chips.push("Add a dead-letter queue for error handling");
-    else if (hasGateway) chips.push("Add rate limiting to the gateway");
-    else chips.push("Add monitoring and observability");
 
     return { response, chips };
   };
@@ -876,7 +858,7 @@ export function AIAssistantPanel({
     const aiMsgId = (Date.now() + 1).toString();
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s connection timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s connection timeout
 
     setMessages((prev) => [
       ...prev,
@@ -893,15 +875,16 @@ export function AIAssistantPanel({
     const resetWatchdog = () => {
       if (streamWatchdog) clearTimeout(streamWatchdog);
       streamWatchdog = setTimeout(() => {
-        console.warn("[Watchdog] Stream stalled for 15s. Aborting.");
+        console.warn("[Watchdog] Stream stalled for 60s. Aborting.");
         controller.abort();
-      }, 15000);
+      }, 60000); // Increased to 60s to accommodate reasoning models
     };
 
     let accumulatedContent = "";
     let accumulatedReasoning = "";
     let lastGeneratedData: any = null; // Capture generated data
     let showingArchitectureProgress = false;
+    let tokenUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | null = null;
 
     try {
       // NEW: Include conversation history for context-aware AI
@@ -1151,6 +1134,8 @@ export function AIAssistantPanel({
                 ),
               );
               toast.error(streamError);
+            } else if (json.type === "usage" && json.data) {
+              tokenUsage = json.data;
             } else if (json.type === "progress" && json.data) {
               const progressPayload = json.data as {
                 progress?: number;
@@ -1176,7 +1161,7 @@ export function AIAssistantPanel({
 
       // If we have generated data, use punchy conversational response + chips
       if (lastGeneratedData) {
-        const { response, chips } = generateConversationalResponse(lastGeneratedData);
+        const { response, chips } = generateConversationalResponse(lastGeneratedData, accumulatedReasoning, tokenUsage);
         finalContent = response;
         newChips = chips;
       } else if (
@@ -1187,6 +1172,15 @@ export function AIAssistantPanel({
         finalContent = "Architecture drafted — check the canvas for the full layout.";
       } else if (!accumulatedContent) {
         finalContent = "I couldn't generate a response.";
+      } else {
+        // If it's a completely arbitrary generation string, fallback string
+        finalContent = accumulatedContent;
+      }
+
+      // Append token usage for the fallback cases (not handled by generateConversationalResponse)
+      if (!lastGeneratedData && tokenUsage) {
+        const total = tokenUsage.totalTokens || (tokenUsage.promptTokens + tokenUsage.completionTokens);
+        finalContent += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
       }
 
       const finalAiMessage = {
@@ -1579,7 +1573,7 @@ export function AIAssistantPanel({
                                 <span className="text-brand-orange ml-1">🔥🔥</span>
                               )}
                               {m.badge === "balance_tag" && (
-                                <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 py-0.5 rounded ml-1 uppercase border border-blue-500/20 leading-none">
+                                <span className="text-[8px] bg-blue-500/1text-blue-500 px-1 py-0.5 rounded ml-1 uppercase border border-blue-500/20 leading-none">
                                   Balance
                                 </span>
                               )}

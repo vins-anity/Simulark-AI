@@ -1252,11 +1252,12 @@ REQUIRED JSON STRUCTURE:
   "nodes": [
     {
       "id": "unique-id",
-      "type": "frontend|backend|database|gateway|cache|queue|ai|storage",
+      "type": "frontend|backend|database|gateway|cache|queue|ai|storage|external|saas",
       "position": { "x": number, "y": number },
       "data": {
         "label": "Display Name",
         "description": "Brief purpose",
+        "justification": "Detailed reasoning for choosing this specific technology or architecture pattern",
         "tech": "technology-id-from-ecosystem",
         "serviceType": "same-as-type"
       }
@@ -1268,7 +1269,10 @@ REQUIRED JSON STRUCTURE:
       "source": "source-node-id",
       "target": "target-node-id",
       "animated": true,
-      "data": { "protocol": "https" }
+      "data": { 
+        "protocol": "https",
+        "label": "Brief description of data flow (e.g. 'Session & Cart Data')"
+      }
     }
   ]
 }
@@ -1277,8 +1281,9 @@ CONNECTION REQUIREMENTS - VERY IMPORTANT:
 1. EVERY node (except the entry point) MUST have at least ONE incoming edge
 2. Create edges showing data flow: Load Balancer → Frontend → Backend → Database
 3. Use "animated": true on all edges to show active connections
-4. Protocol options: "https", "http", "websocket", "grpc", "database", "cache", "queue"
-5. Example edge: { "id": "edge-1", "source": "gateway-1", "target": "frontend-1", "animated": true, "data": { "protocol": "https" } }
+4. Provide descriptive "label" for edges to clarify what data is flowing between components
+5. Protocol options: "https", "http", "websocket", "grpc", "database", "cache", "queue"
+6. Example edge: { "id": "edge-1", "source": "gateway-1", "target": "frontend-1", "animated": true, "data": { "protocol": "https", "label": "User Requests" } }
 
 CRITICAL RULES:
 1. Never exceed ${adjustedMax} components
@@ -1348,14 +1353,14 @@ export function getTechKnowledgeInjection(
     )
     .join("\n");
 
-  return `
-Tech Stack Selection Guidelines:
+  return `Tech Stack Selection Guidelines:
 1. UNBIASED SELECTION: Do NOT blindly favor trending tools. "New" != "Best".
 2. MATCH REQUIREMENTS:
    - For PREDICTABILITY/STABILITY: Choose proven stacks (e.g., Laravel, Rails, Django, Go, Java).
    - For PERFORMANCE/EDGE: Choose modern runtimes (e.g., Bun, Hono, Rust, Go).
    - For RAPID MVP: Choose all-inclusive frameworks (e.g., Next.js, Laravel, Rails).
-3. 2026 KNOWLEDGE BASE (Use if relevant to constraints):
+3. THIRD-PARTY INTEGRATIONS: If the user requests specific third-party integrations (e.g., Stripe, SendGrid, Twilio), you MUST create dedicated nodes for them of type 'external' or 'saas' rather than embedding them inside backend components.
+4. 2026 KNOWLEDGE BASE (Use if relevant to constraints):
 ${knowledgeEntries}
 `;
 }

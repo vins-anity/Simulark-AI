@@ -23,6 +23,9 @@ export const NodeTypeSchema = v.picklist([
   "idp",
   "function", // Serverless functions
   "bucket", // Object storage
+  "external", // External API / SaaS
+  "saas",
+  "third-party",
 ]);
 
 export const ProviderSchema = v.picklist(["AWS", "GCP", "Azure", "Generic"]);
@@ -33,6 +36,8 @@ export const ValidationStatusSchema = v.picklist(["valid", "warning", "error"]);
 
 export const NodeDataSchema = v.object({
   label: v.string(),
+  description: v.optional(v.string()), // Add description which is used in prompt
+  justification: v.optional(v.string()), // AI reasoning for the node
   tech: v.optional(v.string()), // Technology ID for icon rendering (e.g., "nextjs", "postgres", "redis")
   serviceType: NodeTypeSchema,
   validationStatus: v.optional(ValidationStatusSchema, "valid"),

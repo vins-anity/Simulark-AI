@@ -644,6 +644,14 @@ export async function POST(req: NextRequest) {
                 break;
               }
               case "finish": {
+                if ('usage' in part && part.usage) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `${JSON.stringify({ type: "usage", data: part.usage })}\n`,
+                    ),
+                  );
+                }
+
                 // Fallback: If we haven't extracted architecture yet, try one last time with the full text
                 if (!architectureData) {
                   try {

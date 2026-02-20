@@ -783,6 +783,9 @@ function HeroCanvasInner() {
       ai: AINode,
       payment: PaymentNode,
       auth: AuthNode,
+      external: ServiceNode,
+      saas: ServiceNode,
+      "third-party": ServiceNode,
     }),
     [],
   );

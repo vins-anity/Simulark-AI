@@ -503,6 +503,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         "shape-circle": ShapeNode,
         "shape-diamond": ShapeNode,
         text: TextNode,
+        external: ServiceNode,
+        saas: ServiceNode,
+        "third-party": ServiceNode,
       }),
       [],
     );

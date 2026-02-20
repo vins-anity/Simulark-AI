@@ -61,6 +61,7 @@ export function BaseNode({
   children,
   className,
   icon,
+  logo,
   label,
   type,
 }: BaseNodeProps) {
@@ -74,8 +75,8 @@ export function BaseNode({
   } = useSimulationStore();
   const { setNodes, getNodes } = useReactFlow();
   const nodeLabel = nodeData?.label || label || "Node";
-  // Check for logo (direct), techIcon (from enrichment), or fallback
-  const nodeLogo = nodeData?.logo || nodeData?.techIcon || null;
+  // Check for logo (prop), logo (data), techIcon (from enrichment), or fallback
+  const nodeLogo = logo || nodeData?.logo || nodeData?.techIcon || null;
   const nodeTechLabel = nodeData?.techLabel || null;
 
   const [contextMenu, setContextMenu] = useState<{
@@ -223,7 +224,7 @@ export function BaseNode({
       >
         <button
           type="button"
-          className="nodrag nopan absolute top-8 left-2 z-20 h-5 w-5 border border-brand-charcoal/20 bg-bg-secondary/95 text-brand-charcoal/60 hover:text-brand-charcoal flex items-center justify-center"
+          className="nodrag nopan absolute top-[12px] right-2 z-20 h-5 w-5 border border-brand-charcoal/20 bg-bg-secondary/95 text-brand-charcoal/60 hover:text-brand-charcoal flex items-center justify-center"
           title="Node usage guide"
           onClick={(event) => {
             event.stopPropagation();
@@ -234,7 +235,7 @@ export function BaseNode({
         </button>
 
         {showGuide && (
-          <div className="nodrag nopan absolute top-8 left-8 z-20 max-w-[220px] border border-brand-charcoal/20 bg-bg-secondary/95 px-2 py-1.5 shadow-sm">
+          <div className="nodrag nopan absolute top-8 right-8 z-20 max-w-[220px] border border-brand-charcoal/20 bg-bg-secondary/95 px-2 py-1.5 shadow-sm">
             <p className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50 mb-1">
               Node Controls
             </p>
@@ -360,15 +361,25 @@ export function BaseNode({
             </div>
           </div>
 
-          {/* Infrastructure Metrics (Mock Readout) */}
-          {nodeData?.description && (
-            <div className="bg-bg-tertiary border border-brand-charcoal/5 p-1.5 font-mono text-[9px] opacity-80 leading-tight">
-              <span
-                className="line-clamp-3"
-                title={nodeData.description as string}
-              >
-                {nodeData.description as string}
-              </span>
+          {/* Infrastructure Metrics and Justification */}
+          {(nodeData?.description || nodeData?.justification) && (
+            <div className="bg-bg-tertiary border border-brand-charcoal/5 p-1.5 font-mono text-[9px] opacity-80 leading-tight flex flex-col gap-1.5 mt-1">
+              {nodeData?.description && (
+                <span
+                  className="font-bold text-brand-charcoal dark:text-text-primary uppercase"
+                  title={nodeData.description as string}
+                >
+                  {">"} {nodeData.description as string}
+                </span>
+              )}
+              {nodeData?.justification && (
+                <span
+                  className="italic opacity-70"
+                  title={nodeData.justification as string}
+                >
+                  // {nodeData.justification as string}
+                </span>
+              )}
             </div>
           )}
         </div>
