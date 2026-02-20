@@ -110,4 +110,3 @@ export type NodeType = v.InferOutput<typeof NodeTypeSchema>;
 export type NodeData = v.InferOutput<typeof NodeDataSchema>;
 export type ArchitectureGraph = v.InferOutput<typeof ArchitectureGraphSchema>;
 export type Project = v.InferOutput<typeof ProjectSchema>;
-     

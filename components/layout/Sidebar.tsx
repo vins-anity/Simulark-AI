@@ -138,7 +138,12 @@ export function Sidebar() {
           )}
         >
           {/* Top Collapse Toggle */}
-          <div className={cn("flex items-center mb-2 mt-1", isCollapsed ? "justify-center" : "justify-start px-1")}>
+          <div
+            className={cn(
+              "flex items-center mb-2 mt-1",
+              isCollapsed ? "justify-center" : "justify-start px-1",
+            )}
+          >
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -161,7 +166,6 @@ export function Sidebar() {
 
           {/* Navigation */}
           <nav className="space-y-1 flex-1">
-
             <div
               className={cn(
                 "px-1 mb-2 flex items-center gap-2 text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest overflow-hidden",
@@ -326,7 +330,10 @@ export function Sidebar() {
                         : "gap-2 px-3 py-2",
                     )}
                   >
-                    <Icon icon="lucide:arrow-left-to-line" className="shrink-0 w-4 h-4" />
+                    <Icon
+                      icon="lucide:arrow-left-to-line"
+                      className="shrink-0 w-4 h-4"
+                    />
                     <span
                       className={cn(
                         "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap overflow-hidden",
@@ -343,7 +350,6 @@ export function Sidebar() {
                 </TooltipTrigger>
               </Tooltip>
             </TooltipProvider>
-
           </div>
 
           {/* User Section */}

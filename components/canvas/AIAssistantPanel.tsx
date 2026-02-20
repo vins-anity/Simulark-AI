@@ -413,7 +413,11 @@ export function AIAssistantPanel({
     setChatModeState(mode);
     // Save preference to project
     import("@/actions/projects").then(({ saveProject }) => {
-      saveProject(projectId, { metadata: { ...initialMetadata, mode, model } }, false);
+      saveProject(
+        projectId,
+        { metadata: { ...initialMetadata, mode, model } },
+        false,
+      );
     });
     // Sync to global user preferences
     updateUserPreferences({ defaultMode: mode });
@@ -423,9 +427,13 @@ export function AIAssistantPanel({
     setModelState(newModel);
     // Save preference to project
     import("@/actions/projects").then(({ saveProject }) => {
-      saveProject(projectId, {
-        metadata: { ...initialMetadata, mode: chatMode, model: newModel },
-      }, false);
+      saveProject(
+        projectId,
+        {
+          metadata: { ...initialMetadata, mode: chatMode, model: newModel },
+        },
+        false,
+      );
     });
     // Sync to global user preferences
     updateUserPreferences({ defaultModel: newModel });
@@ -462,7 +470,10 @@ export function AIAssistantPanel({
 
   // Scroll to bottom on new messages — uses a sentinel div for reliable behaviour
   useEffect(() => {
-    scrollSentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    scrollSentinelRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   }, [messages, isGenerating]);
 
   // Reliable initial prompt processing with state machine
@@ -626,7 +637,8 @@ export function AIAssistantPanel({
             ? prefs.customInstructions
             : "";
 
-        let finalMode = (prefs.defaultMode || prefs.defaultArchitectureMode) as ArchitectureMode;
+        let finalMode = (prefs.defaultMode ||
+          prefs.defaultArchitectureMode) as ArchitectureMode;
 
         // Migrate legacy corporate mode
         if ((finalMode as string) === "corporate") {
@@ -784,7 +796,11 @@ export function AIAssistantPanel({
       recommendations?: string[];
     },
     reasoningStr?: string,
-    usage?: { promptTokens: number; completionTokens: number; totalTokens: number } | null
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    } | null,
   ) => {
     const nodeCount = data.nodes?.length || 0;
     const edgeCount = data.edges?.length || 0;
@@ -794,48 +810,51 @@ export function AIAssistantPanel({
     ) as string[];
 
     // Hook line — sharp opener
-  const stackSnippet = techs.slice(0, 3).join(", ");
-  
-  // Dynamic hooks for better personality
-  const openers = [
-    `Synthesized **${nodeCount} nodes** with **${edgeCount} connections**`,
-    `Architecture deployed — **${nodeCount} nodes** mapped across **${edgeCount} links**`,
-    `OPERATOR: Component synthesis complete (**${nodeCount} nodes**, **${edgeCount} edges**)`,
-    `Blueprint verified: **${nodeCount} nodes** integrated via **${edgeCount} connections**`,
-  ];
-  
-  let hook = openers[Math.floor(Math.random() * openers.length)];
-  if (stackSnippet) hook += `, anchored on **${stackSnippet}**`;
-  hook += ".";
+    const stackSnippet = techs.slice(0, 3).join(", ");
 
-  // Extract a brief, meaningful chunk from the reasoning string, OR use the explicit analysis payload field
-  let insight = "";
-  if (reasoningStr && reasoningStr.trim().length > 0) {
-    const cleanReasoning = reasoningStr.replace(/<think>|<\/think>/g, "").trim();
-    const firstParagraph = cleanReasoning.split("\n\n")[0];
-    // Limit the length to be readable
-    insight = firstParagraph.slice(0, 350);
-    if (cleanReasoning.length > 350) insight += "...";
-    insight = `\n\n> *${insight.trim()}*`;
-  } else if (data.analysis && data.analysis.trim().length > 0) {
-    insight = `\n\n> *${data.analysis.trim()}*`;
-  } else if (techs.length > 0) {
-    // Dynamic fallback if both are missing
-    const techPick = techs[Math.floor(Math.random() * techs.length)];
-    insight = `\n\n> *Optimized for high-performance ${techPick} patterns and automated scalability.*`;
-  }
+    // Dynamic hooks for better personality
+    const openers = [
+      `Synthesized **${nodeCount} nodes** with **${edgeCount} connections**`,
+      `Architecture deployed — **${nodeCount} nodes** mapped across **${edgeCount} links**`,
+      `OPERATOR: Component synthesis complete (**${nodeCount} nodes**, **${edgeCount} edges**)`,
+      `Blueprint verified: **${nodeCount} nodes** integrated via **${edgeCount} connections**`,
+    ];
 
-  let response = `${hook}${insight}`;
-  if (usage) {
-    const total = usage.totalTokens || (usage.promptTokens + usage.completionTokens);
-    response += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
-  }
+    let hook = openers[Math.floor(Math.random() * openers.length)];
+    if (stackSnippet) hook += `, anchored on **${stackSnippet}**`;
+    hook += ".";
 
-  // Removed suggestion chips as requested
-  const chips: string[] = [];
+    // Extract a brief, meaningful chunk from the reasoning string, OR use the explicit analysis payload field
+    let insight = "";
+    if (reasoningStr && reasoningStr.trim().length > 0) {
+      const cleanReasoning = reasoningStr
+        .replace(/<think>|<\/think>/g, "")
+        .trim();
+      const firstParagraph = cleanReasoning.split("\n\n")[0];
+      // Limit the length to be readable
+      insight = firstParagraph.slice(0, 350);
+      if (cleanReasoning.length > 350) insight += "...";
+      insight = `\n\n> *${insight.trim()}*`;
+    } else if (data.analysis && data.analysis.trim().length > 0) {
+      insight = `\n\n> *${data.analysis.trim()}*`;
+    } else if (techs.length > 0) {
+      // Dynamic fallback if both are missing
+      const techPick = techs[Math.floor(Math.random() * techs.length)];
+      insight = `\n\n> *Optimized for high-performance ${techPick} patterns and automated scalability.*`;
+    }
 
-  return { response, chips };
-};
+    let response = `${hook}${insight}`;
+    if (usage) {
+      const total =
+        usage.totalTokens || usage.promptTokens + usage.completionTokens;
+      response += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
+    }
+
+    // Removed suggestion chips as requested
+    const chips: string[] = [];
+
+    return { response, chips };
+  };
   const processMessage = async (content: string) => {
     if (!content.trim() || isGenerating) return;
 
@@ -849,7 +868,7 @@ export function AIAssistantPanel({
     setInputValue("");
     setIsGenerating(true);
     if (onGenerationStart) onGenerationStart();
-    
+
     setStreamProgress(5);
     setStreamStage("analyzing");
 
@@ -903,7 +922,11 @@ export function AIAssistantPanel({
     let accumulatedReasoning = "";
     let lastGeneratedData: any = null; // Capture generated data
     let showingArchitectureProgress = false;
-    let tokenUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | null = null;
+    let tokenUsage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+    } | null = null;
 
     try {
       // NEW: Include conversation history for context-aware AI
@@ -939,7 +962,7 @@ export function AIAssistantPanel({
         setQuotaResetAt(errorData.resetAt || null);
         setQuotaLimit(errorData.limit || 15);
         setIsQuotaModalOpen(true);
-        
+
         // Cleanup the placeholder AI message
         setMessages((prev) => prev.filter((m) => m.id !== aiMsgId));
         setIsGenerating(false);
@@ -1049,9 +1072,7 @@ export function AIAssistantPanel({
                   // (prevents the StreamingMessage from flickering away on non-JSON chunks)
                   setMessages((prev) =>
                     prev.map((m) =>
-                      m.id === aiMsgId
-                        ? { ...m, isThinking: true }
-                        : m,
+                      m.id === aiMsgId ? { ...m, isThinking: true } : m,
                     ),
                   );
                 } else if (part.type === "reasoning" && part.text) {
@@ -1180,7 +1201,11 @@ export function AIAssistantPanel({
 
       // If we have generated data, use punchy conversational response + chips
       if (lastGeneratedData) {
-        const { response, chips } = generateConversationalResponse(lastGeneratedData, accumulatedReasoning, tokenUsage);
+        const { response, chips } = generateConversationalResponse(
+          lastGeneratedData,
+          accumulatedReasoning,
+          tokenUsage,
+        );
         finalContent = response;
         newChips = chips;
       } else if (
@@ -1188,7 +1213,8 @@ export function AIAssistantPanel({
         accumulatedContent.trim().startsWith("{") ||
         accumulatedContent.trim().startsWith("```")
       ) {
-        finalContent = "Architecture drafted — check the canvas for the full layout.";
+        finalContent =
+          "Architecture drafted — check the canvas for the full layout.";
       } else if (!accumulatedContent) {
         finalContent = "I couldn't generate a response.";
       } else {
@@ -1198,7 +1224,9 @@ export function AIAssistantPanel({
 
       // Append token usage for the fallback cases (not handled by generateConversationalResponse)
       if (!lastGeneratedData && tokenUsage) {
-        const total = tokenUsage.totalTokens || (tokenUsage.promptTokens + tokenUsage.completionTokens);
+        const total =
+          tokenUsage.totalTokens ||
+          tokenUsage.promptTokens + tokenUsage.completionTokens;
         finalContent += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
       }
 
@@ -1225,7 +1253,7 @@ export function AIAssistantPanel({
       if (streamWatchdog) clearTimeout(streamWatchdog);
 
       const isAbortError = err.name === "AbortError";
-      
+
       // Only log and toast if it's NOT a manual abort
       if (!isAbortError) {
         console.error("Error processing message:", err);
@@ -1246,7 +1274,11 @@ export function AIAssistantPanel({
         setMessages((prev) =>
           prev.map((m) =>
             m.id === aiMsgId
-              ? { ...m, isThinking: false, content: accumulatedContent + " [Stopped by user]" }
+              ? {
+                  ...m,
+                  isThinking: false,
+                  content: accumulatedContent + " [Stopped by user]",
+                }
               : m,
           ),
         );
@@ -1267,7 +1299,6 @@ export function AIAssistantPanel({
   };
 
   const currentChat = chats.find((c) => c.id === currentChatId);
-
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-bg-secondary font-sans text-sm overflow-hidden border-l border-brand-charcoal/10 dark:border-border-primary/50">
@@ -1587,10 +1618,14 @@ export function AIAssistantPanel({
                             <div className="flex items-center gap-2">
                               <span>{m.name}</span>
                               {m.badge === "hot_tag" && (
-                                <span className="text-brand-orange ml-1">🔥</span>
+                                <span className="text-brand-orange ml-1">
+                                  🔥
+                                </span>
                               )}
                               {m.badge === "double_hot_tag" && (
-                                <span className="text-brand-orange ml-1">🔥🔥</span>
+                                <span className="text-brand-orange ml-1">
+                                  🔥🔥
+                                </span>
                               )}
                               {m.badge === "balance_tag" && (
                                 <span className="text-[8px] bg-blue-500/1text-blue-500 px-1 py-0.5 rounded ml-1 uppercase border border-blue-500/20 leading-none">
@@ -1606,8 +1641,14 @@ export function AIAssistantPanel({
                           </SelectItem>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="right" align="center" className="max-w-[200px] border-brand-charcoal/10 font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap">
-                        <div className="font-bold text-brand-orange mb-1">{m.name}</div>
+                      <TooltipContent
+                        side="right"
+                        align="center"
+                        className="max-w-[200px] border-brand-charcoal/10 font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap"
+                      >
+                        <div className="font-bold text-brand-orange mb-1">
+                          {m.name}
+                        </div>
                         {m.description}
                         {m.tooltipOverview && (
                           <div className="mt-1.5 pt-1.5 border-t border-border-primary/50 text-text-secondary">
@@ -1663,8 +1704,8 @@ export function AIAssistantPanel({
         </div>
       </div>
 
-      <ResourceExhaustionModal 
-        isOpen={isQuotaModalOpen} 
+      <ResourceExhaustionModal
+        isOpen={isQuotaModalOpen}
         onClose={() => setIsQuotaModalOpen(false)}
         resetAt={quotaResetAt}
         limit={quotaLimit}

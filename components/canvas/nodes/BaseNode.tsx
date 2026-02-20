@@ -122,7 +122,6 @@ export function BaseNode({
     }
   };
 
-
   const handleEditLabel = () => {
     setIsEditingLabel(true);
     setEditedLabel(nodeLabel);
@@ -270,7 +269,9 @@ export function BaseNode({
             <div className="flex flex-col min-w-0 flex-1">
               <div className="flex flex-col gap-0.5">
                 <span className="text-[9px] font-mono text-brand-charcoal/40 uppercase tracking-widest">
-                  {(nodeTechLabel as string) || (nodeData?.tech as string) || "GENERIC_SRV"}
+                  {(nodeTechLabel as string) ||
+                    (nodeData?.tech as string) ||
+                    "GENERIC_SRV"}
                 </span>
                 {isEditingLabel ? (
                   <input

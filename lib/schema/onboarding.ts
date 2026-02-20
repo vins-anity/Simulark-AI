@@ -81,14 +81,26 @@ export const OnboardingStep1Schema = v.object({
 });
 
 export const OnboardingStep2Schema = v.object({
-  cloudProviders: v.pipe(v.array(v.string()), v.minLength(1, "Select at least one cloud provider")),
-  languages: v.pipe(v.array(v.string()), v.minLength(1, "Select at least one language")),
-  frameworks: v.pipe(v.array(v.string()), v.minLength(1, "Select at least one framework")),
+  cloudProviders: v.pipe(
+    v.array(v.string()),
+    v.minLength(1, "Select at least one cloud provider"),
+  ),
+  languages: v.pipe(
+    v.array(v.string()),
+    v.minLength(1, "Select at least one language"),
+  ),
+  frameworks: v.pipe(
+    v.array(v.string()),
+    v.minLength(1, "Select at least one framework"),
+  ),
   experienceLevel: v.picklist(Object.values(ExperienceLevel)),
 });
 
 export const OnboardingStep3Schema = v.object({
-  architecturePreferences: v.pipe(v.array(v.picklist(Object.values(ArchitecturePreference))), v.minLength(1, "Select at least one architecture pattern")),
+  architecturePreferences: v.pipe(
+    v.array(v.picklist(Object.values(ArchitecturePreference))),
+    v.minLength(1, "Select at least one architecture pattern"),
+  ),
   applicationType: v.picklist(Object.values(ApplicationType)),
   defaultMode: v.optional(v.string()), // "default" | "startup" | "enterprise"
   defaultArchitectureMode: v.optional(v.string()),

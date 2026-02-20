@@ -1,7 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, SkipForward, ArrowRight } from "lucide-react";
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  SkipForward,
+  ArrowRight,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -180,18 +186,21 @@ export default function OnboardingPage() {
             ] as "beginner" | "intermediate" | "advanced",
           },
           step3: {
-            architecturePreferences: (data.architecturePreferences && data.architecturePreferences.length > 0)
-              ? data.architecturePreferences
-              : [
-                  data.defaultMode === "enterprise"
-                    ? "microservices"
-                    : data.defaultMode === "startup"
-                      ? "serverless"
-                      : "not-sure",
-                ],
-            applicationType: (data.projectType === "api" || data.projectType === "mobile")
-              ? data.projectType
-              : "web-app",
+            architecturePreferences:
+              data.architecturePreferences &&
+              data.architecturePreferences.length > 0
+                ? data.architecturePreferences
+                : [
+                    data.defaultMode === "enterprise"
+                      ? "microservices"
+                      : data.defaultMode === "startup"
+                        ? "serverless"
+                        : "not-sure",
+                  ],
+            applicationType:
+              data.projectType === "api" || data.projectType === "mobile"
+                ? data.projectType
+                : "web-app",
             includeServices: {
               auth: true,
               database: true,
@@ -249,7 +258,11 @@ export default function OnboardingPage() {
 
   const handleSkipStep = async () => {
     // For specific steps, we might want to save default state before moving on
-    if (currentStep.id === "profile" || currentStep.id === "techstack" || currentStep.id === "archpatterns") {
+    if (
+      currentStep.id === "profile" ||
+      currentStep.id === "techstack" ||
+      currentStep.id === "archpatterns"
+    ) {
       setIsSaving(true);
       try {
         await saveOnboardingProgress({
@@ -262,7 +275,7 @@ export default function OnboardingPage() {
         setIsSaving(false);
       }
     }
-    
+
     setDirection(1);
     setCurrentStepIndex((prev) => prev + 1);
   };
@@ -294,9 +307,11 @@ export default function OnboardingPage() {
       case "profile":
         return !!(data.experienceLevel && data.projectType && data.teamContext);
       case "techstack":
-        return data.techStack.cloud.length > 0 && 
-               data.techStack.languages.length > 0 && 
-               data.techStack.frameworks.length > 0;
+        return (
+          data.techStack.cloud.length > 0 &&
+          data.techStack.languages.length > 0 &&
+          data.techStack.frameworks.length > 0
+        );
       case "archpatterns":
         return (data.architecturePreferences?.length || 0) > 0;
       case "mode":
@@ -459,34 +474,37 @@ export default function OnboardingPage() {
                   onClick={() => setShowSkipModal(true)}
                   className="group font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-charcoal"
                 >
-                  <X className="mr-1 h-3.5 w-3.5" />
-                  [ EXIT_FLOW ]
+                  <X className="mr-1 h-3.5 w-3.5" />[ EXIT_FLOW ]
                 </Button>
-              ) : !isLastStep && (
-                <Button
-                  variant="ghost"
-                  onClick={handleBack}
-                  className="group font-mono text-xs uppercase tracking-wider text-brand-charcoal/60 hover:text-brand-charcoal"
-                >
-                  <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                  [ BACK ]
-                </Button>
+              ) : (
+                !isLastStep && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleBack}
+                    className="group font-mono text-xs uppercase tracking-wider text-brand-charcoal/60 hover:text-brand-charcoal"
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                    [ BACK ]
+                  </Button>
+                )
               )}
             </div>
 
             {/* Right: Skip Step + Exit + Next */}
             <div className="flex items-center gap-3">
-              {!isLastStep && currentStepIndex > 1 && currentStep.id !== "techstack" && currentStep.id !== "archpatterns" && (
-                <Button
-                  variant="ghost"
-                  onClick={handleSkipStep}
-                  disabled={isSaving}
-                  className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-orange hover:bg-brand-orange/5 transition-all flex items-center gap-2 h-9 border border-transparent hover:border-brand-orange/20"
-                >
-                  <SkipForward className="h-3 w-3" />
-                  [ SKIP_STEP ]
-                </Button>
-              )}
+              {!isLastStep &&
+                currentStepIndex > 1 &&
+                currentStep.id !== "techstack" &&
+                currentStep.id !== "archpatterns" && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleSkipStep}
+                    disabled={isSaving}
+                    className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-orange hover:bg-brand-orange/5 transition-all flex items-center gap-2 h-9 border border-transparent hover:border-brand-orange/20"
+                  >
+                    <SkipForward className="h-3 w-3" />[ SKIP_STEP ]
+                  </Button>
+                )}
 
               {/* Exit button for non-first steps (moved to desktop-only if screen space is tight) */}
               {currentStepIndex > 0 && !isLastStep && (
@@ -530,7 +548,7 @@ export default function OnboardingPage() {
         </div>
       </footer>
 
-      <ResetOnboardingModal 
+      <ResetOnboardingModal
         isOpen={showSkipModal}
         onOpenChange={setShowSkipModal}
         onConfirm={handleExitFlow}

@@ -6,8 +6,6 @@ import {
   sendExpiryReminders,
 } from "@/lib/subscription-lifecycle";
 
-export const runtime = "nodejs";
-
 /**
  * Admin API for subscription lifecycle management
  * Can be called via cron job or manually

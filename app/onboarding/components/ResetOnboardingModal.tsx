@@ -44,7 +44,7 @@ export function ResetOnboardingModal({
               {badge}
             </span>
           </div>
-          <button 
+          <button
             onClick={() => onOpenChange(false)}
             className="text-white/30 hover:text-white transition-colors"
           >

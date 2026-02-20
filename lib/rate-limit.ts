@@ -27,7 +27,6 @@ export async function checkRateLimit(userId: string, modelId?: string) {
     dailyLimit = plan.tierFeatures.modelDailyLimits[modelId];
   }
 
-
   // 2. Atomically check and increment today's usage in SQL.
   const { data, error: usageError } = await supabase.rpc(
     "check_and_increment_daily_usage",

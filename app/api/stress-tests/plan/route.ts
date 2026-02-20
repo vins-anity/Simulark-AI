@@ -11,8 +11,6 @@ import { generateStressTestPlanWithAI } from "@/lib/stress-ai-planner";
 import { getEffectiveTier } from "@/lib/subscription-lifecycle";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
-
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();

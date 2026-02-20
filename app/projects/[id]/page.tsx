@@ -257,7 +257,7 @@ export default function ProjectPage({
                       className="w-4 h-4 text-brand-charcoal dark:text-white/80 animate-pulse"
                     />
                   </div>
-                  
+
                   <div className="flex flex-col items-center gap-2 text-center">
                     <h3 className="font-mono text-xs font-semibold tracking-[0.2em] text-brand-charcoal dark:text-text-primary uppercase">
                       Synthesizing Architecture

@@ -38,12 +38,16 @@ export function UpgradeModal({
     e.preventDefault();
     setIsLoading(true);
 
-    const emailInput = ((e.currentTarget as HTMLFormElement).elements.namedItem("email") as HTMLInputElement)?.value;
-    
+    const emailInput = (
+      (e.currentTarget as HTMLFormElement).elements.namedItem(
+        "email",
+      ) as HTMLInputElement
+    )?.value;
+
     const result = await requestUpgrade(planName, emailInput);
 
     setIsLoading(false);
-    
+
     if (!result.success) {
       toast.error("Upgrade Request Failed", {
         description: result.error || "Please try again later.",

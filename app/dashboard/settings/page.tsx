@@ -166,8 +166,6 @@ const TECH_CATEGORIES = {
   ],
 };
 
-
-
 // Module Card Component
 function ModuleCard({
   module,
@@ -188,7 +186,7 @@ function ModuleCard({
     <div
       className={cn(
         "border border-border-primary bg-bg-secondary transition-all duration-300 relative",
-        isExpanded ? "shadow-md z-10" : "hover:-translate-y-1 hover:shadow-sm"
+        isExpanded ? "shadow-md z-10" : "hover:-translate-y-1 hover:shadow-sm",
       )}
     >
       {/* Card Header */}
@@ -214,7 +212,9 @@ function ModuleCard({
                 {module.id}
               </span>
             </div>
-            <p className="text-xs text-text-muted mt-0.5 font-lora italic">{module.subtitle}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-lora italic">
+              {module.subtitle}
+            </p>
           </div>
         </div>
 
@@ -365,15 +365,15 @@ export default function SettingsPage() {
             setApplicationType(prefs.applicationType);
           if (typeof prefs.customInstructions === "string")
             setCustomInstructions(prefs.customInstructions);
-          
+
           // Prioritize defaultMode for new sync logic
           if (prefs.defaultMode) {
             setDefaultArchitectureMode(prefs.defaultMode);
           } else if (prefs.defaultArchitectureMode) {
             setDefaultArchitectureMode(
-               (prefs.defaultArchitectureMode as string) === "corporate"
+              (prefs.defaultArchitectureMode as string) === "corporate"
                 ? "enterprise"
-                : prefs.defaultArchitectureMode as string,
+                : (prefs.defaultArchitectureMode as string),
             );
           }
 
@@ -426,7 +426,9 @@ export default function SettingsPage() {
     const result = await updateUserPreferences(preferences);
 
     if (!result.success) {
-      toast.error("Error", { description: result.error || "Failed to update preferences." });
+      toast.error("Error", {
+        description: result.error || "Failed to update preferences.",
+      });
     } else {
       toast.success("Configuration Saved", {
         description: "System parameters updated globally.",
@@ -503,7 +505,7 @@ export default function SettingsPage() {
                 {"// SYSTEM_CONFIG"}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted hidden sm:inline-block">
                 SYS_STATUS: ONLINE
@@ -516,7 +518,8 @@ export default function SettingsPage() {
       <main className="max-w-4xl mx-auto px-6 pt-10">
         <div className="mb-6">
           <p className="text-text-secondary font-lora text-sm md:text-base border-l-2 border-brand-orange pl-4 italic">
-            "Manage profile parameters and artificial intelligence generator defaults to align with monolithic infrastructure constraints."
+            "Manage profile parameters and artificial intelligence generator
+            defaults to align with monolithic infrastructure constraints."
           </p>
         </div>
         {/* Profile Module */}
@@ -560,14 +563,10 @@ export default function SettingsPage() {
                     className="bg-bg-primary border-border-primary focus-visible:ring-brand-orange/20 rounded-none"
                   />
                 </div>
-
-
               </div>
             </div>
           </div>
         </section>
-
-
 
         {/* Generator Defaults Label */}
         <div className="flex items-center justify-between gap-2 mb-4 px-1">
@@ -803,15 +802,23 @@ export default function SettingsPage() {
                             : "bg-bg-primary border-border-primary hover:border-border-secondary",
                         )}
                       >
-                        <div className={cn(
-                          "w-1 h-3 shrink-0",
-                          m.id.includes("nvidia") ? "bg-green-500" : "bg-blue-500"
-                        )} />
+                        <div
+                          className={cn(
+                            "w-1 h-3 shrink-0",
+                            m.id.includes("nvidia")
+                              ? "bg-green-500"
+                              : "bg-blue-500",
+                          )}
+                        />
                         <div className="flex flex-col min-w-0">
-                          <span className={cn(
-                            "text-xs font-bold uppercase tracking-wider truncate",
-                            isSelected ? "text-brand-orange" : "text-text-primary"
-                          )}>
+                          <span
+                            className={cn(
+                              "text-xs font-bold uppercase tracking-wider truncate",
+                              isSelected
+                                ? "text-brand-orange"
+                                : "text-text-primary",
+                            )}
+                          >
                             {m.name}
                           </span>
                           <span className="text-[9px] text-text-muted font-mono uppercase">
@@ -852,7 +859,8 @@ export default function SettingsPage() {
                   Purge Onboarding State
                 </h3>
                 <p className="text-xs text-text-muted font-lora">
-                  Executing this protocol will clear your architecture preferences and restart the initialization sequence.
+                  Executing this protocol will clear your architecture
+                  preferences and restart the initialization sequence.
                 </p>
               </div>
               <Button
@@ -869,8 +877,7 @@ export default function SettingsPage() {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <RotateCcw className="w-3 h-3" />
-                    [ INITIATE RESET ]
+                    <RotateCcw className="w-3 h-3" />[ INITIATE RESET ]
                   </span>
                 )}
               </Button>
@@ -893,8 +900,7 @@ export default function SettingsPage() {
               </span>
             ) : (
               <span className="flex items-center gap-3">
-                <Save className="w-4 h-4" />
-                [ TRANSMIT CONFIG ]
+                <Save className="w-4 h-4" />[ TRANSMIT CONFIG ]
               </span>
             )}
           </Button>

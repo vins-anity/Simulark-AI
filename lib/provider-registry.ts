@@ -26,22 +26,26 @@ export const AVAILABLE_MODELS: Record<string, ModelInfo> = {
   "qwen:qwen3-max": {
     name: "Qwen3 Max",
     provider: "qwen",
-    description: "Most powerful Qwen — ideal for complex, multi-step enterprise tasks",
+    description:
+      "Most powerful Qwen — ideal for complex, multi-step enterprise tasks",
     supportsTools: true,
     supportsStreaming: true,
     badge: "double_hot_tag",
     dailyLimit: 30,
-    tooltipOverview: "Flagship reasoning model. Native Thinking mode for deep architectural analysis. Best for Enterprise mode.",
+    tooltipOverview:
+      "Flagship reasoning model. Native Thinking mode for deep architectural analysis. Best for Enterprise mode.",
   },
   "qwen:qwen3.5-plus": {
     name: "Qwen3.5 Plus",
     provider: "qwen",
-    description: "Balanced model — performs on par with Qwen3 Max at a fraction of the cost",
+    description:
+      "Balanced model — performs on par with Qwen3 Max at a fraction of the cost",
     supportsTools: true,
     supportsStreaming: true,
     badge: "hot_tag",
     dailyLimit: 30,
-    tooltipOverview: "1M token context. Supports text, image & video. Great balance of quality and speed for Startup mode.",
+    tooltipOverview:
+      "1M token context. Supports text, image & video. Great balance of quality and speed for Startup mode.",
   },
   "qwen:qwen-flash": {
     name: "Qwen Flash",
@@ -50,7 +54,8 @@ export const AVAILABLE_MODELS: Record<string, ModelInfo> = {
     supportsTools: true,
     supportsStreaming: true,
     dailyLimit: 30,
-    tooltipOverview: "1M token context. Qwen3-series. Blazing fast JSON graph generation for rapid prototyping.",
+    tooltipOverview:
+      "1M token context. Qwen3-series. Blazing fast JSON graph generation for rapid prototyping.",
   },
 
   // ── Other free-tier models ───────────────────────────────────────────────
@@ -113,24 +118,41 @@ export function getModel(modelId: ModelId | string): LanguageModel {
 
   switch (provider) {
     case "zhipu":
-      if (!providers.zhipu) providers.zhipu = createZhipu({ apiKey: env.ZHIPU_API_KEY });
+      if (!providers.zhipu)
+        providers.zhipu = createZhipu({ apiKey: env.ZHIPU_API_KEY });
       return providers.zhipu(modelName);
     case "openrouter":
-      if (!providers.openrouter) providers.openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
+      if (!providers.openrouter)
+        providers.openrouter = createOpenRouter({
+          apiKey: env.OPENROUTER_API_KEY,
+        });
       return providers.openrouter.chat(modelName);
     case "kimi":
-      if (!providers.kimi) providers.kimi = createOpenAI({ baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1", apiKey: env.KIMI_API_KEY });
+      if (!providers.kimi)
+        providers.kimi = createOpenAI({
+          baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
+          apiKey: env.KIMI_API_KEY,
+        });
       return providers.kimi(modelName);
     case "nvidia":
-      if (!providers.nvidia) providers.nvidia = createOpenAI({ baseURL: "https://integrate.api.nvidia.com/v1", apiKey: env.NVIDIA_API_KEY });
+      if (!providers.nvidia)
+        providers.nvidia = createOpenAI({
+          baseURL: "https://integrate.api.nvidia.com/v1",
+          apiKey: env.NVIDIA_API_KEY,
+        });
       return providers.nvidia(modelName);
     case "qwen":
-      if (!providers.qwen) providers.qwen = createOpenAI({ baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", apiKey: env.QWEN_API_KEY });
+      if (!providers.qwen)
+        providers.qwen = createOpenAI({
+          baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+          apiKey: env.QWEN_API_KEY,
+        });
       return providers.qwen(modelName);
     default:
       // Default to Zhipu
       console.warn(`Unknown provider: ${provider}, defaulting to Zhipu`);
-      if (!providers.zhipu) providers.zhipu = createZhipu({ apiKey: env.ZHIPU_API_KEY });
+      if (!providers.zhipu)
+        providers.zhipu = createZhipu({ apiKey: env.ZHIPU_API_KEY });
       return providers.zhipu("glm-4.7-flash");
   }
 }
@@ -142,13 +164,14 @@ export function getModel(modelId: ModelId | string): LanguageModel {
  */
 export function getModelInfo(modelId: string) {
   return (
-    AVAILABLE_MODELS[modelId as ModelId] || {
+    AVAILABLE_MODELS[modelId as ModelId] ||
+    ({
       name: "Unknown Model",
       provider: "unknown",
       description: "Model information not available",
       supportsTools: false,
       supportsStreaming: false,
-    } as ModelInfo
+    } as ModelInfo)
   );
 }
 

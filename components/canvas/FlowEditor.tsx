@@ -242,42 +242,33 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         const width = Math.ceil(bounds.width);
         const height = Math.ceil(bounds.height);
 
-        const exportRoot = document.createElement("div");
-        exportRoot.style.position = "fixed";
-        exportRoot.style.left = "-100000px";
-        exportRoot.style.top = "0";
-        exportRoot.style.width = `${width}px`;
-        exportRoot.style.height = `${height}px`;
-        exportRoot.style.overflow = "hidden";
-        exportRoot.style.backgroundColor = bgColor;
-        exportRoot.style.pointerEvents = "none";
-        exportRoot.style.zIndex = "-1";
-
-        const viewportClone = viewport.cloneNode(true) as HTMLElement;
-        viewportClone.style.transformOrigin = "0 0";
-        viewportClone.style.transform = `translate(${bounds.translateX}px, ${bounds.translateY}px) scale(1)`;
-        viewportClone.style.width = "100%";
-        viewportClone.style.height = "100%";
-
-        exportRoot.appendChild(viewportClone);
-        document.body.appendChild(exportRoot);
+        // html-to-image correctly handles cloning the node internally.
+        // We just need to give it the dimensions and tell the clone how to
+        // transform itself to capture everything properly.
+        const imageOptions = {
+          cacheBust: true,
+          backgroundColor: bgColor,
+          width,
+          height,
+          pixelRatio: 2,
+          style: {
+            width: `${width}px`,
+            height: `${height}px`,
+            transform: `translate(${bounds.translateX}px, ${bounds.translateY}px) scale(1)`,
+          },
+        };
 
         try {
           const { toPng, toSvg } = await import("html-to-image");
 
           await new Promise<void>((resolve) => {
+            // allow a frame for rendering
             requestAnimationFrame(() => resolve());
           });
 
           switch (format) {
             case "png": {
-              const dataUrl = await toPng(exportRoot, {
-                cacheBust: true,
-                backgroundColor: bgColor,
-                width,
-                height,
-                pixelRatio: 2,
-              });
+              const dataUrl = await toPng(viewport, imageOptions);
               const link = document.createElement("a");
               link.download = `architecture-${Date.now()}.png`;
               link.href = dataUrl;
@@ -286,11 +277,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               break;
             }
             case "svg": {
-              const dataUrl = await toSvg(exportRoot, {
-                cacheBust: true,
-                backgroundColor: bgColor,
-                width,
-                height,
+              const dataUrl = await toSvg(viewport, {
+                ...imageOptions,
+                pixelRatio: 1, // SVG does not need pixel ratio
               });
               const link = document.createElement("a");
               link.download = `architecture-${Date.now()}.svg`;
@@ -301,13 +290,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
             }
             case "pdf": {
               const { jsPDF } = await import("jspdf");
-              const dataUrl = await toPng(exportRoot, {
-                cacheBust: true,
-                backgroundColor: bgColor,
-                width,
-                height,
-                pixelRatio: 2,
-              });
+              const dataUrl = await toPng(viewport, imageOptions);
               const pdf = new jsPDF({
                 orientation: width > height ? "landscape" : "portrait",
                 unit: "px",
@@ -319,8 +302,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               break;
             }
           }
-        } finally {
-          exportRoot.remove();
+        } catch (error) {
+          console.error("Export failed:", error);
+          toast.error(`Failed to export as ${format.toUpperCase()}`);
         }
       },
       [getNodes, resolvedTheme],
@@ -460,9 +444,42 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       },
       exportGraph: async (format: "mermaid" | "png" | "pdf" | "svg") => {
         if (format === "mermaid") {
-          const mermaidCode = generateMermaidCode(getNodes(), getEdges());
-          navigator.clipboard.writeText(mermaidCode);
-          toast.success("Mermaid code copied to clipboard!");
+          const loadingToastId = toast.loading(
+            "Generating AI-optimized Mermaid code...",
+          );
+          try {
+            const response = await fetch("/api/export-mermaid", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ nodes: getNodes(), edges: getEdges() }),
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to generate Mermaid via AI");
+            }
+
+            const data = await response.json();
+
+            if (data.mermaid) {
+              navigator.clipboard.writeText(data.mermaid);
+              toast.success("AI Mermaid code copied to clipboard!", {
+                id: loadingToastId,
+              });
+            } else {
+              throw new Error("Invalid response format");
+            }
+          } catch (error) {
+            console.error(
+              "AI Mermaid Export Error, falling back to static generator:",
+              error,
+            );
+            const mermaidCode = generateMermaidCode(getNodes(), getEdges());
+            navigator.clipboard.writeText(mermaidCode);
+            toast.success(
+              "Mermaid code copied to clipboard! (Static Fallback)",
+              { id: loadingToastId },
+            );
+          }
         } else {
           await exportGraphFile(format);
         }

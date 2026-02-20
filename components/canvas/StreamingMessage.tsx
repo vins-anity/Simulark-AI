@@ -81,7 +81,10 @@ const ARCHITECTURE_PATTERNS = [
 
 function parseLogLines(reasoning: string): LogLine[] {
   const lower = reasoning.toLowerCase();
-  const detected: { pattern: typeof ARCHITECTURE_PATTERNS[number]; index: number }[] = [];
+  const detected: {
+    pattern: (typeof ARCHITECTURE_PATTERNS)[number];
+    index: number;
+  }[] = [];
 
   for (const pattern of ARCHITECTURE_PATTERNS) {
     let firstIndex = -1;
@@ -136,13 +139,13 @@ export function StreamingMessage({
   // Reveal lines one by one for a typewriter effect
   useEffect(() => {
     if (allLines.length === 0) return;
-    
+
     // Find lines in allLines that are not yet in visibleLines
-    const visibleIds = new Set(visibleLines.map(l => l.id));
-    const next = allLines.find(l => !visibleIds.has(l.id));
-    
+    const visibleIds = new Set(visibleLines.map((l) => l.id));
+    const next = allLines.find((l) => !visibleIds.has(l.id));
+
     if (!next) return;
-    
+
     const timer = setTimeout(() => {
       setVisibleLines((prev) => [...prev, next]);
     }, 180);
@@ -170,15 +173,20 @@ export function StreamingMessage({
   // We prioritize the latest reasoning if it's currently thinking,
   // or the latest content if it's currently generating.
   const activeStreamChunk = (() => {
-    const raw = content 
-      ? content.split('\n').filter(Boolean).pop() 
-      : reasoning?.split('\n').filter(Boolean).pop();
+    const raw = content
+      ? content.split("\n").filter(Boolean).pop()
+      : reasoning?.split("\n").filter(Boolean).pop();
 
     if (!raw) return null;
 
     // Sanitize: If it looks like JSON (starts with { or " or [), hide the noise
     const trimmed = raw.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('"') || trimmed.startsWith('[') || trimmed.startsWith(':')) {
+    if (
+      trimmed.startsWith("{") ||
+      trimmed.startsWith('"') ||
+      trimmed.startsWith("[") ||
+      trimmed.startsWith(":")
+    ) {
       return "Synthesizing architecture nodes...";
     }
 

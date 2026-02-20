@@ -327,13 +327,16 @@ export function WorkstationHeader({
             </div>
             <div className="p-4 text-brand-charcoal dark:text-text-primary flex flex-col gap-3 leading-relaxed">
               <p>
-                <strong>Interact:</strong> Click nodes to open properties, drag to move, and double-click the title to rename.
+                <strong>Interact:</strong> Click nodes to open properties, drag
+                to move, and double-click the title to rename.
               </p>
               <p>
-                <strong>Tech Stacks:</strong> Modify node tech stacks and services manually inside the properties panel.
+                <strong>Tech Stacks:</strong> Modify node tech stacks and
+                services manually inside the properties panel.
               </p>
               <p>
-                <strong>Layout:</strong> Use the Autolayout controls in the header to organize the architecture automatically.
+                <strong>Layout:</strong> Use the Autolayout controls in the
+                header to organize the architecture automatically.
               </p>
             </div>
           </DropdownMenuContent>

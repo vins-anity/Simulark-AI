@@ -99,7 +99,7 @@ The platform solves the "Context Loss" problem in modern software engineering—
 
 - **Live Context URLs:** Secure, read-only JSON endpoints
 - **IDE Integration:** Generates `.cursorrules` and Markdown for Cursor/Windsurf
-- **Export Options:** Mermaid, PNG, SVG, PDF
+- **Export Options:** High-fidelity Mermaid, PNG, SVG, and PDF exports that dynamically scale to fit your entire architecture diagram
 
 ### User Experience
 

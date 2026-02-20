@@ -1198,7 +1198,9 @@ ${getFrameworkCompatibilityRules()}`;
 
     // Handle Internal Onboarding-derived Guidance
     if (context.userPreferences.onboardingMetadata) {
-      const internalGuidance = generateInternalGuidance(context.userPreferences.onboardingMetadata);
+      const internalGuidance = generateInternalGuidance(
+        context.userPreferences.onboardingMetadata,
+      );
       if (internalGuidance) {
         techRecommendations += `\n\nARCHITECTURAL CORE GUIDANCE:\n${internalGuidance}`;
       }
@@ -1378,16 +1380,24 @@ function generateInternalGuidance(metadata: {
 
   // Add experience context
   if (metadata.experienceLevel === "beginner") {
-    parts.push("- Focus on simple, well-documented solutions with clear explanations.");
+    parts.push(
+      "- Focus on simple, well-documented solutions with clear explanations.",
+    );
   } else if (metadata.experienceLevel === "advanced") {
-    parts.push("- Optimize for performance, scalability, and production-ready patterns.");
+    parts.push(
+      "- Optimize for performance, scalability, and production-ready patterns.",
+    );
   }
 
   // Add team context
   if (metadata.teamSize === "solo") {
-    parts.push("- Keep architecture simple and manageable by a single developer.");
+    parts.push(
+      "- Keep architecture simple and manageable by a single developer.",
+    );
   } else if (metadata.teamSize === "enterprise") {
-    parts.push("- Design for team collaboration with clear service boundaries.");
+    parts.push(
+      "- Design for team collaboration with clear service boundaries.",
+    );
   }
 
   // Add service preferences
@@ -1395,7 +1405,9 @@ function generateInternalGuidance(metadata: {
     .filter(([, enabled]) => enabled)
     .map(([name]) => name);
   if (services.length > 0) {
-    parts.push(`- Ensure ${services.join(", ")} are properly integrated into the architecture.`);
+    parts.push(
+      `- Ensure ${services.join(", ")} are properly integrated into the architecture.`,
+    );
   }
 
   return parts.join("\n");

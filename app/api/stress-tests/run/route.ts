@@ -12,8 +12,6 @@ import { runStressSimulation } from "@/lib/stress-runner";
 import { getEffectiveTier } from "@/lib/subscription-lifecycle";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
-
 function createStableSeed(
   nodes: Node[],
   edges: Edge[],

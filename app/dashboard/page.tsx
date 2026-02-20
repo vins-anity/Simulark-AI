@@ -31,15 +31,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
-import {
-  ArchitectureMode,
-  MODE_CONSTRAINTS,
-} from "@/lib/prompt-engineering";
+import { ArchitectureMode, MODE_CONSTRAINTS } from "@/lib/prompt-engineering";
 import type { Project } from "@/lib/schema/graph";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { getUserPreferences, updateUserPreferences } from "@/actions/users";
-
 
 const ITEMS_PER_PAGE = 3;
 
@@ -186,9 +182,10 @@ function DashboardContent() {
 
     try {
       // Shorten project name with futuristic prefix
-      const projectName = trimmedPrompt.length > 40
-        ? `MANIFEST // ${trimmedPrompt.substring(0, 40).toUpperCase()}...`
-        : `MANIFEST // ${trimmedPrompt.toUpperCase()}`;
+      const projectName =
+        trimmedPrompt.length > 40
+          ? `MANIFEST // ${trimmedPrompt.substring(0, 40).toUpperCase()}...`
+          : `MANIFEST // ${trimmedPrompt.toUpperCase()}`;
 
       // Create project with metadata (mode & model)
       const result = await createProject(projectName, "Generic", {
@@ -329,7 +326,9 @@ function DashboardContent() {
                         </span>
                         <span className="flex items-center gap-1">
                           {getModeIcon(selectedMode)}
-                          {selectedMode === "default" ? "Balanced" : selectedMode}
+                          {selectedMode === "default"
+                            ? "Balanced"
+                            : selectedMode}
                         </span>
                         <ChevronDown size={10} className="opacity-50" />
                       </button>
@@ -355,7 +354,8 @@ function DashboardContent() {
                           )}
                         >
                           <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
-                            {getModeIcon(mode)} {mode === "default" ? "Balanced" : mode}
+                            {getModeIcon(mode)}{" "}
+                            {mode === "default" ? "Balanced" : mode}
                           </div>
                           <span className="text-[9px] text-brand-charcoal/60 dark:text-gray-400 leading-tight">
                             {MODE_CONSTRAINTS[mode].focus}

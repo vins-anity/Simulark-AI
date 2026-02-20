@@ -34,5 +34,4 @@ export const AVAILABLE_MODELS = [
   },
 ] as const;
 
-
 export type AIModelId = (typeof AVAILABLE_MODELS)[number]["id"];

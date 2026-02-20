@@ -54,11 +54,11 @@ export const SUBSCRIPTION_PLANS = {
     tierFeatures: {
       maxProjects: 3,
       allowedModels: [
-        "nvidia:z-ai/glm5", 
+        "nvidia:z-ai/glm5",
         "zhipu:glm-4.7-flash",
         "qwen:qwen3-max",
         "qwen:qwen3.5-plus",
-        "qwen:qwen-flash"
+        "qwen:qwen-flash",
       ],
       privateMode: false,
       commercialRights: false,
@@ -73,7 +73,7 @@ export const SUBSCRIPTION_PLANS = {
         "qwen:qwen3-max": 30,
         "qwen:qwen3.5-plus": 30,
         "qwen:qwen-flash": 30,
-      }
+      },
     } as TierFeatures,
   },
   starter: {
@@ -101,13 +101,13 @@ export const SUBSCRIPTION_PLANS = {
     tierFeatures: {
       maxProjects: Infinity,
       allowedModels: [
-        "nvidia:z-ai/glm5", 
-        "zhipu:glm-4.7-flash", 
-        "nvidia:moonshotai/kimi-k2.5", 
+        "nvidia:z-ai/glm5",
+        "zhipu:glm-4.7-flash",
+        "nvidia:moonshotai/kimi-k2.5",
         "nvidia:minimaxai/minimax-m2.1",
         "qwen:qwen3-max",
         "qwen:qwen3.5-plus",
-        "qwen:qwen-flash"
+        "qwen:qwen-flash",
       ],
       privateMode: false,
       commercialRights: false,
@@ -144,9 +144,9 @@ export const SUBSCRIPTION_PLANS = {
     tierFeatures: {
       maxProjects: Infinity,
       allowedModels: [
-        "nvidia:z-ai/glm5", 
-        "zhipu:glm-4.7-flash", 
-        "nvidia:moonshotai/kimi-k2.5", 
+        "nvidia:z-ai/glm5",
+        "zhipu:glm-4.7-flash",
+        "nvidia:moonshotai/kimi-k2.5",
         "nvidia:minimaxai/minimax-m2.1",
         "qwen:qwen3-max",
         "qwen:qwen3.5-plus",

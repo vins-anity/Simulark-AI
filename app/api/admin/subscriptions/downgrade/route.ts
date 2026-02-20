@@ -3,8 +3,6 @@ import { verifyAdminAccess } from "@/lib/admin/auth";
 import type { SubscriptionStatus } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
-
 export interface DowngradeRequest {
   userId: string;
   reason?: string;

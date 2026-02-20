@@ -17,8 +17,6 @@ import { GenerateRequestSchema } from "@/lib/schema/api";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
-export const runtime = "nodejs"; // Switch to Node.js runtime for better stream compatibility
-
 // Create module-specific logger
 const logger = createLogger("api:generate");
 

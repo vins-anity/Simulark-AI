@@ -31,19 +31,19 @@ bun run format
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|------------|
-| Framework | Next.js 16 (App Router), React 19 |
-| Language | TypeScript (strict mode) |
-| Runtime | Bun |
-| Styling | Tailwind CSS v4 |
-| Canvas | XYFlow (React Flow) |
-| State | Zustand |
-| Database | Supabase (PostgreSQL) |
-| Auth | Supabase Auth |
-| Validation | Valibot |
-| Linting | Biome |
-| AI | OpenAI SDK with ZhipuAI, OpenRouter, Kimi |
+| Category   | Technology                                |
+| ---------- | ----------------------------------------- |
+| Framework  | Next.js 16 (App Router), React 19         |
+| Language   | TypeScript (strict mode)                  |
+| Runtime    | Bun                                       |
+| Styling    | Tailwind CSS v4                           |
+| Canvas     | XYFlow (React Flow)                       |
+| State      | Zustand                                   |
+| Database   | Supabase (PostgreSQL)                     |
+| Auth       | Supabase Auth                             |
+| Validation | Valibot                                   |
+| Linting    | Biome                                     |
+| AI         | OpenAI SDK with ZhipuAI, OpenRouter, Kimi |
 
 ---
 
@@ -81,13 +81,13 @@ simulark-app/
 
 ### Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Components | PascalCase | `FlowEditor.tsx` |
-| Hooks | camelCase + `use` | `useCanvasState.ts` |
-| Utilities | camelCase | `tech-normalizer.ts` |
-| Types/Interfaces | PascalCase | `NodeData` |
-| Constants | UPPER_SNAKE_CASE | `MAX_NODES` |
+| Type             | Convention        | Example              |
+| ---------------- | ----------------- | -------------------- |
+| Components       | PascalCase        | `FlowEditor.tsx`     |
+| Hooks            | camelCase + `use` | `useCanvasState.ts`  |
+| Utilities        | camelCase         | `tech-normalizer.ts` |
+| Types/Interfaces | PascalCase        | `NodeData`           |
+| Constants        | UPPER_SNAKE_CASE  | `MAX_NODES`          |
 
 ### Import Order
 
@@ -151,7 +151,6 @@ export async function actionName(param: string) {
 - Use Next.js 15+ route handlers
 - Validate with Valibot before processing
 - Return appropriate HTTP status codes
-- Use `export const runtime = "nodejs"` for streaming
 
 ---
 

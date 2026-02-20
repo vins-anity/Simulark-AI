@@ -90,7 +90,7 @@ const PROVIDERS: Record<AIProvider, ProviderConfig> = {
   qwen: {
     baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     apiKey: env.QWEN_API_KEY,
-    model: "qwen-flash", 
+    model: "qwen-flash",
     // Qwen3-series - fast and capable. Route.tsx handles model-specific overrides.
   },
 };

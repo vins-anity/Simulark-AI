@@ -7,8 +7,6 @@ import {
 } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs";
-
 export interface SubscriptionUser {
   user_id: string;
   email: string;

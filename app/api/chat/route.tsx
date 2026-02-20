@@ -21,7 +21,6 @@ import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
 export const maxDuration = 120; // 2 minutes for complex generations
-export const runtime = "nodejs";
 
 import OpenAI from "openai"; // Import standard OpenAI SDK
 
@@ -432,16 +431,17 @@ export async function POST(req: NextRequest) {
 
       // Stream text with conversation history
       // Qwen3-series models support enable_thinking — configure per model
-      const qwenProviderOptions = fallbackProvider === "qwen"
-        ? {
-            openai: {
-              // Qwen3-series models support enable_thinking
-              extra_body: {
-                enable_thinking: true,
+      const qwenProviderOptions =
+        fallbackProvider === "qwen"
+          ? {
+              openai: {
+                // Qwen3-series models support enable_thinking
+                extra_body: {
+                  enable_thinking: true,
+                },
               },
-            },
-          }
-        : undefined;
+            }
+          : undefined;
 
       result = streamText({
         model: getModelInstance(
@@ -453,7 +453,9 @@ export async function POST(req: NextRequest) {
         temperature: 0.7,
         // Dashscope (Qwen) hard cap for standard models is 32768, but we let it be default if possible or cap at max supported
         maxOutputTokens: fallbackProvider === "qwen" ? 32768 : 131072,
-        ...(qwenProviderOptions ? { providerOptions: qwenProviderOptions } : {}),
+        ...(qwenProviderOptions
+          ? { providerOptions: qwenProviderOptions }
+          : {}),
       });
     }
 
@@ -644,7 +646,7 @@ export async function POST(req: NextRequest) {
                 break;
               }
               case "finish": {
-                if ('usage' in part && part.usage) {
+                if ("usage" in part && part.usage) {
                   controller.enqueue(
                     encoder.encode(
                       `${JSON.stringify({ type: "usage", data: part.usage })}\n`,
