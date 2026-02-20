@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { resetOnboarding } from "@/actions/onboarding";
 import { MarketingThemeToggle } from "@/components/marketing/MarketingThemeToggle";
+import { ResetOnboardingModal } from "@/app/onboarding/components/ResetOnboardingModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -315,6 +316,7 @@ export default function SettingsPage() {
   const [expandedModule, setExpandedModule] = useState<string | null>("CFG-01");
   const router = useRouter();
   const [resetting, setResetting] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // Form State
   const [fullName, setFullName] = useState("");
@@ -435,14 +437,7 @@ export default function SettingsPage() {
   };
 
   const handleReset = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to reset your onboarding progress? This will clear your current settings and take you back to the beginning.",
-      )
-    ) {
-      return;
-    }
-
+    setShowResetModal(false);
     setResetting(true);
     const result = await resetOnboarding();
 
@@ -863,7 +858,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 variant="destructive"
-                onClick={handleReset}
+                onClick={() => setShowResetModal(true)}
                 disabled={resetting}
                 className="bg-red-500 hover:bg-red-600 text-white rounded-none h-10 px-4 text-xs uppercase tracking-wider font-mono border-2 border-transparent hover:border-white/20 transition-all shrink-0"
               >
@@ -905,6 +900,13 @@ export default function SettingsPage() {
           </Button>
         </div>
       </main>
+
+      <ResetOnboardingModal
+        isOpen={showResetModal}
+        onOpenChange={setShowResetModal}
+        onConfirm={handleReset} // handleReset now contains the actual reset logic
+        isResetting={resetting}
+      />
     </div>
   );
 }

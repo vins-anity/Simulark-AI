@@ -53,6 +53,13 @@ export interface PromptContext {
     cloudProvider?: string;
     language?: string;
     framework?: string;
+    onboardingMetadata?: {
+      role: string;
+      useCase: string;
+      teamSize: string;
+      experienceLevel: string;
+      includeServices: Record<string, boolean>;
+    };
   };
 }
 
@@ -1184,9 +1191,17 @@ ${getFrameworkCompatibilityRules()}`;
       techRecommendations += `\n\nTARGET APPLICATION TYPE:\n${context.userPreferences.applicationType.join(", ")}\n\nOptimize the architecture for this specific type of application.`;
     }
 
-    // Handle Custom User Instructions
-    if (context.userPreferences.customInstructions) {
+    // Handle Custom User Instructions (APPENDED ONLY IF NON-EMPTY)
+    if (context.userPreferences.customInstructions?.trim()) {
       techRecommendations += `\n\nCUSTOM USER INSTRUCTIONS:\n"${context.userPreferences.customInstructions}"\n\nFollow these specific instructions strictly.`;
+    }
+
+    // Handle Internal Onboarding-derived Guidance
+    if (context.userPreferences.onboardingMetadata) {
+      const internalGuidance = generateInternalGuidance(context.userPreferences.onboardingMetadata);
+      if (internalGuidance) {
+        techRecommendations += `\n\nARCHITECTURAL CORE GUIDANCE:\n${internalGuidance}`;
+      }
     }
   }
 
@@ -1201,15 +1216,7 @@ OPERATION TYPE: ${operationType ? operationType.toUpperCase() : "CREATE"}
 DETECTED ARCHITECTURE: ${detection.type}
 CONFIDENCE: ${Math.round(detection.confidence * 100)}%
 
-${componentGuidelines}
-
-${architectureGuidelines}
-
-${componentGuidelines}
-
 ${getTechKnowledgeInjection(detection.type, context.userInput)}
-
-${architectureGuidelines}
 
 ${techRecommendations}
 
@@ -1233,6 +1240,7 @@ POSITIONING GUIDELINES:
 - Layer 1 (Entry): y: 50-150 (CDN, Load Balancer, API Gateway, Frontend)
 - Layer 2 (Application): y: 200-350 (Services, Auth, Workers, AI)
 - Layer 3 (Data): y: 400-500 (Databases, Cache, Storage, Queues)
+- NOTE: Full-stack frameworks (Next.js, Laravel) often consolidate Layer 1 and 2. Only separate them if high-scale distribution is requested.
 - Spread horizontally: x spacing 200-300px
 
 CRITICAL RULES:
@@ -1242,7 +1250,8 @@ CRITICAL RULES:
 4. Match complexity to request (simple apps don't need CDN/load balancer)
 5. Prefer managed services in startup mode
 6. Include monitoring only if complexity warrants it
-7. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
+7. HYBRID PATTERN: If both 'Monolith' and 'Microservices' are selected, implement a MODULAR MONOLITH.
+8. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
 
 OUTPUT FORMAT - CRITICAL:
 You MUST return a complete JSON object with BOTH nodes AND edges arrays. Without edges, the architecture is incomplete and unusable.
@@ -1286,16 +1295,8 @@ CONNECTION REQUIREMENTS - VERY IMPORTANT:
 5. Protocol options: "https", "http", "websocket", "grpc", "database", "cache", "queue"
 6. Example edge: { "id": "edge-1", "source": "gateway-1", "target": "frontend-1", "animated": true, "data": { "protocol": "https", "label": "User Requests" } }
 
-CRITICAL RULES:
-1. Never exceed ${adjustedMax} components
-2. Never use less than ${adjustedMin} components${shouldRelax ? ` (relaxed for ${operationType})` : ""}
-3. Never mix full-stack frameworks with separate backend frameworks
-4. Match complexity to request (simple apps don't need CDN/load balancer)
-5. Prefer managed services in startup mode
-6. Include monitoring only if complexity warrants it
-7. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
-
-Generate the complete JSON architecture now.`;
+Generate the complete JSON architecture now. 
+CRITICAL: The JSON object MUST begin with an "analysis" key containing a CONCISE 1-SENTENCE DESIGN INSIGHT. This is essential for system stability.`;
 }
 
 export function getTechKnowledgeInjection(
@@ -1364,4 +1365,38 @@ export function getTechKnowledgeInjection(
 4. 2026 KNOWLEDGE BASE (Use if relevant to constraints):
 ${knowledgeEntries}
 `;
+}
+
+function generateInternalGuidance(metadata: {
+  role: string;
+  useCase: string;
+  teamSize: string;
+  experienceLevel: string;
+  includeServices: Record<string, boolean>;
+}): string {
+  const parts: string[] = [];
+
+  // Add experience context
+  if (metadata.experienceLevel === "beginner") {
+    parts.push("- Focus on simple, well-documented solutions with clear explanations.");
+  } else if (metadata.experienceLevel === "advanced") {
+    parts.push("- Optimize for performance, scalability, and production-ready patterns.");
+  }
+
+  // Add team context
+  if (metadata.teamSize === "solo") {
+    parts.push("- Keep architecture simple and manageable by a single developer.");
+  } else if (metadata.teamSize === "enterprise") {
+    parts.push("- Design for team collaboration with clear service boundaries.");
+  }
+
+  // Add service preferences
+  const services = Object.entries(metadata.includeServices || {})
+    .filter(([, enabled]) => enabled)
+    .map(([name]) => name);
+  if (services.length > 0) {
+    parts.push(`- Ensure ${services.join(", ")} are properly integrated into the architecture.`);
+  }
+
+  return parts.join("\n");
 }

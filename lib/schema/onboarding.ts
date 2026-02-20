@@ -51,6 +51,7 @@ export const ArchitecturePreference = {
   MONOLITH: "monolith",
   EVENT_DRIVEN: "event-driven",
   JAMSTACK: "jamstack",
+  CLEAN_ARCH: "clean-arch",
   NOT_SURE: "not-sure",
 } as const;
 
@@ -80,14 +81,14 @@ export const OnboardingStep1Schema = v.object({
 });
 
 export const OnboardingStep2Schema = v.object({
-  cloudProviders: v.array(v.string()),
-  languages: v.array(v.string()),
-  frameworks: v.array(v.string()),
+  cloudProviders: v.pipe(v.array(v.string()), v.minLength(1, "Select at least one cloud provider")),
+  languages: v.pipe(v.array(v.string()), v.minLength(1, "Select at least one language")),
+  frameworks: v.pipe(v.array(v.string()), v.minLength(1, "Select at least one framework")),
   experienceLevel: v.picklist(Object.values(ExperienceLevel)),
 });
 
 export const OnboardingStep3Schema = v.object({
-  architecturePreference: v.picklist(Object.values(ArchitecturePreference)),
+  architecturePreferences: v.pipe(v.array(v.picklist(Object.values(ArchitecturePreference))), v.minLength(1, "Select at least one architecture pattern")),
   applicationType: v.picklist(Object.values(ApplicationType)),
   defaultMode: v.optional(v.string()), // "default" | "startup" | "enterprise"
   defaultArchitectureMode: v.optional(v.string()),
@@ -165,7 +166,7 @@ export function generateSmartDefaults(
     languages: [],
     frameworks: [],
     experienceLevel: "intermediate",
-    architecturePreference: "not-sure",
+    architecturePreferences: ["not-sure"],
     applicationType: "web-app",
     includeServices: {
       auth: true,
@@ -200,7 +201,7 @@ export function generateSmartDefaults(
       defaults.languages = ["java", "go", "python"];
       defaults.cloudProviders = ["aws", "gcp"];
       defaults.experienceLevel = "advanced";
-      defaults.architecturePreference = "microservices";
+      defaults.architecturePreferences = ["microservices"];
       break;
     case "student":
     case "hobbyist":
@@ -208,7 +209,7 @@ export function generateSmartDefaults(
       defaults.frameworks = ["react", "express"];
       defaults.cloudProviders = ["vercel", "railway"];
       defaults.experienceLevel = "beginner";
-      defaults.architecturePreference = "serverless";
+      defaults.architecturePreferences = ["serverless"];
       break;
   }
 
@@ -216,12 +217,12 @@ export function generateSmartDefaults(
   switch (step1.useCase) {
     case "saas":
       defaults.frameworks = ["nextjs", "react"];
-      defaults.architecturePreference = "serverless";
+      defaults.architecturePreferences = ["serverless"];
       defaults.applicationType = "web-app";
       break;
     case "ecommerce":
       defaults.frameworks = ["nextjs", "remix"];
-      defaults.architecturePreference = "microservices";
+      defaults.architecturePreferences = ["microservices"];
       break;
     case "ai-ml":
       defaults.languages = ["python"];
@@ -239,7 +240,7 @@ export function generateSmartDefaults(
       break;
     case "devops-infra":
       defaults.cloudProviders = ["aws", "gcp", "azure"];
-      defaults.architecturePreference = "event-driven";
+      defaults.architecturePreferences = ["event-driven"];
       break;
   }
 

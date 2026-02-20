@@ -22,6 +22,9 @@ export interface OnboardingData {
 
   // Step 3: Generation Mode (MOD-01)
   defaultMode?: "startup" | "default" | "enterprise";
+
+  // Step 3.5: Architecture Patterns (CFG-03)
+  architecturePreferences?: string[];
 }
 
 // ============================================================================
@@ -49,6 +52,13 @@ export const ONBOARDING_STEPS = [
     shortTitle: "CONFIG",
     badge: "CFG-01",
     description: "Your preferred technologies",
+  },
+  {
+    id: "archpatterns",
+    title: "Architecture Patterns",
+    shortTitle: "PATTERNS",
+    badge: "CFG-03",
+    description: "Monolith, microservices, or serverless",
   },
   {
     id: "mode",

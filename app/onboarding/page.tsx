@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, ChevronLeft, SkipForward } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, SkipForward, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -10,6 +10,8 @@ import {
   saveOnboardingProgress,
 } from "@/actions/onboarding";
 import { Button } from "@/components/ui/button";
+import { ResetOnboardingModal } from "./components/ResetOnboardingModal";
+import { ArchPatternsStep } from "./steps/ArchPatternsStep";
 import { CompleteStep } from "./steps/CompleteStep";
 import { ModeStep } from "./steps/ModeStep";
 import { ProfileStep } from "./steps/ProfileStep";
@@ -69,6 +71,7 @@ export default function OnboardingPage() {
   const [direction, setDirection] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSkipModal, setShowSkipModal] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     techStack: {
       cloud: [],
@@ -177,20 +180,25 @@ export default function OnboardingPage() {
             ] as "beginner" | "intermediate" | "advanced",
           },
           step3: {
-            architecturePreference:
-              data.defaultMode === "enterprise"
-                ? "microservices"
-                : data.defaultMode === "startup"
-                  ? "serverless"
-                  : "not-sure",
-            applicationType:
-              data.projectType === "mobile" ? "mobile" : "web-app",
+            architecturePreferences: (data.architecturePreferences && data.architecturePreferences.length > 0)
+              ? data.architecturePreferences
+              : [
+                  data.defaultMode === "enterprise"
+                    ? "microservices"
+                    : data.defaultMode === "startup"
+                      ? "serverless"
+                      : "not-sure",
+                ],
+            applicationType: (data.projectType === "api" || data.projectType === "mobile")
+              ? data.projectType
+              : "web-app",
             includeServices: {
               auth: true,
               database: true,
               cdn:
                 data.techStack.cloud.includes("vercel") ||
-                data.techStack.cloud.includes("aws"),
+                data.techStack.cloud.includes("aws") ||
+                data.techStack.cloud.includes("cloudflare"),
               monitoring: data.defaultMode === "enterprise",
               cicd: data.defaultMode === "enterprise",
             },
@@ -239,13 +247,39 @@ export default function OnboardingPage() {
     setCurrentStepIndex((prev) => prev - 1);
   };
 
-  const handleSkip = async () => {
-    if (confirm("Skip onboarding? Your preferences won't be saved.")) {
+  const handleSkipStep = async () => {
+    // For specific steps, we might want to save default state before moving on
+    if (currentStep.id === "profile" || currentStep.id === "techstack" || currentStep.id === "archpatterns") {
+      setIsSaving(true);
+      try {
+        await saveOnboardingProgress({
+          step: currentStepIndex,
+          data: getStepDataForServer(currentStep.id, data),
+        });
+      } catch (error) {
+        console.error("Failed to save skip progress:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    }
+    
+    setDirection(1);
+    setCurrentStepIndex((prev) => prev + 1);
+  };
+
+  const handleExitFlow = async () => {
+    setShowSkipModal(false);
+    setIsSaving(true);
+    try {
       const { skipOnboarding } = await import("@/actions/onboarding");
       await skipOnboarding();
       sessionStorage.removeItem("onboarding_data");
       sessionStorage.removeItem("onboarding_step");
       router.push("/dashboard");
+    } catch (error) {
+      console.error("Failed to exit onboarding:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -260,7 +294,11 @@ export default function OnboardingPage() {
       case "profile":
         return !!(data.experienceLevel && data.projectType && data.teamContext);
       case "techstack":
-        return true; // Optional
+        return data.techStack.cloud.length > 0 && 
+               data.techStack.languages.length > 0 && 
+               data.techStack.frameworks.length > 0;
+      case "archpatterns":
+        return (data.architecturePreferences?.length || 0) > 0;
       case "mode":
         return !!data.defaultMode;
       case "complete":
@@ -291,6 +329,15 @@ export default function OnboardingPage() {
             data={data.techStack}
             onChange={(techStack) => updateData({ techStack })}
             projectType={data.projectType}
+          />
+        );
+      case "archpatterns":
+        return (
+          <ArchPatternsStep
+            selected={data.architecturePreferences || []}
+            onChange={(architecturePreferences) =>
+              updateData({ architecturePreferences })
+            }
           />
         );
       case "mode":
@@ -404,9 +451,18 @@ export default function OnboardingPage() {
       <footer className="sticky bottom-0 z-50 border-t border-brand-charcoal/10 bg-bg-secondary/80 backdrop-blur-sm">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
-            {/* Left: Back button */}
+            {/* Left: Back button or Exit button */}
             <div>
-              {!isFirstStep && !isLastStep && (
+              {isFirstStep ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSkipModal(true)}
+                  className="group font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-charcoal"
+                >
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  [ EXIT_FLOW ]
+                </Button>
+              ) : !isLastStep && (
                 <Button
                   variant="ghost"
                   onClick={handleBack}
@@ -418,15 +474,30 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            {/* Right: Skip + Next */}
+            {/* Right: Skip Step + Exit + Next */}
             <div className="flex items-center gap-3">
-              {!isLastStep && currentStepIndex > 0 && (
-                <button
-                  onClick={handleSkip}
-                  className="font-mono text-xs uppercase tracking-wider text-brand-charcoal/40 hover:text-brand-charcoal/60 transition-colors hidden sm:flex items-center gap-1"
+              {!isLastStep && currentStepIndex > 1 && currentStep.id !== "techstack" && currentStep.id !== "archpatterns" && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkipStep}
+                  disabled={isSaving}
+                  className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-orange hover:bg-brand-orange/5 transition-all flex items-center gap-2 h-9 border border-transparent hover:border-brand-orange/20"
                 >
-                  <SkipForward className="h-3.5 w-3.5" />[ SKIP ]
-                </button>
+                  <SkipForward className="h-3 w-3" />
+                  [ SKIP_STEP ]
+                </Button>
+              )}
+
+              {/* Exit button for non-first steps (moved to desktop-only if screen space is tight) */}
+              {currentStepIndex > 0 && !isLastStep && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowSkipModal(true)}
+                  disabled={isSaving}
+                  className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/30 hover:text-red-500 hover:bg-red-50/50 transition-all hidden md:flex items-center gap-2 h-9 border border-transparent hover:border-red-500/20"
+                >
+                  [ EXIT_ONBOARDING ]
+                </Button>
               )}
 
               <Button
@@ -458,6 +529,17 @@ export default function OnboardingPage() {
           </div>
         </div>
       </footer>
+
+      <ResetOnboardingModal 
+        isOpen={showSkipModal}
+        onOpenChange={setShowSkipModal}
+        onConfirm={handleExitFlow}
+        isResetting={isSaving}
+        title="Exit Onboarding?"
+        description="Proceeding will terminate the configuration sequence. System defaults will be applied until manual parameters are defined in settings."
+        confirmLabel="[ TERMINATE & EXIT ]"
+        badge="SYS-EXIT_01 // BYPASS_PROTOCOL"
+      />
     </motion.div>
   );
 }

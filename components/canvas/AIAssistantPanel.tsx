@@ -794,36 +794,48 @@ export function AIAssistantPanel({
     ) as string[];
 
     // Hook line — sharp opener
-    const stackSnippet = techs.slice(0, 3).join(", ");
-    let hook = `Architecture deployed — **${nodeCount} nodes**, **${edgeCount} connections**`;
-    if (stackSnippet) hook += `, running on ${stackSnippet}`;
-    hook += ".";
+  const stackSnippet = techs.slice(0, 3).join(", ");
+  
+  // Dynamic hooks for better personality
+  const openers = [
+    `Synthesized **${nodeCount} nodes** with **${edgeCount} connections**`,
+    `Architecture deployed — **${nodeCount} nodes** mapped across **${edgeCount} links**`,
+    `OPERATOR: Component synthesis complete (**${nodeCount} nodes**, **${edgeCount} edges**)`,
+    `Blueprint verified: **${nodeCount} nodes** integrated via **${edgeCount} connections**`,
+  ];
+  
+  let hook = openers[Math.floor(Math.random() * openers.length)];
+  if (stackSnippet) hook += `, anchored on **${stackSnippet}**`;
+  hook += ".";
 
-    // Extract a brief, meaningful chunk from the reasoning string, OR use the explicit analysis payload field
-    let insight = "";
-    if (reasoningStr && reasoningStr.trim().length > 0) {
-      const cleanReasoning = reasoningStr.replace(/<think>|<\/think>/g, "").trim();
-      const firstParagraphLabel = cleanReasoning.split("\\n\\n")[0];
-      // Limit the length to be readable
-      insight = firstParagraphLabel.slice(0, 300);
-      if (cleanReasoning.length > 300) insight += "...";
-      insight = `\n\n> *${insight.trim()}*`;
-    } else if (data.analysis && data.analysis.trim().length > 0) {
-      insight = `\n\n> *${data.analysis.trim()}*`;
-    }
+  // Extract a brief, meaningful chunk from the reasoning string, OR use the explicit analysis payload field
+  let insight = "";
+  if (reasoningStr && reasoningStr.trim().length > 0) {
+    const cleanReasoning = reasoningStr.replace(/<think>|<\/think>/g, "").trim();
+    const firstParagraph = cleanReasoning.split("\n\n")[0];
+    // Limit the length to be readable
+    insight = firstParagraph.slice(0, 350);
+    if (cleanReasoning.length > 350) insight += "...";
+    insight = `\n\n> *${insight.trim()}*`;
+  } else if (data.analysis && data.analysis.trim().length > 0) {
+    insight = `\n\n> *${data.analysis.trim()}*`;
+  } else if (techs.length > 0) {
+    // Dynamic fallback if both are missing
+    const techPick = techs[Math.floor(Math.random() * techs.length)];
+    insight = `\n\n> *Optimized for high-performance ${techPick} patterns and automated scalability.*`;
+  }
 
-    let response = `${hook}${insight}`;
-    if (usage) {
-      const total = usage.totalTokens || (usage.promptTokens + usage.completionTokens);
-      response += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
-    }
+  let response = `${hook}${insight}`;
+  if (usage) {
+    const total = usage.totalTokens || (usage.promptTokens + usage.completionTokens);
+    response += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
+  }
 
-    // Removed suggestion chips as requested
-    const chips: string[] = [];
+  // Removed suggestion chips as requested
+  const chips: string[] = [];
 
-    return { response, chips };
-  };
-
+  return { response, chips };
+};
   const processMessage = async (content: string) => {
     if (!content.trim() || isGenerating) return;
 

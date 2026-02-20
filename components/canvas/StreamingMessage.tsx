@@ -81,26 +81,32 @@ const ARCHITECTURE_PATTERNS = [
 
 function parseLogLines(reasoning: string): LogLine[] {
   const lower = reasoning.toLowerCase();
-  const lines: LogLine[] = [];
-  const seenLabels = new Set<string>();
+  const detected: { pattern: typeof ARCHITECTURE_PATTERNS[number]; index: number }[] = [];
 
   for (const pattern of ARCHITECTURE_PATTERNS) {
-    if (
-      pattern.keywords.some((kw) => lower.includes(kw)) &&
-      !seenLabels.has(pattern.label)
-    ) {
-      lines.push({
-        id: pattern.label,
-        prefix: "✓",
-        label: pattern.label,
-        description: pattern.description,
-        status: "done",
-      });
-      seenLabels.add(pattern.label);
+    let firstIndex = -1;
+    for (const kw of pattern.keywords) {
+      const idx = lower.indexOf(kw);
+      if (idx !== -1 && (firstIndex === -1 || idx < firstIndex)) {
+        firstIndex = idx;
+      }
+    }
+
+    if (firstIndex !== -1) {
+      detected.push({ pattern, index: firstIndex });
     }
   }
 
-  return lines;
+  // Sort by the first occurrence index to preserve logical flow
+  return detected
+    .sort((a, b) => a.index - b.index)
+    .map((item) => ({
+      id: item.pattern.label,
+      prefix: "✓",
+      label: item.pattern.label,
+      description: item.pattern.description,
+      status: "done",
+    }));
 }
 
 export function StreamingMessage({
@@ -130,8 +136,13 @@ export function StreamingMessage({
   // Reveal lines one by one for a typewriter effect
   useEffect(() => {
     if (allLines.length === 0) return;
-    const next = allLines[visibleLines.length];
+    
+    // Find lines in allLines that are not yet in visibleLines
+    const visibleIds = new Set(visibleLines.map(l => l.id));
+    const next = allLines.find(l => !visibleIds.has(l.id));
+    
     if (!next) return;
+    
     const timer = setTimeout(() => {
       setVisibleLines((prev) => [...prev, next]);
     }, 180);
@@ -158,9 +169,21 @@ export function StreamingMessage({
   // Determine what to show after the $ prompt
   // We prioritize the latest reasoning if it's currently thinking,
   // or the latest content if it's currently generating.
-  const activeStreamChunk = content 
-    ? content.split('\n').filter(Boolean).pop()?.slice(-60) 
-    : reasoning?.split('\n').filter(Boolean).pop()?.slice(-60);
+  const activeStreamChunk = (() => {
+    const raw = content 
+      ? content.split('\n').filter(Boolean).pop() 
+      : reasoning?.split('\n').filter(Boolean).pop();
+
+    if (!raw) return null;
+
+    // Sanitize: If it looks like JSON (starts with { or " or [), hide the noise
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('"') || trimmed.startsWith('[') || trimmed.startsWith(':')) {
+      return "Synthesizing architecture nodes...";
+    }
+
+    return raw.slice(-60);
+  })();
 
   return (
     <div className="w-full border border-brand-charcoal/12 dark:border-border-primary/40 bg-neutral-50 dark:bg-bg-primary font-mono shrink-0">

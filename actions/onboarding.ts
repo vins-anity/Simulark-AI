@@ -240,9 +240,9 @@ export async function completeOnboarding(input: unknown): Promise<{
       cloudProviders: data.step2.cloudProviders,
       languages: data.step2.languages,
       frameworks: data.step2.frameworks,
-      architectureTypes: [data.step3.architecturePreference],
+      architectureTypes: data.step3.architecturePreferences,
       applicationType: [data.step3.applicationType],
-      customInstructions: generateCustomInstructions(data),
+      customInstructions: "",
       defaultMode: (data.step3.defaultMode ||
         data.step3.defaultArchitectureMode) as
         | "default"
@@ -399,38 +399,4 @@ export async function resumeOnboarding(): Promise<{
 // Helper: Generate Custom Instructions from Onboarding Data
 // ============================================================================
 
-function generateCustomInstructions(data: CompleteOnboardingInput): string {
-  const parts: string[] = [];
 
-  // Add experience context
-  if (data.step2.experienceLevel === "beginner") {
-    parts.push(
-      "Focus on simple, well-documented solutions with clear explanations.",
-    );
-  } else if (data.step2.experienceLevel === "advanced") {
-    parts.push(
-      "Optimize for performance, scalability, and production-ready patterns.",
-    );
-  }
-
-  // Add team context
-  if (data.step1.teamSize === "solo") {
-    parts.push(
-      "Keep architecture simple and manageable by a single developer.",
-    );
-  } else if (data.step1.teamSize === "enterprise") {
-    parts.push("Design for team collaboration with clear service boundaries.");
-  }
-
-  // Add service preferences
-  const services = Object.entries(data.step3.includeServices)
-    .filter(([, enabled]) => enabled)
-    .map(([name]) => name);
-  if (services.length > 0) {
-    parts.push(
-      `Include ${services.join(", ")} in architecture recommendations.`,
-    );
-  }
-
-  return parts.join(" ");
-}
