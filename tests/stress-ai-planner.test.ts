@@ -20,6 +20,7 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+process.env.QWEN_API_KEY = "test-qwen-key";
 process.env.NVIDIA_API_KEY = "test-nvidia-key";
 process.env.ZHIPU_API_KEY = "test-zhipu-key";
 
@@ -74,10 +75,11 @@ describe("stress-ai-planner", () => {
     getModelMock.mockImplementation((modelId: string) => ({ modelId }));
   });
 
-  it("auto chain falls back from GLM-5 auth failure to Kimi success", async () => {
+  it("auto chain falls back from Qwen and GLM-5 failures to Kimi success", async () => {
     generateTextMock
-      .mockRejectedValueOnce(new Error("401 Unauthorized"))
-      .mockResolvedValueOnce(validAIText("B"));
+      .mockRejectedValueOnce(new Error("401 Unauthorized")) // Qwen fails
+      .mockRejectedValueOnce(new Error("401 Unauthorized")) // GLM-5 fails
+      .mockResolvedValueOnce(validAIText("B")); // Kimi succeeds
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
@@ -87,6 +89,11 @@ describe("stress-ai-planner", () => {
     expect(result.plannerMeta.providerUsed).toBe("kimi");
     expect(result.plannerMeta.modelUsed).toBe("nvidia:moonshotai/kimi-k2.5");
     expect(result.plannerMeta.attempts).toEqual([
+      {
+        modelId: "qwen:qwen-flash",
+        ok: false,
+        reasonCode: "auth_failed",
+      },
       {
         modelId: "nvidia:z-ai/glm5",
         ok: false,
@@ -104,9 +111,10 @@ describe("stress-ai-planner", () => {
 
   it("auto chain falls back across timeouts and succeeds on MiniMax", async () => {
     generateTextMock
-      .mockRejectedValueOnce(new Error("planner_timeout"))
-      .mockRejectedValueOnce(new Error("planner_timeout"))
-      .mockResolvedValueOnce(validAIText("C"));
+      .mockRejectedValueOnce(new Error("planner_timeout")) // Qwen
+      .mockRejectedValueOnce(new Error("planner_timeout")) // GLM-5
+      .mockRejectedValueOnce(new Error("planner_timeout")) // Kimi
+      .mockResolvedValueOnce(validAIText("C")); // MiniMax
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
@@ -118,9 +126,11 @@ describe("stress-ai-planner", () => {
     expect(result.plannerMeta.attempts.map((item) => item.reasonCode)).toEqual([
       "timeout",
       "timeout",
+      "timeout",
       undefined,
     ]);
     expect(getModelMock.mock.calls.map((call) => call[0])).toEqual([
+      "qwen:qwen-flash",
       "nvidia:z-ai/glm5",
       "nvidia:moonshotai/kimi-k2.5",
       "nvidia:minimaxai/minimax-m2.1",
@@ -129,10 +139,11 @@ describe("stress-ai-planner", () => {
 
   it("auto chain uses deterministic fallback when all models fail", async () => {
     generateTextMock
-      .mockRejectedValueOnce(new Error("401 User not found"))
-      .mockRejectedValueOnce(new Error("provider down"))
-      .mockRejectedValueOnce(new Error("provider down"))
-      .mockRejectedValueOnce(new Error("provider down"));
+      .mockRejectedValueOnce(new Error("401 User not found")) // Qwen
+      .mockRejectedValueOnce(new Error("provider down")) // GLM-5
+      .mockRejectedValueOnce(new Error("provider down")) // Kimi
+      .mockRejectedValueOnce(new Error("provider down")) // MiniMax
+      .mockRejectedValueOnce(new Error("provider down")); // Zhipu
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
@@ -140,7 +151,7 @@ describe("stress-ai-planner", () => {
 
     expect(result.source).toBe("fallback");
     expect(result.plannerMeta.providerUsed).toBe("fallback");
-    expect(result.plannerMeta.attempts).toHaveLength(4);
+    expect(result.plannerMeta.attempts).toHaveLength(5);
     expect(result.plannerMeta.warningCode).toBe("ai_unavailable");
     expect(result.warning?.includes("User not found")).toBe(false);
   });

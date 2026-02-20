@@ -3,10 +3,11 @@ export type StressPlannerMode = "auto" | "manual";
 export interface StressPlannerModelOption {
   id: string;
   label: string;
-  providerUsed: "nvidia" | "kimi" | "minimax" | "zhipu";
+  providerUsed: "qwen" | "nvidia" | "kimi" | "minimax" | "zhipu";
 }
 
 export const STRESS_PLANNER_AUTO_CHAIN: string[] = [
+  "qwen:qwen-flash",
   "nvidia:z-ai/glm5",
   "nvidia:moonshotai/kimi-k2.5",
   "nvidia:minimaxai/minimax-m2.1",
@@ -14,6 +15,11 @@ export const STRESS_PLANNER_AUTO_CHAIN: string[] = [
 ];
 
 export const STRESS_PLANNER_MODEL_OPTIONS: StressPlannerModelOption[] = [
+  {
+    id: "qwen:qwen-flash",
+    label: "Qwen Flash (Alibaba)",
+    providerUsed: "qwen",
+  },
   {
     id: "nvidia:z-ai/glm5",
     label: "GLM-5 (NVIDIA)",

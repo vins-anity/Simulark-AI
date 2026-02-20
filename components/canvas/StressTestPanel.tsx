@@ -93,7 +93,7 @@ export function getPlannerRequestConfig(
   if (plannerMode === "manual") {
     return {
       mode: "manual",
-      modelId: plannerModelId === "auto" ? "nvidia:z-ai/glm5" : plannerModelId,
+      modelId: plannerModelId === "auto" ? "qwen:qwen-flash" : plannerModelId,
     };
   }
   return { mode: "auto" };

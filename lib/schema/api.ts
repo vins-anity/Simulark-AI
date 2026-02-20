@@ -106,6 +106,7 @@ export const StressScenarioSchema = v.object({
 });
 
 export const StressPlannerProviderSchema = v.picklist([
+  "qwen",
   "nvidia",
   "kimi",
   "minimax",

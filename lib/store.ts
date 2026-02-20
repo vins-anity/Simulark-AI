@@ -423,8 +423,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         mode === "auto"
           ? "auto"
           : state.plannerModelId === "auto"
-            ? "nvidia:z-ai/glm5"
-            : state.plannerModelId,
+            ? "qwen:qwen-flash"
+             : state.plannerModelId,
     })),
 
   setPlannerModelId: (modelId) => set({ plannerModelId: modelId }),

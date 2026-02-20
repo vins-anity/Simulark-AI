@@ -247,6 +247,9 @@ function hasCredentialsForModel(modelId: string): boolean {
     return true;
   }
 
+  if (modelId.startsWith("qwen:")) {
+    return Boolean(env.QWEN_API_KEY);
+  }
   if (modelId.startsWith("nvidia:")) {
     return Boolean(env.NVIDIA_API_KEY);
   }

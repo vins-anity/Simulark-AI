@@ -1222,6 +1222,8 @@ ${getTechKnowledgeInjection(detection.type, context.userInput)}
 
 ${techRecommendations}
 
+${componentGuidelines}
+
 TECHNOLOGY ECOSYSTEM:
 Use these exact technology IDs when possible:
 - Full-stack: nextjs, nuxt, sveltekit, laravel, django, rails, adonisjs

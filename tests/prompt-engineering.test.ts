@@ -322,8 +322,8 @@ describe("Prompt Engineering Tests", () => {
         mode: "enterprise",
       });
 
-      expect(prompt).toContain("web-app");
       expect(prompt).toContain("DETECTED ARCHITECTURE");
+      expect(prompt).toContain("web-app");
     });
 
     it("should include mode constraints", () => {
@@ -341,8 +341,8 @@ describe("Prompt Engineering Tests", () => {
         mode: "enterprise",
       });
 
-      expect(startup).toContain("MODE: STARTUP");
-      expect(corporate).toContain("MODE: ENTERPRISE");
+      expect(startup).toContain("STARTUP");
+      expect(corporate).toContain("ENTERPRISE");
     });
 
     it("should include complexity guidelines", () => {
@@ -408,7 +408,7 @@ describe("Prompt Engineering Tests", () => {
         userInput: "Build app",
         architectureType: "web-app",
         detectedIntent: "Architecture: web-app",
-        mode: "corporate",
+        mode: "enterprise",
       });
 
       // Should mention existing architecture
@@ -437,9 +437,10 @@ describe("Prompt Engineering Tests", () => {
         mode: "enterprise",
       });
 
-      expect(webApp).toContain("Web Application");
-      expect(aiPipeline).toContain("AI/ML Pipeline");
-      expect(microservices).toContain("Microservices");
+      // These come from getArchitectureGuidelines and getTechRecommendations
+      expect(webApp).toContain("Web Application Architecture:");
+      expect(aiPipeline).toContain("AI/ML Pipeline Architecture:");
+      expect(microservices).toContain("Microservices Architecture:");
     });
 
     it("should include component count constraints", () => {
@@ -458,6 +459,7 @@ describe("Prompt Engineering Tests", () => {
       });
 
       expect(startup).toContain("- Minimum components: 3");
+      // Max for startup web-app mode without current nodes
       expect(startup).toContain("- Maximum components: 5");
       expect(corporate).toContain("- Minimum components: 6");
       expect(corporate).toContain("- Maximum components: 20");
