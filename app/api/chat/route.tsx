@@ -8,6 +8,7 @@ import { validateArchitecture } from "@/lib/architecture-validator";
 import { env } from "@/lib/env";
 import { detectOperation } from "@/lib/intent-detector";
 import { logger } from "@/lib/logger";
+import { getClientIp } from "@/lib/network";
 import {
   type ArchitectureMode,
   buildEnhancedSystemPrompt,
@@ -85,7 +86,7 @@ const ChatRequestSchema = v.object({
   model: v.optional(v.string()),
   currentNodes: v.optional(v.array(v.unknown())),
   currentEdges: v.optional(v.array(v.unknown())),
-  projectId: v.optional(v.string()),
+  projectId: v.optional(v.pipe(v.string(), v.uuid())),
   userPreferences: v.optional(v.record(v.string(), v.unknown())),
 });
 
@@ -96,6 +97,93 @@ interface StreamArchitecturePayload {
     valid: boolean;
     issues: unknown[];
     appliedFixes: unknown[];
+  };
+}
+
+const MAX_PROJECT_DOCUMENTS = 3;
+const MAX_DOCUMENT_CHARS = 2400;
+const MAX_TOTAL_DOCUMENT_CONTEXT_CHARS = 7200;
+
+interface ProjectDocumentContext {
+  context: string;
+  documentCount: number;
+}
+
+async function buildProjectDocumentContext(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  projectId?: string,
+): Promise<ProjectDocumentContext | null> {
+  if (!projectId) {
+    return null;
+  }
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .single();
+
+  if (projectError || !project) {
+    return null;
+  }
+
+  const { data: docs, error } = await supabase
+    .from("project_documents")
+    .select("file_name, extracted_text, extraction_status, created_at")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .eq("extraction_status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error || !docs || docs.length === 0) {
+    return null;
+  }
+
+  const lines: string[] = [];
+  let consumed = 0;
+  let usedDocuments = 0;
+
+  for (const doc of docs) {
+    if (usedDocuments >= MAX_PROJECT_DOCUMENTS) break;
+    const rawText =
+      typeof doc.extracted_text === "string" ? doc.extracted_text.trim() : "";
+    if (!rawText) continue;
+
+    const remaining = MAX_TOTAL_DOCUMENT_CONTEXT_CHARS - consumed;
+    if (remaining <= 0) break;
+
+    const budget = Math.max(400, Math.min(MAX_DOCUMENT_CHARS, remaining));
+    const snippet = rawText.slice(0, budget);
+    if (!snippet) continue;
+
+    const suffix =
+      rawText.length > snippet.length
+        ? "\n[...document excerpt truncated for context window...]"
+        : "";
+
+    lines.push(
+      `Document ${usedDocuments + 1}: ${doc.file_name || "uploaded.pdf"}\n${snippet}${suffix}`,
+    );
+    consumed += snippet.length;
+    usedDocuments += 1;
+  }
+
+  if (usedDocuments === 0) {
+    return null;
+  }
+
+  return {
+    documentCount: usedDocuments,
+    context: [
+      "PROJECT DOCUMENT CONTEXT (uploaded PDFs):",
+      "Use this as supporting context when answering or generating architecture output.",
+      "If the document context conflicts with direct user instructions in this request, prioritize the user request and mention the conflict briefly.",
+      "",
+      ...lines,
+    ].join("\n"),
   };
 }
 
@@ -173,7 +261,7 @@ export async function POST(req: NextRequest) {
     const { model: requestedModelId } = parsedBody.output;
 
     // IP-based rate limiting (prevent account-switching abuse)
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+    const ip = getClientIp(req.headers);
     const ipRateLimitResult = await checkIPRateLimit(ip);
     if (!ipRateLimitResult.allowed) {
       return NextResponse.json(
@@ -205,7 +293,7 @@ export async function POST(req: NextRequest) {
       model: modelId,
       currentNodes = [],
       currentEdges = [],
-      projectId: _projectId,
+      projectId,
       userPreferences,
     } = parsedBody.output;
     const normalizedMode = normalizeArchitectureMode(mode);
@@ -295,8 +383,24 @@ export async function POST(req: NextRequest) {
     const operationType = detectOperation(lastMessageContent, currentNodes);
     logger.info("Detected operation type", { operationType });
 
+    let projectDocumentContext: ProjectDocumentContext | null = null;
+    if (projectId) {
+      try {
+        projectDocumentContext = await buildProjectDocumentContext(
+          supabase,
+          user.id,
+          projectId,
+        );
+      } catch (error) {
+        logger.warn("Failed to load project PDF context", {
+          projectId,
+          error: String(error),
+        });
+      }
+    }
+
     // Build system prompt with full context including operation type
-    const systemPrompt = buildEnhancedSystemPrompt({
+    const baseSystemPrompt = buildEnhancedSystemPrompt({
       userInput: lastMessageContent,
       architectureType: detection.type,
       detectedIntent: `Architecture: ${detection.type}, Complexity: ${complexity}`,
@@ -308,6 +412,9 @@ export async function POST(req: NextRequest) {
       operationType,
       userPreferences,
     });
+    const systemPrompt = projectDocumentContext
+      ? `${baseSystemPrompt}\n\n${projectDocumentContext.context}`
+      : baseSystemPrompt;
 
     // Get provider and model
     const { provider: providerType, model: effectiveModel } =
@@ -463,6 +570,7 @@ export async function POST(req: NextRequest) {
       systemPromptLength: systemPrompt.length,
       userMessage: lastMessageContent.substring(0, 50),
       provider: providerType,
+      projectDocumentCount: projectDocumentContext?.documentCount || 0,
     });
 
     // Create custom stream that transforms to legacy format for frontend compatibility
@@ -624,8 +732,7 @@ export async function POST(req: NextRequest) {
                 // Send reasoning chunk in legacy format
                 controller.enqueue(
                   encoder.encode(
-                    JSON.stringify({ type: "reasoning", data: part.text }) +
-                      "\n",
+                    `${JSON.stringify({ type: "reasoning", data: part.text })}\n`,
                   ),
                 );
                 break;
@@ -639,7 +746,7 @@ export async function POST(req: NextRequest) {
                   accumulatedReasoning += text;
                   controller.enqueue(
                     encoder.encode(
-                      JSON.stringify({ type: "reasoning", data: text }) + "\n",
+                      `${JSON.stringify({ type: "reasoning", data: text })}\n`,
                     ),
                   );
                 }

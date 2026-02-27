@@ -1,10 +1,24 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/lib/ai-client";
+import * as v from "valibot";
+import { analyzeArchitectureQuality } from "@/lib/architecture-quality";
 import { createLogger } from "@/lib/logger";
+import { generateMermaidCode } from "@/lib/mermaid-export";
 import { createClient } from "@/lib/supabase/server";
 
 const logger = createLogger("api:export-mermaid");
+
+const ExportMermaidRequestSchema = v.object({
+  nodes: v.pipe(v.array(v.any()), v.minLength(1), v.maxLength(1000)),
+  edges: v.pipe(v.array(v.any()), v.maxLength(5000)),
+  mode: v.optional(
+    v.union([
+      v.literal("default"),
+      v.literal("startup"),
+      v.literal("enterprise"),
+    ]),
+  ),
+});
 
 export async function POST(req: NextRequest) {
   const requestId = randomUUID();
@@ -21,63 +35,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { nodes, edges } = await req.json();
-
-    if (!nodes || !edges) {
+    const body = await req.json();
+    const parsedBody = v.safeParse(ExportMermaidRequestSchema, body);
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { error: "Nodes and edges are required" },
+        { error: "Invalid Mermaid export payload" },
         { status: 400 },
       );
     }
 
-    const { client, config } = createAIClient("qwen");
-
-    const systemPrompt = `You are an expert architecture diagram designer. Your task is to take a JSON representation of an application's architecture (nodes and edges) and convert it into a perfectly formatted, clean, and highly readable Mermaid \`flowchart TD\` diagram.
-
-Instructions:
-1. ONLY return the final Mermaid code block starting with \`\`\`mermaid and ending with \`\`\`. Do not include any reasoning, conversational text, or explanations.
-2. Group related nodes into subgraphs where it makes semantic sense (e.g., grouping all frontend nodes, backend services, or database clusters).
-3. Use appropriate Mermaid node shapes based on the node types (e.g., [(Database)] for databases, {{Queue}} for message brokers, etc.).
-4. Ensure edges have clear directional arrows (-->) and include labels if the original edges have them.
-5. Make sure node IDs are alphanumeric and do not break mermaid syntax.
-6. The diagram should flow beautifully from top to bottom (\`flowchart TD\`).`;
-
-    const userPrompt = `Here is the architecture JSON data:
-Nodes:
-${JSON.stringify(nodes, null, 2)}
-
-Edges:
-${JSON.stringify(edges, null, 2)}
-`;
-
-    const response = await client.chat.completions.create({
-      model: config.model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.2, // Low temperature for deterministic output
-    });
-
-    let mermaidCode = response.choices[0]?.message?.content || "";
-
-    // Clean up the markdown formatting if it exists
-    mermaidCode = mermaidCode.trim();
-    if (mermaidCode.startsWith("\`\`\`mermaid")) {
-      mermaidCode = mermaidCode.slice(10);
-    } else if (mermaidCode.startsWith("\`\`\`")) {
-      mermaidCode = mermaidCode.slice(3);
+    const { nodes, edges, mode } = parsedBody.output;
+    const quality = analyzeArchitectureQuality(nodes, edges, mode);
+    if (quality.isExportBlocked) {
+      return NextResponse.json(
+        {
+          error: "Export blocked by architecture quality gate",
+          quality,
+        },
+        { status: 422 },
+      );
     }
-    if (mermaidCode.endsWith("\`\`\`")) {
-      mermaidCode = mermaidCode.slice(0, -3);
-    }
+
+    const mermaidCode = generateMermaidCode(nodes, edges);
 
     timer.end({ success: true, contentLength: mermaidCode.length });
-
-    return NextResponse.json({ mermaid: mermaidCode.trim() });
+    return NextResponse.json({
+      mermaid: mermaidCode.trim(),
+      quality,
+    });
   } catch (error: any) {
     timer.end({ success: false });
-    logger.error("Failed to export mermaid via AI", error);
+    logger.error("Failed to export mermaid", error);
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 },

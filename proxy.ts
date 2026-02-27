@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
+import { getClientIp } from "@/lib/network";
 import { updateSession } from "@/lib/supabase/middleware";
 
 // Initialize Redis for rate limiting
@@ -77,6 +78,7 @@ function logRequest(
   request: NextRequest,
   response: NextResponse,
   duration: number,
+  clientIp: string,
 ): void {
   const logData = {
     method: request.method,
@@ -84,7 +86,7 @@ function logRequest(
     status: response.status,
     duration,
     userAgent: request.headers.get("user-agent")?.slice(0, 100),
-    ip: request.headers.get("x-forwarded-for") ?? "unknown",
+    ip: clientIp,
   };
 
   if (response.status >= 500) {
@@ -108,7 +110,7 @@ async function checkRateLimit(
   key: string,
   pathname: string,
 ): Promise<{ allowed: boolean; response?: NextResponse }> {
-  if (!ratelimit) {
+  if (!ratelimit || !key || key === "unknown") {
     return { allowed: true };
   }
 
@@ -145,7 +147,7 @@ async function checkRateLimit(
 
 export async function proxy(request: NextRequest) {
   const startTime = Date.now();
-  const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
+  const clientIp = getClientIp(request.headers);
   const pathname = request.nextUrl.pathname;
 
   try {
@@ -153,12 +155,12 @@ export async function proxy(request: NextRequest) {
     if (pathname.startsWith("/api/generate")) {
       const { allowed, response } = await checkRateLimit(
         aiRatelimit,
-        ip,
+        clientIp,
         pathname,
       );
       if (!allowed) {
         addSecurityHeaders(response!);
-        logRequest(request, response!, Date.now() - startTime);
+        logRequest(request, response!, Date.now() - startTime, clientIp);
         return response!;
       }
     }
@@ -171,12 +173,12 @@ export async function proxy(request: NextRequest) {
     ) {
       const { allowed, response } = await checkRateLimit(
         authRatelimit,
-        ip,
+        clientIp,
         pathname,
       );
       if (!allowed) {
         addSecurityHeaders(response!);
-        logRequest(request, response!, Date.now() - startTime);
+        logRequest(request, response!, Date.now() - startTime, clientIp);
         return response!;
       }
     }
@@ -189,12 +191,12 @@ export async function proxy(request: NextRequest) {
     ) {
       const { allowed, response } = await checkRateLimit(
         apiRatelimit,
-        ip,
+        clientIp,
         pathname,
       );
       if (!allowed) {
         addSecurityHeaders(response!);
-        logRequest(request, response!, Date.now() - startTime);
+        logRequest(request, response!, Date.now() - startTime, clientIp);
         return response!;
       }
     }
@@ -206,7 +208,7 @@ export async function proxy(request: NextRequest) {
     addSecurityHeaders(response);
 
     // Log request
-    logRequest(request, response, Date.now() - startTime);
+    logRequest(request, response, Date.now() - startTime, clientIp);
 
     return response;
   } catch (error) {
@@ -219,7 +221,7 @@ export async function proxy(request: NextRequest) {
     );
 
     addSecurityHeaders(errorResponse);
-    logRequest(request, errorResponse, Date.now() - startTime);
+    logRequest(request, errorResponse, Date.now() - startTime, clientIp);
 
     return errorResponse;
   }

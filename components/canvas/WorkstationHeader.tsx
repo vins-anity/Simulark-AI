@@ -10,6 +10,7 @@ import {
   CircleHelp,
   Download,
   FileCode,
+  FileText,
   GitBranch,
   Grid3X3,
   Image as ImageIcon,
@@ -384,6 +385,22 @@ export function WorkstationHeader({
             >
               <ImageIcon className="w-4 h-4 mr-3" />
               <span>RASTER_IMAGE_PNG</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => onExport("svg")}
+              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+            >
+              <ImageIcon className="w-4 h-4 mr-3" />
+              <span>VECTOR_IMAGE_SVG</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => onExport("pdf")}
+              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+            >
+              <FileText className="w-4 h-4 mr-3" />
+              <span>DOCUMENT_PDF</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

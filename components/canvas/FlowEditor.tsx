@@ -218,6 +218,42 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       }
     }, [projectId, nodes, edges]);
 
+    const checkExportQualityGate = useCallback(async () => {
+      const nodesForCheck = getNodes();
+      const edgesForCheck = getEdges();
+
+      const response = await fetch("/api/quality-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nodes: nodesForCheck,
+          edges: edgesForCheck,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response
+          .json()
+          .catch(() => ({ error: "Quality check failed" }));
+        throw new Error(payload.error || "Quality check failed");
+      }
+
+      const payload = await response.json();
+      const quality = payload?.data;
+      if (quality?.isExportBlocked) {
+        const firstBlocker =
+          quality.blockers?.[0] ||
+          "Resolve validation errors before exporting this architecture.";
+        toast.error(`Export blocked: ${firstBlocker}`);
+        return null;
+      }
+
+      return quality as {
+        score: number;
+        grade: string;
+      } | null;
+    }, [getEdges, getNodes]);
+
     // Handle export
     const exportGraphFile = useCallback(
       async (format: "png" | "pdf" | "svg") => {
@@ -234,6 +270,11 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         const currentNodes = getNodes();
         if (currentNodes.length === 0) {
           toast.error("No nodes to export");
+          return;
+        }
+
+        const quality = await checkExportQualityGate();
+        if (!quality) {
           return;
         }
 
@@ -273,7 +314,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               link.download = `architecture-${Date.now()}.png`;
               link.href = dataUrl;
               link.click();
-              toast.success("PNG exported successfully!");
+              toast.success(
+                `PNG exported successfully! Quality ${quality.score}/100 (${quality.grade})`,
+              );
               break;
             }
             case "svg": {
@@ -285,7 +328,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               link.download = `architecture-${Date.now()}.svg`;
               link.href = dataUrl;
               link.click();
-              toast.success("SVG exported successfully!");
+              toast.success(
+                `SVG exported successfully! Quality ${quality.score}/100 (${quality.grade})`,
+              );
               break;
             }
             case "pdf": {
@@ -298,7 +343,9 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
               });
               pdf.addImage(dataUrl, "PNG", 0, 0, width, height);
               pdf.save(`architecture-${Date.now()}.pdf`);
-              toast.success("PDF exported successfully!");
+              toast.success(
+                `PDF exported successfully! Quality ${quality.score}/100 (${quality.grade})`,
+              );
               break;
             }
           }
@@ -307,7 +354,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           toast.error(`Failed to export as ${format.toUpperCase()}`);
         }
       },
-      [getNodes, resolvedTheme],
+      [checkExportQualityGate, getNodes, resolvedTheme],
     );
 
     const handleExport = useCallback(async () => {
@@ -444,9 +491,35 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
       },
       exportGraph: async (format: "mermaid" | "png" | "pdf" | "svg") => {
         if (format === "mermaid") {
-          const loadingToastId = toast.loading(
-            "Generating AI-optimized Mermaid code...",
-          );
+          const quality = await checkExportQualityGate();
+          if (!quality) {
+            return;
+          }
+
+          const loadingToastId = toast.loading("Generating Mermaid code...");
+          const copyAndDownloadMermaid = async (
+            mermaidCode: string,
+            successMessage: string,
+          ) => {
+            try {
+              await navigator.clipboard.writeText(mermaidCode);
+            } catch {
+              // Continue download fallback even if clipboard API is blocked.
+            }
+
+            const blob = new Blob([mermaidCode], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `architecture-${Date.now()}.mmd`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            toast.success(successMessage, {
+              id: loadingToastId,
+            });
+          };
+
           try {
             const response = await fetch("/api/export-mermaid", {
               method: "POST",
@@ -455,30 +528,44 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
             });
 
             if (!response.ok) {
-              throw new Error("Failed to generate Mermaid via AI");
+              const errorPayload = await response
+                .json()
+                .catch(() => ({ error: "Failed to generate Mermaid" }));
+              if (response.status === 422 && errorPayload.quality) {
+                throw new Error(
+                  `Export blocked: ${errorPayload.quality.blockers?.[0] || "Resolve critical architecture issues first."}`,
+                );
+              }
+              throw new Error(
+                errorPayload.error || "Failed to generate Mermaid",
+              );
             }
 
             const data = await response.json();
 
             if (data.mermaid) {
-              navigator.clipboard.writeText(data.mermaid);
-              toast.success("AI Mermaid code copied to clipboard!", {
-                id: loadingToastId,
-              });
+              const mermaidCode = data.mermaid as string;
+              await copyAndDownloadMermaid(
+                mermaidCode,
+                `Mermaid copied + downloaded (.mmd). Quality ${quality.score}/100 (${quality.grade})`,
+              );
             } else {
               throw new Error("Invalid response format");
             }
           } catch (error) {
             console.error(
-              "AI Mermaid Export Error, falling back to static generator:",
+              "Mermaid export error, falling back to static generator:",
               error,
             );
-            const mermaidCode = generateMermaidCode(getNodes(), getEdges());
-            navigator.clipboard.writeText(mermaidCode);
-            toast.success(
-              "Mermaid code copied to clipboard! (Static Fallback)",
-              { id: loadingToastId },
-            );
+            try {
+              const mermaidCode = generateMermaidCode(getNodes(), getEdges());
+              await copyAndDownloadMermaid(
+                mermaidCode,
+                "Mermaid copied + downloaded (static fallback).",
+              );
+            } catch {
+              toast.error("Failed to export Mermaid", { id: loadingToastId });
+            }
           }
         } else {
           await exportGraphFile(format);

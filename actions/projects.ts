@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { analyzeArchitectureQuality } from "@/lib/architecture-quality";
 import type { ArchitectureGraph, Project } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATE_GRAPHS } from "@/lib/templates";
@@ -131,10 +132,27 @@ export async function saveProject(
 
   if (graph.nodes) updateData.nodes = graph.nodes;
   if (graph.edges) updateData.edges = graph.edges;
-  if (graph.metadata) {
-    // Merge existing metadata with new metadata
-    updateData.metadata = { ...currentProject.metadata, ...graph.metadata };
-  }
+
+  const mergedMetadata = {
+    ...currentProject.metadata,
+    ...(graph.metadata || {}),
+  };
+  const qualityMode =
+    typeof mergedMetadata?.mode === "string" ? mergedMetadata.mode : "default";
+  const qualityReport = analyzeArchitectureQuality(
+    graph.nodes ?? currentProject.nodes ?? [],
+    graph.edges ?? currentProject.edges ?? [],
+    qualityMode,
+  );
+
+  updateData.metadata = {
+    ...mergedMetadata,
+    quality: qualityReport,
+    qualityScore: qualityReport.score,
+    qualityGrade: qualityReport.grade,
+    qualityStatus: qualityReport.status,
+    qualityUpdatedAt: new Date().toISOString(),
+  };
 
   const { data, error } = await supabase
     .from("projects")

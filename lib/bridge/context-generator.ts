@@ -1,4 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
+import { generateMermaidCode } from "@/lib/mermaid-export";
 
 /**
  * Generates a .cursorrules file content based on the current architecture.
@@ -40,24 +41,7 @@ ${edges.map((e) => `- ${e.source} connects to ${e.target} via ${e.data?.protocol
  * Generates a Mermaid diagram string for documentation.
  */
 export function generateMermaid(nodes: Node[], edges: Edge[]) {
-  let mermaid = "graph TD;\n";
-
-  // Add Nodes
-  nodes.forEach((node) => {
-    const label = (node.data.label as string) || node.id;
-    // Sanitize label
-    const cleanLabel = label.replace(/"/g, "'");
-    mermaid += `    ${node.id}["${cleanLabel}"]\n`;
-  });
-
-  // Add Edges
-  edges.forEach((edge) => {
-    const protocol = (edge.data?.protocol as string) || "";
-    const label = protocol ? `|${protocol}|` : "";
-    mermaid += `    ${edge.source} -->${label} ${edge.target}\n`;
-  });
-
-  return mermaid;
+  return generateMermaidCode(nodes, edges);
 }
 
 /**

@@ -130,6 +130,14 @@ export default function ProjectPage({
         const errorData = await response
           .json()
           .catch(() => ({ error: "Failed to generate skill" }));
+        if (response.status === 422 && errorData.quality) {
+          const blocker =
+            errorData.quality.blockers?.[0] ||
+            "Resolve validation errors before export.";
+          throw new Error(
+            `${errorData.error || "Export blocked"} ${blocker}`.trim(),
+          );
+        }
         throw new Error(errorData.error || "Failed to generate skill");
       }
 

@@ -8,10 +8,13 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  FileUp,
   Loader2,
+  Paperclip,
   RotateCcw,
   Square,
   Terminal,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -26,6 +29,7 @@ import {
   updateChatTitle as updateChatTitleAction,
 } from "@/actions/chats";
 import { updateUserPreferences } from "@/actions/users";
+import { ResourceExhaustionModal } from "@/components/subscription/ResourceExhaustionModal";
 import {
   Select,
   SelectContent,
@@ -39,11 +43,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AVAILABLE_MODELS } from "@/lib/provider-registry";
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
+import { AVAILABLE_MODELS } from "@/lib/provider-registry";
 import { cn } from "@/lib/utils";
 import { StreamingMessage } from "./StreamingMessage";
-import { ResourceExhaustionModal } from "@/components/subscription/ResourceExhaustionModal";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
@@ -103,6 +106,28 @@ interface Chat {
   title: string;
   created_at: string;
   updated_at: string;
+}
+
+interface ProjectDocument {
+  id: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  extraction_status: "pending" | "completed" | "failed";
+  extraction_error?: string | null;
+  created_at: string;
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
 type GenerationState =
@@ -332,6 +357,7 @@ export function AIAssistantPanel({
   const [suggestionChips, setSuggestionChips] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollSentinelRef = useRef<HTMLDivElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // Chat state
   const [chats, setChats] = useState<Chat[]>([]);
@@ -339,6 +365,11 @@ export function AIAssistantPanel({
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [_editingChatId, _setEditingChatId] = useState<string | null>(null);
   const [_editingTitle, _setEditingTitle] = useState("");
+  const [projectDocuments, setProjectDocuments] = useState<ProjectDocument[]>(
+    [],
+  );
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
 
   // Generation state machine for reliable prompt processing
   const [generationState, setGenerationState] =
@@ -592,6 +623,112 @@ export function AIAssistantPanel({
     setGenerationError(null);
 
     await processMessage(inputValue);
+  };
+
+  const loadProjectDocuments = useCallback(async () => {
+    setIsLoadingDocuments(true);
+    try {
+      const response = await fetch(
+        `/api/project-documents?projectId=${encodeURIComponent(projectId)}`,
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to load project documents");
+      }
+
+      const payload = await response.json();
+      setProjectDocuments(
+        Array.isArray(payload?.documents)
+          ? (payload.documents as ProjectDocument[])
+          : [],
+      );
+    } catch (error) {
+      console.error("Error loading project documents:", error);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadProjectDocuments();
+  }, [loadProjectDocuments]);
+
+  const handlePdfUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      toast.error("Only PDF files are supported");
+      event.target.value = "";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("projectId", projectId);
+    formData.append("file", file);
+
+    setIsUploadingDocument(true);
+
+    try {
+      const response = await fetch("/api/project-documents", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response
+        .json()
+        .catch(() => ({ error: "Upload failed" }));
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to upload PDF");
+      }
+
+      await loadProjectDocuments();
+      if (payload?.extraction?.status === "failed") {
+        toast.warning(
+          "PDF uploaded, but text extraction failed. The file is saved and can be retried later.",
+        );
+      } else {
+        toast.success("PDF uploaded and added to AI context");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload PDF",
+      );
+    } finally {
+      setIsUploadingDocument(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      const response = await fetch(
+        `/api/project-documents?id=${encodeURIComponent(documentId)}`,
+        { method: "DELETE" },
+      );
+      const payload = await response
+        .json()
+        .catch(() => ({ error: "Delete failed" }));
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to remove document");
+      }
+
+      setProjectDocuments((prev) =>
+        prev.filter((item) => item.id !== documentId),
+      );
+      toast.success("Document removed");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove document",
+      );
+    }
   };
 
   const loadUserPreferences = async () => {
@@ -1277,7 +1414,7 @@ export function AIAssistantPanel({
               ? {
                   ...m,
                   isThinking: false,
-                  content: accumulatedContent + " [Stopped by user]",
+                  content: `${accumulatedContent} [Stopped by user]`,
                 }
               : m,
           ),
@@ -1588,6 +1725,70 @@ export function AIAssistantPanel({
 
         {/* Input Controls */}
         <div className="p-3 space-y-3">
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={handlePdfUpload}
+          />
+
+          <div className="border border-brand-charcoal/10 dark:border-border-primary/40 bg-neutral-50/70 dark:bg-bg-tertiary/60 p-2">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={isUploadingDocument || isGenerating}
+                className="h-7 px-2 flex items-center gap-1.5 border border-brand-charcoal/20 dark:border-border-primary/50 bg-white dark:bg-bg-secondary text-[10px] font-mono uppercase tracking-wider hover:border-brand-orange/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUploadingDocument ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <FileUp className="w-3 h-3" />
+                )}
+                Upload PDF
+              </button>
+
+              <div className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-brand-charcoal/50 dark:text-text-secondary/60">
+                <Paperclip className="w-3 h-3" />
+                {isLoadingDocuments
+                  ? "loading..."
+                  : `${projectDocuments.length} doc${projectDocuments.length === 1 ? "" : "s"}`}
+              </div>
+            </div>
+
+            {projectDocuments.length > 0 && (
+              <div className="mt-2 space-y-1 max-h-24 overflow-y-auto pr-1">
+                {projectDocuments.slice(0, 6).map((document) => (
+                  <div
+                    key={document.id}
+                    className="flex items-center justify-between gap-2 px-2 py-1 bg-white dark:bg-bg-secondary border border-brand-charcoal/10 dark:border-border-primary/30"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] truncate text-brand-charcoal dark:text-text-primary">
+                        {document.file_name}
+                      </p>
+                      <p className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/45 dark:text-text-secondary/60">
+                        {document.extraction_status === "completed"
+                          ? "ready"
+                          : document.extraction_status}{" "}
+                        · {formatBytes(document.size_bytes)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDocument(document.id)}
+                      className="p-1 text-brand-charcoal/40 hover:text-red-600 transition-colors"
+                      title="Remove document"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Mode & Model Selectors */}
           <div className="flex gap-2">
             <Select value={chatMode} onValueChange={setChatMode}>

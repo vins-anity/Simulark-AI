@@ -1,6 +1,7 @@
 import type { Edge, Node } from "@xyflow/react";
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
+import { analyzeArchitectureQuality } from "@/lib/architecture-quality";
 import { logger } from "@/lib/logger";
 import {
   type ExportSkillRequestInput,
@@ -40,12 +41,24 @@ export async function POST(req: NextRequest) {
       userId: user.id,
     });
 
+    const quality = analyzeArchitectureQuality(nodes, edges);
+    if (quality.isExportBlocked) {
+      return NextResponse.json(
+        {
+          error: "Skill export blocked by architecture quality gate",
+          quality,
+        },
+        { status: 422 },
+      );
+    }
+
     // Generate skill content
     const skill = generateSkillContent({
       projectName,
       projectDescription,
       nodes,
       edges,
+      quality,
     });
 
     // Package into ZIP
@@ -64,6 +77,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${safeFileName}-skill.zip"`,
         "X-Simulark-Skill-Version": skill.metadata.version,
+        "X-Simulark-Quality-Score": quality.score.toString(),
       },
     });
   } catch (error: any) {

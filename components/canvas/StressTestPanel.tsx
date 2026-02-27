@@ -23,7 +23,11 @@ import { getDefaultValuesForType } from "@/lib/node-schemas";
 import type { StressPlannerMetaInput } from "@/lib/schema/api";
 import { useSimulationStore } from "@/lib/store";
 import { STRESS_PLANNER_MODEL_OPTIONS } from "@/lib/stress-planner-models";
-import type { StressRunStreamEvent } from "@/lib/stress-runner";
+import {
+  runStressSimulation,
+  type StressRunStreamEvent,
+} from "@/lib/stress-runner";
+import { buildStressTestPlan } from "@/lib/stress-testing-plan";
 import { cn } from "@/lib/utils";
 
 const PROFILE_DEFAULTS: Record<string, Record<string, unknown>> = {
@@ -122,6 +126,28 @@ export function getPlannerStatusMessage(
   }
 
   return meta.modelUsed ? `Planned with ${toName(meta.modelUsed)}.` : null;
+}
+
+function createStableSeed(
+  nodes: Node[],
+  edges: { id: string }[],
+  scenarioId: string,
+): number {
+  const source = `${scenarioId}:${nodes.length}:${edges.length}:${nodes
+    .map((node) => node.id)
+    .sort()
+    .join("|")}:${edges
+    .map((edge) => edge.id)
+    .sort()
+    .join("|")}`;
+
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index++) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return Math.abs(hash >>> 0);
 }
 
 export function StressTestPanel() {
@@ -237,6 +263,33 @@ export function StressTestPanel() {
     setStressPlanning();
     setStatusNote("Generating scenario plan...");
 
+    const applyDeterministicPlan = (reason?: string) => {
+      const deterministicPlan = buildStressTestPlan(nodes, edges);
+      const warning = reason
+        ? `AI planner unavailable (${reason}). Deterministic planner applied.`
+        : "AI planner unavailable. Deterministic planner applied.";
+
+      setScenarioPlan({
+        assumptions: deterministicPlan.assumptions,
+        scenarios: deterministicPlan.scenarios,
+        markdown: deterministicPlan.markdown,
+        source: "fallback",
+        warning,
+        plannerMeta: {
+          providerUsed: "fallback",
+          attempts: [],
+          warningCode: "ai_unavailable",
+          warning,
+        },
+      });
+
+      setStatusNote("Scenario plan ready (deterministic fallback).");
+      addStressTimelineMessage(
+        "Planner API unavailable. Used deterministic fallback plan.",
+        "medium",
+      );
+    };
+
     try {
       const response = await fetch("/api/stress-tests/plan", {
         method: "POST",
@@ -254,7 +307,19 @@ export function StressTestPanel() {
         const errorData = await response
           .json()
           .catch(() => ({ error: "Failed to generate stress plan" }));
-        throw new Error(errorData.error || "Failed to generate stress plan");
+
+        if (response.status === 401 || response.status === 403) {
+          const message = errorData.error || "Stress planning is unavailable";
+          setStatusNote(message);
+          processStressEvent({
+            type: "error",
+            data: { message },
+          });
+          return;
+        }
+
+        applyDeterministicPlan(errorData.error || "planner API error");
+        return;
       }
 
       const payload = await response.json();
@@ -289,11 +354,7 @@ export function StressTestPanel() {
         error instanceof Error
           ? error.message
           : "Failed to generate stress scenarios";
-      setStatusNote(message);
-      processStressEvent({
-        type: "error",
-        data: { message },
-      });
+      applyDeterministicPlan(message);
     }
   };
 
@@ -324,6 +385,47 @@ export function StressTestPanel() {
     setStatusNote(`Running "${scenario.name}"...`);
     const abortController = new AbortController();
     abortRef.current = abortController;
+    const parsedSeed = Number(seedInput);
+    const runSeed = Number.isFinite(parsedSeed)
+      ? parsedSeed
+      : createStableSeed(nodes, edges, scenario.id);
+
+    const runLocally = async (reason: string) => {
+      addStressTimelineMessage(
+        `Realtime stream unavailable (${reason}). Running local deterministic simulation.`,
+        "medium",
+      );
+
+      try {
+        for await (const event of runStressSimulation(
+          {
+            nodes,
+            edges,
+            scenario,
+            seed: runSeed,
+            nodeSpecOverrides,
+          },
+          { delayMs: 60 },
+        )) {
+          if (abortController.signal.aborted) {
+            return;
+          }
+          processStressEvent(event);
+        }
+
+        setStatusNote("Run completed (local deterministic fallback).");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Local deterministic run failed";
+        setStatusNote(message);
+        processStressEvent({
+          type: "error",
+          data: { message },
+        });
+      }
+    };
 
     try {
       const response = await fetch("/api/stress-tests/run", {
@@ -335,7 +437,7 @@ export function StressTestPanel() {
           nodes,
           edges,
           scenario,
-          seed: Number(seedInput) || undefined,
+          seed: runSeed,
           nodeSpecOverrides,
         }),
         signal: abortController.signal,
@@ -345,7 +447,20 @@ export function StressTestPanel() {
         const errorData = await response
           .json()
           .catch(() => ({ error: "Stress run failed to start" }));
-        throw new Error(errorData.error || "Stress run failed to start");
+
+        if (response.status === 401 || response.status === 403) {
+          const message =
+            errorData.error || "Stress run is unavailable for this account";
+          setStatusNote(message);
+          processStressEvent({
+            type: "error",
+            data: { message },
+          });
+          return;
+        }
+
+        await runLocally(errorData.error || "stress run API unavailable");
+        return;
       }
 
       const reader = response.body.getReader();
@@ -390,13 +505,9 @@ export function StressTestPanel() {
       if (abortController.signal.aborted) {
         return;
       }
-      const message =
-        error instanceof Error ? error.message : "Stress run failed";
-      setStatusNote(message);
-      processStressEvent({
-        type: "error",
-        data: { message },
-      });
+      await runLocally(
+        error instanceof Error ? error.message : "Stress run failed",
+      );
     } finally {
       abortRef.current = null;
     }

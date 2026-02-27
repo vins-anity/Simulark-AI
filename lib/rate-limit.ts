@@ -87,7 +87,7 @@ export async function checkRateLimit(userId: string, modelId?: string) {
 }
 
 export async function checkIPRateLimit(ip: string, limit: number = 30) {
-  if (!ip || ip === "127.0.0.1" || ip === "::1") {
+  if (!ip || ip === "unknown" || ip === "127.0.0.1" || ip === "::1") {
     return { allowed: true, limit, remaining: limit, reset: "" };
   }
 
