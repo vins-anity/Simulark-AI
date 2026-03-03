@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { verifyAdminAccess } from "@/lib/admin/auth";
+import { ListSubscriptionsQuerySchema } from "@/lib/schema/api";
 import {
   getPlanDetails,
   type SubscriptionStatus,
@@ -42,16 +44,27 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const parsedQuery = v.safeParse(ListSubscriptionsQuerySchema, {
+      page: searchParams.get("page") ?? undefined,
+      pageSize: searchParams.get("pageSize") ?? undefined,
+      tier: searchParams.get("tier") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+      search: searchParams.get("search") ?? undefined,
+    });
+
+    if (!parsedQuery.success) {
+      return NextResponse.json(
+        { error: "Invalid query parameters" },
+        { status: 400 },
+      );
+    }
 
     // Parse query parameters
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const pageSize = Math.min(
-      100,
-      Math.max(1, parseInt(searchParams.get("pageSize") || "20", 10)),
-    );
-    const tier = searchParams.get("tier");
-    const status = searchParams.get("status");
-    const search = searchParams.get("search");
+    const page = parsedQuery.output.page ?? 1;
+    const pageSize = parsedQuery.output.pageSize ?? 20;
+    const tier = parsedQuery.output.tier;
+    const status = parsedQuery.output.status;
+    const search = parsedQuery.output.search;
 
     const supabase = await createClient();
 
@@ -73,8 +86,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      // Sanitize search input - remove special characters that could cause injection
-      const sanitizedSearch = search.replace(/[%_]/g, "");
+      // Sanitize search input before embedding in `.or()` expression.
+      const sanitizedSearch = search.replace(/[^a-zA-Z0-9@.+\-_ ]/g, "").trim();
 
       if (sanitizedSearch.length > 0) {
         // Use ilike with wildcards safely

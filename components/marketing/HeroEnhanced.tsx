@@ -143,7 +143,7 @@ export function HeroEnhanced() {
 
         {/* Main Headline */}
         <div className="space-y-2 mb-8">
-          <div className="overflow-hidden">
+          <div className="overflow-visible pb-2 pt-2">
             <motion.h1
               className="text-5xl md:text-7xl lg:text-8xl font-poppins font-bold tracking-tight text-brand-charcoal leading-[0.95]"
               initial={{ y: "100%", opacity: 0 }}
@@ -157,7 +157,7 @@ export function HeroEnhanced() {
               DESIGN SYSTEMS.
             </motion.h1>
           </div>
-          <div className="overflow-hidden">
+          <div className="overflow-visible pb-4">
             <motion.h1
               className="text-5xl md:text-7xl lg:text-8xl font-poppins font-bold tracking-tight leading-[0.95]"
               initial={{ y: "100%", opacity: 0 }}
@@ -252,7 +252,7 @@ export function HeroEnhanced() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-12 w-full max-w-5xl mx-auto aspect-[16/9] bg-bg-secondary border border-brand-charcoal/20 relative overflow-hidden"
+          className="mt-12 w-full max-w-5xl mx-auto aspect-[16/9] bg-bg-secondary border border-brand-charcoal/20 relative overflow-hidden hidden md:block"
         >
           {/* Interface Header - Technical */}
           <div className="h-8 border-b border-brand-charcoal/10 bg-brand-sand-light flex items-center px-3">

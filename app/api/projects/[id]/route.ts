@@ -1,7 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
 import { getProject, saveProject } from "@/actions/projects";
+import type { ArchitectureGraph } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/server";
+
+const ParamsSchema = v.object({
+  id: v.pipe(v.string(), v.uuid()),
+});
+
+const UpdateProjectPayloadSchema = v.object({
+  nodes: v.array(v.unknown()),
+  edges: v.array(v.unknown()),
+});
 
 /**
  * GET /api/projects/[id]
@@ -12,12 +22,21 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = v.safeParse(ParamsSchema, await params);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        { error: "Invalid project id" },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.output;
     const result = await getProject(id);
     if (result.success) {
       return NextResponse.json(result.data);
     } else {
-      return NextResponse.json({ error: result.error }, { status: 404 });
+      const status = result.error === "Unauthorized" ? 401 : 404;
+      return NextResponse.json({ error: result.error }, { status });
     }
   } catch (error) {
     console.error("[API Project GET] Error:", error);
@@ -37,12 +56,19 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
-    const payloadSchema = v.object({
-      nodes: v.array(v.any()),
-      edges: v.array(v.any()),
-    });
-    const parsed = v.safeParse(payloadSchema, await request.json());
+    const parsedParams = v.safeParse(ParamsSchema, await params);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        { error: "Invalid project id" },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.output;
+    const parsed = v.safeParse(
+      UpdateProjectPayloadSchema,
+      await request.json(),
+    );
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid architecture payload" },
@@ -51,7 +77,10 @@ export async function PATCH(
     }
     const { nodes, edges } = parsed.output;
 
-    const result = await saveProject(id, { nodes, edges });
+    const result = await saveProject(id, {
+      nodes: nodes as ArchitectureGraph["nodes"],
+      edges: edges as ArchitectureGraph["edges"],
+    });
     if (result.success) {
       return NextResponse.json(result.data);
     } else {
@@ -75,7 +104,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
+    const parsedParams = v.safeParse(ParamsSchema, await params);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        { error: "Invalid project id" },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.output;
     const supabase = await createClient();
 
     // Check if user is owner via RLS or explicit check

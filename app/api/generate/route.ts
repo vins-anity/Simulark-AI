@@ -14,6 +14,10 @@ import {
 } from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { GenerateRequestSchema } from "@/lib/schema/api";
+import {
+  getEffectiveTierForAccess,
+  isModelAllowedForTier,
+} from "@/lib/subscription-guards";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
@@ -78,8 +82,20 @@ export async function POST(req: NextRequest) {
     } = parsedBody.output;
     const normalizedMode = normalizeArchitectureMode(mode);
 
-    // Rate Limiting Check (New DB-based logic)
-    const rateLimitResult = await checkRateLimit(user.id);
+    const effectiveTier = await getEffectiveTierForAccess(supabase, user.id);
+    if (!isModelAllowedForTier(effectiveTier, model)) {
+      userLogger.warn("Blocked generation request due to model entitlement", {
+        model,
+        effectiveTier,
+      });
+      return NextResponse.json(
+        { error: "This model is not available for your current plan." },
+        { status: 403 },
+      );
+    }
+
+    // Rate Limiting Check (model-aware)
+    const rateLimitResult = await checkRateLimit(user.id, model, effectiveTier);
 
     if (!rateLimitResult.allowed) {
       userLogger.warn("Rate limit exceeded", {

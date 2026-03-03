@@ -15,6 +15,7 @@ import {
   Square,
   Terminal,
   Trash2,
+  ArrowRight,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -1733,53 +1734,21 @@ export function AIAssistantPanel({
             onChange={handlePdfUpload}
           />
 
-          <div className="border border-brand-charcoal/10 dark:border-border-primary/40 bg-neutral-50/70 dark:bg-bg-tertiary/60 p-2">
-            <div className="flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => pdfInputRef.current?.click()}
-                disabled={isUploadingDocument || isGenerating}
-                className="h-7 px-2 flex items-center gap-1.5 border border-brand-charcoal/20 dark:border-border-primary/50 bg-white dark:bg-bg-secondary text-[10px] font-mono uppercase tracking-wider hover:border-brand-orange/50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUploadingDocument ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <FileUp className="w-3 h-3" />
-                )}
-                Upload PDF
-              </button>
-
-              <div className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-brand-charcoal/50 dark:text-text-secondary/60">
-                <Paperclip className="w-3 h-3" />
-                {isLoadingDocuments
-                  ? "loading..."
-                  : `${projectDocuments.length} doc${projectDocuments.length === 1 ? "" : "s"}`}
-              </div>
-            </div>
-
+          <div className="flex flex-col gap-1.5 px-3 pb-3">
             {projectDocuments.length > 0 && (
-              <div className="mt-2 space-y-1 max-h-24 overflow-y-auto pr-1">
-                {projectDocuments.slice(0, 6).map((document) => (
+              <div className="flex flex-wrap gap-1">
+                {projectDocuments.slice(0, 4).map((document) => (
                   <div
                     key={document.id}
-                    className="flex items-center justify-between gap-2 px-2 py-1 bg-white dark:bg-bg-secondary border border-brand-charcoal/10 dark:border-border-primary/30"
+                    className="flex items-center gap-1.5 px-2 py-1 bg-brand-charcoal/5 dark:bg-bg-secondary border border-brand-charcoal/10 dark:border-border-primary/30 rounded-full"
                   >
-                    <div className="min-w-0">
-                      <p className="font-mono text-[9px] truncate text-brand-charcoal dark:text-text-primary">
-                        {document.file_name}
-                      </p>
-                      <p className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/45 dark:text-text-secondary/60">
-                        {document.extraction_status === "completed"
-                          ? "ready"
-                          : document.extraction_status}{" "}
-                        · {formatBytes(document.size_bytes)}
-                      </p>
-                    </div>
+                    <span className="font-mono text-[9px] truncate max-w-[120px] text-brand-charcoal/70 dark:text-text-secondary">
+                      {document.file_name}
+                    </span>
                     <button
                       type="button"
                       onClick={() => handleDeleteDocument(document.id)}
-                      className="p-1 text-brand-charcoal/40 hover:text-red-600 transition-colors"
-                      title="Remove document"
+                      className="text-brand-charcoal/40 hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -1787,121 +1756,110 @@ export function AIAssistantPanel({
                 ))}
               </div>
             )}
+
+            <div className="relative group">
+              <form onSubmit={handleManualSubmit} className="relative flex items-center bg-bg-primary dark:bg-bg-secondary border border-brand-charcoal/20 dark:border-border-primary focus-within:border-brand-orange/50 transition-colors shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => pdfInputRef.current?.click()}
+                  disabled={isUploadingDocument || isGenerating}
+                  className="pl-3 pr-2 h-11 flex items-center justify-center shrink-0 text-brand-charcoal/40 dark:text-text-secondary/50 hover:text-brand-orange transition-colors disabled:opacity-50"
+                  title="Attach PDF"
+                >
+                  {isUploadingDocument ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="w-4 h-4" />
+                  )}
+                </button>
+
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") setSuggestionChips([]);
+                  }}
+                  placeholder={
+                    isGenerating
+                      ? "PROCESSING..."
+                      : generationState === "preparing"
+                        ? "INITIALIZING..."
+                        : "COMMAND //"
+                  }
+                  disabled={isGenerating || generationState === "preparing"}
+                  className="flex-1 h-11 bg-transparent border-none text-brand-charcoal dark:text-text-primary placeholder:text-brand-charcoal/30 dark:placeholder:text-text-secondary/30 text-[13px] font-mono focus:outline-none focus:ring-0 disabled:opacity-50"
+                />
+
+                <div className="flex items-center pr-2 gap-1 shrink-0">
+                  <Select value={chatMode} onValueChange={setChatMode}>
+                    <SelectTrigger className="h-8 w-auto px-2 max-w-[120px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono uppercase tracking-widest text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none">
+                      <SelectValue placeholder="MODE" />
+                    </SelectTrigger>
+                    <SelectContent className="font-mono text-[10px] uppercase rounded-none border-brand-charcoal">
+                      <SelectItem value="default">Default</SelectItem>
+                      <SelectItem value="startup">Startup</SelectItem>
+                      <SelectItem value="enterprise">Enterprise</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={model} onValueChange={setModel}>
+                    <SelectTrigger className="h-8 w-auto px-2 flex items-center justify-center border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-mono text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none rounded-none gap-1">
+                      <Bot className="w-4 h-4 shrink-0" />
+                    </SelectTrigger>
+                    <SelectContent align="end" className="font-mono text-[11px] max-w-[300px] rounded-none border-brand-charcoal">
+                      <TooltipProvider delayDuration={100}>
+                        {Object.entries(AVAILABLE_MODELS).map(([id, m]) => (
+                          <Tooltip key={id}>
+                            <TooltipTrigger asChild>
+                              <div className="w-full">
+                                <SelectItem
+                                  value={id}
+                                  className="flex items-center justify-between group rounded-none"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>{m.name}</span>
+                                    {m.badge === "hot_tag" && <span className="text-brand-orange ml-1">🔥</span>}
+                                    {m.badge === "double_hot_tag" && <span className="text-brand-orange ml-1">🔥🔥</span>}
+                                    {m.badge === "balance_tag" && <span className="text-[8px] text-blue-500 border border-blue-500/20 px-1 py-0.5 ml-1 leading-none uppercase">BAL</span>}
+                                  </div>
+                                </SelectItem>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-[200px] font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap rounded-none border-brand-charcoal">
+                              <div className="font-bold text-brand-orange mb-1">{m.name}</div>
+                              {m.description}
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                      </TooltipProvider>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="w-px h-4 bg-brand-charcoal/20 dark:bg-border-primary mx-1" />
+
+                  {isGenerating ? (
+                    <button
+                      type="button"
+                      onClick={handleStopGeneration}
+                      className="h-8 w-8 flex items-center justify-center p-0 bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm"
+                      title="Stop generation"
+                    >
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!inputValue.trim()}
+                      className="h-8 w-8 flex items-center justify-center p-0 bg-brand-charcoal dark:bg-white text-white dark:text-zinc-950 hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-30 transition-colors shadow-sm"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
-
-          {/* Mode & Model Selectors */}
-          <div className="flex gap-2">
-            <Select value={chatMode} onValueChange={setChatMode}>
-              <SelectTrigger className="w-full h-8 text-[11px] font-mono uppercase tracking-wider bg-neutral-50 dark:bg-bg-tertiary border-brand-charcoal/10 dark:border-border-primary/50 focus:ring-brand-orange/20">
-                <SelectValue placeholder="MODE" />
-              </SelectTrigger>
-              <SelectContent className="font-mono text-[11px]">
-                <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="startup">Startup</SelectItem>
-                <SelectItem value="enterprise">Enterprise</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={model} onValueChange={setModel}>
-              <SelectTrigger className="w-full h-8 text-[11px] font-mono uppercase tracking-wider bg-neutral-50 dark:bg-bg-tertiary border-brand-charcoal/10 dark:border-border-primary/50 focus:ring-brand-orange/20">
-                <SelectValue placeholder="MODEL" />
-              </SelectTrigger>
-              <SelectContent className="font-mono text-[11px] max-w-[300px]">
-                <TooltipProvider delayDuration={100}>
-                  {Object.entries(AVAILABLE_MODELS).map(([id, m]) => (
-                    <Tooltip key={id}>
-                      <TooltipTrigger asChild>
-                        <div className="w-full">
-                          <SelectItem
-                            value={id}
-                            className="flex items-center justify-between group"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span>{m.name}</span>
-                              {m.badge === "hot_tag" && (
-                                <span className="text-brand-orange ml-1">
-                                  🔥
-                                </span>
-                              )}
-                              {m.badge === "double_hot_tag" && (
-                                <span className="text-brand-orange ml-1">
-                                  🔥🔥
-                                </span>
-                              )}
-                              {m.badge === "balance_tag" && (
-                                <span className="text-[8px] bg-blue-500/1text-blue-500 px-1 py-0.5 rounded ml-1 uppercase border border-blue-500/20 leading-none">
-                                  Balance
-                                </span>
-                              )}
-                              {m.dailyLimit && (
-                                <span className="text-[9px] text-text-secondary/50 ml-1">
-                                  ({m.dailyLimit}x)
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="right"
-                        align="center"
-                        className="max-w-[200px] border-brand-charcoal/10 font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap"
-                      >
-                        <div className="font-bold text-brand-orange mb-1">
-                          {m.name}
-                        </div>
-                        {m.description}
-                        {m.tooltipOverview && (
-                          <div className="mt-1.5 pt-1.5 border-t border-border-primary/50 text-text-secondary">
-                            {m.tooltipOverview}
-                          </div>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </TooltipProvider>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Input Field */}
-          <form onSubmit={handleManualSubmit} className="relative">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") setSuggestionChips([]);
-              }}
-              placeholder={
-                isGenerating
-                  ? "PROCESSING..."
-                  : generationState === "preparing"
-                    ? "INITIALIZING..."
-                    : "ENTER_COMMAND..."
-              }
-              disabled={isGenerating || generationState === "preparing"}
-              className="w-full h-11 pl-4 pr-12 bg-neutral-50 dark:bg-bg-tertiary border border-brand-charcoal/15 dark:border-border-primary/50 text-brand-charcoal dark:text-text-primary placeholder:text-brand-charcoal/30 dark:placeholder:text-text-secondary/30 text-[13px] font-mono focus:outline-none focus:border-brand-orange/50 focus:ring-1 focus:ring-brand-orange/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            {isGenerating ? (
-              <button
-                type="button"
-                onClick={handleStopGeneration}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-600 text-white hover:bg-red-700 transition-colors"
-                title="Stop generation"
-              >
-                <Square className="w-3.5 h-3.5 fill-current" />
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!inputValue.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-brand-charcoal dark:bg-bg-elevated text-white dark:text-text-primary hover:bg-brand-orange dark:hover:bg-brand-orange disabled:opacity-30 disabled:hover:bg-brand-charcoal dark:disabled:hover:bg-bg-elevated transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-          </form>
         </div>
       </div>
 

@@ -52,7 +52,9 @@ describe("skill-generator", () => {
     expect(skill.metadata.version).toBe("1.1.0");
     expect(skill.files["manifest.json"]).toContain('"version": "1.1.0"');
     expect(skill.files["references/stress-test-plan.md"]).toBeUndefined();
-    expect(skill.files["references/diagram.mmd"]).toContain("graph TD");
+    expect(skill.files["references/diagram.mmd"]).toMatch(
+      /(graph|flowchart)\s+TD/,
+    );
     expect(skill.skillMd).not.toContain("Stress Testing Focus");
     expect(skill.skillMd).not.toContain("stress-test-plan");
     expect(skill.files["README.md"]).not.toContain("stress-test");

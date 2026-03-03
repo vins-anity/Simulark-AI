@@ -190,6 +190,7 @@ export function SimulationEdge({
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: "all",
+            zIndex: 50,
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -197,12 +198,12 @@ export function SimulationEdge({
           className="group cursor-pointer"
         >
           {isBlocked ? (
-            <div className="bg-red-500/10 text-red-500 px-2 py-1 rounded border border-red-500/20 font-bold shadow-sm text-xs font-mono">
+            <div className="bg-red-50 dark:bg-red-950/80 text-red-500 px-2 py-1 rounded-none border border-red-500/50 font-bold shadow-md text-xs font-mono">
               BLOCKED
             </div>
           ) : (
-            <div className="flex items-center gap-1 bg-bg-secondary/95 backdrop-blur-sm border border-brand-charcoal/10 px-2 py-0.5 rounded-sm shadow-sm hover:border-brand-orange/50 transition-all">
-              <span className="text-[10px] font-mono text-text-primary/70">
+            <div className="flex items-center gap-1 bg-white dark:bg-zinc-950 border border-brand-charcoal/20 dark:border-border-primary/80 px-2 py-0.5 rounded-none shadow-md hover:border-brand-orange/80 transition-all">
+              <span className="text-[10px] font-mono font-bold text-brand-charcoal dark:text-text-primary/90">
                 {label ||
                   (isStressHot ? `${protocolLabel} • HOT` : protocolLabel)}
               </span>

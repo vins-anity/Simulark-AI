@@ -3,14 +3,53 @@
 import { revalidatePath } from "next/cache";
 import { analyzeArchitectureQuality } from "@/lib/architecture-quality";
 import type { ArchitectureGraph, Project } from "@/lib/schema/graph";
+import {
+  canCreateProject as canCreateProjectForTier,
+  getPlanDetails,
+} from "@/lib/subscription";
+import { getEffectiveTierForAccess } from "@/lib/subscription-guards";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATE_GRAPHS } from "@/lib/templates";
+
+async function enforceProjectQuota(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<{ allowed: true } | { allowed: false; error: string }> {
+  const effectiveTier = await getEffectiveTierForAccess(supabase, userId);
+  const plan = getPlanDetails(effectiveTier);
+  const maxProjects = plan.tierFeatures.maxProjects;
+
+  if (maxProjects === Infinity) {
+    return { allowed: true };
+  }
+
+  const limit = Number(maxProjects);
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("user_id", userId)
+    .limit(limit + 1);
+
+  if (error) {
+    return { allowed: false, error: "Failed to verify project quota" };
+  }
+
+  const currentProjectCount = data?.length ?? 0;
+  if (!canCreateProjectForTier(effectiveTier, currentProjectCount)) {
+    return {
+      allowed: false,
+      error: `Project limit reached for ${plan.label}.`,
+    };
+  }
+
+  return { allowed: true };
+}
 
 // --- Create Project ---
 export async function createProject(
   name: string,
   provider: string = "Generic",
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
 ) {
   const supabase = await createClient();
   const {
@@ -19,6 +58,11 @@ export async function createProject(
 
   if (!user) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  const quotaCheck = await enforceProjectQuota(supabase, user.id);
+  if (!quotaCheck.allowed) {
+    return { success: false, error: quotaCheck.error };
   }
 
   const { data, error } = await supabase
@@ -61,6 +105,7 @@ export async function updateProjectName(projectId: string, name: string) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .select()
     .single();
 
@@ -92,8 +137,9 @@ export async function saveProject(
   // 1. Get current project
   const { data: currentProject, error: fetchError } = await supabase
     .from("projects")
-    .select("*")
+    .select("id, user_id, version, nodes, edges, metadata")
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .single();
 
   if (fetchError || !currentProject) {
@@ -158,6 +204,7 @@ export async function saveProject(
     .from("projects")
     .update(updateData)
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .select()
     .single();
 
@@ -175,10 +222,19 @@ export async function saveProject(
 // --- Get Project ---
 export async function getProject(projectId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .select("*")
     .eq("id", projectId)
+    .eq("user_id", user.id)
     .single();
 
   if (error) {
@@ -202,7 +258,8 @@ export async function getUserProjects(page = 1, limit = 9) {
   // Get total count (approximation is fine for performance)
   const { count, error: countError } = await supabase
     .from("projects")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id);
 
   if (countError) {
     return { success: false, error: countError.message };
@@ -214,6 +271,7 @@ export async function getUserProjects(page = 1, limit = 9) {
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
     .range(from, to);
 
@@ -236,6 +294,11 @@ export async function createProjectFromTemplate(
 
   if (!user) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  const quotaCheck = await enforceProjectQuota(supabase, user.id);
+  if (!quotaCheck.allowed) {
+    return { success: false, error: quotaCheck.error };
   }
 
   const template = TEMPLATE_GRAPHS[templateId];

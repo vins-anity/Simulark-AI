@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { verifyAdminAccess } from "@/lib/admin/auth";
+import { DowngradeSubscriptionSchema } from "@/lib/schema/api";
 import type { SubscriptionStatus } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,7 +35,15 @@ export async function POST(request: NextRequest) {
   const adminUserId = auth.userId;
 
   try {
-    const body: DowngradeRequest = await request.json();
+    const parsedBody = v.safeParse(
+      DowngradeSubscriptionSchema,
+      await request.json(),
+    );
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const body: DowngradeRequest = parsedBody.output;
     const { userId, reason, immediate = false } = body;
 
     // Validate required fields

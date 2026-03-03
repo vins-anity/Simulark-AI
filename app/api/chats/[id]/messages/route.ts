@@ -1,5 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { createClient } from "@/lib/supabase/server";
+
+const ParamsSchema = v.object({
+  id: v.pipe(v.string(), v.uuid()),
+});
+
+const CreateMessageSchema = v.object({
+  role: v.union([v.literal("user"), v.literal("assistant")]),
+  content: v.pipe(v.string(), v.minLength(1), v.maxLength(20000)),
+  reasoning: v.optional(v.string()),
+});
 
 // POST /api/chats/[id]/messages - Add a message to a chat
 export async function POST(
@@ -7,15 +18,17 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const supabase = await createClient();
-  const { id } = await params;
-  const { role, content, reasoning } = await req.json();
-
-  if (!role || !content) {
-    return NextResponse.json(
-      { error: "Role and content required" },
-      { status: 400 },
-    );
+  const parsedParams = v.safeParse(ParamsSchema, await params);
+  if (!parsedParams.success) {
+    return NextResponse.json({ error: "Invalid chat id" }, { status: 400 });
   }
+  const { id } = parsedParams.output;
+
+  const parsedBody = v.safeParse(CreateMessageSchema, await req.json());
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+  const { role, content, reasoning } = parsedBody.output;
 
   // Verify ownership
   const { data: chat } = await supabase
@@ -66,7 +79,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const supabase = await createClient();
-  const { id } = await params;
+  const parsedParams = v.safeParse(ParamsSchema, await params);
+  if (!parsedParams.success) {
+    return NextResponse.json({ error: "Invalid chat id" }, { status: 400 });
+  }
+  const { id } = parsedParams.output;
 
   // Verify ownership
   const { data: chat } = await supabase

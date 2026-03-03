@@ -151,11 +151,14 @@ export function WorkstationHeader({
         </Link>
 
         {/* Project Identity */}
-        <div className="flex flex-col ml-2">
-          <span className="hidden md:block font-mono text-[8px] text-brand-charcoal/20 uppercase tracking-[0.3em] mb-0.5">
+        <div className="flex flex-col ml-2 min-w-0">
+          <span className="hidden md:block font-mono text-[8px] text-brand-charcoal/20 uppercase tracking-[0.3em] mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
             PROJECT_STATION // ARCH_DRAFT
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <span className="font-mono text-[10px] sm:text-xs font-bold text-brand-orange hidden sm:inline-block shrink-0">
+              MANIFEST-{project.id.substring(0, 3).toUpperCase()} //
+            </span>
             {isEditingName ? (
               <input
                 value={projectName}
@@ -163,17 +166,18 @@ export function WorkstationHeader({
                 onBlur={handleNameSave}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="h-6 w-[200px] text-base font-poppins font-bold uppercase text-brand-charcoal dark:text-text-primary bg-bg-elevated border-b border-brand-orange focus:outline-none"
+                className="h-6 w-[120px] sm:w-[200px] text-base font-poppins font-bold uppercase text-brand-charcoal dark:text-text-primary bg-bg-elevated border-b border-brand-orange focus:outline-none truncate"
               />
             ) : (
               <h2
                 onClick={() => setIsEditingName(true)}
-                className="font-poppins font-bold text-base text-brand-charcoal dark:text-text-primary uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors"
+                className="font-poppins font-bold text-sm sm:text-base text-brand-charcoal dark:text-text-primary uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors truncate max-w-[100px] sm:max-w-[200px] md:max-w-[300px]"
+                title={project.name}
               >
                 {project.name}
               </h2>
             )}
-            <div className="px-1.5 py-0.5 border border-brand-charcoal/10 bg-brand-charcoal/5 text-brand-charcoal/40 font-mono text-[8px] uppercase tracking-widest font-bold">
+            <div className="hidden sm:block px-1.5 py-0.5 border border-brand-charcoal/10 bg-brand-charcoal/5 text-brand-charcoal/40 font-mono text-[8px] uppercase tracking-widest font-bold shrink-0">
               v1.0.D
             </div>
           </div>
@@ -184,9 +188,9 @@ export function WorkstationHeader({
         <div className="h-10 w-px bg-brand-charcoal/10 mx-4" />
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Layout Algorithm Controls moved here */}
-        <div className="flex items-center gap-1 mr-2 scale-[0.9] origin-right">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+        {/* Layout Algorithm Controls */}
+        <div className="hidden lg:flex items-center gap-1 scale-[0.9] origin-right">
           <div className="flex items-center border border-brand-charcoal/10">
             <Button
               variant="ghost"
@@ -267,7 +271,7 @@ export function WorkstationHeader({
           </DropdownMenu>
         </div>
 
-        <div className="px-2 py-1 border border-brand-charcoal/10 font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+        <div className="hidden md:block px-2 py-1 border border-brand-charcoal/10 font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50 whitespace-nowrap">
           {saving ? "SYNC:SAVING" : "SYNC:READY"}
         </div>
 
@@ -288,7 +292,7 @@ export function WorkstationHeader({
               chaosMode && "fill-current animate-pulse",
             )}
           />
-          <span>{chaosMode ? "CHAOS_MODE:ON" : "SYSTEM_SIM"}</span>
+          <span className="sr-only">{chaosMode ? "CHAOS_MODE:ON" : "SYSTEM_SIM"}</span>
         </Button>
 
         <Button
@@ -305,7 +309,7 @@ export function WorkstationHeader({
           <ShieldAlert
             className={cn("w-3.5 h-3.5", stressMode && "animate-pulse")}
           />
-          <span>{stressLabel}</span>
+          <span className="sr-only">{stressLabel}</span>
         </Button>
 
         {/* Workspace Guide */}
@@ -316,7 +320,7 @@ export function WorkstationHeader({
               className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2"
             >
               <CircleHelp className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline-block">[ GUIDE ]</span>
+              <span className="sr-only">[ GUIDE ]</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -348,9 +352,10 @@ export function WorkstationHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all"
+              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2 flex items-center"
             >
-              [ ARCHIVE ]
+              <Download className="w-3.5 h-3.5" />
+              <span className="sr-only">[ ARCHIVE ]</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent

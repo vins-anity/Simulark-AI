@@ -4,21 +4,36 @@ import { createClient } from "@/lib/supabase/server";
 
 const logger = createLogger("rate-limit");
 
-export async function checkRateLimit(userId: string, modelId?: string) {
+function getNextUtcDayIsoString(): string {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+  ).toISOString();
+}
+
+export async function checkRateLimit(
+  userId: string,
+  modelId?: string,
+  tierOverride?: string,
+) {
   const supabase = await createClient(); // Use server client
 
-  // 1. Get User's Subscription Tier
-  const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("subscription_tier")
-    .eq("user_id", userId)
-    .single();
+  let tier = tierOverride || "free";
+  if (!tierOverride) {
+    // 1. Get User's Subscription Tier
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("subscription_tier")
+      .eq("user_id", userId)
+      .single();
 
-  if (userError) {
-    logger.error("Failed to fetch user tier", userError, { userId });
+    if (userError) {
+      logger.error("Failed to fetch user tier", userError, { userId });
+    }
+
+    tier = userData?.subscription_tier || "free";
   }
 
-  const tier = userData?.subscription_tier || "free";
   const plan = getPlanDetails(tier);
 
   // Determine the limit: use model-specific limit if provided, otherwise global daily_limit
@@ -43,7 +58,7 @@ export async function checkRateLimit(userId: string, modelId?: string) {
       allowed: true,
       limit: dailyLimit,
       remaining: Math.max(0, dailyLimit - 1),
-      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+      reset: getNextUtcDayIsoString(),
     };
   }
 
@@ -54,7 +69,7 @@ export async function checkRateLimit(userId: string, modelId?: string) {
       allowed: true,
       limit: dailyLimit,
       remaining: Math.max(0, dailyLimit - 1),
-      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+      reset: getNextUtcDayIsoString(),
     };
   }
 
@@ -82,7 +97,7 @@ export async function checkRateLimit(userId: string, modelId?: string) {
     reset:
       typeof usage.reset_at === "string"
         ? usage.reset_at
-        : new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+        : getNextUtcDayIsoString(),
   };
 }
 
@@ -91,7 +106,13 @@ export async function checkIPRateLimit(ip: string, limit: number = 30) {
     return { allowed: true, limit, remaining: limit, reset: "" };
   }
 
-  const redis = (await import("@/lib/redis")).default;
+  const redisModule = await import("@/lib/redis");
+  const redis = redisModule.getRedisClient();
+  if (!redis) {
+    logger.warn("Redis is not configured. Skipping IP rate limit.", { ip });
+    return { allowed: true, limit, remaining: limit, reset: "" };
+  }
+
   const today = new Date().toISOString().split("T")[0];
   const key = `ratelimit:ip:${ip}:${today}`;
 
@@ -112,7 +133,7 @@ export async function checkIPRateLimit(ip: string, limit: number = 30) {
       allowed,
       limit,
       remaining,
-      reset: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+      reset: getNextUtcDayIsoString(),
     };
   } catch (error) {
     logger.error("Redis IP rate limit error", error as Error, { ip });

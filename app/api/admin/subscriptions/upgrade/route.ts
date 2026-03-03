@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import * as v from "valibot";
 import { verifyAdminAccess } from "@/lib/admin/auth";
+import { UpgradeSubscriptionSchema } from "@/lib/schema/api";
 import {
   isValidTier,
   type SubscriptionStatus,
@@ -39,7 +41,15 @@ export async function POST(request: NextRequest) {
   const adminUserId = auth.userId;
 
   try {
-    const body: UpgradeRequest = await request.json();
+    const parsedBody = v.safeParse(
+      UpgradeSubscriptionSchema,
+      await request.json(),
+    );
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    const body: UpgradeRequest = parsedBody.output;
     const {
       userId,
       newTier,

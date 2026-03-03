@@ -13,7 +13,8 @@ export async function GET() {
     if (result.success) {
       return NextResponse.json(result.data);
     } else {
-      return NextResponse.json({ error: result.error }, { status: 401 });
+      const status = result.error === "Unauthorized" ? 401 : 500;
+      return NextResponse.json({ error: result.error }, { status });
     }
   } catch (error) {
     console.error("[API Projects GET] Error:", error);

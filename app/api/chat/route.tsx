@@ -18,6 +18,10 @@ import {
   validatePrompt,
 } from "@/lib/prompt-engineering";
 import { checkIPRateLimit, checkRateLimit } from "@/lib/rate-limit";
+import {
+  getEffectiveTierForAccess,
+  isModelAllowedForTier,
+} from "@/lib/subscription-guards";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
@@ -259,6 +263,13 @@ export async function POST(req: NextRequest) {
     }
 
     const { model: requestedModelId } = parsedBody.output;
+    const effectiveTier = await getEffectiveTierForAccess(supabase, user.id);
+    if (!isModelAllowedForTier(effectiveTier, requestedModelId)) {
+      return NextResponse.json(
+        { error: "This model is not available for your current plan." },
+        { status: 403 },
+      );
+    }
 
     // IP-based rate limiting (prevent account-switching abuse)
     const ip = getClientIp(req.headers);
@@ -275,7 +286,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limiting (now model-aware)
-    const rateLimitResult = await checkRateLimit(user.id, requestedModelId);
+    const rateLimitResult = await checkRateLimit(
+      user.id,
+      requestedModelId,
+      effectiveTier,
+    );
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         {
