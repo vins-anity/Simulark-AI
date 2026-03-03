@@ -222,27 +222,16 @@ export function DataTransmission() {
             </div>
           </motion.div>
 
-          {/* Stats */}
+          {/* Footer note */}
           <motion.div
-            className="mt-12 grid grid-cols-3 gap-8"
+            className="mt-12 text-center"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            {[
-              { value: "12K+", label: "SUBSCRIBERS" },
-              { value: "WEEKLY", label: "FREQUENCY" },
-              { value: "0%", label: "SPAM" },
-            ].map((stat, index) => (
-              <div key={stat.label} className="text-center">
-                <span className="font-poppins text-2xl font-bold text-text-primary block">
-                  {stat.value}
-                </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-text-primary/30">
-                  {stat.label}
-                </span>
-              </div>
-            ))}
+            <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-text-primary/20">
+              CAPSTONE_PROJECT · SIMULARK · 2026
+            </span>
           </motion.div>
         </div>
       </div>

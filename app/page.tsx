@@ -7,7 +7,6 @@ import {
   FeatureShowcaseEnhanced,
   HeroEnhanced,
   ResourceContracts,
-  TestimonialsEnhanced,
   TrustedByEnhanced,
 } from "@/components/marketing";
 import { MarketingLayout } from "@/components/marketing/MarketingLayout";
@@ -21,7 +20,6 @@ export default function Home() {
       <FeatureShowcaseEnhanced />
       <CapabilitiesGrid />
       <ResourceContracts />
-      <TestimonialsEnhanced />
       <DocumentationFAQ />
       <DataTransmission />
       <CTAEnhanced />

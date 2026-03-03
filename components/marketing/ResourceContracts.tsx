@@ -57,9 +57,7 @@ const contracts = [
       "Everything in Sketch, Forever",
       "Commercial Usage Rights",
       "Priority Generation Queue",
-      "Private Mode (Zero Data Retention)",
-      "Claude Opus 4.5",
-      "Code Export",
+      "All Available AI Models",
     ],
     limits: [],
     cta: "[ MINT_BLUEPRINT ]",
@@ -272,8 +270,7 @@ export function ResourceContracts() {
         >
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-brand-charcoal/30">
-              All plans include: SSL Encryption • Daily Backups • 99.9% Uptime
-              SLA
+              All plans include: SSL Encryption • Supabase Cloud Hosting
             </p>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-brand-green rounded-full animate-pulse" />

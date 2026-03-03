@@ -59,30 +59,10 @@ const capabilities = [
     category: "TESTING",
     title: "Chaos Mode",
     description:
-      "Simulate failures and test resilience of your architecture design.",
+      "Simulate failures and stress test the resilience of your architecture design visually.",
     icon: "lucide:flame",
-    status: "COMING_SOON",
+    status: "BETA",
     specs: ["Stress Test", "Failure Sim", "Resilience"],
-  },
-  {
-    id: "CAP-07",
-    category: "EXPORT",
-    title: "Terraform Export",
-    description:
-      "Generate Infrastructure-as-Code from your visual diagrams automatically.",
-    icon: "lucide:terminal-square",
-    status: "COMING_SOON",
-    specs: ["Terraform", "HCL", "Multi-provider"],
-  },
-  {
-    id: "CAP-08",
-    category: "COLLABORATION",
-    title: "Team Workspaces",
-    description:
-      "Real-time collaboration with comments, version history, and shared projects.",
-    icon: "lucide:users",
-    status: "COMING_SOON",
-    specs: ["Real-time", "Comments", "History"],
   },
 ];
 

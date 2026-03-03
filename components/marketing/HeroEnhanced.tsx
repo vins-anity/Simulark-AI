@@ -41,8 +41,14 @@ export function HeroEnhanced() {
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-bg-primary"
       onMouseMove={handleMouseMove}
     >
-      {/* Schematic Grid Background */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Schematic Grid Background — fades at center behind headline */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          maskImage: `radial-gradient(ellipse 70% 55% at 50% 45%, transparent 30%, black 80%)`,
+          WebkitMaskImage: `radial-gradient(ellipse 70% 55% at 50% 45%, transparent 30%, black 80%)`,
+        }}
+      >
         {/* Primary Grid */}
         <div
           className="absolute inset-0"
@@ -184,8 +190,8 @@ export function HeroEnhanced() {
           transition={{ delay: 0.5, duration: 0.6 }}
         >
           <p className="text-lg md:text-xl font-lora text-brand-charcoal/60 leading-relaxed">
-            From architectural intent to executable infrastructure. Visual
-            design that compiles to production-ready systems.
+            Describe your system architecture in plain English. AI generates
+            interactive diagrams you can explore, export, and share.
           </p>
         </motion.div>
 

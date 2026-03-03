@@ -17,9 +17,9 @@ interface Template {
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   id_code: string;
   metrics: {
-    complexity: string;
     nodes: number;
-    uptime: string;
+    edges: number;
+    difficulty: string;
   };
   accent: string;
 }
@@ -29,15 +29,15 @@ const templates: Template[] = [
     id: "saas-starter",
     title: "SaaS Starter Kit",
     description:
-      "Complete B2B SaaS architecture with Auth, Stripe Billing, and Multi-tenancy.",
-    tags: ["Next.js", "Supabase", "Stripe"],
+      "Multi-tenant B2B SaaS with Auth, Stripe Billing, API Gateway, Redis cache, and transactional email.",
+    tags: ["Next.js", "Supabase", "Stripe", "Redis"],
     icon: "lucide:rocket",
     difficulty: "Intermediate",
     id_code: "TMP-001",
     metrics: {
-      complexity: "O(log N)",
-      nodes: 12,
-      uptime: "99.99%",
+      nodes: 9,
+      edges: 8,
+      difficulty: "INTERMEDIATE",
     },
     accent: "#FF5733",
   },
@@ -45,15 +45,15 @@ const templates: Template[] = [
     id: "e-commerce",
     title: "E-Commerce Platform",
     description:
-      "Scalable online store backend with Product Catalog, Cart, and Order processing.",
-    tags: ["Microservices", "Redis", "PostgreSQL"],
+      "Headless storefront with Algolia search, Kafka event bus, Stripe payments, and inventory management.",
+    tags: ["Next.js", "Kafka", "Stripe", "Algolia"],
     icon: "lucide:shopping-bag",
     difficulty: "Advanced",
     id_code: "TMP-002",
     metrics: {
-      complexity: "O(N^2)",
-      nodes: 24,
-      uptime: "99.95%",
+      nodes: 9,
+      edges: 8,
+      difficulty: "ADVANCED",
     },
     accent: "#33FF57",
   },
@@ -61,15 +61,15 @@ const templates: Template[] = [
     id: "iot-dashboard",
     title: "IoT Data Pipeline",
     description:
-      "Real-time data ingestion architecture for IoT devices using MQTT and TimescaleDB.",
-    tags: ["MQTT", "TimescaleDB", "WebSockets"],
+      "MQTT ingestion → Flink stream processing → TimescaleDB with Grafana alerting and RabbitMQ queue.",
+    tags: ["MQTT", "Flink", "TimescaleDB", "Grafana"],
     icon: "lucide:cpu",
     difficulty: "Advanced",
     id_code: "TMP-003",
     metrics: {
-      complexity: "O(N log N)",
-      nodes: 42,
-      uptime: "99.999%",
+      nodes: 7,
+      edges: 6,
+      difficulty: "ADVANCED",
     },
     accent: "#3357FF",
   },
@@ -77,15 +77,15 @@ const templates: Template[] = [
     id: "blog-cms",
     title: "Headless CMS Blog",
     description:
-      "Simple yet powerful content management system architecture for media-heavy blogs.",
-    tags: ["Strapi", "S3", "CDN"],
+      "CDN-first Next.js blog with Sanity CMS, Meilisearch full-text search, and S3 media storage.",
+    tags: ["Next.js", "Sanity", "Meilisearch", "S3"],
     icon: "lucide:file-text",
     difficulty: "Beginner",
     id_code: "TMP-004",
     metrics: {
-      complexity: "O(1)",
-      nodes: 4,
-      uptime: "99.9%",
+      nodes: 6,
+      edges: 5,
+      difficulty: "BEGINNER",
     },
     accent: "#F333FF",
   },
@@ -93,15 +93,15 @@ const templates: Template[] = [
     id: "chat-app",
     title: "Real-time Chat App",
     description:
-      "Scalable WebSocket-based chat application with message persistence and presence.",
-    tags: ["Socket.io", "Redis", "MongoDB"],
+      "WebSocket cluster behind a load balancer with Redis pub/sub, MongoDB message store, and JWT auth.",
+    tags: ["Socket.io", "Redis", "MongoDB", "JWT"],
     icon: "lucide:message-circle",
     difficulty: "Intermediate",
     id_code: "TMP-005",
     metrics: {
-      complexity: "O(N)",
-      nodes: 18,
-      uptime: "99.99%",
+      nodes: 7,
+      edges: 6,
+      difficulty: "INTERMEDIATE",
     },
     accent: "#FFBD33",
   },
@@ -109,15 +109,15 @@ const templates: Template[] = [
     id: "ai-rag",
     title: "RAG AI Agent",
     description:
-      "Retrieval-Augmented Generation pipeline for custom knowledge base AI assistants.",
-    tags: ["Vector DB", "OpenAI", "LangChain"],
+      "LangChain orchestration with Pinecone vector store, OpenAI embeddings, async ingestion queue, and LangSmith tracing.",
+    tags: ["LangChain", "Pinecone", "OpenAI", "LangSmith"],
     icon: "lucide:brain-circuit",
     difficulty: "Advanced",
     id_code: "TMP-006",
     metrics: {
-      complexity: "O(K * N)",
       nodes: 8,
-      uptime: "99.5%",
+      edges: 9,
+      difficulty: "ADVANCED",
     },
     accent: "#33FFF3",
   },
@@ -238,24 +238,24 @@ export default function TemplatesPage() {
               <div className="grid grid-cols-3 gap-4 mb-8 border-y border-brand-charcoal/10 py-4 font-mono">
                 <div className="flex flex-col gap-1">
                   <span className="text-[9px] uppercase opacity-40">
-                    Complexity
+                    Nodes
                   </span>
                   <span className="text-xs font-bold text-brand-orange">
-                    {template.metrics.complexity}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] uppercase opacity-40">Nodes</span>
-                  <span className="text-xs font-bold">
                     {template.metrics.nodes}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
+                  <span className="text-[9px] uppercase opacity-40">Edges</span>
+                  <span className="text-xs font-bold">
+                    {template.metrics.edges}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
                   <span className="text-[9px] uppercase opacity-40">
-                    Up_Time
+                    Level
                   </span>
                   <span className="text-xs font-bold">
-                    {template.metrics.uptime}
+                    {template.metrics.difficulty}
                   </span>
                 </div>
               </div>

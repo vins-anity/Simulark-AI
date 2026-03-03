@@ -24,7 +24,7 @@ const documentation = [
     category: "EXPORT",
     question: "What formats can I export to?",
     answer:
-      "Simulark supports export to Terraform (HCL), Kubernetes YAML, Docker Compose, AWS CloudFormation, Azure ARM templates, and more. You can also generate implementation code stubs in various languages.",
+      "Simulark supports export to PNG, SVG, PDF, and Mermaid. You can also export an agent context ZIP file for use with Cursor, Claude Code, and Windsurf AI IDEs.",
   },
   {
     id: "DOC-04",
@@ -38,14 +38,14 @@ const documentation = [
     category: "SECURITY",
     question: "Is my architecture data secure?",
     answer:
-      "Absolutely. We use enterprise-grade encryption, never train on your data, and offer SOC 2 Type II compliance. Enterprise plans include SSO, audit logs, and on-premise deployment options.",
+      "Your projects are stored securely via Supabase with row-level security policies. We use standard encryption in transit and at rest. This is a capstone project — enterprise-grade compliance features are on the roadmap.",
   },
   {
     id: "DOC-06",
     category: "COLLABORATION",
     question: "Can my team collaborate?",
     answer:
-      "Yes. Team and Enterprise plans support real-time collaboration, comments, version history, and role-based access control. Multiple team members can work on the same architecture simultaneously.",
+      "Currently, projects are per-user. Real-time team collaboration and shared workspaces are planned for a future version.",
   },
 ];
 
@@ -166,9 +166,8 @@ export function DocumentationFAQ() {
                 // QUICK_LINKS
               </span>
               {[
-                { label: "API Reference", href: "/reference" },
-                { label: "GitHub", href: "#" },
-                { label: "Community", href: "#" },
+                { label: "Sign In", href: "/auth/signin" },
+                { label: "Get Started", href: "/auth/signin" },
               ].map((link) => (
                 <a
                   key={link.label}
@@ -199,7 +198,7 @@ export function DocumentationFAQ() {
                 </span>
               </div>
               <p className="font-mono text-xs text-brand-charcoal/60">
-                Need help? Our team is available 24/7.
+                Questions? Reach out via email.
               </p>
             </div>
           </motion.div>

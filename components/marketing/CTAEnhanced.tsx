@@ -85,7 +85,7 @@ export function CTAEnhanced() {
           viewport={{ once: true }}
           transition={{ delay: 0.3 }}
         >
-          Stop drawing static boxes. Start architecting executable systems.
+          Stop drawing static boxes. Start designing architecture with AI.
         </motion.p>
 
         {/* CTA Button - Bracket Style */}
@@ -127,7 +127,7 @@ export function CTAEnhanced() {
           viewport={{ once: true }}
           transition={{ delay: 0.7 }}
         >
-          {["NO_CREDIT_CARD", "FREE_FOREVER", "CANCEL_ANYTIME"].map(
+          {["NO_CREDIT_CARD", "FREE_TIER", "OPEN_BETA"].map(
             (item, index) => (
               <div key={item} className="flex items-center gap-2">
                 <span className="w-1 h-1 bg-brand-orange" />
@@ -143,7 +143,7 @@ export function CTAEnhanced() {
       {/* Bottom System Info */}
       <div className="absolute bottom-8 left-8 font-mono text-[9px] text-brand-sand-light/20 uppercase">
         <div>SYS_VERSION: 0.9.2</div>
-        <div>UPTIME: 99.99%</div>
+        <div>UPTIME: SUPABASE_HOSTED</div>
       </div>
 
       <div className="absolute bottom-8 right-8 font-mono text-[9px] text-brand-sand-light/20 uppercase text-right">

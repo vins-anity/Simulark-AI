@@ -8,13 +8,14 @@ const architectures = [
   {
     id: "ARC-01",
     name: "Modern Web App",
-    stack: ["Next.js 15", "Turso", "Upstash", "Vercel"],
+    stack: ["Next.js", "Supabase", "Vercel", "Tailwind"],
     nodes: 5,
     connections: 4,
     icon: "logos:nextjs-icon",
     color: "#6a9bcc",
     description:
-      "Edge-first architecture with serverless compute and distributed databases.",
+      "Full-stack web app with auth, database, and edge deployment — the most common modern stack.",
+    prompt: "Build a SaaS app with Next.js, Supabase auth, and Vercel deployment",
     status: "LIVE",
   },
   {
@@ -26,54 +27,61 @@ const architectures = [
     icon: "simple-icons:langchain",
     color: "#ff4d00",
     description:
-      "AI-powered retrieval system with vector search and reasoning models.",
+      "AI-powered retrieval system with vector search — ideal for document Q&A and knowledge bases.",
+    prompt: "Design a RAG pipeline with LangChain, Pinecone vector store, and OpenAI",
     status: "LIVE",
   },
   {
     id: "ARC-03",
     name: "Microservices",
-    stack: ["Bun", "Elysia", "Kafka", "Rust"],
+    stack: ["Docker", "Kafka", "Redis", "API Gateway"],
     nodes: 8,
     connections: 7,
     icon: "logos:kafka-icon",
     color: "#788c5d",
     description:
-      "High-performance event-driven architecture with ultra-fast runtimes.",
+      "Event-driven microservices with message queuing, caching, and a unified API gateway.",
+    prompt: "Microservices architecture with Kafka event bus, Redis cache, and Docker",
     status: "LIVE",
   },
   {
     id: "ARC-04",
-    name: "E-Commerce",
-    stack: ["Astro", "Medusa", "Meilisearch", "Stripe"],
+    name: "E-Commerce Platform",
+    stack: ["Next.js", "Stripe", "PostgreSQL", "Algolia"],
     nodes: 7,
     connections: 6,
-    icon: "simple-icons:medusa",
+    icon: "logos:stripe",
     color: "#8b5cf6",
-    description: "Composable commerce with headless CMS and instant search.",
-    status: "BETA",
+    description:
+      "Headless commerce setup with payment processing, full-text search, and inventory management.",
+    prompt: "E-commerce platform with Stripe payments, PostgreSQL, and Algolia search",
+    status: "LIVE",
   },
   {
     id: "ARC-05",
-    name: "Real-time Sync",
-    stack: ["PartyKit", "Hono", "Automerge", "WASM"],
-    nodes: 5,
-    connections: 5,
-    icon: "logos:webassembly",
-    color: "#ec4899",
+    name: "AI Agent System",
+    stack: ["Python", "LangGraph", "Redis", "PostgreSQL"],
+    nodes: 7,
+    connections: 8,
+    icon: "simple-icons:openai",
+    color: "#10b981",
     description:
-      "Local-first CRDT architecture for collaborative applications.",
-    status: "COMING_SOON",
+      "Multi-step AI agent with tool use, memory persistence, and state management via LangGraph.",
+    prompt: "LangGraph AI agent with tool calling, Redis memory, and PostgreSQL state",
+    status: "LIVE",
   },
   {
     id: "ARC-06",
-    name: "AI Agent Swarm",
-    stack: ["Python", "CrewAI", "Redis", "Postgres"],
-    nodes: 9,
-    connections: 12,
-    icon: "simple-icons:openai",
-    color: "#10b981",
-    description: "Multi-agent orchestration system with persistent memory.",
-    status: "COMING_SOON",
+    name: "Real-Time Analytics",
+    stack: ["ClickHouse", "Kafka", "Grafana", "Node.js"],
+    nodes: 6,
+    connections: 5,
+    icon: "simple-icons:clickhouse",
+    color: "#f59e0b",
+    description:
+      "High-throughput analytics pipeline ingesting events, storing in columnar DB, and visualizing live.",
+    prompt: "Real-time analytics with Kafka ingestion, ClickHouse, and Grafana dashboards",
+    status: "LIVE",
   },
 ];
 
@@ -252,7 +260,7 @@ export function ArchitectureShowcase() {
             </span>
           </h2>
           <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-2xl">
-            Production-tested architecture patterns. Import, customize, deploy.
+            Type a prompt like these and the AI generates the full diagram.
           </p>
         </motion.div>
 
@@ -366,6 +374,17 @@ export function ArchitectureShowcase() {
                 <p className="text-brand-charcoal/60 font-lora mb-4">
                   {selectedArch.description}
                 </p>
+                {/* Example Prompt */}
+                {(selectedArch as typeof architectures[0] & { prompt?: string }).prompt && (
+                  <div className="mb-4 p-3 border border-brand-charcoal/10 bg-bg-primary">
+                    <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-brand-orange block mb-1.5">
+                      // EXAMPLE_PROMPT
+                    </span>
+                    <p className="font-mono text-[11px] text-brand-charcoal/60 leading-relaxed">
+                      &ldquo;{(selectedArch as typeof architectures[0] & { prompt?: string }).prompt}&rdquo;
+                    </p>
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {selectedArch.stack.map((tech) => (
                     <span

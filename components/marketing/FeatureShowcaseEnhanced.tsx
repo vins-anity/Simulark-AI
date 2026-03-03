@@ -16,18 +16,18 @@ const modules = [
   {
     id: "MOD-02",
     title: "Visual Logic",
-    desc: "AI generates interactive diagrams. Real-time visualization of architectural decisions and data flows.",
+    desc: "AI generates interactive diagrams. Visualize your architecture decisions and data flows on an infinite canvas.",
     sub: "FLOW_RENDERER",
     icon: "lucide:git-fork",
-    specs: ["Real-time sync", "Collab editing", "Version control"],
+    specs: ["Pan & zoom", "Node editing", "Auto-layout"],
   },
   {
     id: "MOD-03",
-    title: "Production Export",
-    desc: "Generate Terraform configuration and context files for Cursor/Windsurf IDE integration.",
+    title: "Export & Integrate",
+    desc: "Export diagrams as PNG, SVG, PDF, or Mermaid. Generate context files for Cursor, Claude Code, and Windsurf.",
     sub: "CODE_GEN",
     icon: "lucide:terminal-square",
-    specs: ["Terraform HCL", "Cursor Rules", "Mermaid diagrams"],
+    specs: ["PNG / SVG / PDF", "Mermaid", "Agent Skills ZIP"],
   },
 ];
 
@@ -219,38 +219,7 @@ export function FeatureShowcaseEnhanced() {
           ))}
         </div>
 
-        {/* System Stats */}
-        <motion.div
-          className="mt-24 pt-12 border-t border-brand-charcoal/10"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: "100+", label: "SUPPORTED_TECHNOLOGIES" },
-              { value: "10x", label: "SPEED_GAIN" },
-              { value: "90%", label: "ACCURACY" },
-              { value: "24/7", label: "AI_UPTIME" },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 * index }}
-              >
-                <div className="text-3xl md:text-4xl font-poppins font-bold text-text-primary mb-1">
-                  {stat.value}
-                </div>
-                <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+
       </div>
     </section>
   );
