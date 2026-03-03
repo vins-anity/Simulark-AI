@@ -166,7 +166,6 @@ export function DocumentationFAQ() {
                 // QUICK_LINKS
               </span>
               {[
-                { label: "Documentation", href: "/docs" },
                 { label: "API Reference", href: "/reference" },
                 { label: "GitHub", href: "#" },
                 { label: "Community", href: "#" },

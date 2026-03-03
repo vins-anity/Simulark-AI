@@ -181,11 +181,11 @@ function DashboardContent() {
     const trimmedPrompt = prompt.trim();
 
     try {
-      // Shorten project name with futuristic prefix
+      // Use prompt as project name directly (clean, no prefix)
       const projectName =
-        trimmedPrompt.length > 40
-          ? `MANIFEST // ${trimmedPrompt.substring(0, 40).toUpperCase()}...`
-          : `MANIFEST // ${trimmedPrompt.toUpperCase()}`;
+        trimmedPrompt.length > 50
+          ? `${trimmedPrompt.substring(0, 50)}...`
+          : trimmedPrompt;
 
       // Create project with metadata (mode & model)
       const result = await createProject(projectName, "Generic", {

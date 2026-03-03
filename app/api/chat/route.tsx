@@ -97,6 +97,7 @@ const ChatRequestSchema = v.object({
 interface StreamArchitecturePayload {
   nodes: unknown[];
   edges: unknown[];
+  analysis?: string;
   validation: {
     valid: boolean;
     issues: unknown[];
@@ -612,6 +613,7 @@ export async function POST(req: NextRequest) {
       return {
         nodes: validationResult.fixed?.nodes || enrichedNodes,
         edges: validationResult.fixed?.edges || parsed.edges,
+        analysis: typeof parsed.analysis === "string" ? parsed.analysis : undefined,
         validation: {
           valid: validationResult.valid,
           issues: validationResult.issues,

@@ -293,6 +293,27 @@ export const TECH_ECOSYSTEM: TechItem[] = [
     defaultType: "backend",
   },
   {
+    id: "livewire",
+    label: "Livewire",
+    icon: "logos:laravel",
+    category: "frontend",
+    defaultType: "frontend",
+  },
+  {
+    id: "inertia",
+    label: "Inertia.js",
+    icon: "logos:vitejs",
+    category: "frontend",
+    defaultType: "frontend",
+  },
+  {
+    id: "blade",
+    label: "Laravel Blade",
+    icon: "logos:laravel",
+    category: "frontend",
+    defaultType: "frontend",
+  },
+  {
     id: "rails",
     label: "Ruby on Rails",
     icon: "logos:rails",

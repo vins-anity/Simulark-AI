@@ -304,16 +304,7 @@ export function MarketingLayoutClient({
                 // INDEX_01
               </h4>
               <ul className="space-y-3 font-mono text-xs text-brand-charcoal/70">
-                <li>
-                  <Link
-                    href="/docs"
-                    className="hover:text-brand-orange transition-colors flex items-center gap-2"
-                  >
-                    <span className="text-brand-charcoal/30">[</span>
-                    <span>Documentation</span>
-                    <span className="text-brand-charcoal/30">]</span>
-                  </Link>
-                </li>
+
                 <li>
                   <Link
                     href="/reference"

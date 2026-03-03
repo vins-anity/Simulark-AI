@@ -16,7 +16,7 @@ export type ArchitecturePattern =
  * Available layout algorithms
  */
 export type LayoutAlgorithm =
-  | "dagre-hierarchy" // Dagre hierarchical
+  | "dagre-flow" // Dagre LR flow
   | "radial" // Circular around center
   | "force" // Physics-based organic
   | "grid" // Matrix layout
@@ -146,9 +146,9 @@ export function applyLayout(
           rankSep,
           nodeSep,
         });
-      case "dagre-hierarchy":
+      case "dagre-flow":
         return applyDagreLayout(nodes, edges, {
-          direction,
+          direction: "LR",
           nodeWidth,
           nodeHeight,
           rankSep,

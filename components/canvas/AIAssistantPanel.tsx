@@ -934,7 +934,7 @@ export function AIAssistantPanel({
       recommendations?: string[];
     },
     reasoningStr?: string,
-    usage?: {
+    _usage?: {
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
@@ -947,48 +947,56 @@ export function AIAssistantPanel({
       new Set(data.nodes?.map((n: any) => n.data?.tech).filter(Boolean) || []),
     ) as string[];
 
-    // Hook line — sharp opener
-    const stackSnippet = techs.slice(0, 3).join(", ");
+    // Capitalize/format known tech names
+    const formatTech = (t: string) => {
+      const map: Record<string, string> = {
+        laravel: "Laravel", livewire: "Livewire", inertia: "Inertia.js", blade: "Blade",
+        postgres: "PostgreSQL", postgresql: "PostgreSQL",
+        openai: "OpenAI", redis: "Redis", mysql: "MySQL", mongodb: "MongoDB",
+        react: "React", nextjs: "Next.js", vuejs: "Vue.js", nuxtjs: "Nuxt.js",
+        express: "Express", fastapi: "FastAPI", django: "Django", rails: "Rails",
+        node: "Node.js", nodejs: "Node.js", graphql: "GraphQL", kafka: "Kafka",
+        rabbitmq: "RabbitMQ", elasticsearch: "Elasticsearch", nginx: "Nginx",
+        docker: "Docker", kubernetes: "Kubernetes", terraform: "Terraform",
+        aws: "AWS", gcp: "GCP", azure: "Azure", supabase: "Supabase",
+        firebase: "Firebase", vercel: "Vercel", cloudflare: "Cloudflare",
+        stripe: "Stripe", twilio: "Twilio", sendgrid: "SendGrid",
+        tailwind: "Tailwind", typescript: "TypeScript", python: "Python",
+        rust: "Rust", go: "Go", java: "Java", spring: "Spring",
+        pinecone: "Pinecone", weaviate: "Weaviate", qdrant: "Qdrant",
+        anthropic: "Anthropic", gemini: "Gemini", ollama: "Ollama",
+        datadog: "Datadog", sentry: "Sentry", prometheus: "Prometheus",
+        grafana: "Grafana", celery: "Celery", sidekiq: "Sidekiq",
+      };
+      return map[t.toLowerCase()] || t.charAt(0).toUpperCase() + t.slice(1);
+    };
 
-    // Dynamic hooks for better personality
-    const openers = [
-      `Synthesized **${nodeCount} nodes** with **${edgeCount} connections**`,
-      `Architecture deployed — **${nodeCount} nodes** mapped across **${edgeCount} links**`,
-      `OPERATOR: Component synthesis complete (**${nodeCount} nodes**, **${edgeCount} edges**)`,
-      `Blueprint verified: **${nodeCount} nodes** integrated via **${edgeCount} connections**`,
-    ];
+    const formattedTechs = techs.slice(0, 4).map(formatTech);
+    const stackSnippet = formattedTechs.join(", ");
 
-    let hook = openers[Math.floor(Math.random() * openers.length)];
-    if (stackSnippet) hook += `, anchored on **${stackSnippet}**`;
-    hook += ".";
-
-    // Extract a brief, meaningful chunk from the reasoning string, OR use the explicit analysis payload field
+    // LLM-generated analysis is the primary response — lead with it
     let insight = "";
-    if (reasoningStr && reasoningStr.trim().length > 0) {
+    if (data.analysis && data.analysis.trim().length > 0) {
+      insight = data.analysis.trim();
+    } else if (reasoningStr && reasoningStr.trim().length > 0) {
       const cleanReasoning = reasoningStr
         .replace(/<think>|<\/think>/g, "")
         .trim();
       const firstParagraph = cleanReasoning.split("\n\n")[0];
-      // Limit the length to be readable
-      insight = firstParagraph.slice(0, 350);
-      if (cleanReasoning.length > 350) insight += "...";
-      insight = `\n\n> *${insight.trim()}*`;
-    } else if (data.analysis && data.analysis.trim().length > 0) {
-      insight = `\n\n> *${data.analysis.trim()}*`;
+      const trimmed = firstParagraph.slice(0, 400);
+      insight = `> *${trimmed.trim()}${cleanReasoning.length > 400 ? "..." : ""}*`;
     } else if (techs.length > 0) {
-      // Dynamic fallback if both are missing
-      const techPick = techs[Math.floor(Math.random() * techs.length)];
-      insight = `\n\n> *Optimized for high-performance ${techPick} patterns and automated scalability.*`;
+      insight = `> *Optimized for high-performance ${formatTech(techs[0])} patterns and automated scalability.*`;
     }
 
-    let response = `${hook}${insight}`;
-    if (usage) {
-      const total =
-        usage.totalTokens || usage.promptTokens + usage.completionTokens;
-      response += `\n\n*(Used **${total.toLocaleString()}** tokens)*`;
-    }
+    // Stats footer — brief, secondary
+    let statsLine = `**${nodeCount} nodes** · **${edgeCount} connections**`;
+    if (stackSnippet) statsLine += ` · ${stackSnippet}`;
 
-    // Removed suggestion chips as requested
+    let response = insight
+      ? `${insight}\n\n---\n${statsLine}`
+      : statsLine;
+
     const chips: string[] = [];
 
     return { response, chips };
@@ -1791,9 +1799,9 @@ export function AIAssistantPanel({
                   className="flex-1 h-11 bg-transparent border-none text-brand-charcoal dark:text-text-primary placeholder:text-brand-charcoal/30 dark:placeholder:text-text-secondary/30 text-[13px] font-mono focus:outline-none focus:ring-0 disabled:opacity-50"
                 />
 
-                <div className="flex items-center pr-2 gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <Select value={chatMode} onValueChange={setChatMode}>
-                    <SelectTrigger className="h-8 w-auto px-2 max-w-[120px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono uppercase tracking-widest text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none">
+                    <SelectTrigger className="h-8 w-auto min-w-0 px-2 max-w-[100px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono uppercase tracking-widest text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none">
                       <SelectValue placeholder="MODE" />
                     </SelectTrigger>
                     <SelectContent className="font-mono text-[10px] uppercase rounded-none border-brand-charcoal">
@@ -1804,7 +1812,7 @@ export function AIAssistantPanel({
                   </Select>
 
                   <Select value={model} onValueChange={setModel}>
-                    <SelectTrigger className="h-8 w-auto px-2 flex items-center justify-center border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-mono text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none rounded-none gap-1">
+                    <SelectTrigger className="h-8 w-8 min-w-0 p-0 flex items-center justify-center border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-mono text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none rounded-none">
                       <Bot className="w-4 h-4 shrink-0" />
                     </SelectTrigger>
                     <SelectContent align="end" className="font-mono text-[11px] max-w-[300px] rounded-none border-brand-charcoal">
@@ -1835,28 +1843,26 @@ export function AIAssistantPanel({
                       </TooltipProvider>
                     </SelectContent>
                   </Select>
-
-                  <div className="w-px h-4 bg-brand-charcoal/20 dark:bg-border-primary mx-1" />
-
-                  {isGenerating ? (
-                    <button
-                      type="button"
-                      onClick={handleStopGeneration}
-                      className="h-8 w-8 flex items-center justify-center p-0 bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm"
-                      title="Stop generation"
-                    >
-                      <Square className="w-3.5 h-3.5 fill-current" />
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={!inputValue.trim()}
-                      className="h-8 w-8 flex items-center justify-center p-0 bg-brand-charcoal dark:bg-white text-white dark:text-zinc-950 hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-30 transition-colors shadow-sm"
-                    >
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
+
+                {isGenerating ? (
+                  <button
+                    type="button"
+                    onClick={handleStopGeneration}
+                    className="h-11 w-11 flex items-center justify-center p-0 bg-red-600 text-white hover:bg-red-700 transition-colors shrink-0"
+                    title="Stop generation"
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!inputValue.trim()}
+                    className="h-11 w-11 flex items-center justify-center p-0 bg-brand-charcoal dark:bg-white text-white dark:text-zinc-950 hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                  >
+                    <ArrowRight className="w-4.5 h-4.5" />
+                  </button>
+                )}
               </form>
             </div>
           </div>

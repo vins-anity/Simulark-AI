@@ -1,10 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
-  ArrowDown,
   ArrowRight,
-  ChevronDown,
   ChevronLeft,
   Circle,
   CircleHelp,
@@ -14,7 +11,6 @@ import {
   GitBranch,
   Grid3X3,
   Image as ImageIcon,
-  List,
   Move,
   ShieldAlert,
   Zap,
@@ -27,7 +23,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { LayoutAlgorithm } from "@/lib/layout";
@@ -49,11 +44,11 @@ const LAYOUT_ALGORITHMS: {
   label: string;
   icon: React.ElementType;
 }[] = [
-  { id: "arch-pattern", label: "Architecture", icon: GitBranch },
-  { id: "dagre-hierarchy", label: "Hierarchical", icon: List },
+  { id: "dagre-flow", label: "Flow", icon: ArrowRight },
   { id: "radial", label: "Radial", icon: Circle },
   { id: "force", label: "Force", icon: Move },
   { id: "grid", label: "Grid", icon: Grid3X3 },
+  { id: "arch-pattern", label: "Arch", icon: GitBranch },
 ];
 
 export function WorkstationHeader({
@@ -72,6 +67,8 @@ export function WorkstationHeader({
     runStatus,
     runProgress,
   } = useSimulationStore();
+
+  const [hasInteractedWithLayout, setHasInteractedWithLayout] = useState(false);
   const [currentLayoutIndex, setCurrentLayoutIndex] = useState(0);
   const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
 
@@ -90,7 +87,6 @@ export function WorkstationHeader({
     if (result.success) {
       setIsEditingName(false);
     } else {
-      // Revert on error (could also show toast)
       setProjectName(project.name);
       setIsEditingName(false);
     }
@@ -105,8 +101,15 @@ export function WorkstationHeader({
     }
   };
 
-  const handleLayoutRotate = useCallback(() => {
+  const handleLayoutCycle = useCallback(() => {
     if (isLayoutAnimating) return;
+
+    if (!hasInteractedWithLayout) {
+      setHasInteractedWithLayout(true);
+      const algo = LAYOUT_ALGORITHMS[0];
+      onLayoutAlgorithm(algo.id);
+      return;
+    }
 
     setIsLayoutAnimating(true);
     const nextIndex = (currentLayoutIndex + 1) % LAYOUT_ALGORITHMS.length;
@@ -116,7 +119,12 @@ export function WorkstationHeader({
     setCurrentLayoutIndex(nextIndex);
 
     setTimeout(() => setIsLayoutAnimating(false), 300);
-  }, [currentLayoutIndex, isLayoutAnimating, onLayoutAlgorithm]);
+  }, [
+    currentLayoutIndex,
+    isLayoutAnimating,
+    onLayoutAlgorithm,
+    hasInteractedWithLayout,
+  ]);
 
   const currentLayout = LAYOUT_ALGORITHMS[currentLayoutIndex];
   const LayoutIcon = currentLayout.icon;
@@ -138,27 +146,19 @@ export function WorkstationHeader({
   }
 
   return (
-    <header className="h-14 border-b border-border-primary bg-bg-elevated flex items-center justify-between px-6 shrink-0 z-20 relative">
-      {/* Left Section - Navigation & Identity */}
-      <div className="flex items-center gap-4">
-        {/* Back Navigation */}
+    <header className="h-14 border-b border-border-primary bg-bg-elevated flex items-center px-4 lg:px-6 shrink-0 z-20 relative gap-2">
+      {/* ========== ZONE 1: LEFT — Navigation & Identity ========== */}
+      <div className="flex items-center gap-3 min-w-0 flex-shrink">
         <Link
           href="/dashboard"
-          className="flex items-center justify-center w-8 h-8 border border-brand-charcoal/20 text-brand-charcoal dark:text-text-primary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all active:translate-x-0.5 active:translate-y-0.5"
+          className="flex items-center justify-center w-8 h-8 border border-brand-charcoal/20 text-brand-charcoal dark:text-text-primary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all active:translate-x-0.5 active:translate-y-0.5 shrink-0"
           title="[ ESC ] Return to Dashboard"
         >
           <ChevronLeft className="w-4 h-4" />
         </Link>
 
-        {/* Project Identity */}
-        <div className="flex flex-col ml-2 min-w-0">
-          <span className="hidden md:block font-mono text-[8px] text-brand-charcoal/20 uppercase tracking-[0.3em] mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
-            PROJECT_STATION // ARCH_DRAFT
-          </span>
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <span className="font-mono text-[10px] sm:text-xs font-bold text-brand-orange hidden sm:inline-block shrink-0">
-              MANIFEST-{project.id.substring(0, 3).toUpperCase()} //
-            </span>
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             {isEditingName ? (
               <input
                 value={projectName}
@@ -166,219 +166,156 @@ export function WorkstationHeader({
                 onBlur={handleNameSave}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="h-6 w-[120px] sm:w-[200px] text-base font-poppins font-bold uppercase text-brand-charcoal dark:text-text-primary bg-bg-elevated border-b border-brand-orange focus:outline-none truncate"
+                className="h-6 w-[120px] sm:w-[180px] text-sm font-poppins font-bold uppercase text-brand-charcoal dark:text-text-primary bg-bg-elevated border-b border-brand-orange focus:outline-none truncate"
               />
             ) : (
               <h2
                 onClick={() => setIsEditingName(true)}
-                className="font-poppins font-bold text-sm sm:text-base text-brand-charcoal dark:text-text-primary uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors truncate max-w-[100px] sm:max-w-[200px] md:max-w-[300px]"
+                className="font-poppins font-bold text-sm text-brand-charcoal dark:text-text-primary uppercase tracking-tight cursor-text hover:text-brand-orange transition-colors truncate max-w-[100px] sm:max-w-[180px] lg:max-w-[280px]"
                 title={project.name}
               >
                 {project.name}
               </h2>
             )}
-            <div className="hidden sm:block px-1.5 py-0.5 border border-brand-charcoal/10 bg-brand-charcoal/5 text-brand-charcoal/40 font-mono text-[8px] uppercase tracking-widest font-bold shrink-0">
-              v1.0.D
+            <div className="hidden md:block px-1.5 py-0.5 border border-brand-charcoal/10 bg-brand-charcoal/5 text-brand-charcoal/40 font-mono text-[8px] uppercase tracking-widest font-bold shrink-0">
+              {project.id.substring(0, 6).toUpperCase()}
             </div>
           </div>
         </div>
-
-        <div className="h-10 w-px bg-brand-charcoal/10 mx-4" />
-
-        <div className="h-10 w-px bg-brand-charcoal/10 mx-4" />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-        {/* Layout Algorithm Controls */}
-        <div className="hidden lg:flex items-center gap-1 scale-[0.9] origin-right">
-          <div className="flex items-center border border-brand-charcoal/10">
-            <Button
-              variant="ghost"
-              onClick={() => onAutolayout("DOWN")}
-              className="h-8 w-8 rounded-none p-0 text-brand-charcoal/50 hover:text-white hover:bg-brand-charcoal"
-              title="[ AUTO_LAYOUT ] Top to Bottom"
-            >
-              <ArrowDown className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => onAutolayout("RIGHT")}
-              className="h-8 w-8 rounded-none p-0 text-brand-charcoal/50 hover:text-white hover:bg-brand-charcoal border-l border-brand-charcoal/10"
-              title="[ AUTO_LAYOUT ] Left to Right"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+      {/* Divider */}
+      <div className="h-8 w-px bg-brand-charcoal/10 shrink-0 hidden md:block" />
 
-          <Button
-            variant="ghost"
-            onClick={handleLayoutRotate}
-            disabled={isLayoutAnimating}
-            className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/60 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2"
-          >
-            <motion.div
-              animate={{ rotate: isLayoutAnimating ? 180 : 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <LayoutIcon className="w-3.5 h-3.5 opacity-40" />
-            </motion.div>
-            <span>{currentLayout.label}</span>
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-8 w-6 border border-brand-charcoal/10 rounded-none p-0 flex items-center justify-center text-brand-charcoal/40"
-              >
-                <ChevronDown className="w-3.5 h-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated"
-            >
-              <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
-                LAYOUT_ALGOS
-              </div>
-
-              {LAYOUT_ALGORITHMS.map((algo, index) => {
-                const AlgoIcon = algo.icon;
-                return (
-                  <DropdownMenuItem
-                    key={algo.id}
-                    onClick={() => {
-                      onLayoutAlgorithm(algo.id);
-                      setCurrentLayoutIndex(index);
-                    }}
-                    className={cn(
-                      "cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 flex justify-between",
-                      currentLayoutIndex === index &&
-                        "bg-neutral-50 border-l-4 border-brand-orange",
-                    )}
-                  >
-                    <span className="flex items-center">
-                      <AlgoIcon className="w-4 h-4 mr-3" />
-                      {algo.label.toUpperCase()}
-                    </span>
-                    {currentLayoutIndex === index && (
-                      <div className="w-2 h-2 bg-brand-orange" />
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* ========== ZONE 2: CENTER — Status & Tools ========== */}
+      <div className="flex items-center gap-1.5">
+        {/* Status Pulse */}
+        <div
+          className={cn(
+            "hidden lg:flex items-center gap-2 px-2.5 py-1 border font-mono text-[9px] uppercase tracking-widest font-bold whitespace-nowrap shrink-0",
+            saving
+              ? "border-brand-orange text-brand-orange bg-brand-orange/5"
+              : "border-brand-charcoal/10 text-brand-charcoal/50 bg-bg-elevated"
+          )}
+        >
+          <div
+            className={cn(
+              "w-1.5 h-1.5",
+              saving ? "bg-brand-orange animate-pulse" : "bg-emerald-500"
+            )}
+          />
+          {saving ? "SAVING" : "READY"}
         </div>
 
-        <div className="hidden md:block px-2 py-1 border border-brand-charcoal/10 font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50 whitespace-nowrap">
-          {saving ? "SYNC:SAVING" : "SYNC:READY"}
-        </div>
+        {/* Auto Layout */}
+        <Button
+          variant="ghost"
+          onClick={handleLayoutCycle}
+          disabled={isLayoutAnimating}
+          className={cn(
+            "h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-1.5 flex items-center justify-center shrink-0",
+            !hasInteractedWithLayout
+              ? "text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white"
+              : "border-brand-orange/20 bg-brand-orange/5 text-brand-orange hover:bg-brand-orange hover:text-white"
+          )}
+        >
+          {hasInteractedWithLayout ? (
+            <>
+              <LayoutIcon
+                className={cn(
+                  "w-3.5 h-3.5 shrink-0",
+                  isLayoutAnimating && "animate-spin"
+                )}
+              />
+              <span className="truncate">
+                {currentLayout.label.toUpperCase()}
+              </span>
+            </>
+          ) : (
+            <>
+              <Zap className="w-3.5 h-3.5 shrink-0 opacity-70" />
+              <span>LAYOUT</span>
+            </>
+          )}
+        </Button>
 
-        {/* Chaos Toggle moved here */}
+        {/* Simulation Toggles */}
         <Button
           variant="ghost"
           onClick={() => setChaosMode(!chaosMode)}
+          title={chaosMode ? "CHAOS:ON — click to disable" : "CHAOS_SIM — inject random failures"}
           className={cn(
-            "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
+            "h-8 gap-1.5 px-2 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold",
             chaosMode
               ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
-              : "bg-bg-elevated border-brand-charcoal/10 text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950",
+              : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white"
           )}
         >
           <Zap
             className={cn(
-              "w-3.5 h-3.5",
-              chaosMode && "fill-current animate-pulse",
+              "w-3 h-3 shrink-0",
+              chaosMode && "fill-current animate-pulse"
             )}
           />
-          <span className="sr-only">{chaosMode ? "CHAOS_MODE:ON" : "SYSTEM_SIM"}</span>
+          <span className="hidden xl:inline">{chaosMode ? "CHAOS" : "CHAOS"}</span>
         </Button>
 
         <Button
           variant="ghost"
           onClick={() => setStressMode(!stressMode)}
-          title="Stress Test: AI planner + deterministic simulation for resilience risk"
+          title={stressLabel}
           className={cn(
-            "h-8 px-3 border rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-2",
+            "h-8 gap-1.5 px-2 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold",
             stressMode
               ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-400"
-              : "bg-bg-elevated border-brand-charcoal/10 text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950",
+              : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white"
           )}
         >
           <ShieldAlert
-            className={cn("w-3.5 h-3.5", stressMode && "animate-pulse")}
+            className={cn(
+              "w-3 h-3 shrink-0",
+              stressMode && "animate-pulse"
+            )}
           />
-          <span className="sr-only">{stressLabel}</span>
+          <span className="hidden xl:inline">STRESS</span>
         </Button>
+      </div>
 
-        {/* Workspace Guide */}
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* ========== ZONE 3: RIGHT — Menus ========== */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Export / Archive */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2"
-            >
-              <CircleHelp className="w-3.5 h-3.5" />
-              <span className="sr-only">[ GUIDE ]</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-64 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated whitespace-normal z-50"
-          >
-            <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
-              WORKSPACE_CONTROLS
-            </div>
-            <div className="p-4 text-brand-charcoal dark:text-text-primary flex flex-col gap-3 leading-relaxed">
-              <p>
-                <strong>Interact:</strong> Click nodes to open properties, drag
-                to move, and double-click the title to rename.
-              </p>
-              <p>
-                <strong>Tech Stacks:</strong> Modify node tech stacks and
-                services manually inside the properties panel.
-              </p>
-              <p>
-                <strong>Layout:</strong> Use the Autolayout controls in the
-                header to organize the architecture automatically.
-              </p>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* File Operations moved here */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest text-brand-charcoal/40 dark:text-text-secondary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all gap-2 flex items-center"
+              className="h-8 w-8 p-0 border border-brand-charcoal/10 rounded-none text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all"
+              title="[ ARCHIVE ]"
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="sr-only">[ ARCHIVE ]</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-56 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated"
+            className="w-60 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated"
           >
             <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
-              OPERATIONS_LOG
+              EXPORT_OPERATIONS
             </div>
 
             <DropdownMenuItem
               onClick={onExportSkill}
-              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4 border-b border-neutral-100"
+              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
-              <FileCode className="w-4 h-4 mr-3 text-brand-orange" />
+              <FileCode className="w-4 h-4 text-brand-orange mr-3" />
               <span>EXPORT_SKILL_ZIP</span>
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator className="m-0 h-px bg-brand-charcoal/10" />
-
             <DropdownMenuItem
               onClick={() => onExport("mermaid")}
-              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <Download className="w-4 h-4 mr-3" />
               <span>MERMAID_SCHEMATIC</span>
@@ -386,7 +323,7 @@ export function WorkstationHeader({
 
             <DropdownMenuItem
               onClick={() => onExport("png")}
-              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <ImageIcon className="w-4 h-4 mr-3" />
               <span>RASTER_IMAGE_PNG</span>
@@ -394,7 +331,7 @@ export function WorkstationHeader({
 
             <DropdownMenuItem
               onClick={() => onExport("svg")}
-              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <ImageIcon className="w-4 h-4 mr-3" />
               <span>VECTOR_IMAGE_SVG</span>
@@ -402,11 +339,46 @@ export function WorkstationHeader({
 
             <DropdownMenuItem
               onClick={() => onExport("pdf")}
-              className="cursor-pointer rounded-none hover:bg-neutral-100 focus:bg-neutral-100 py-3 px-4"
+              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 flex items-center"
             >
               <FileText className="w-4 h-4 mr-3" />
               <span>DOCUMENT_PDF</span>
             </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Guide — last item */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0 border border-brand-charcoal/10 rounded-none text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all"
+              title="[ GUIDE ]"
+            >
+              <CircleHelp className="w-3.5 h-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-72 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated whitespace-normal z-50"
+          >
+            <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
+              WORKSPACE_CONTROLS
+            </div>
+            <div className="p-4 text-brand-charcoal dark:text-text-primary flex flex-col gap-3 leading-relaxed rounded-none">
+              <p>
+                <strong>INTERACT:</strong> Click nodes to open properties, drag
+                to move, and double-click titles to rename.
+              </p>
+              <p>
+                <strong>TECH_STACKS:</strong> Modify node tech stacks and
+                services manually inside the properties panel.
+              </p>
+              <p>
+                <strong>LAYOUT:</strong> Use the Auto-layout controls in the
+                header to organize the architecture automatically.
+              </p>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

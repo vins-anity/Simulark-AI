@@ -632,6 +632,28 @@ CONSTRAINTS:
 function getFrameworkCompatibilityRules(): string {
   return `FRAMEWORK COMPATIBILITY RULES (CRITICAL):
 
+BACKEND FRAMEWORKS ARE NEVER FRONTEND TECH:
+- ❌ NEVER set tech="laravel" on a frontend/UI node — Laravel is PHP backend only
+- ❌ NEVER set tech="django" on a frontend/UI node — Django is Python backend only
+- ❌ NEVER set tech="rails" on a frontend/UI node — Rails is Ruby backend only
+- ❌ NEVER set tech="spring" on a frontend/UI node — Spring is Java backend only
+- ❌ NEVER set tech="express", "fastapi", "nestjs", "adonis" on a frontend/UI node
+
+LARAVEL ECOSYSTEM — correct frontend tech per scenario:
+- Server-rendered + reactive: tech="livewire" (Livewire + Alpine.js)
+- SPA over Laravel API: tech="inertia" (Inertia.js) or tech="vue" or tech="react"
+- Classic templates: tech="blade" (Laravel Blade)
+- The backend node uses tech="laravel"; the frontend node must use one of the above.
+
+DJANGO ECOSYSTEM — correct frontend tech:
+- tech="react", tech="vue", or tech="htmx"
+
+RAILS ECOSYSTEM — correct frontend tech:
+- tech="react", tech="vue", or tech="stimulus" (Hotwire)
+
+SPRING ECOSYSTEM — correct frontend tech:
+- tech="react", tech="angular", tech="vue"
+
 INCOMPATIBLE COMBINATIONS - NEVER USE THESE TOGETHER:
 1. Full-stack frameworks + Backend frameworks:
    - ❌ Next.js + Express (Next.js has API routes)
@@ -644,11 +666,9 @@ INCOMPATIBLE COMBINATIONS - NEVER USE THESE TOGETHER:
    - ❌ Rails + Hono (Rails is full-stack)
 
 CORRECT APPROACHES:
-1. Full-stack single framework:
-   - ✅ Next.js (handles frontend + API)
-   - ✅ Laravel (handles frontend + backend)
-   - ✅ Django (handles frontend + backend)
-   - ✅ AdonisJS (handles frontend + backend)
+1. Laravel full-stack:
+   - ✅ Livewire/Blade (frontend) + Laravel (backend) — same codebase
+   - ✅ Vue/React + Inertia.js (frontend) + Laravel (backend API)
 
 2. Frontend + Backend separation:
    - ✅ React + Express
@@ -1172,7 +1192,24 @@ ${getFrameworkCompatibilityRules()}`;
     }
 
     if (prefParts.length > 0) {
-      techRecommendations += `\n\nUSER PREFERRED STACK (MANDATORY):\n${prefParts.join("\n")}\n\nPrioritize these technologies. If conflicting options are present, choose the best fit for the detected pattern.`;
+      techRecommendations += `\n\nUSER PREFERRED STACK (apply contextually per layer — not blindly to every node):
+${prefParts.join("\n")}
+
+LAYER-AWARE PREFERENCE RULES (CRITICAL — never violate these):
+- Backend frameworks (Laravel, Django, Rails, Flask, Spring, Express, NestJS, FastAPI, AdonisJS) are SERVER-SIDE only.
+  → NEVER assign a backend framework as the "tech" for a frontend/UI node.
+- When user prefers Laravel and a FRONTEND node is needed, use:
+  → "livewire" (Livewire + Alpine.js, reactive UI within Laravel)
+  → "inertia" (Inertia.js with Vue or React as the SPA layer)
+  → "blade" (Laravel Blade templates, traditional server-rendered)
+  → "vue" or "react" (decoupled SPA calling a Laravel API)
+  Choose based on what the app needs — interactive SPA → inertia/vue/react; server-rendered → livewire/blade.
+- When user prefers Django and a FRONTEND node is needed, use: "react", "vue", "htmx"
+- When user prefers Rails and a FRONTEND node is needed, use: "react", "vue" (Hotwire/Stimulus if server-rendered)
+- When user prefers Spring Boot and a FRONTEND node is needed, use: "react", "angular", "vue"
+- Database nodes must use database tech (postgres, mysql, mongodb, redis, etc.)
+- Queue nodes must use queue tech (kafka, rabbitmq, sqs, etc.)
+- The user's framework preference defines their ecosystem, not a blanket assignment for every node.`;
     }
 
     // Handle Architecture Preferences (Patterns)

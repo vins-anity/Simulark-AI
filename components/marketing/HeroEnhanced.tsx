@@ -230,21 +230,6 @@ export function HeroEnhanced() {
               </span>
             </Button>
           </Link>
-          <Link href="/features">
-            <Button
-              variant="ghost"
-              size="lg"
-              className="group h-14 px-0 text-sm font-mono uppercase tracking-[0.15em] rounded-none text-brand-charcoal hover:text-brand-orange hover:bg-transparent transition-all duration-300"
-            >
-              <span className="px-4 text-brand-charcoal/30 group-hover:text-brand-orange/50">
-                [
-              </span>
-              <span className="px-2">DOCUMENTATION</span>
-              <span className="px-4 text-brand-charcoal/30 group-hover:text-brand-orange/50">
-                ]
-              </span>
-            </Button>
-          </Link>
         </motion.div>
 
         {/* Interactive Preview - Technical Interface */}
