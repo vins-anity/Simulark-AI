@@ -587,129 +587,204 @@ export function validatePrompt(input: string): PromptValidation {
   return { isValid: true };
 }
 
+
 /**
- * Get mode-specific component constraints
+ * Hard tech-to-node-type validation matrix.
+ * Replaces the old prose-based framework compatibility rules.
+ * Tabular format is processed more reliably by all LLMs.
  */
-function getModeConstraints(mode: ArchitectureMode): string {
-  const constraints = MODE_CONSTRAINTS[mode];
+function getTechValidationMatrix(): string {
+  return `TECH VALIDATION MATRIX (BINDING — a node with tech outside its allowed set is an INVALID output):
 
-  let guidelines = `MODE: ${mode.toUpperCase()}
-${constraints.description}
+| Node Type  | Allowed tech values                                                                                   |
+|------------|-------------------------------------------------------------------------------------------------------|
+| frontend   | react, vue, angular, svelte, nextjs, nuxt, sveltekit, remix, solid-start, tanstack-start,             |
+|            | livewire, inertia, blade, htmx, stimulus, astro, qwik                                                |
+| backend    | express, fastify, nestjs, hono, elysia, django, flask, fastapi, laravel, rails, spring,               |
+|            | adonisjs, go, rust, dotnet, bun, deno, nitro, hattip                                                 |
+| database   | postgresql, mysql, mongodb, sqlite, redis, dynamodb, cassandra, cockroachdb, supabase,                |
+|            | firebase, planetscale, turso, neon, convex, faunadb, tidb, surrealdb                                 |
+| cache      | redis, memcached, upstash, cloudflare-kv, varnish                                                    |
+| queue      | kafka, rabbitmq, sqs, bullmq, celery, sidekiq, nats, pulsar, upstash-qstash                          |
+| gateway    | kong, nginx, traefik, aws-apigw, cloudflare, ambassador, envoy, caddy                                |
+| ai         | openai, anthropic, pinecone, weaviate, pgvector, langchain, langgraph, huggingface,                  |
+|            | replicate, ollama, crewai, pydantic-ai, llamaindex                                                    |
+| storage    | s3, cloudflare-r2, gcs, azure-blob, supabase-storage, backblaze, minio                               |
+| external   | stripe, sendgrid, twilio, mailgun, pusher, algolia, mapbox, plaid, shippo                            |
+| saas       | clerk, auth0, firebase-auth, cognito, okta, supabase-auth, nextauth, datadog, newrelic,               |
+|            | grafana, sentry, posthog, segment, mixpanel, intercom, zendesk                                        |
+| compute    | aws-lambda, vercel-functions, cloudflare-workers, netlify-functions, azure-functions                   |
 
-CONSTRAINTS:
-- Minimum components: ${constraints.minComponents}
-- Maximum components: ${constraints.maxComponents}`;
+FRAMEWORK ECOSYSTEM RULES (when user prefers a backend framework, use these for frontend nodes):
+| User Prefers | Valid Frontend Tech                                          |
+|--------------|--------------------------------------------------------------|
+| laravel      | livewire (reactive server), inertia (SPA bridge),            |
+|              | blade (templates), vue, react (decoupled SPA)                |
+| django       | react, vue, htmx, django-templates                           |
+| rails        | react, vue, stimulus, hotwire                                |
+| spring       | react, angular, vue                                          |
+| express/fastify/nestjs/hono | react, vue, angular, svelte               |
+| fastapi      | react, vue, svelte                                           |
 
-  if (mode === "startup") {
-    guidelines += `
-- PREFER FULL-STACK FRAMEWORKS (Next.js, Laravel, Django, Rails, AdonisJS)
-- AVOID unnecessary infrastructure (skip CDN, Load Balancer for simple apps)
-- Focus on SPEED and COST (use managed services, avoid self-hosted)
-- Single database is fine (no need for separate cache layer for small apps)
-- Simple auth solution (Clerk, Supabase Auth, not self-hosted)`;
-  } else if (mode === "enterprise") {
-    guidelines += `
-- REQUIRE full redundancy and failover
-- Include monitoring/observability (Datadog, New Relic, or Grafana)
-- Separate concerns (frontend/backend)
-- Include CDN and Load Balancer
-- Security-first approach (WAF, encryption at rest/transit)
-- Compliance considerations (GDPR, SOC2)`;
-  } else {
-    guidelines += `
-- Balance between simplicity and best practices
-- Use CDN for static assets
-- Include basic monitoring
-- Right-size infrastructure for expected scale`;
-  }
-
-  return guidelines;
+FULL-STACK FRAMEWORK RULE (critical — never pair these with a separate backend framework):
+nextjs, nuxt, sveltekit, remix → these handle BOTH frontend AND API routes.
+If user picks nextjs → DO NOT add express/fastify/nestjs as a separate backend node.`;
 }
 
 /**
- * Get framework compatibility rules
+ * Single authoritative component count decision tree.
+ * Replaces getModeConstraints() + getComplexityGuidelines() signals.
+ * Explicit precedence prevents competing constraints.
  */
-function getFrameworkCompatibilityRules(): string {
-  return `FRAMEWORK COMPATIBILITY RULES (CRITICAL):
-
-BACKEND FRAMEWORKS ARE NEVER FRONTEND TECH:
-- ❌ NEVER set tech="laravel" on a frontend/UI node — Laravel is PHP backend only
-- ❌ NEVER set tech="django" on a frontend/UI node — Django is Python backend only
-- ❌ NEVER set tech="rails" on a frontend/UI node — Rails is Ruby backend only
-- ❌ NEVER set tech="spring" on a frontend/UI node — Spring is Java backend only
-- ❌ NEVER set tech="express", "fastapi", "nestjs", "adonis" on a frontend/UI node
-
-LARAVEL ECOSYSTEM — correct frontend tech per scenario:
-- Server-rendered + reactive: tech="livewire" (Livewire + Alpine.js)
-- SPA over Laravel API: tech="inertia" (Inertia.js) or tech="vue" or tech="react"
-- Classic templates: tech="blade" (Laravel Blade)
-- The backend node uses tech="laravel"; the frontend node must use one of the above.
-
-DJANGO ECOSYSTEM — correct frontend tech:
-- tech="react", tech="vue", or tech="htmx"
-
-RAILS ECOSYSTEM — correct frontend tech:
-- tech="react", tech="vue", or tech="stimulus" (Hotwire)
-
-SPRING ECOSYSTEM — correct frontend tech:
-- tech="react", tech="angular", tech="vue"
-
-INCOMPATIBLE COMBINATIONS - NEVER USE THESE TOGETHER:
-1. Full-stack frameworks + Backend frameworks:
-   - ❌ Next.js + Express (Next.js has API routes)
-   - ❌ Nuxt + Fastify (Nuxt has server API)
-   - ❌ SvelteKit + NestJS (SvelteKit handles backend)
-
-2. Traditional MVC + Modern frameworks:
-   - ❌ Laravel + Express (different ecosystems)
-   - ❌ Django + Fastify (use Django's built-in)
-   - ❌ Rails + Hono (Rails is full-stack)
-
-CORRECT APPROACHES:
-1. Laravel full-stack:
-   - ✅ Livewire/Blade (frontend) + Laravel (backend) — same codebase
-   - ✅ Vue/React + Inertia.js (frontend) + Laravel (backend API)
-
-2. Frontend + Backend separation:
-   - ✅ React + Express
-   - ✅ Vue + Fastify
-   - ✅ React + Hono
-   - ✅ Svelte + Elysia
-
-3. API-only backend:
-   - ✅ Express (REST API)
-   - ✅ Fastify (high-performance API)
-   - ✅ Hono (lightweight, Bun-optimized)
-   - ✅ Elysia (Bun-optimized, type-safe)`;
-}
-
-/**
- * Get complexity-based architecture guidelines
- */
-function getComplexityGuidelines(complexity: ComplexityLevel): string {
-  const guidelines: Record<ComplexityLevel, string> = {
-    simple: `COMPLEXITY: SIMPLE (3-5 components max)
-- Minimal infrastructure
-- Single database sufficient
-- No message queues unless explicitly requested
-- Simple auth (managed service)
-- Skip CDN for truly simple apps (< 1000 users)`,
-    medium: `COMPLEXITY: MEDIUM (4-7 components)
-- Include CDN for static assets
-- Add Redis cache for performance
-- Include monitoring basics
-- Proper auth service separation
-- Add message queue if async processing needed`,
-    complex: `COMPLEXITY: COMPLEX (6-12 components)
-- Full microservices or highly scalable monolith
-- Multiple data stores (primary + cache + search)
-- Message queues for async processing
-- Load balancing and auto-scaling
-- Comprehensive observability
-- Security layers (WAF, encryption)`,
+function getComponentDecisionTree(
+  mode: ArchitectureMode,
+  complexity: ComplexityLevel,
+  operationType: string,
+  adjustedMin: number,
+  adjustedMax: number,
+): string {
+  const modeGuidance: Record<ArchitectureMode, string> = {
+    startup: "Bias toward LOWER end. Prefer full-stack frameworks that consolidate layers.",
+    default: "Balance simplicity with best practices. Right-size for described scale.",
+    enterprise: "Bias toward HIGHER end. Add monitoring, security, and redundancy nodes.",
   };
 
-  return guidelines[complexity];
+  const complexityRange: Record<ComplexityLevel, string> = {
+    simple: "3–5 components",
+    medium: "5–8 components",
+    complex: "7–12 components",
+  };
+
+  const neverInclude = `NEVER include these unless explicitly requested or mode requires:
+- CDN node: skip for <10K users, internal tools, or startup mode
+- Load Balancer: skip for single-instance apps and startup mode
+- Message Queue: skip unless async processing is explicitly needed
+- Monitoring/Observability: skip for startup mode and simple apps
+- WAF/Security node: only for enterprise mode
+- API Gateway: only when multiple backend services need routing`;
+
+  return `COMPONENT COUNT DECISION TREE (follow in order — do not skip steps):
+
+STEP 1 — Start with complexity baseline: ${complexity.toUpperCase()} → ${complexityRange[complexity]}
+STEP 2 — Apply mode modifier (${mode.toUpperCase()}): ${modeGuidance[mode]}
+STEP 3 — Apply operation modifier: your adjusted range is MIN=${adjustedMin} to MAX=${adjustedMax}
+STEP 4 — Final purpose check: for EVERY component you plan to include, ask:
+          "Can I write a one-sentence justification for why this specific app needs this?"
+          If NO → REMOVE IT.
+
+${neverInclude}
+
+ANTI-PATTERN EXAMPLES:
+❌ WRONG — simple todo app with 9 nodes: Frontend + CDN + LB + Gateway + Backend + DB + Cache + Queue + Monitoring
+   WHY WRONG: Simple apps don't need CDN/LB/Queue/Monitoring — this is cargo-cult architecture
+✅ CORRECT — simple todo app with 3 nodes: Next.js App + PostgreSQL + Clerk Auth
+
+❌ WRONG — enterprise SaaS with 3 nodes: Frontend + Backend + DB
+   WHY WRONG: Enterprise mode requires observability, security, and redundancy
+✅ CORRECT — enterprise SaaS with 8+ nodes: CDN + LB + Frontend + Backend + DB + Cache + Monitoring + WAF`;
+}
+
+/**
+ * Mode-appropriate few-shot examples.
+ * Shows the model exactly what correct output looks like.
+ */
+function getFewShotExamples(mode: ArchitectureMode): string {
+  const startupExample = `EXAMPLE — Startup mode, simple todo app (prompt: "build a simple todo app"):
+{
+  "analysis": "Chose a Next.js monolith to eliminate ops overhead — a solo developer can ship and iterate without managing separate services.",
+  "nodes": [
+    { "id": "app-1", "type": "frontend", "position": {"x": 300, "y": 100},
+      "data": { "label": "Next.js App", "description": "Full-stack app with API routes", "justification": "Handles both UI and API in one deployment — no separate backend needed for a todo app", "tech": "nextjs", "serviceType": "frontend" }},
+    { "id": "db-1", "type": "database", "position": {"x": 200, "y": 350},
+      "data": { "label": "PostgreSQL", "description": "Persistent task storage", "justification": "Relational DB for structured task data with user ownership queries", "tech": "postgresql", "serviceType": "database" }},
+    { "id": "auth-1", "type": "saas", "position": {"x": 500, "y": 350},
+      "data": { "label": "Clerk Auth", "description": "Managed user authentication", "justification": "Eliminates auth boilerplate — free tier covers startup scale", "tech": "clerk", "serviceType": "saas" }}
+  ],
+  "edges": [
+    { "id": "e-1", "source": "app-1", "target": "db-1", "animated": true, "data": { "protocol": "database", "label": "Read/Write Tasks" }},
+    { "id": "e-2", "source": "app-1", "target": "auth-1", "animated": true, "data": { "protocol": "https", "label": "Auth Tokens & User Sessions" }}
+  ]
+}`;
+
+  const defaultExample = `EXAMPLE — Default mode, SaaS dashboard (prompt: "build a SaaS analytics dashboard"):
+{
+  "analysis": "Separated frontend and backend to allow independent scaling of the API under analytics query load, with Redis caching to absorb repeated dashboard reads.",
+  "nodes": [
+    { "id": "cdn-1", "type": "gateway", "position": {"x": 300, "y": 50},
+      "data": { "label": "Cloudflare CDN", "description": "Edge caching and DDoS protection", "justification": "Dashboard assets are static — CDN eliminates origin load for 80% of requests", "tech": "cloudflare", "serviceType": "gateway" }},
+    { "id": "fe-1", "type": "frontend", "position": {"x": 300, "y": 200},
+      "data": { "label": "React Dashboard", "description": "Interactive analytics UI with charts", "justification": "React ecosystem has the best charting libraries (Recharts, D3) for analytics use case", "tech": "react", "serviceType": "frontend" }},
+    { "id": "api-1", "type": "backend", "position": {"x": 300, "y": 350},
+      "data": { "label": "FastAPI Backend", "description": "REST API for analytics queries", "justification": "Python enables pandas/numpy for analytics processing; FastAPI is fastest Python framework", "tech": "fastapi", "serviceType": "backend" }},
+    { "id": "db-1", "type": "database", "position": {"x": 150, "y": 500},
+      "data": { "label": "PostgreSQL", "description": "Time-series analytics data", "justification": "TimescaleDB extension on Postgres handles time-series queries efficiently", "tech": "postgresql", "serviceType": "database" }},
+    { "id": "cache-1", "type": "cache", "position": {"x": 450, "y": 500},
+      "data": { "label": "Redis Cache", "description": "Dashboard query result cache", "justification": "Analytics queries are expensive — cache results for 5-minute windows to handle concurrent users", "tech": "redis", "serviceType": "cache" }}
+  ],
+  "edges": [
+    { "id": "e-1", "source": "cdn-1", "target": "fe-1", "animated": true, "data": { "protocol": "https", "label": "Cached Assets" }},
+    { "id": "e-2", "source": "fe-1", "target": "api-1", "animated": true, "data": { "protocol": "https", "label": "Analytics Queries" }},
+    { "id": "e-3", "source": "api-1", "target": "db-1", "animated": true, "data": { "protocol": "database", "label": "Raw Analytics Data" }},
+    { "id": "e-4", "source": "api-1", "target": "cache-1", "animated": true, "data": { "protocol": "cache", "label": "Query Result Cache" }}
+  ]
+}`;
+
+  const enterpriseExample = `EXAMPLE — Enterprise mode, fintech platform (prompt: "build an enterprise payment processing platform"):
+{
+  "analysis": "Separated auth, payment processing, and notifications into dedicated services behind a gateway to enable independent compliance auditing and zero-downtime updates to PCI-scoped components.",
+  "nodes": [
+    { "id": "waf-1", "type": "gateway", "position": {"x": 400, "y": 50},
+      "data": { "label": "Cloudflare WAF", "description": "Web application firewall", "justification": "PCI-DSS requires WAF for cardholder data environments", "tech": "cloudflare", "serviceType": "gateway" }},
+    { "id": "lb-1", "type": "gateway", "position": {"x": 400, "y": 150},
+      "data": { "label": "Load Balancer", "description": "Traffic distribution with health checks", "justification": "Enterprise SLA requires zero single points of failure at the entry layer", "tech": "nginx", "serviceType": "gateway" }},
+    { "id": "fe-1", "type": "frontend", "position": {"x": 200, "y": 280},
+      "data": { "label": "React Frontend", "description": "Merchant dashboard and payment UI", "justification": "React with strict CSP headers for PCI-compliant cardholder data entry forms", "tech": "react", "serviceType": "frontend" }},
+    { "id": "gw-1", "type": "gateway", "position": {"x": 500, "y": 280},
+      "data": { "label": "API Gateway", "description": "Route and authenticate API requests", "justification": "Kong provides rate limiting, JWT validation, and audit logging required for PCI", "tech": "kong", "serviceType": "gateway" }},
+    { "id": "pay-1", "type": "backend", "position": {"x": 300, "y": 420},
+      "data": { "label": "Payment Service", "description": "PCI-scoped payment processing", "justification": "Isolated microservice limits PCI scope to a single deployable unit", "tech": "nestjs", "serviceType": "backend" }},
+    { "id": "auth-1", "type": "backend", "position": {"x": 600, "y": 420},
+      "data": { "label": "Auth Service", "description": "OAuth2/OIDC identity management", "justification": "Separate auth service enables SOC2-compliant access controls and audit trails", "tech": "nestjs", "serviceType": "backend" }},
+    { "id": "db-1", "type": "database", "position": {"x": 200, "y": 570},
+      "data": { "label": "PostgreSQL HA", "description": "Encrypted transaction storage", "justification": "Patroni HA cluster with column-level encryption for PCI cardholder data", "tech": "postgresql", "serviceType": "database" }},
+    { "id": "monitor-1", "type": "saas", "position": {"x": 600, "y": 570},
+      "data": { "label": "Datadog APM", "description": "Full-stack observability", "justification": "Enterprise SLA requires <1s P99 latency — Datadog provides distributed tracing across all services", "tech": "datadog", "serviceType": "saas" }}
+  ],
+  "edges": [
+    { "id": "e-1", "source": "waf-1", "target": "lb-1", "animated": true, "data": { "protocol": "https", "label": "Filtered Traffic" }},
+    { "id": "e-2", "source": "lb-1", "target": "fe-1", "animated": true, "data": { "protocol": "https", "label": "Web Requests" }},
+    { "id": "e-3", "source": "lb-1", "target": "gw-1", "animated": true, "data": { "protocol": "https", "label": "API Requests" }},
+    { "id": "e-4", "source": "gw-1", "target": "pay-1", "animated": true, "data": { "protocol": "https", "label": "Authenticated Payment Ops" }},
+    { "id": "e-5", "source": "gw-1", "target": "auth-1", "animated": true, "data": { "protocol": "https", "label": "Token Validation" }},
+    { "id": "e-6", "source": "pay-1", "target": "db-1", "animated": true, "data": { "protocol": "database", "label": "Transaction Records" }},
+    { "id": "e-7", "source": "pay-1", "target": "monitor-1", "animated": true, "data": { "protocol": "https", "label": "Metrics & Traces" }},
+    { "id": "e-8", "source": "auth-1", "target": "monitor-1", "animated": true, "data": { "protocol": "https", "label": "Auth Events & Audit Log" }}
+  ]
+}`;
+
+  if (mode === "startup") return startupExample;
+  if (mode === "enterprise") return enterpriseExample;
+  return defaultExample;
+}
+
+/**
+ * Self-validation checklist appended at the end of the prompt.
+ * Forces the model to verify its output before finalizing.
+ */
+function getSelfValidationChecklist(): string {
+  return `SELF-VALIDATION — Before outputting JSON, verify ALL of these:
+□ 1. Every node's "tech" is in the allowed set for its "type" (check the TECH VALIDATION MATRIX above)
+□ 2. Component count is within the adjusted MIN–MAX range from the decision tree
+□ 3. Every node (except the single entry point) has at least ONE incoming edge
+□ 4. No full-stack framework (nextjs/nuxt/sveltekit/remix) is paired with a separate backend framework
+□ 5. Backend frameworks (laravel/django/rails/spring/express/nestjs) are NEVER assigned to a "frontend" type node
+□ 6. Edge "label" values describe actual data (e.g., "User Auth Tokens", "Task CRUD Ops") — NOT generic ("connects to", "API call")
+□ 7. Edge "protocol" matches actual transport: database connections use "database", cache ops use "cache", queues use "queue"
+□ 8. Every node has a non-empty "justification" explaining WHY this tech was chosen for THIS specific use case
+□ 9. No unnecessary infrastructure (CDN/LB/WAF/Queue/Monitoring) for startup mode or simple complexity
+□ 10. The "analysis" field is a SINGLE sentence that explains the most interesting design trade-off made
+
+If ANY check fails → fix the output before returning it.`;
 }
 
 /**
@@ -1008,8 +1083,6 @@ function getTechRecommendations(
 export function buildEnhancedSystemPrompt(context: PromptContext): string {
   const {
     userInput,
-    architectureType,
-    detectedIntent,
     currentNodes,
     currentEdges,
     mode,
@@ -1018,110 +1091,13 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
     userPreferences,
   } = context;
 
-  // Detect complexity if not provided
   const complexity = detectComplexity(userInput);
   const detection = detectArchitectureType(userInput);
-
-  // Get constraints
   const effectiveMode = normalizeArchitectureMode(mode);
   const modeConstraints = MODE_CONSTRAINTS[effectiveMode];
-  const countAdjustment = getComponentCountAdjustment(
-    operationType || "create",
-  );
+  const countAdjustment = getComponentCountAdjustment(operationType || "create");
   const shouldRelax = shouldRelaxConstraints(operationType || "create");
 
-  // Format existing nodes for context
-  let currentArchitectureContext = "";
-  let architectureNodes: any[] = [];
-  let customNodes: any[] = [];
-  let nodeCount = 0;
-  let edgeCount = 0;
-
-  if (currentNodes && currentNodes.length > 0) {
-    const nodes = currentNodes;
-    const edges = currentEdges || [];
-    nodeCount = nodes.length;
-    edgeCount = edges.length;
-
-    // Separate functional nodes from decorative/custom nodes
-    architectureNodes = nodes.filter(
-      (n: any) =>
-        n.type !== "stickyNote" &&
-        n.type !== "text" &&
-        n.type !== "group" &&
-        n.type !== "frame",
-    );
-    customNodes = nodes.filter(
-      (n: any) =>
-        n.type === "stickyNote" ||
-        n.type === "text" ||
-        n.type === "group" ||
-        n.type === "frame",
-    );
-
-    const operationInstructions = getOperationInstructions(
-      operationType || "modify",
-    );
-
-    currentArchitectureContext = `
-CURRENT STATE:
-You are MODIFYING an existing architecture with ${nodeCount} components and ${edgeCount} connections.
-
-Existing Architecture Components (${architectureNodes.length}):
-${architectureNodes
-  .map(
-    (n: any) =>
-      `- ${n.data?.label || n.id} (${n.type}): ${n.data?.description || "No description"}`,
-  )
-  .join("\n")}
-
-${
-  customNodes.length > 0
-    ? `
-Custom Annotations & Shapes (${customNodes.length}):
-${customNodes
-  .map(
-    (n: any) =>
-      `- ${n.type === "text" ? `Text: "${n.data?.label || ""}"` : `Shape: ${n.data?.label || n.id} (${n.type})`}`,
-  )
-  .join("\n")}
-
-NOTE: Preserve these custom annotations when modifying the architecture. They represent user-added notes and visual elements.
-`
-    : ""
-}
-
-IMPORTANT: ${operationInstructions}
-
-PRESERVATION RULES:
-1. Keep existing node IDs where possible
-2. Only modify components explicitly mentioned in the request
-3. Maintain connections unless they involve removed components
-4. Preserve the overall architecture pattern unless changing it entirely
-5. Always preserve custom shapes and text annotations - these are user-created elements`;
-  }
-
-  // Build conversation context analysis
-  let conversationContext = "";
-  if (context.conversationHistory && context.conversationHistory.length > 0) {
-    const history = context.conversationHistory.slice(-10); // Last 10 messages
-    const previousRequests = history
-      .filter((m) => m.role === "user")
-      .map((m) => m.content.substring(0, 150));
-
-    if (previousRequests.length > 0) {
-      conversationContext = `
-CONVERSATION CONTEXT:
-This is a continuing conversation. Previous requests:
-${previousRequests.map((req, i) => `${i + 1}. "${req}"`).join("\n")}
-
-Current request: "${context.userInput}"
-
-INSTRUCTION: Build upon or modify the previous architecture based on this conversation flow. If the user is changing direction (e.g., from "todo app" to "Netflix"), acknowledge the pivot and adapt the architecture accordingly.`;
-    }
-  }
-
-  // Adjust component constraints for operations like simplify/remove
   const adjustedMin = Math.max(
     1,
     modeConstraints.minComponents + countAdjustment.minAdjustment,
@@ -1131,186 +1107,199 @@ INSTRUCTION: Build upon or modify the previous architecture based on this conver
     modeConstraints.maxComponents + countAdjustment.maxAdjustment,
   );
 
-  // Skip complexity-based component limits for now
-  const componentGuidelines = `COMPONENT GUIDELINES:
-${getModeConstraints(effectiveMode)}
-${getComplexityGuidelines(complexity)}
+  // ── CURRENT ARCHITECTURE CONTEXT (modification mode) ──────────────────────
+  let currentArchitectureContext = "";
+  if (currentNodes && currentNodes.length > 0) {
+    const nodes = currentNodes;
+    const edges = currentEdges || [];
+    const architectureNodes = nodes.filter(
+      (n: any) =>
+        n.type !== "stickyNote" &&
+        n.type !== "text" &&
+        n.type !== "group" &&
+        n.type !== "frame",
+    );
+    const customNodes = nodes.filter(
+      (n: any) =>
+        n.type === "stickyNote" ||
+        n.type === "text" ||
+        n.type === "group" ||
+        n.type === "frame",
+    );
 
-${getFrameworkCompatibilityRules()}`;
+    const operationInstructions = getOperationInstructions(operationType || "modify");
 
-  let techRecommendations = getTechRecommendations(
-    detection.type,
-    effectiveMode,
-    complexity,
-  );
+    const archNodeLines = architectureNodes
+      .map(
+        (n: any) =>
+          "  \u2022 " +
+          (n.data?.label || n.id) +
+          " [type=" + n.type + ", tech=" + (n.data?.tech || "unknown") + "]: " +
+          (n.data?.description || ""),
+      )
+      .join("\n");
 
-  const architectureGuidelines = getArchitectureGuidelines(detection.type);
+    const customNodeLines =
+      customNodes.length > 0
+        ? "\nUser annotations (preserve these exactly):\n" +
+          customNodes
+            .map((n: any) =>
+              n.type === "text"
+                ? '  \u2022 Text: "' + (n.data?.label || "") + '"'
+                : "  \u2022 Shape: " + (n.data?.label || n.id) + " (" + n.type + ")",
+            )
+            .join("\n")
+        : "";
 
-  if (context.userPreferences) {
-    const { cloudProviders, languages, frameworks } = context.userPreferences;
-    const prefParts = [];
+    currentArchitectureContext = `
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+PHASE 0 \u2014 CURRENT STATE (you are MODIFYING, not creating from scratch)
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+Existing components (${architectureNodes.length} nodes, ${edges.length} edges):
+${archNodeLines}${customNodeLines}
 
-    // Handle Cloud Providers
-    if (cloudProviders && cloudProviders.length > 0) {
-      const clouds = cloudProviders
-        .filter((c) => c !== "Generic")
-        .map((c) => c.toUpperCase())
-        .join(", ");
-      if (clouds) prefParts.push(`- Cloud Providers: ${clouds}`);
-    } else if (
-      context.userPreferences.cloudProvider &&
-      context.userPreferences.cloudProvider !== "Generic"
-    ) {
-      // Legacy fallback
-      prefParts.push(
-        `- Cloud Provider: ${context.userPreferences.cloudProvider.toUpperCase()}`,
-      );
-    }
+OPERATION: ${operationInstructions}
 
-    // Handle Languages
-    if (languages && languages.length > 0) {
-      prefParts.push(
-        `- Programming Languages: ${languages.map((l) => l.toUpperCase()).join(", ")}`,
-      );
-    } else if (context.userPreferences.language) {
-      // Legacy fallback
-      prefParts.push(
-        `- Programming Language: ${context.userPreferences.language.toUpperCase()}`,
-      );
-    }
+PRESERVATION RULES:
+1. Keep existing node IDs where possible
+2. Only modify components explicitly mentioned in the request
+3. Maintain connections unless they involve removed/replaced components
+4. Preserve ALL custom annotations/text shapes \u2014 they are user notes`;
+  }
 
-    // Handle Frameworks
-    if (frameworks && frameworks.length > 0) {
-      prefParts.push(
-        `- Core Frameworks: ${frameworks.map((f) => f.toUpperCase()).join(", ")}`,
-      );
-    } else if (context.userPreferences.framework) {
-      // Legacy fallback
-      prefParts.push(
-        `- Core Framework: ${context.userPreferences.framework.toUpperCase()}`,
-      );
-    }
+  // ── CONVERSATION CONTEXT ───────────────────────────────────────────────────
+  let conversationContext = "";
+  if (conversationHistory && conversationHistory.length > 0) {
+    const history = conversationHistory.slice(-10);
+    const previousRequests = history
+      .filter((m) => m.role === "user")
+      .map((m, i) => `  ${i + 1}. "${m.content.substring(0, 150)}"`);
 
-    if (prefParts.length > 0) {
-      techRecommendations += `\n\nUSER PREFERRED STACK (apply contextually per layer — not blindly to every node):
-${prefParts.join("\n")}
-
-LAYER-AWARE PREFERENCE RULES (CRITICAL — never violate these):
-- Backend frameworks (Laravel, Django, Rails, Flask, Spring, Express, NestJS, FastAPI, AdonisJS) are SERVER-SIDE only.
-  → NEVER assign a backend framework as the "tech" for a frontend/UI node.
-- When user prefers Laravel and a FRONTEND node is needed, use:
-  → "livewire" (Livewire + Alpine.js, reactive UI within Laravel)
-  → "inertia" (Inertia.js with Vue or React as the SPA layer)
-  → "blade" (Laravel Blade templates, traditional server-rendered)
-  → "vue" or "react" (decoupled SPA calling a Laravel API)
-  Choose based on what the app needs — interactive SPA → inertia/vue/react; server-rendered → livewire/blade.
-- When user prefers Django and a FRONTEND node is needed, use: "react", "vue", "htmx"
-- When user prefers Rails and a FRONTEND node is needed, use: "react", "vue" (Hotwire/Stimulus if server-rendered)
-- When user prefers Spring Boot and a FRONTEND node is needed, use: "react", "angular", "vue"
-- Database nodes must use database tech (postgres, mysql, mongodb, redis, etc.)
-- Queue nodes must use queue tech (kafka, rabbitmq, sqs, etc.)
-- The user's framework preference defines their ecosystem, not a blanket assignment for every node.`;
-    }
-
-    // Handle Architecture Preferences (Patterns)
-    if (
-      context.userPreferences.architectureTypes &&
-      context.userPreferences.architectureTypes.length > 0
-    ) {
-      techRecommendations += `\n\nPREFERRED ARCHITECTURE PATTERNS:\n${context.userPreferences.architectureTypes.join(", ")}\n\nincorporate these architectural styles where applicable.`;
-    }
-
-    // Handle Application Type
-    if (
-      context.userPreferences.applicationType &&
-      context.userPreferences.applicationType.length > 0
-    ) {
-      techRecommendations += `\n\nTARGET APPLICATION TYPE:\n${context.userPreferences.applicationType.join(", ")}\n\nOptimize the architecture for this specific type of application.`;
-    }
-
-    // Handle Custom User Instructions (APPENDED ONLY IF NON-EMPTY)
-    if (context.userPreferences.customInstructions?.trim()) {
-      techRecommendations += `\n\nCUSTOM USER INSTRUCTIONS:\n"${context.userPreferences.customInstructions}"\n\nFollow these specific instructions strictly.`;
-    }
-
-    // Handle Internal Onboarding-derived Guidance
-    if (context.userPreferences.onboardingMetadata) {
-      const internalGuidance = generateInternalGuidance(
-        context.userPreferences.onboardingMetadata,
-      );
-      if (internalGuidance) {
-        techRecommendations += `\n\nARCHITECTURAL CORE GUIDANCE:\n${internalGuidance}`;
-      }
+    if (previousRequests.length > 0) {
+      conversationContext = `
+CONVERSATION HISTORY (build upon or adapt the previous direction):
+${previousRequests.join("\n")}
+→ Current request: "${userInput}"
+NOTE: If the user is changing direction entirely (e.g. "todo app" → "Netflix clone"), acknowledge the pivot and redesign from scratch.`;
     }
   }
 
-  // Full prompt
-  return `You are an expert Solutions Architect specializing in ${detection.type.replace("-", " ")} design.
+  // ── USER PREFERENCES ───────────────────────────────────────────────────────
+  let preferencesBlock = "";
+  if (userPreferences) {
+    const { cloudProviders, languages, frameworks, architectureTypes, applicationType, customInstructions, onboardingMetadata } = userPreferences;
+    const prefLines: string[] = [];
 
-USER REQUEST: "${context.userInput}"
+    const clouds = (cloudProviders || []).filter((c) => c !== "Generic").map((c) => c.toUpperCase());
+    if (clouds.length > 0) prefLines.push(`  • Cloud: ${clouds.join(", ")}`);
+    else if (userPreferences.cloudProvider && userPreferences.cloudProvider !== "Generic")
+      prefLines.push(`  • Cloud: ${userPreferences.cloudProvider.toUpperCase()}`);
+
+    const langs = languages || (userPreferences.language ? [userPreferences.language] : []);
+    if (langs.length > 0) prefLines.push(`  • Languages: ${langs.map((l) => l.toUpperCase()).join(", ")}`);
+
+    const fws = frameworks || (userPreferences.framework ? [userPreferences.framework] : []);
+    if (fws.length > 0) prefLines.push(`  • Frameworks: ${fws.map((f) => f.toUpperCase()).join(", ")} — see FRAMEWORK ECOSYSTEM RULES for correct frontend tech`);
+
+    if (architectureTypes && architectureTypes.length > 0)
+      prefLines.push(`  • Architecture Patterns: ${architectureTypes.join(", ")} (apply where relevant)`);
+
+    if (applicationType && applicationType.length > 0)
+      prefLines.push(`  • Application Type: ${applicationType.join(", ")}`);
+
+    if (customInstructions?.trim())
+      prefLines.push(`  • Custom Instructions (follow strictly): "${customInstructions}"`);
+
+    if (onboardingMetadata) {
+      const { experienceLevel, teamSize, includeServices } = onboardingMetadata;
+      if (experienceLevel === "beginner") prefLines.push("  • Experience: Beginner — use well-documented, simple solutions");
+      if (experienceLevel === "advanced") prefLines.push("  • Experience: Advanced — optimize for performance and production patterns");
+      if (teamSize === "solo") prefLines.push("  • Team: Solo — keep architecture manageable by one developer");
+      if (teamSize === "enterprise") prefLines.push("  • Team: Enterprise — design for team collaboration with clear service boundaries");
+      const enabledServices = Object.entries(includeServices || {}).filter(([, v]) => v).map(([k]) => k);
+      if (enabledServices.length > 0) prefLines.push(`  • Required Services: ${enabledServices.join(", ")}`);
+    }
+
+    if (prefLines.length > 0) {
+      preferencesBlock = `
+USER PREFERENCES (apply contextually per layer — not blindly to every node):
+${prefLines.join("\n")}`;
+    }
+  }
+
+  // ── TECH KNOWLEDGE INJECTION ───────────────────────────────────────────────
+  const techKnowledge = getTechKnowledgeInjection(detection.type, userInput);
+
+  // ── ASSEMBLE FINAL PROMPT ──────────────────────────────────────────────────
+  return `You are an expert Solutions Architect specializing in ${detection.type.replace(/-/g, " ")} design.
 ${currentArchitectureContext}
 ${conversationContext}
 
-OPERATION TYPE: ${operationType ? operationType.toUpperCase() : "CREATE"}
-DETECTED ARCHITECTURE: ${detection.type}
-CONFIDENCE: ${Math.round(detection.confidence * 100)}%
+═══════════════════════════════════════════════════
+PHASE 1 — UNDERSTAND THE REQUEST
+═══════════════════════════════════════════════════
+User Request: "${userInput}"
+Detected Architecture: ${detection.type} (${Math.round(detection.confidence * 100)}% confidence)
+Detected Complexity: ${complexity.toUpperCase()}
+Operation: ${(operationType || "create").toUpperCase()}
+Mode: ${effectiveMode.toUpperCase()} — ${MODE_CONSTRAINTS[effectiveMode].description}
+${preferencesBlock}
 
-${getTechKnowledgeInjection(detection.type, context.userInput)}
+═══════════════════════════════════════════════════
+PHASE 2 — DECIDE (think through these steps BEFORE writing any JSON)
+═══════════════════════════════════════════════════
+${getComponentDecisionTree(effectiveMode, complexity, operationType || "create", adjustedMin, adjustedMax)}
 
-${techRecommendations}
+${techKnowledge}
 
-${componentGuidelines}
-
-TECHNOLOGY ECOSYSTEM:
-Use these exact technology IDs when possible:
-- Full-stack: nextjs, nuxt, sveltekit, laravel, django, rails, adonisjs
-- Frontend: react, vue, angular, svelte
-- Backend: express, fastify, nestjs, hono, elysia
-- Database: postgresql, mysql, mongodb, redis, sqlite
-- Cloud: aws, vercel, railway, render, cloudflare
-- AI/ML: openai, anthropic, pinecone, weaviate
-- Auth: clerk, auth0, firebase-auth
-- Cache: redis, memcached
-- Queue: rabbitmq, kafka, sqs
-- Storage: s3, cloudflare-r2
-- Monitoring: datadog, newrelic, grafana
-
-IMPORTANT: Always include the "tech" field with the specific technology ID (e.g., "tech": "nextjs" or "tech": "postgresql"). This enables proper icon rendering.
+═══════════════════════════════════════════════════
+PHASE 3 — HARD CONSTRAINTS (never violate)
+═══════════════════════════════════════════════════
+${getTechValidationMatrix()}
 
 POSITIONING GUIDELINES:
-- Layer 1 (Entry): y: 50-150 (CDN, Load Balancer, API Gateway, Frontend)
-- Layer 2 (Application): y: 200-350 (Services, Auth, Workers, AI)
-- Layer 3 (Data): y: 400-500 (Databases, Cache, Storage, Queues)
-- NOTE: Full-stack frameworks (Next.js, Laravel) often consolidate Layer 1 and 2. Only separate them if high-scale distribution is requested.
-- Spread horizontally: x spacing 200-300px
+  Layer 1 (Entry/Edge): y: 50–150   → CDN, WAF, Load Balancer, API Gateway, Frontend
+  Layer 2 (Application): y: 200–380 → Services, Auth, Workers, AI, Backend API
+  Layer 3 (Data): y: 420–560        → Databases, Cache, Storage, Queues
+  Horizontal spacing: 200–300px between nodes at the same layer
+  NOTE: Full-stack frameworks (Next.js, Laravel, Django, Rails) often consolidate layers 1+2.
+        Only separate them if high-scale distribution is explicitly needed.
 
-CRITICAL RULES:
-1. Never exceed ${adjustedMax} components
-2. Never use less than ${adjustedMin} components${shouldRelax ? ` (relaxed for ${operationType})` : ""}
-3. Never mix full-stack frameworks with separate backend frameworks
-4. Match complexity to request (simple apps don't need CDN/load balancer)
-5. Prefer managed services in startup mode
-6. Include monitoring only if complexity warrants it
-7. HYBRID PATTERN: If both 'Monolith' and 'Microservices' are selected, implement a MODULAR MONOLITH.
-8. ${context.currentNodes && context.currentNodes.length > 0 ? "Preserve existing node IDs when possible - only modify what was requested" : "Generate all new components with unique IDs"}
+CRITICAL OUTPUT RULES:
+  1. Never exceed ${adjustedMax} components
+  2. Never use fewer than ${adjustedMin} components${shouldRelax ? ` (relaxed for ${operationType} operation)` : ""}
+  3. Never mix full-stack frameworks with separate backend frameworks (nextjs + express = INVALID)
+  4. ${currentNodes && currentNodes.length > 0 ? "Preserve existing node IDs where possible — only change what was requested" : "Generate all new components with unique IDs"}
+  5. EVERY third-party integration (Stripe, SendGrid, Twilio, etc.) must be its own "external" or "saas" node — never embed them in a backend node description
 
-OUTPUT FORMAT - CRITICAL:
-You MUST return a complete JSON object with BOTH nodes AND edges arrays. Without edges, the architecture is incomplete and unusable.
+═══════════════════════════════════════════════════
+PHASE 4 — BUILD (write the JSON architecture)
+═══════════════════════════════════════════════════
+Architecture pattern for ${detection.type}:
+${getArchitectureGuidelines(detection.type)}
 
-REQUIRED JSON STRUCTURE:
+Technology context for your decisions:
+${getTechRecommendations(detection.type, effectiveMode, complexity)}
+
+═══════════════════════════════════════════════════
+PHASE 5 — VALIDATE THEN OUTPUT
+═══════════════════════════════════════════════════
+${getSelfValidationChecklist()}
+
+REQUIRED JSON FORMAT:
 {
-  "analysis": "Brief 1-2 sentence insight explaining the most interesting design decision or trade-off made in this architecture",
+  "analysis": "Single sentence: the most important design trade-off or decision made",
   "nodes": [
     {
-      "id": "unique-id",
-      "type": "frontend|backend|database|gateway|cache|queue|ai|storage|external|saas",
+      "id": "unique-kebab-id",
+      "type": "frontend|backend|database|gateway|cache|queue|ai|storage|external|saas|compute",
       "position": { "x": number, "y": number },
       "data": {
         "label": "Display Name",
-        "description": "Brief purpose",
-        "justification": "Detailed reasoning for choosing this specific technology or architecture pattern",
-        "tech": "technology-id-from-ecosystem",
-        "serviceType": "same-as-type"
+        "description": "One sentence: what this component does",
+        "justification": "One sentence: WHY this specific tech for this specific use case",
+        "tech": "technology-id-from-matrix",
+        "serviceType": "same-value-as-type"
       }
     }
   ],
@@ -1320,24 +1309,24 @@ REQUIRED JSON STRUCTURE:
       "source": "source-node-id",
       "target": "target-node-id",
       "animated": true,
-      "data": { 
-        "protocol": "https",
-        "label": "Brief description of data flow (e.g. 'Session & Cart Data')"
+      "data": {
+        "protocol": "https|http|websocket|grpc|database|cache|queue",
+        "label": "Specific data description (e.g. 'JWT Auth Token', 'User Cart State', 'Payment Events')"
       }
     }
   ]
 }
 
-CONNECTION REQUIREMENTS - VERY IMPORTANT:
-1. EVERY node (except the entry point) MUST have at least ONE incoming edge
-2. Create edges showing data flow: Load Balancer → Frontend → Backend → Database
-3. Use "animated": true on all edges to show active connections
-4. Provide descriptive "label" for edges to clarify what data is flowing between components
-5. Protocol options: "https", "http", "websocket", "grpc", "database", "cache", "queue"
-6. Example edge: { "id": "edge-1", "source": "gateway-1", "target": "frontend-1", "animated": true, "data": { "protocol": "https", "label": "User Requests" } }
+REFERENCE EXAMPLE FOR THIS MODE (${effectiveMode.toUpperCase()}):
+${getFewShotExamples(effectiveMode)}
 
-Generate the complete JSON architecture now. 
-CRITICAL: The JSON object MUST begin with an "analysis" key containing a CONCISE 1-SENTENCE DESIGN INSIGHT. This is essential for system stability.`;
+CONNECTION REQUIREMENTS:
+  1. EVERY node except the single entry point must have at least ONE incoming edge
+  2. Edge labels must name SPECIFIC data (not generic "data" or "request")
+  3. Use "animated": true on all edges
+  4. Protocol must match transport: database connections → "database", Redis ops → "cache", queue sends → "queue"
+
+Now generate the complete JSON architecture. Start directly with {"analysis":`;
 }
 
 export function getTechKnowledgeInjection(
