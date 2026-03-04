@@ -6,7 +6,7 @@
 
 ## Overview
 
-Simulark is an AI-powered platform that transforms natural language requirements into semantic, auto-arranged architecture diagrams. It serves as a high-fidelity CAD tool for backend development, bridging the gap between system design and implementation.
+Simulark is an AI-powered platform that transforms natural language requirements into semantic, auto-arranged architecture diagrams. It serves as a high-fidelity CAD tool for backend development, bridging the gap between system design and implementation. With our new **Brutalist Design System**, Simulark focuses on clarity, structural integrity, and raw functionality for developers.
 
 The platform solves the "Context Loss" problem in modern software engineering—where architectural intent is often lost during AI-assisted coding transitions.
 
@@ -16,111 +16,101 @@ The platform solves the "Context Loss" problem in modern software engineering—
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER                                       │
+│                              CLIENT LAYER (Next.js 16)                          │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   Browser   │  │   Mobile    │  │    IDE      │  │   Canvas Editor     │ │
-│  │  (Next.js)  │  │  (PWA)      │  │ (Cursor/    │  │   (XYFlow)          │ │
-│  │             │  │             │  │  Windsurf)  │  │                     │ │
+│  │   Browser   │  │ Dashboard   │  │ AIAssistant │  │   Canvas Editor     │ │
+│  │  (Web UI)   │  │ (Projects)  │  │ (Deep Chat) │  │   (XYFlow)          │ │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
 └─────────┼────────────────┼────────────────┼────────────────────┼──────────────┘
           │                │                │                    │
           ▼                ▼                ▼                    ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              EDGE/MIDDLEWARE                                    │
+│                              API & MIDDLEWARE LAYER                             │
 ├─────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────────────┐     │
-│  │  Auth Callback  │  │  Rate Limiter  │  │      Context Bridge        │     │
-│  │  (OAuth)        │  │  (Upstash)     │  │   (cursorrules export)    │     │
-│  └────────┬────────┘  └────────┬────────┘  └─────────────┬──────────────┘     │
-└───────────┼───────────────────┼─────────────────────────┼─────────────────────┘
-            │                   │                         │
-            ▼                   ▼                         ▼
+│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────────────┐ │
+│  │  Auth & Oauth   │  │  Rate Limiter   │  │      Export & Bridge         │ │
+│  │  (Supabase)     │  │  (Upstash)      │  │  (Mermaid & Cursorrules)     │ │
+│  └────────┬────────┘  └────────┬────────┘  └─────────────┬──────────────┘ │
+└───────────┼────────────────────┼─────────────────────────┼────────────────┘
+            │                    │                         │
+            ▼                    ▼                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              API LAYER (Next.js)                               │
+│                              CORE SERVICES (React Server Components/Actions)    │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │  /generate  │  │   /chat     │  │ /projects   │  │    /admin/*        │ │
-│  │  (AI Gen)   │  │  (Streaming)│  │  (CRUD)     │  │  (Subscriptions)   │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬────────┘ │
+│  │  /generate  │  │   /chat     │  │ /projects   │  │ /quality-check      │ │
+│  │  (AI Gen)   │  │ (Streaming) │  │   (CRUD)    │  │ (Arch Validation)   │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
 └─────────┼────────────────┼────────────────┼────────────────────┼──────────────┘
           │                │                │                    │
           ▼                │                ▼                    ▼
-┌─────────────────────────┐ │  ┌─────────────────────────────────────────────────┐
-│      AI PROVIDERS      │ │  │              DATABASE (Supabase)                 │
-├─────────────────────────┤ │  ├─────────────────────────────────────────────────┤
-│  ┌─────────────────┐   │ │  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
-│  │    ZhipuAI      │   │ │  │  │ users  │ │projects│ │ graphs │ │  chats  │  │
-│  │  (GLM-4.7)     │   │ │  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
-│  └─────────────────┘   │ │  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
-│  ┌─────────────────┐   │ │  │  │ messages│ │templates│ │contexts│ │api_keys │  │
-│  │   OpenRouter    │   │ │  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
-│  │ (Multi-Provider)│   │ │  └─────────────────────────────────────────────────┘
-│  └─────────────────┘   │ │
-│  ┌─────────────────┐   │ │
-│  │     Kimi       │   │ │
-│  │   (Moonshot)   │   │ │
-│  └─────────────────┘   │ │
-└───────────────────────┘ │
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │    UPSTASH         │
-              │    (Redis)        │
-              │  - Rate Limits    │
-              │  - AI Response    │
-              │    Cache          │
-              └─────────────────────┘
+┌─────────────────────────┐│  ┌─────────────────────────────────────────────────┐
+│      AI PROVIDERS       ││  │              DATABASE (Supabase)                │
+├─────────────────────────┤│  ├─────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ││  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
+│  │    ZhipuAI      │    ││  │  │ users  │ │projects│ │ graphs│ │  chats  │  │
+│  │  (GLM-4.7)      │    ││  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
+│  └─────────────────┘    ││  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
+│  ┌─────────────────┐    ││  │  │messages│ │templates││contexts││api_keys │  │
+│  │   OpenRouter    │    ││  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
+│  │ (Multi-Provider)│    ││  └─────────────────────────────────────────────────┘
+│  └─────────────────┘    ││
+└─────────────────────────┘│
+                           ▼
+                ┌─────────────────────┐
+                │    UPSTASH          │
+                │    (Redis)          │
+                │  - Rate Limits      │
+                │  - AI Cache         │
+                └─────────────────────┘
 ```
 
 ---
 
-## Features
+## Key Features
 
 ### Interactive Architecture Canvas
 
-- **20+ Semantic Node Types:** Gateway, Compute, Database, Queue, Cache, Storage, Functions, AI components
-- **Smart Auto-Layout:** Dagre-directed graph algorithms for automatic arrangement
-- **Dynamic Interaction:** Direct manipulation with referential integrity
+- **Comprehensive Node Ecosystem (20+ Semantic Types):** Gateway, Compute, Database, Queue, Cache, Storage, Functions, AI Nodes, Security, Payment, CI/CD, and more.
+- **Smart Auto-Layout:** Dagre-directed graph algorithms for automatic structured arrangement.
+- **Dynamic Interaction:** Direct manipulation with referential integrity.
+- **Template Blueprints:** Start fast with predefined, scalable cloud patterns.
 
-### AI-Powered Generation
+### AI-Powered Generation & deep assistance
 
-- **Deep Thinking Models:** GLM-4.7 Flash with reasoning capabilities
-- **Multi-Provider Fallback:** ZhipuAI (primary), OpenRouter (fallback)
-- **Streaming Responses:** Real-time SSE for AI thought process
+- **Deep Thinking Models:** Built around GLM-4.7 Flash with robust reasoning capabilities.
+- **Embedded AI Assistant Panel:** Integrated side-panel to chat directly regarding project architecture context.
+- **Multi-Provider Fallback:** Intelligent request routing between ZhipuAI and OpenRouter to prevent outages.
+- **Streaming Responses:** Real-time SSE for observing the AI thought process.
 
-### Visual Simulation
+### Intelligent Analysis & Export
 
-- **Protocol Visualization:** Animated data flows (HTTP/gRPC vs Queues/Streams)
-- **Chaos Mode:** Fault tolerance testing with node "kill switches"
-- **Congestion Detection:** Visual indicators for high fan-in/out
+- **Quality Check:** Validate graph structures, highlighting potential architectural flaws or security bottlenecks.
+- **Export "Skills" Bridge:** Convert architecture directly to contextual text (`.cursorrules`), Markdown, SVG, PDF, PNG, or high-fidelity Mermaid syntax for Cursor/Windsurf.
+- **Project Documents:** AI seamlessly extracts constraints and architectural contexts and stores them against the project repository.
 
-### Context Bridge
+### Developer Experience
 
-- **Live Context URLs:** Secure, read-only JSON endpoints
-- **IDE Integration:** Generates `.cursorrules` and Markdown for Cursor/Windsurf
-- **Export Options:** High-fidelity Mermaid, PNG, SVG, and PDF exports that dynamically scale to fit your entire architecture diagram
-
-### User Experience
-
-- **Dark Mode:** Fully supported dark/light themes with system detection
-- **Responsive Design:** Optimized for mobile and desktop workstations
+- **Brutalist Design:** A stark, functional UI powered by advanced CSS techniques and Framer Motion.
+- **Comprehensive Onboarding Flow:** Custom guided multistep tours for new users and organizations.
+- **Dark Mode:** Fully supported dark/light themes with system detection.
 
 ---
 
 ## Tech Stack
 
-| Layer         | Technology                       |
-| ------------- | -------------------------------- |
-| Frontend      | Next.js 16, React 19, TypeScript |
-| Styling       | Tailwind CSS v4, Shadcn/UI       |
-| Canvas        | XYFlow (React Flow), Dagre       |
-| State         | Zustand                          |
-| Backend       | Bun Runtime, Server Actions      |
-| Database      | Supabase (PostgreSQL + Auth)     |
-| AI            | OpenAI SDK, ZhipuAI, OpenRouter  |
-| Validation    | Valibot                          |
-| Rate Limiting | Upstash Redis                    |
+| Layer          | Technology                                |
+| -------------- | ----------------------------------------- |
+| **Frontend**   | Next.js 16.1.6, React 19, TypeScript      |
+| **Styling**    | Tailwind CSS v4, Shadcn/UI, Framer Motion |
+| **Canvas**     | XYFlow (React Flow), Dagre                |
+| **State**      | Zustand                                   |
+| **Backend**    | Bun Runtime, Server Actions               |
+| **Database**   | Supabase (PostgreSQL + Auth SSR)          |
+| **AI**         | Vercel AI SDK, ZhipuAI, OpenRouter        |
+| **Validation** | Valibot                                   |
+| **Cache/RL**   | Upstash Redis                             |
 
 ---
 
@@ -128,9 +118,10 @@ The platform solves the "Context Loss" problem in modern software engineering—
 
 ### Prerequisites
 
-- Bun runtime
-- Supabase account
+- Bun runtime v1+
+- Supabase project
 - AI provider API keys (ZhipuAI, OpenRouter)
+- Upstash Redis instance
 
 ### Installation
 
@@ -140,10 +131,10 @@ git clone https://github.com/your-repo/simulark-app.git
 cd simulark-app
 bun install
 
-# Configure environment
+# Configure environment variables
 cp .env.example .env.local
 
-# Start development
+# Run Next.js securely atop Bun
 bun dev
 ```
 
@@ -166,36 +157,13 @@ UPSTASH_REDIS_REST_TOKEN=
 
 ---
 
-## API Reference
-
-### Generate Architecture
-
-```http
-POST /api/generate
-Content-Type: application/json
-
-{
-  "prompt": "Design a serverless e-commerce backend",
-  "model": "glm-4.7-flash",
-  "mode": "startup"
-}
-```
-
-### Health Check
-
-```http
-GET /api/health
-```
-
----
-
 ## Subscription Plans
 
-| Plan                     | Price | Features                                                          |
-| ------------------------ | ----- | ----------------------------------------------------------------- |
-| **Doodle** (Free)        | $0    | 3 Projects, Standard Nodes, 10 AI requests/day                    |
-| **Sketch** (Starter)     | $5/mo | Unlimited Projects, Chaos Mode, Auto-Layouts, Kimi/Gemini/Minimax |
-| **Blueprint** (Lifetime) | $10   | Forever Access, Commercial Rights, Private Mode, Claude Opus 4.5  |
+| Plan                     | Price | Features                                                           |
+| ------------------------ | ----- | ------------------------------------------------------------------ |
+| **Doodle** (Free)        | $0    | 3 Projects, Standard Nodes, 10 AI requests/day                     |
+| **Sketch** (Starter)     | $5/mo | Unlimited Projects, Full node suite, Auto-Layouts, Fallback Models |
+| **Blueprint** (Lifetime) | $10   | Forever Access, Commercial Rights, Priority Support                |
 
 ---
 
@@ -207,7 +175,7 @@ MIT License.
 
 ## Acknowledgments
 
-- [XYFlow](https://xyflow.com) — Canvas library
-- [Valibot](https://valibot.dev/) — Schema validation
-- [Supabase](https://supabase.com) — Auth & database
-- [ZhipuAI](https://zhipuai.com) — GLM MODEL
+- [XYFlow](https://xyflow.com) — Powering our core architecture canvas.
+- [Valibot](https://valibot.dev/) — Making schema validation type-safe & lightweight.
+- [Supabase](https://supabase.com) — Best-in-class open-source Postgres auth & db.
+- [ZhipuAI](https://zhipuai.com) — Driving our intelligent graph reasoning logic.
