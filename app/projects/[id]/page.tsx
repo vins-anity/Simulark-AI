@@ -291,18 +291,23 @@ export default function ProjectPage({
               <button
                 type="button"
                 onClick={() => setIsTerminalOpen(true)}
-                className="absolute right-6 top-6 z-30 flex items-center justify-center w-12 h-12 bg-bg-elevated border-2 border-brand-charcoal shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all group"
+                className="absolute right-4 top-4 md:right-6 md:top-6 z-30 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-bg-elevated border-2 border-brand-charcoal shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all group"
                 title="Open Agentic Chat"
               >
                 <Icon
                   icon="lucide:message-square"
-                  className="w-6 h-6 text-brand-charcoal"
+                  className="w-5 h-5 md:w-6 md:h-6 text-brand-charcoal"
                 />
               </button>
             )}
 
             {/* Overlay HUD Zoom Controls */}
-            <div className="absolute bottom-6 left-6 p-0.5 bg-bg-elevated border border-brand-charcoal/20 flex items-center gap-0 z-10">
+            <div
+              className={cn(
+                "absolute bottom-4 left-4 md:bottom-6 md:left-6 p-0.5 bg-bg-elevated border border-brand-charcoal/20 flex items-center gap-0 z-10",
+                isTerminalOpen ? "hidden md:flex" : "flex",
+              )}
+            >
               <button
                 type="button"
                 onClick={() => flowEditorRef.current?.zoomOut()}

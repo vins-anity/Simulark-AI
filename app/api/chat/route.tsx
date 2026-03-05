@@ -15,6 +15,7 @@ import {
   detectArchitectureType,
   detectComplexity,
   normalizeArchitectureMode,
+  summarizePreferenceFit,
   validatePrompt,
 } from "@/lib/prompt-engineering";
 import { checkIPRateLimit, checkRateLimit } from "@/lib/rate-limit";
@@ -98,11 +99,31 @@ interface StreamArchitecturePayload {
   nodes: unknown[];
   edges: unknown[];
   analysis?: string;
+  selectedArchitectureStrategy?: string;
+  preferenceConflicts?: string[];
+  recommendedStack?: string[];
+  preferenceAlignedAlternative?: string[];
   validation: {
     valid: boolean;
     issues: unknown[];
     appliedFixes: unknown[];
   };
+}
+
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+
+  return [];
 }
 
 const MAX_PROJECT_DOCUMENTS = 3;
@@ -427,6 +448,11 @@ export async function POST(req: NextRequest) {
       conversationHistory,
       operationType,
       userPreferences,
+      preferenceFitSummary: summarizePreferenceFit(
+        userPreferences,
+        normalizedMode,
+        detection.type,
+      ),
     });
     const systemPrompt = projectDocumentContext
       ? `${baseSystemPrompt}\n\n${projectDocumentContext.context}`
@@ -613,7 +639,17 @@ export async function POST(req: NextRequest) {
       return {
         nodes: validationResult.fixed?.nodes || enrichedNodes,
         edges: validationResult.fixed?.edges || parsed.edges,
-        analysis: typeof parsed.analysis === "string" ? parsed.analysis : undefined,
+        analysis:
+          typeof parsed.analysis === "string" ? parsed.analysis : undefined,
+        selectedArchitectureStrategy:
+          typeof parsed.selectedArchitectureStrategy === "string"
+            ? parsed.selectedArchitectureStrategy
+            : undefined,
+        preferenceConflicts: toStringArray(parsed.preferenceConflicts),
+        recommendedStack: toStringArray(parsed.recommendedStack),
+        preferenceAlignedAlternative: toStringArray(
+          parsed.preferenceAlignedAlternative,
+        ),
         validation: {
           valid: validationResult.valid,
           issues: validationResult.issues,
@@ -658,8 +694,12 @@ export async function POST(req: NextRequest) {
         };
 
         try {
-          emitProgress(8, "analyzing", "Prompt validated and context prepared");
-          emitProgress(18, "connecting", "Connecting to model provider");
+          emitProgress(
+            8,
+            "analyzing",
+            "Understanding requirements, mode, and current architecture",
+          );
+          emitProgress(18, "connecting", "Connecting to the selected model");
 
           // Process the stream
           for await (const part of result.fullStream) {
@@ -668,7 +708,11 @@ export async function POST(req: NextRequest) {
                 accumulatedText += part.text;
                 if (!firstContentSeen) {
                   firstContentSeen = true;
-                  emitProgress(42, "generating", "Model started generating");
+                  emitProgress(
+                    42,
+                    "generating",
+                    "Generating the recommended architecture",
+                  );
                 }
 
                 const contentProgress = Math.min(
@@ -678,7 +722,7 @@ export async function POST(req: NextRequest) {
                 emitProgress(
                   contentProgress,
                   "generating",
-                  "Building architecture response",
+                  "Building architecture graph and recommendation",
                 );
                 // logger.debug("Text delta received", { len: part.text.length });
                 // Send content chunk in legacy format
@@ -711,7 +755,7 @@ export async function POST(req: NextRequest) {
                         emitProgress(
                           95,
                           "validating",
-                          "Validating generated architecture",
+                          "Validating graph quality and policy compliance",
                         );
                         // Send result in legacy format
                         controller.enqueue(
@@ -734,7 +778,11 @@ export async function POST(req: NextRequest) {
                 accumulatedReasoning += part.text;
                 if (!firstReasoningSeen) {
                   firstReasoningSeen = true;
-                  emitProgress(30, "thinking", "Model is reasoning");
+                  emitProgress(
+                    30,
+                    "thinking",
+                    "Ranking architecture options against your preferences",
+                  );
                 }
 
                 const reasoningProgress = Math.min(
@@ -744,7 +792,7 @@ export async function POST(req: NextRequest) {
                 emitProgress(
                   reasoningProgress,
                   "thinking",
-                  "Analyzing architecture trade-offs",
+                  "Checking overlaps, conflicts, and trade-offs",
                 );
                 // Send reasoning chunk in legacy format
                 controller.enqueue(
@@ -824,7 +872,7 @@ export async function POST(req: NextRequest) {
                       emitProgress(
                         95,
                         "validating",
-                        "Validating generated architecture",
+                        "Validating graph quality and policy compliance",
                       );
                       // Send result in legacy format if found
                       controller.enqueue(
@@ -863,7 +911,11 @@ export async function POST(req: NextRequest) {
                   fullResponseSnapshot: `${accumulatedText.substring(0, 200)}...`,
                 });
 
-                emitProgress(100, "complete", "Generation complete");
+                emitProgress(
+                  100,
+                  "complete",
+                  "Recommended architecture and alternatives ready",
+                );
                 controller.close();
                 break;
               }

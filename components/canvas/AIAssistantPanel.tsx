@@ -4,6 +4,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
+  ArrowRight,
   Bot,
   ChevronDown,
   ChevronRight,
@@ -15,7 +16,6 @@ import {
   Square,
   Terminal,
   Trash2,
-  ArrowRight,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -70,6 +70,17 @@ interface Message {
   content: string;
   reasoning?: string;
   isThinking?: boolean;
+}
+
+interface ArchitectureResponseData {
+  nodes: any[];
+  edges: any[];
+  analysis?: string;
+  selectedArchitectureStrategy?: string;
+  preferenceConflicts?: string[];
+  recommendedStack?: string[];
+  preferenceAlignedAlternative?: string[];
+  recommendations?: string[];
 }
 
 function isLikelyArchitecturePayload(text: string): boolean {
@@ -353,6 +364,7 @@ export function AIAssistantPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamProgress, setStreamProgress] = useState(0);
   const [streamStage, setStreamStage] = useState<StreamStage>("analyzing");
+  const [streamDetail, setStreamDetail] = useState("");
   const [showChatList, setShowChatList] = useState(false);
   const [_isThinkingOpen, _setIsThinkingOpen] = useState(true);
   const [suggestionChips, setSuggestionChips] = useState<string[]>([]);
@@ -430,6 +442,7 @@ export function AIAssistantPanel({
   const updateStreamProgress = (
     nextProgress: number,
     nextStage?: StreamStage,
+    detail?: string,
   ) => {
     setStreamProgress((prev) => {
       const clamped = Math.max(0, Math.min(100, Math.round(nextProgress)));
@@ -437,6 +450,9 @@ export function AIAssistantPanel({
     });
     if (nextStage) {
       setStreamStage(nextStage);
+    }
+    if (typeof detail === "string") {
+      setStreamDetail(detail);
     }
   };
 
@@ -927,12 +943,7 @@ export function AIAssistantPanel({
 
   // Generates a conversational response using the AI's actual reasoning
   const generateConversationalResponse = (
-    data: {
-      nodes: any[];
-      edges: any[];
-      analysis?: string;
-      recommendations?: string[];
-    },
+    data: ArchitectureResponseData,
     reasoningStr?: string,
     _usage?: {
       promptTokens: number;
@@ -950,29 +961,73 @@ export function AIAssistantPanel({
     // Capitalize/format known tech names
     const formatTech = (t: string) => {
       const map: Record<string, string> = {
-        laravel: "Laravel", livewire: "Livewire", inertia: "Inertia.js", blade: "Blade",
-        postgres: "PostgreSQL", postgresql: "PostgreSQL",
-        openai: "OpenAI", redis: "Redis", mysql: "MySQL", mongodb: "MongoDB",
-        react: "React", nextjs: "Next.js", vuejs: "Vue.js", nuxtjs: "Nuxt.js",
-        express: "Express", fastapi: "FastAPI", django: "Django", rails: "Rails",
-        node: "Node.js", nodejs: "Node.js", graphql: "GraphQL", kafka: "Kafka",
-        rabbitmq: "RabbitMQ", elasticsearch: "Elasticsearch", nginx: "Nginx",
-        docker: "Docker", kubernetes: "Kubernetes", terraform: "Terraform",
-        aws: "AWS", gcp: "GCP", azure: "Azure", supabase: "Supabase",
-        firebase: "Firebase", vercel: "Vercel", cloudflare: "Cloudflare",
-        stripe: "Stripe", twilio: "Twilio", sendgrid: "SendGrid",
-        tailwind: "Tailwind", typescript: "TypeScript", python: "Python",
-        rust: "Rust", go: "Go", java: "Java", spring: "Spring",
-        pinecone: "Pinecone", weaviate: "Weaviate", qdrant: "Qdrant",
-        anthropic: "Anthropic", gemini: "Gemini", ollama: "Ollama",
-        datadog: "Datadog", sentry: "Sentry", prometheus: "Prometheus",
-        grafana: "Grafana", celery: "Celery", sidekiq: "Sidekiq",
+        laravel: "Laravel",
+        livewire: "Livewire",
+        inertia: "Inertia.js",
+        blade: "Blade",
+        postgres: "PostgreSQL",
+        postgresql: "PostgreSQL",
+        openai: "OpenAI",
+        redis: "Redis",
+        mysql: "MySQL",
+        mongodb: "MongoDB",
+        react: "React",
+        nextjs: "Next.js",
+        vuejs: "Vue.js",
+        nuxtjs: "Nuxt.js",
+        express: "Express",
+        fastapi: "FastAPI",
+        django: "Django",
+        rails: "Rails",
+        node: "Node.js",
+        nodejs: "Node.js",
+        graphql: "GraphQL",
+        kafka: "Kafka",
+        rabbitmq: "RabbitMQ",
+        elasticsearch: "Elasticsearch",
+        nginx: "Nginx",
+        docker: "Docker",
+        kubernetes: "Kubernetes",
+        terraform: "Terraform",
+        aws: "AWS",
+        gcp: "GCP",
+        azure: "Azure",
+        supabase: "Supabase",
+        firebase: "Firebase",
+        vercel: "Vercel",
+        cloudflare: "Cloudflare",
+        stripe: "Stripe",
+        twilio: "Twilio",
+        sendgrid: "SendGrid",
+        tailwind: "Tailwind",
+        typescript: "TypeScript",
+        python: "Python",
+        rust: "Rust",
+        go: "Go",
+        java: "Java",
+        spring: "Spring",
+        pinecone: "Pinecone",
+        weaviate: "Weaviate",
+        qdrant: "Qdrant",
+        anthropic: "Anthropic",
+        gemini: "Gemini",
+        ollama: "Ollama",
+        datadog: "Datadog",
+        sentry: "Sentry",
+        prometheus: "Prometheus",
+        grafana: "Grafana",
+        celery: "Celery",
+        sidekiq: "Sidekiq",
       };
       return map[t.toLowerCase()] || t.charAt(0).toUpperCase() + t.slice(1);
     };
 
     const formattedTechs = techs.slice(0, 4).map(formatTech);
     const stackSnippet = formattedTechs.join(", ");
+    const recommendedStack = data.recommendedStack || [];
+    const preferenceAlignedAlternative =
+      data.preferenceAlignedAlternative || [];
+    const preferenceConflicts = data.preferenceConflicts || [];
 
     // LLM-generated analysis is the primary response — lead with it
     let insight = "";
@@ -993,9 +1048,40 @@ export function AIAssistantPanel({
     let statsLine = `**${nodeCount} nodes** · **${edgeCount} connections**`;
     if (stackSnippet) statsLine += ` · ${stackSnippet}`;
 
-    let response = insight
-      ? `${insight}\n\n---\n${statsLine}`
-      : statsLine;
+    const sections: string[] = [];
+    if (insight) {
+      sections.push(insight);
+    }
+
+    if (data.selectedArchitectureStrategy?.trim()) {
+      sections.push(
+        `**Why This Architecture**\n${data.selectedArchitectureStrategy.trim()}`,
+      );
+    }
+
+    if (recommendedStack.length > 0) {
+      sections.push(
+        `**Recommended Stack**\n${recommendedStack.map((item) => `- ${item}`).join("\n")}`,
+      );
+    }
+
+    if (preferenceAlignedAlternative.length > 0) {
+      sections.push(
+        `**Preference-Aligned Option**\n${preferenceAlignedAlternative
+          .map((item) => `- ${item}`)
+          .join("\n")}`,
+      );
+    }
+
+    if (preferenceConflicts.length > 0) {
+      sections.push(
+        `**Tradeoffs**\n${preferenceConflicts.map((item) => `- ${item}`).join("\n")}`,
+      );
+    }
+
+    sections.push(`---\n${statsLine}`);
+
+    const response = sections.join("\n\n");
 
     const chips: string[] = [];
 
@@ -1017,6 +1103,7 @@ export function AIAssistantPanel({
 
     setStreamProgress(5);
     setStreamStage("analyzing");
+    setStreamDetail("Preparing your request");
 
     // Save user message to database
     let chatId = currentChatId;
@@ -1099,7 +1186,11 @@ export function AIAssistantPanel({
         }),
       });
 
-      updateStreamProgress(15, "connecting");
+      updateStreamProgress(
+        15,
+        "connecting",
+        "Connecting to the selected model",
+      );
       clearTimeout(timeoutId); // Connection established, clear initial timeout
       resetWatchdog(); // Start stream watchdog
 
@@ -1195,6 +1286,7 @@ export function AIAssistantPanel({
                       40 + Math.floor(accumulatedContent.length / 120),
                     ),
                     "generating",
+                    "Building architecture graph and recommendation",
                   );
                   showingArchitectureProgress =
                     showingArchitectureProgress ||
@@ -1207,7 +1299,11 @@ export function AIAssistantPanel({
                       if (parsed) {
                         lastGeneratedData = parsed;
                         onGenerationSuccess(parsed);
-                        updateStreamProgress(95, "validating");
+                        updateStreamProgress(
+                          95,
+                          "validating",
+                          "Validating graph quality and policy compliance",
+                        );
                       }
                     } catch {
                       // Ignore incomplete JSON chunks or parse errors while streaming
@@ -1229,6 +1325,7 @@ export function AIAssistantPanel({
                       28 + Math.floor(accumulatedReasoning.length / 140),
                     ),
                     "thinking",
+                    "Checking overlaps, conflicts, and trade-offs",
                   );
                   setMessages((prev) =>
                     prev.map((m) =>
@@ -1250,6 +1347,7 @@ export function AIAssistantPanel({
                   28 + Math.floor(accumulatedReasoning.length / 140),
                 ),
                 "thinking",
+                "Checking overlaps, conflicts, and trade-offs",
               );
               setMessages((prev) =>
                 prev.map((m) =>
@@ -1263,6 +1361,7 @@ export function AIAssistantPanel({
               updateStreamProgress(
                 Math.min(88, 40 + Math.floor(accumulatedContent.length / 120)),
                 "generating",
+                "Building architecture graph and recommendation",
               );
               showingArchitectureProgress =
                 showingArchitectureProgress ||
@@ -1275,7 +1374,11 @@ export function AIAssistantPanel({
                   if (parsed) {
                     lastGeneratedData = parsed;
                     onGenerationSuccess(parsed);
-                    updateStreamProgress(95, "validating");
+                    updateStreamProgress(
+                      95,
+                      "validating",
+                      "Validating graph quality and policy compliance",
+                    );
                   }
                 } catch {
                   // Ignore parse errors during stream.
@@ -1294,7 +1397,11 @@ export function AIAssistantPanel({
               console.log("Received architecture result:", json.data);
               lastGeneratedData = json.data;
               onGenerationSuccess(json.data);
-              updateStreamProgress(95, "validating");
+              updateStreamProgress(
+                95,
+                "validating",
+                "Validating graph quality and policy compliance",
+              );
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === aiMsgId
@@ -1326,12 +1433,14 @@ export function AIAssistantPanel({
               const progressPayload = json.data as {
                 progress?: number;
                 stage?: StreamStage;
+                detail?: string;
               };
 
               if (typeof progressPayload.progress === "number") {
                 updateStreamProgress(
                   progressPayload.progress,
                   progressPayload.stage,
+                  progressPayload.detail,
                 );
               }
             }
@@ -1392,7 +1501,11 @@ export function AIAssistantPanel({
         ),
       );
       setSuggestionChips(newChips);
-      updateStreamProgress(100, "complete");
+      updateStreamProgress(
+        100,
+        "complete",
+        "Recommended architecture and alternatives ready",
+      );
 
       await saveMessage(chatId, finalAiMessage);
     } catch (err: any) {
@@ -1431,6 +1544,9 @@ export function AIAssistantPanel({
       }
 
       setStreamStage(isAbortError ? "complete" : "error");
+      setStreamDetail(
+        isAbortError ? "Generation stopped" : "Generation failed",
+      );
 
       // Re-throw for the initial prompt handling if it's not an abort
       if (!isAbortError) throw err;
@@ -1440,6 +1556,7 @@ export function AIAssistantPanel({
       setIsGenerating(false);
       setStreamProgress(0);
       setStreamStage("analyzing");
+      setStreamDetail("");
       if (onGenerationEnd) onGenerationEnd();
     }
   };
@@ -1620,6 +1737,8 @@ export function AIAssistantPanel({
                   reasoning={message.reasoning}
                   content={message.content}
                   streamProgress={streamProgress}
+                  stage={streamStage}
+                  detail={streamDetail}
                 />
               ) : (
                 <div
@@ -1721,6 +1840,11 @@ export function AIAssistantPanel({
                     stage={streamStage}
                   />
                 </div>
+                {streamDetail ? (
+                  <div className="font-mono text-[9px] leading-relaxed text-brand-charcoal/45 dark:text-text-secondary/55">
+                    {streamDetail}
+                  </div>
+                ) : null}
                 <div className="h-0.5 bg-brand-charcoal/5 dark:bg-border-primary/30 overflow-hidden">
                   <motion.div
                     className="h-full bg-brand-orange"
@@ -1766,7 +1890,10 @@ export function AIAssistantPanel({
             )}
 
             <div className="relative group">
-              <form onSubmit={handleManualSubmit} className="relative flex items-center bg-bg-primary dark:bg-bg-secondary border border-brand-charcoal/20 dark:border-border-primary focus-within:border-brand-orange/50 transition-colors shadow-sm">
+              <form
+                onSubmit={handleManualSubmit}
+                className="relative flex items-center bg-bg-primary dark:bg-bg-secondary border border-brand-charcoal/20 dark:border-border-primary focus-within:border-brand-orange/50 transition-colors shadow-sm"
+              >
                 <button
                   type="button"
                   onClick={() => pdfInputRef.current?.click()}
@@ -1815,7 +1942,10 @@ export function AIAssistantPanel({
                     <SelectTrigger className="h-8 w-8 min-w-0 p-0 flex items-center justify-center border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-mono text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none rounded-none">
                       <Bot className="w-4 h-4 shrink-0" />
                     </SelectTrigger>
-                    <SelectContent align="end" className="font-mono text-[11px] max-w-[300px] rounded-none border-brand-charcoal">
+                    <SelectContent
+                      align="end"
+                      className="font-mono text-[11px] max-w-[300px] rounded-none border-brand-charcoal"
+                    >
                       <TooltipProvider delayDuration={100}>
                         {Object.entries(AVAILABLE_MODELS).map(([id, m]) => (
                           <Tooltip key={id}>
@@ -1827,15 +1957,32 @@ export function AIAssistantPanel({
                                 >
                                   <div className="flex items-center gap-2">
                                     <span>{m.name}</span>
-                                    {m.badge === "hot_tag" && <span className="text-brand-orange ml-1">🔥</span>}
-                                    {m.badge === "double_hot_tag" && <span className="text-brand-orange ml-1">🔥🔥</span>}
-                                    {m.badge === "balance_tag" && <span className="text-[8px] text-blue-500 border border-blue-500/20 px-1 py-0.5 ml-1 leading-none uppercase">BAL</span>}
+                                    {m.badge === "hot_tag" && (
+                                      <span className="text-brand-orange ml-1">
+                                        🔥
+                                      </span>
+                                    )}
+                                    {m.badge === "double_hot_tag" && (
+                                      <span className="text-brand-orange ml-1">
+                                        🔥🔥
+                                      </span>
+                                    )}
+                                    {m.badge === "balance_tag" && (
+                                      <span className="text-[8px] text-blue-500 border border-blue-500/20 px-1 py-0.5 ml-1 leading-none uppercase">
+                                        BAL
+                                      </span>
+                                    )}
                                   </div>
                                 </SelectItem>
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-[200px] font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap rounded-none border-brand-charcoal">
-                              <div className="font-bold text-brand-orange mb-1">{m.name}</div>
+                            <TooltipContent
+                              side="right"
+                              className="max-w-[200px] font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap rounded-none border-brand-charcoal"
+                            >
+                              <div className="font-bold text-brand-orange mb-1">
+                                {m.name}
+                              </div>
                               {m.description}
                             </TooltipContent>
                           </Tooltip>

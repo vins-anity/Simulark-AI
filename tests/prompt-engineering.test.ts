@@ -4,6 +4,7 @@ import {
   detectArchitectureType,
   detectComplexity,
   normalizeArchitectureMode,
+  summarizePreferenceFit,
   validatePrompt,
 } from "../lib/prompt-engineering";
 
@@ -463,6 +464,60 @@ describe("Prompt Engineering Tests", () => {
       expect(startup).toContain("- Maximum components: 5");
       expect(corporate).toContain("- Minimum components: 6");
       expect(corporate).toContain("- Maximum components: 20");
+    });
+
+    it("should prioritize best architecture over conflicting preferences in enterprise mode", () => {
+      const prompt = buildEnhancedSystemPrompt({
+        userInput:
+          "Design an enterprise architecture for a global B2B SaaS platform",
+        architectureType: "web-app",
+        detectedIntent: "Architecture: web-app",
+        mode: "enterprise",
+        userPreferences: {
+          frameworks: ["Laravel"],
+          languages: ["PHP"],
+          cloudProviders: ["AWS"],
+        },
+      });
+
+      expect(prompt).toContain("ARCHITECTURE DECISION PRIORITY");
+      expect(prompt).toContain("best architecture comes first");
+      expect(prompt).toContain("preferences are soft constraints");
+      expect(prompt).toContain("preference-aligned alternative");
+    });
+
+    it("should include structured recommendation sections for conflict handling", () => {
+      const prompt = buildEnhancedSystemPrompt({
+        userInput:
+          "Build an enterprise fintech platform with strict compliance",
+        architectureType: "microservices",
+        detectedIntent: "Architecture: microservices",
+        mode: "enterprise",
+      });
+
+      expect(prompt).toContain('"selectedArchitectureStrategy"');
+      expect(prompt).toContain('"preferenceConflicts"');
+      expect(prompt).toContain('"recommendedStack"');
+      expect(prompt).toContain('"preferenceAlignedAlternative"');
+    });
+  });
+
+  describe("Preference Fit Summary", () => {
+    it("flags likely conflicts for enterprise-biased recommendations", () => {
+      const summary = summarizePreferenceFit(
+        {
+          frameworks: ["Laravel"],
+          languages: ["PHP"],
+          cloudProviders: ["AWS"],
+        },
+        "enterprise",
+        "microservices",
+      );
+
+      expect(summary.normalizedPreferences).toContain("frameworks: laravel");
+      expect(summary.overlapOpportunities).toContain("aws");
+      expect(summary.likelyConflicts.join(" ")).toContain("laravel");
+      expect(summary.promptDirective).toContain("best architecture first");
     });
   });
 

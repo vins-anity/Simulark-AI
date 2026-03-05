@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createProject, getUserProjects } from "@/actions/projects";
-
+import { getUserPreferences, updateUserPreferences } from "@/actions/users";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,9 +33,8 @@ import {
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
 import { ArchitectureMode, MODE_CONSTRAINTS } from "@/lib/prompt-engineering";
 import type { Project } from "@/lib/schema/graph";
-import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { getUserPreferences, updateUserPreferences } from "@/actions/users";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 3;
 
@@ -259,7 +258,7 @@ function DashboardContent() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
       </div>
 
-      <main className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto w-full px-6 pt-20 pb-12">
+      <main className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 pt-16 sm:pt-20 pb-10 sm:pb-12">
         {/* Mission Control Hero */}
         <motion.div
           variants={containerVariants}
@@ -279,7 +278,7 @@ function DashboardContent() {
 
           <motion.h1
             variants={itemVariants}
-            className="text-7xl md:text-8xl font-poppins font-bold text-brand-charcoal dark:text-gray-100 uppercase tracking-tighter leading-[0.85] mb-6 text-center"
+            className="text-5xl sm:text-6xl md:text-8xl font-poppins font-bold text-brand-charcoal dark:text-gray-100 uppercase tracking-tighter leading-[0.85] mb-6 text-center"
           >
             Mission
             <br />
@@ -309,8 +308,8 @@ function DashboardContent() {
             <div className="absolute -bottom-3 -right-3 w-6 h-6 border-b border-r border-brand-charcoal/20 dark:border-white/20" />
 
             <div className="bg-white dark:bg-zinc-900 border-2 border-brand-charcoal dark:border-zinc-700 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)] transition-all flex flex-col overflow-hidden">
-              <div className="bg-brand-charcoal/5 dark:bg-white/5 border-b border-brand-charcoal dark:border-zinc-700 px-4 py-1.5 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
-                <div className="flex items-center gap-6">
+              <div className="bg-brand-charcoal/5 dark:bg-white/5 border-b border-brand-charcoal dark:border-zinc-700 px-3 sm:px-4 py-2 flex flex-wrap justify-between items-center gap-x-4 gap-y-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <div className="flex items-center gap-3 sm:gap-6 min-w-0">
                   <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none">
                     {isExecuting
                       ? "UPLINK_STATION:TRANSMITTING"
@@ -428,14 +427,14 @@ function DashboardContent() {
                     />
                   </form>
                 </div>
-                <div className="flex border-t sm:border-t-0 sm:border-l border-brand-charcoal dark:border-zinc-700 divide-x divide-brand-charcoal dark:divide-zinc-700">
+                <div className="grid grid-cols-3 sm:flex border-t sm:border-t-0 sm:border-l border-brand-charcoal dark:border-zinc-700 sm:divide-x divide-brand-charcoal dark:divide-zinc-700">
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     disabled={isExecuting}
                     onClick={handleRandomPrompt}
-                    className="h-16 w-16 rounded-none hover:bg-brand-orange/10 hover:text-brand-orange dark:text-gray-400 transition-colors"
+                    className="h-16 w-full sm:w-16 rounded-none hover:bg-brand-orange/10 hover:text-brand-orange dark:text-gray-400 transition-colors"
                   >
                     <Sparkles size={18} />
                   </Button>
@@ -444,7 +443,7 @@ function DashboardContent() {
                     variant="ghost"
                     disabled={isExecuting}
                     onClick={handleCreateNew}
-                    className="h-16 px-6 rounded-none font-mono text-[10px] uppercase font-bold tracking-widest hover:bg-brand-charcoal/5 dark:text-gray-400 dark:hover:bg-white/5"
+                    className="h-16 w-full px-3 sm:px-6 rounded-none font-mono text-[10px] uppercase font-bold tracking-widest hover:bg-brand-charcoal/5 dark:text-gray-400 dark:hover:bg-white/5"
                   >
                     <Plus size={14} className="mr-2" />
                     BLANK
@@ -452,7 +451,7 @@ function DashboardContent() {
                   <button
                     onClick={handleExecute}
                     disabled={!prompt.trim() || isExecuting}
-                    className="h-16 px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-zinc-950 font-mono text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="h-16 w-full px-3 sm:px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-zinc-950 font-mono text-[10px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isExecuting ? (
                       <>
@@ -485,8 +484,8 @@ function DashboardContent() {
 
         {/* Active Operations Section */}
         <div className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-8 border-b-2 border-brand-charcoal dark:border-zinc-700 pb-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8 border-b-2 border-brand-charcoal dark:border-zinc-700 pb-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <div className="w-8 h-8 bg-brand-charcoal dark:bg-white flex items-center justify-center text-brand-sand-light dark:text-brand-charcoal">
                 <Box size={16} />
               </div>
@@ -498,14 +497,14 @@ function DashboardContent() {
                   // PROJECT_REGISTRY_01
                 </span>
               </div>
-              <div className="bg-brand-orange text-white px-2 py-0.5 text-[10px] font-mono font-bold leading-none ml-2">
+              <div className="bg-brand-orange text-white px-2 py-0.5 text-[10px] font-mono font-bold leading-none ml-1 sm:ml-2 shrink-0">
                 {totalProjects}
               </div>
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between sm:justify-end gap-4">
                 <span className="text-[10px] font-mono font-bold text-brand-charcoal/30 dark:text-gray-600 tracking-widest uppercase">
                   PAGE: {currentPage.toString().padStart(2, "0")} /{" "}
                   {totalPages.toString().padStart(2, "0")}
@@ -587,7 +586,7 @@ function DashboardContent() {
 
       {/* Decorative Footer Element */}
       <footer className="relative z-10 p-6 border-t border-brand-charcoal/10 dark:border-white/10">
-        <div className="max-w-7xl mx-auto flex justify-between items-center opacity-30 dark:opacity-20 dark:text-white">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center opacity-30 dark:opacity-20 dark:text-white">
           <span className="text-[8px] font-mono uppercase tracking-[0.5em]">
             // SIMULARK_OS_V1.6.2_BUILD_FINAL
           </span>

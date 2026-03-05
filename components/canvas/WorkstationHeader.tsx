@@ -146,9 +146,9 @@ export function WorkstationHeader({
   }
 
   return (
-    <header className="h-14 border-b border-border-primary bg-bg-elevated flex items-center px-4 lg:px-6 shrink-0 z-20 relative gap-2">
+    <header className="min-h-14 border-b border-border-primary bg-bg-elevated flex flex-wrap items-center px-3 py-2 sm:px-4 lg:px-6 shrink-0 z-20 relative gap-2">
       {/* ========== ZONE 1: LEFT — Navigation & Identity ========== */}
-      <div className="flex items-center gap-3 min-w-0 flex-shrink">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         <Link
           href="/dashboard"
           className="flex items-center justify-center w-8 h-8 border border-brand-charcoal/20 text-brand-charcoal dark:text-text-primary hover:bg-brand-charcoal hover:text-white dark:hover:bg-white dark:hover:text-brand-charcoal transition-all active:translate-x-0.5 active:translate-y-0.5 shrink-0"
@@ -185,23 +185,23 @@ export function WorkstationHeader({
       </div>
 
       {/* Divider */}
-      <div className="h-8 w-px bg-brand-charcoal/10 shrink-0 hidden md:block" />
+      <div className="h-8 w-px bg-brand-charcoal/10 shrink-0 hidden lg:block" />
 
       {/* ========== ZONE 2: CENTER — Status & Tools ========== */}
-      <div className="flex items-center gap-1.5">
+      <div className="order-3 flex w-full items-center gap-1.5 overflow-x-auto sm:order-none sm:w-auto">
         {/* Status Pulse */}
         <div
           className={cn(
             "hidden lg:flex items-center gap-2 px-2.5 py-1 border font-mono text-[9px] uppercase tracking-widest font-bold whitespace-nowrap shrink-0",
             saving
               ? "border-brand-orange text-brand-orange bg-brand-orange/5"
-              : "border-brand-charcoal/10 text-brand-charcoal/50 bg-bg-elevated"
+              : "border-brand-charcoal/10 text-brand-charcoal/50 bg-bg-elevated",
           )}
         >
           <div
             className={cn(
               "w-1.5 h-1.5",
-              saving ? "bg-brand-orange animate-pulse" : "bg-emerald-500"
+              saving ? "bg-brand-orange animate-pulse" : "bg-emerald-500",
             )}
           />
           {saving ? "SAVING" : "READY"}
@@ -216,7 +216,7 @@ export function WorkstationHeader({
             "h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-1.5 flex items-center justify-center shrink-0",
             !hasInteractedWithLayout
               ? "text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white"
-              : "border-brand-orange/20 bg-brand-orange/5 text-brand-orange hover:bg-brand-orange hover:text-white"
+              : "border-brand-orange/20 bg-brand-orange/5 text-brand-orange hover:bg-brand-orange hover:text-white",
           )}
         >
           {hasInteractedWithLayout ? (
@@ -224,7 +224,7 @@ export function WorkstationHeader({
               <LayoutIcon
                 className={cn(
                   "w-3.5 h-3.5 shrink-0",
-                  isLayoutAnimating && "animate-spin"
+                  isLayoutAnimating && "animate-spin",
                 )}
               />
               <span className="truncate">
@@ -243,21 +243,27 @@ export function WorkstationHeader({
         <Button
           variant="ghost"
           onClick={() => setChaosMode(!chaosMode)}
-          title={chaosMode ? "CHAOS:ON — click to disable" : "CHAOS_SIM — inject random failures"}
+          title={
+            chaosMode
+              ? "CHAOS:ON — click to disable"
+              : "CHAOS_SIM — inject random failures"
+          }
           className={cn(
             "h-8 gap-1.5 px-2 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold",
             chaosMode
               ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
-              : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white"
+              : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white",
           )}
         >
           <Zap
             className={cn(
               "w-3 h-3 shrink-0",
-              chaosMode && "fill-current animate-pulse"
+              chaosMode && "fill-current animate-pulse",
             )}
           />
-          <span className="hidden xl:inline">{chaosMode ? "CHAOS" : "CHAOS"}</span>
+          <span className="hidden xl:inline">
+            {chaosMode ? "CHAOS" : "CHAOS"}
+          </span>
         </Button>
 
         <Button
@@ -268,24 +274,21 @@ export function WorkstationHeader({
             "h-8 gap-1.5 px-2 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold",
             stressMode
               ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-400"
-              : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white"
+              : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white",
           )}
         >
           <ShieldAlert
-            className={cn(
-              "w-3 h-3 shrink-0",
-              stressMode && "animate-pulse"
-            )}
+            className={cn("w-3 h-3 shrink-0", stressMode && "animate-pulse")}
           />
           <span className="hidden xl:inline">STRESS</span>
         </Button>
       </div>
 
       {/* Spacer */}
-      <div className="flex-1" />
+      <div className="hidden sm:flex flex-1" />
 
       {/* ========== ZONE 3: RIGHT — Menus ========== */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="ml-auto flex items-center gap-1.5 shrink-0">
         {/* Export / Archive */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

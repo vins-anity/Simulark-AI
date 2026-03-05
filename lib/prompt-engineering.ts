@@ -61,6 +61,14 @@ export interface PromptContext {
       includeServices: Record<string, boolean>;
     };
   };
+  preferenceFitSummary?: PreferenceFitSummary;
+}
+
+export interface PreferenceFitSummary {
+  normalizedPreferences: string[];
+  overlapOpportunities: string[];
+  likelyConflicts: string[];
+  promptDirective: string;
 }
 
 // Complexity indicators
@@ -587,6 +595,78 @@ export function validatePrompt(input: string): PromptValidation {
   return { isValid: true };
 }
 
+function normalizePreferenceValues(values?: string[]): string[] {
+  return (values || [])
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function summarizePreferenceFit(
+  userPreferences: PromptContext["userPreferences"] | undefined,
+  mode: ArchitectureMode,
+  architectureType: ArchitectureType,
+): PreferenceFitSummary {
+  const cloudProviders = normalizePreferenceValues(
+    userPreferences?.cloudProviders,
+  );
+  const frameworks = normalizePreferenceValues(userPreferences?.frameworks);
+  const languages = normalizePreferenceValues(userPreferences?.languages);
+  const architectureTypes = normalizePreferenceValues(
+    userPreferences?.architectureTypes,
+  );
+
+  const normalizedPreferences = [
+    ...cloudProviders.map((value) => `cloud: ${value}`),
+    ...frameworks.map((value) => `frameworks: ${value}`),
+    ...languages.map((value) => `languages: ${value}`),
+    ...architectureTypes.map((value) => `patterns: ${value}`),
+  ];
+
+  const overlapOpportunities = [
+    ...cloudProviders.filter((value) =>
+      ["aws", "gcp", "google cloud", "azure", "cloudflare", "vercel"].includes(
+        value,
+      ),
+    ),
+    ...frameworks.filter((value) =>
+      ["nextjs", "nestjs", "fastapi", "spring", "go"].includes(value),
+    ),
+  ];
+
+  const likelyConflicts: string[] = [];
+  if (mode === "enterprise") {
+    if (
+      frameworks.includes("laravel") &&
+      architectureType === "microservices"
+    ) {
+      likelyConflicts.push(
+        "laravel may constrain service decomposition for enterprise microservices",
+      );
+    }
+    if (frameworks.includes("nextjs") && architectureType === "microservices") {
+      likelyConflicts.push(
+        "nextjs should not be stretched into the primary backend for enterprise microservices",
+      );
+    }
+    if (languages.includes("php") && architectureType === "ai-pipeline") {
+      likelyConflicts.push(
+        "php is usually not the strongest primary language for enterprise AI pipelines",
+      );
+    }
+  }
+
+  const promptDirective =
+    mode === "enterprise"
+      ? "Use the best architecture first. User preferences are soft constraints. Reuse only compatible preferences, and provide a preference-aligned alternative when conflicts remain."
+      : "Favor the best architecture for the request, while preserving compatible user preferences where practical.";
+
+  return {
+    normalizedPreferences,
+    overlapOpportunities,
+    likelyConflicts,
+    promptDirective,
+  };
+}
 
 /**
  * Hard tech-to-node-type validation matrix.
@@ -644,9 +724,12 @@ function getComponentDecisionTree(
   adjustedMax: number,
 ): string {
   const modeGuidance: Record<ArchitectureMode, string> = {
-    startup: "Bias toward LOWER end. Prefer full-stack frameworks that consolidate layers.",
-    default: "Balance simplicity with best practices. Right-size for described scale.",
-    enterprise: "Bias toward HIGHER end. Add monitoring, security, and redundancy nodes.",
+    startup:
+      "Bias toward LOWER end. Prefer full-stack frameworks that consolidate layers.",
+    default:
+      "Balance simplicity with best practices. Right-size for described scale.",
+    enterprise:
+      "Bias toward HIGHER end. Add monitoring, security, and redundancy nodes.",
   };
 
   const complexityRange: Record<ComplexityLevel, string> = {
@@ -1089,13 +1172,16 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
     conversationHistory,
     operationType,
     userPreferences,
+    preferenceFitSummary,
   } = context;
 
   const complexity = detectComplexity(userInput);
   const detection = detectArchitectureType(userInput);
   const effectiveMode = normalizeArchitectureMode(mode);
   const modeConstraints = MODE_CONSTRAINTS[effectiveMode];
-  const countAdjustment = getComponentCountAdjustment(operationType || "create");
+  const countAdjustment = getComponentCountAdjustment(
+    operationType || "create",
+  );
   const shouldRelax = shouldRelaxConstraints(operationType || "create");
 
   const adjustedMin = Math.max(
@@ -1127,14 +1213,20 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
         n.type === "frame",
     );
 
-    const operationInstructions = getOperationInstructions(operationType || "modify");
+    const operationInstructions = getOperationInstructions(
+      operationType || "modify",
+    );
 
     const archNodeLines = architectureNodes
       .map(
         (n: any) =>
           "  \u2022 " +
           (n.data?.label || n.id) +
-          " [type=" + n.type + ", tech=" + (n.data?.tech || "unknown") + "]: " +
+          " [type=" +
+          n.type +
+          ", tech=" +
+          (n.data?.tech || "unknown") +
+          "]: " +
           (n.data?.description || ""),
       )
       .join("\n");
@@ -1145,8 +1237,8 @@ export function buildEnhancedSystemPrompt(context: PromptContext): string {
           customNodes
             .map((n: any) =>
               n.type === "text"
-                ? '  \u2022 Text: "' + (n.data?.label || "") + '"'
-                : "  \u2022 Shape: " + (n.data?.label || n.id) + " (" + n.type + ")",
+                ? `  \u2022 Text: "${n.data?.label || ""}"`
+                : `  \u2022 Shape: ${n.data?.label || n.id} (${n.type})`,
             )
             .join("\n")
         : "";
@@ -1185,45 +1277,97 @@ NOTE: If the user is changing direction entirely (e.g. "todo app" → "Netflix c
   }
 
   // ── USER PREFERENCES ───────────────────────────────────────────────────────
+  const resolvedPreferenceFit =
+    preferenceFitSummary ||
+    summarizePreferenceFit(userPreferences, effectiveMode, detection.type);
   let preferencesBlock = "";
   if (userPreferences) {
-    const { cloudProviders, languages, frameworks, architectureTypes, applicationType, customInstructions, onboardingMetadata } = userPreferences;
+    const {
+      cloudProviders,
+      languages,
+      frameworks,
+      architectureTypes,
+      applicationType,
+      customInstructions,
+      onboardingMetadata,
+    } = userPreferences;
     const prefLines: string[] = [];
 
-    const clouds = (cloudProviders || []).filter((c) => c !== "Generic").map((c) => c.toUpperCase());
+    const clouds = (cloudProviders || [])
+      .filter((c) => c !== "Generic")
+      .map((c) => c.toUpperCase());
     if (clouds.length > 0) prefLines.push(`  • Cloud: ${clouds.join(", ")}`);
-    else if (userPreferences.cloudProvider && userPreferences.cloudProvider !== "Generic")
-      prefLines.push(`  • Cloud: ${userPreferences.cloudProvider.toUpperCase()}`);
+    else if (
+      userPreferences.cloudProvider &&
+      userPreferences.cloudProvider !== "Generic"
+    )
+      prefLines.push(
+        `  • Cloud: ${userPreferences.cloudProvider.toUpperCase()}`,
+      );
 
-    const langs = languages || (userPreferences.language ? [userPreferences.language] : []);
-    if (langs.length > 0) prefLines.push(`  • Languages: ${langs.map((l) => l.toUpperCase()).join(", ")}`);
+    const langs =
+      languages || (userPreferences.language ? [userPreferences.language] : []);
+    if (langs.length > 0)
+      prefLines.push(
+        `  • Languages: ${langs.map((l) => l.toUpperCase()).join(", ")}`,
+      );
 
-    const fws = frameworks || (userPreferences.framework ? [userPreferences.framework] : []);
-    if (fws.length > 0) prefLines.push(`  • Frameworks: ${fws.map((f) => f.toUpperCase()).join(", ")} — see FRAMEWORK ECOSYSTEM RULES for correct frontend tech`);
+    const fws =
+      frameworks ||
+      (userPreferences.framework ? [userPreferences.framework] : []);
+    if (fws.length > 0)
+      prefLines.push(
+        `  • Frameworks: ${fws.map((f) => f.toUpperCase()).join(", ")} — see FRAMEWORK ECOSYSTEM RULES for correct frontend tech`,
+      );
 
     if (architectureTypes && architectureTypes.length > 0)
-      prefLines.push(`  • Architecture Patterns: ${architectureTypes.join(", ")} (apply where relevant)`);
+      prefLines.push(
+        `  • Architecture Patterns: ${architectureTypes.join(", ")} (apply where relevant)`,
+      );
 
     if (applicationType && applicationType.length > 0)
       prefLines.push(`  • Application Type: ${applicationType.join(", ")}`);
 
     if (customInstructions?.trim())
-      prefLines.push(`  • Custom Instructions (follow strictly): "${customInstructions}"`);
+      prefLines.push(
+        `  • Custom Instructions (follow strictly): "${customInstructions}"`,
+      );
 
     if (onboardingMetadata) {
       const { experienceLevel, teamSize, includeServices } = onboardingMetadata;
-      if (experienceLevel === "beginner") prefLines.push("  • Experience: Beginner — use well-documented, simple solutions");
-      if (experienceLevel === "advanced") prefLines.push("  • Experience: Advanced — optimize for performance and production patterns");
-      if (teamSize === "solo") prefLines.push("  • Team: Solo — keep architecture manageable by one developer");
-      if (teamSize === "enterprise") prefLines.push("  • Team: Enterprise — design for team collaboration with clear service boundaries");
-      const enabledServices = Object.entries(includeServices || {}).filter(([, v]) => v).map(([k]) => k);
-      if (enabledServices.length > 0) prefLines.push(`  • Required Services: ${enabledServices.join(", ")}`);
+      if (experienceLevel === "beginner")
+        prefLines.push(
+          "  • Experience: Beginner — use well-documented, simple solutions",
+        );
+      if (experienceLevel === "advanced")
+        prefLines.push(
+          "  • Experience: Advanced — optimize for performance and production patterns",
+        );
+      if (teamSize === "solo")
+        prefLines.push(
+          "  • Team: Solo — keep architecture manageable by one developer",
+        );
+      if (teamSize === "enterprise")
+        prefLines.push(
+          "  • Team: Enterprise — design for team collaboration with clear service boundaries",
+        );
+      const enabledServices = Object.entries(includeServices || {})
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      if (enabledServices.length > 0)
+        prefLines.push(`  • Required Services: ${enabledServices.join(", ")}`);
     }
 
     if (prefLines.length > 0) {
       preferencesBlock = `
 USER PREFERENCES (apply contextually per layer — not blindly to every node):
-${prefLines.join("\n")}`;
+${prefLines.join("\n")}
+
+PREFERENCE FIT SUMMARY:
+  • Normalized: ${resolvedPreferenceFit.normalizedPreferences.join(", ") || "none"}
+  • Overlap opportunities: ${resolvedPreferenceFit.overlapOpportunities.join(", ") || "none"}
+  • Likely conflicts: ${resolvedPreferenceFit.likelyConflicts.join(", ") || "none"}
+  • Directive: ${resolvedPreferenceFit.promptDirective}`;
     }
   }
 
@@ -1239,7 +1383,9 @@ ${conversationContext}
 PHASE 1 — UNDERSTAND THE REQUEST
 ═══════════════════════════════════════════════════
 User Request: "${userInput}"
+DETECTED ARCHITECTURE: ${detection.type}
 Detected Architecture: ${detection.type} (${Math.round(detection.confidence * 100)}% confidence)
+COMPLEXITY: ${complexity.toUpperCase()}
 Detected Complexity: ${complexity.toUpperCase()}
 Operation: ${(operationType || "create").toUpperCase()}
 Mode: ${effectiveMode.toUpperCase()} — ${MODE_CONSTRAINTS[effectiveMode].description}
@@ -1250,12 +1396,22 @@ PHASE 2 — DECIDE (think through these steps BEFORE writing any JSON)
 ═══════════════════════════════════════════════════
 ${getComponentDecisionTree(effectiveMode, complexity, operationType || "create", adjustedMin, adjustedMax)}
 
+ARCHITECTURE DECISION PRIORITY:
+1. Choose the best architecture for the requirements and selected mode.
+2. In enterprise mode, best architecture comes first even when user preferences conflict.
+3. User preferences are soft constraints unless the user explicitly marks them mandatory.
+4. Reuse preferences only when they strengthen or do not materially weaken the architecture.
+5. If there is conflict, produce the strongest recommendation first and then a preference-aligned alternative.
+
 ${techKnowledge}
 
 ═══════════════════════════════════════════════════
 PHASE 3 — HARD CONSTRAINTS (never violate)
 ═══════════════════════════════════════════════════
 ${getTechValidationMatrix()}
+
+FRAMEWORK COMPATIBILITY:
+Use the framework ecosystem rules above. Never combine full-stack frameworks with redundant standalone backends.
 
 POSITIONING GUIDELINES:
   Layer 1 (Entry/Edge): y: 50–150   → CDN, WAF, Load Balancer, API Gateway, Frontend
@@ -1266,6 +1422,8 @@ POSITIONING GUIDELINES:
         Only separate them if high-scale distribution is explicitly needed.
 
 CRITICAL OUTPUT RULES:
+  - Minimum components: ${adjustedMin}
+  - Maximum components: ${adjustedMax}
   1. Never exceed ${adjustedMax} components
   2. Never use fewer than ${adjustedMin} components${shouldRelax ? ` (relaxed for ${operationType} operation)` : ""}
   3. Never mix full-stack frameworks with separate backend frameworks (nextjs + express = INVALID)
@@ -1289,6 +1447,10 @@ ${getSelfValidationChecklist()}
 REQUIRED JSON FORMAT:
 {
   "analysis": "Single sentence: the most important design trade-off or decision made",
+  "selectedArchitectureStrategy": "Short explanation of why this architecture was selected first",
+  "preferenceConflicts": ["Brief note for each user preference that was downgraded or rejected"],
+  "recommendedStack": ["Primary stack choices optimized for the requested mode and requirements"],
+  "preferenceAlignedAlternative": ["Closest viable stack variation that keeps compatible user preferences"],
   "nodes": [
     {
       "id": "unique-kebab-id",

@@ -1,16 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Brain,
-  Database,
-  GitBranch,
-  Layers,
-  Network,
-  Server,
-  Shield,
-  Zap,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 interface StreamingMessageProps {
@@ -18,6 +8,15 @@ interface StreamingMessageProps {
   reasoning?: string;
   content?: string;
   streamProgress?: number;
+  stage?:
+    | "analyzing"
+    | "connecting"
+    | "thinking"
+    | "generating"
+    | "validating"
+    | "complete"
+    | "error";
+  detail?: string;
 }
 
 interface LogLine {
@@ -31,53 +30,92 @@ interface LogLine {
 const ARCHITECTURE_PATTERNS = [
   {
     keywords: ["analyzing", "understand", "requirements", "parsing", "intent"],
-    icon: Brain,
     label: "ANALYZING",
     description: "Parsing architecture requirements",
   },
   {
     keywords: ["planning", "design", "structure", "approach", "pattern"],
-    icon: Layers,
     label: "PLANNING",
     description: "Selecting optimal architecture pattern",
   },
   {
     keywords: ["gateway", "api", "ingress", "entry", "edge", "routing"],
-    icon: Network,
     label: "GATEWAY LAYER",
     description: "Wiring API gateway and routing rules",
   },
   {
     keywords: ["compute", "service", "microservice", "function", "server"],
-    icon: Server,
     label: "COMPUTE LAYER",
     description: "Provisioning services and runtimes",
   },
   {
     keywords: ["database", "db", "storage", "cache", "redis", "postgres"],
-    icon: Database,
     label: "DATA LAYER",
     description: "Configuring databases and persistence",
   },
   {
     keywords: ["connect", "integrate", "link", "wire", "flow", "edge"],
-    icon: GitBranch,
     label: "WIRING",
     description: "Connecting data flows and dependencies",
   },
   {
     keywords: ["security", "auth", "authentication", "authorization"],
-    icon: Shield,
     label: "SECURITY",
     description: "Applying authentication and access control",
   },
   {
     keywords: ["optimize", "performance", "scale", "resilience", "load"],
-    icon: Zap,
     label: "OPTIMIZATION",
     description: "Tuning for performance and scale",
   },
 ];
+
+const STAGE_LOGS = [
+  {
+    id: "analyzing",
+    label: "ANALYZING",
+    description: "Understanding requirements and architecture mode",
+  },
+  {
+    id: "connecting",
+    label: "CONNECTING",
+    description: "Preparing the selected model and context",
+  },
+  {
+    id: "thinking",
+    label: "RANKING",
+    description: "Checking overlap, conflicts, and trade-offs",
+  },
+  {
+    id: "generating",
+    label: "GENERATING",
+    description: "Building the strongest architecture recommendation",
+  },
+  {
+    id: "validating",
+    label: "VALIDATING",
+    description: "Normalizing graph output and policy constraints",
+  },
+];
+
+function buildStageLines(
+  stage: StreamingMessageProps["stage"],
+  detail?: string,
+): LogLine[] {
+  const stageIndex = STAGE_LOGS.findIndex((item) => item.id === stage);
+
+  return STAGE_LOGS.filter((_, index) =>
+    stageIndex === -1 ? index === 0 : index <= stageIndex,
+  ).map((item, index, items) => ({
+    id: item.id,
+    prefix: index === items.length - 1 && stage !== "complete" ? "~" : "✓",
+    label: item.label,
+    description:
+      index === items.length - 1 && detail ? detail : item.description,
+    status:
+      index === items.length - 1 && stage !== "complete" ? "running" : "done",
+  }));
+}
 
 function parseLogLines(reasoning: string): LogLine[] {
   const lower = reasoning.toLowerCase();
@@ -117,6 +155,8 @@ export function StreamingMessage({
   reasoning,
   content,
   streamProgress = 0,
+  stage,
+  detail,
 }: StreamingMessageProps) {
   const [cursor, setCursor] = useState(true);
   const [visibleLines, setVisibleLines] = useState<LogLine[]>([]);
@@ -131,10 +171,15 @@ export function StreamingMessage({
 
   // Parse reasoning into log lines
   useEffect(() => {
+    if (stage) {
+      setAllLines(buildStageLines(stage, detail));
+      return;
+    }
+
     if (!reasoning) return;
     const parsed = parseLogLines(reasoning);
     setAllLines(parsed);
-  }, [reasoning]);
+  }, [detail, reasoning, stage]);
 
   // Reveal lines one by one for a typewriter effect
   useEffect(() => {
@@ -173,6 +218,10 @@ export function StreamingMessage({
   // We prioritize the latest reasoning if it's currently thinking,
   // or the latest content if it's currently generating.
   const activeStreamChunk = (() => {
+    if (detail) {
+      return detail;
+    }
+
     const raw = content
       ? content.split("\n").filter(Boolean).pop()
       : reasoning?.split("\n").filter(Boolean).pop();
