@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
 import { resolveInferenceTier } from "@/lib/inference-tier";
 import { checkUsageStatusReadLimit } from "@/lib/rate-limit";
-import { buildUsageSnapshot } from "@/lib/usage-status";
+import { buildUsageSnapshot } from "@/lib/usage-snapshot-server";
 import { createClient } from "@/lib/supabase/server";
 
 const QuerySchema = v.object({

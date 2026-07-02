@@ -14,7 +14,7 @@ import {
   StressTestPlanRequestSchema,
   StressTestPlanResponseSchema,
 } from "../lib/schema/api";
-import { buildUsageSnapshot } from "../lib/usage-status";
+import { buildUsageSnapshot } from "../lib/usage-snapshot-server";
 import {
   STRESS_PLANNER_AUTO_CHAIN,
   STRESS_PLANNER_MODEL_OPTIONS,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildUsageSnapshot, snapshotFromRateLimitResult } from "../lib/usage-status";
+import { buildUsageSnapshot } from "../lib/usage-snapshot-server";
+import { snapshotFromRateLimitResult } from "../lib/usage-status";
 
 describe("usage-status", () => {
   it("resets used count when the stored date is not today (UTC)", () => {

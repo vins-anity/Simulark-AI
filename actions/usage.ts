@@ -3,10 +3,8 @@
 import type { InferenceTier } from "@/lib/inference-tier";
 import { resolveInferenceTier } from "@/lib/inference-tier";
 import { checkUsageStatusReadLimit } from "@/lib/rate-limit";
-import {
-  buildUsageSnapshot,
-  type DailyUsageSnapshot,
-} from "@/lib/usage-status";
+import { buildUsageSnapshot } from "@/lib/usage-snapshot-server";
+import type { DailyUsageSnapshot } from "@/lib/usage-status";
 import { createClient } from "@/lib/supabase/server";
 import * as v from "valibot";
 
