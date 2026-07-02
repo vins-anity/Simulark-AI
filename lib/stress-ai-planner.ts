@@ -188,6 +188,9 @@ function toPlanFromPayload(
 }
 
 function modelToProviderUsed(modelId: string): PlannerProvider {
+  if (modelId.startsWith("qwen:")) {
+    return "qwen";
+  }
   const match = STRESS_PLANNER_MODEL_OPTIONS.find(
     (item) => item.id === modelId,
   );
@@ -247,8 +250,11 @@ function hasCredentialsForModel(modelId: string): boolean {
     return true;
   }
 
+  if (modelId.startsWith("deepseek:")) {
+    return Boolean(env.DASHSCOPE_API_KEY || env.QWEN_API_KEY);
+  }
   if (modelId.startsWith("qwen:")) {
-    return Boolean(env.QWEN_API_KEY);
+    return Boolean(env.DASHSCOPE_API_KEY || env.QWEN_API_KEY);
   }
   if (modelId.startsWith("nvidia:")) {
     return Boolean(env.NVIDIA_API_KEY);

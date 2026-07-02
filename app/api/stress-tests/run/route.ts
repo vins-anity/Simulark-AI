@@ -1,7 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
-import { isFeatureEnabled } from "@/lib/feature-flags";
 import { logger } from "@/lib/logger";
 import {
   StressTestRunEventSchema,
@@ -9,7 +8,6 @@ import {
   StressTestRunRequestSchema,
 } from "@/lib/schema/api";
 import { runStressSimulation } from "@/lib/stress-runner";
-import { getEffectiveTier } from "@/lib/subscription-lifecycle";
 import { createClient } from "@/lib/supabase/server";
 
 function createStableSeed(
@@ -45,18 +43,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let effectiveTier = "free";
-    const freeTierEnabled = isFeatureEnabled("chaosEngineering", "free");
-    if (!freeTierEnabled) {
-      effectiveTier = await getEffectiveTier(user.id);
-      if (!isFeatureEnabled("chaosEngineering", effectiveTier)) {
-        return NextResponse.json(
-          { error: "Stress testing is not available for your plan" },
-          { status: 403 },
-        );
-      }
-    }
-
     const body = await req.json();
     const parsed = v.safeParse(StressTestRunRequestSchema, body);
     if (!parsed.success) {
@@ -83,7 +69,6 @@ export async function POST(req: NextRequest) {
 
     logger.info("Starting stress test run", {
       userId: user.id,
-      tier: effectiveTier,
       seed: runSeed,
       nodeCount: nodes.length,
       edgeCount: edges.length,

@@ -22,7 +22,10 @@ import { Button } from "@/components/ui/button";
 import { getDefaultValuesForType } from "@/lib/node-schemas";
 import type { StressPlannerMetaInput } from "@/lib/schema/api";
 import { useSimulationStore } from "@/lib/store";
-import { STRESS_PLANNER_MODEL_OPTIONS } from "@/lib/stress-planner-models";
+import {
+  QWEN_FALLBACK_MODEL_ID,
+  STRESS_PLANNER_MODEL_OPTIONS,
+} from "@/lib/stress-planner-models";
 import {
   runStressSimulation,
   type StressRunStreamEvent,
@@ -97,7 +100,7 @@ export function getPlannerRequestConfig(
   if (plannerMode === "manual") {
     return {
       mode: "manual",
-      modelId: plannerModelId === "auto" ? "qwen:qwen-flash" : plannerModelId,
+      modelId: plannerModelId === "auto" ? QWEN_FALLBACK_MODEL_ID : plannerModelId,
     };
   }
   return { mode: "auto" };

@@ -1,14 +1,12 @@
 import type { Edge, Node } from "@xyflow/react";
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
-import { isFeatureEnabled } from "@/lib/feature-flags";
 import { logger } from "@/lib/logger";
 import {
   type StressTestPlanRequestInput,
   StressTestPlanRequestSchema,
 } from "@/lib/schema/api";
 import { generateStressTestPlanWithAI } from "@/lib/stress-ai-planner";
-import { getEffectiveTier } from "@/lib/subscription-lifecycle";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
@@ -20,18 +18,6 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    let effectiveTier = "free";
-    const freeTierEnabled = isFeatureEnabled("chaosEngineering", "free");
-    if (!freeTierEnabled) {
-      effectiveTier = await getEffectiveTier(user.id);
-      if (!isFeatureEnabled("chaosEngineering", effectiveTier)) {
-        return NextResponse.json(
-          { error: "Stress testing is not available for your plan" },
-          { status: 403 },
-        );
-      }
     }
 
     const body = await req.json();
@@ -58,7 +44,6 @@ export async function POST(req: NextRequest) {
 
     logger.info("Generated stress test plan", {
       userId: user.id,
-      tier: effectiveTier,
       nodeCount: nodes.length,
       edgeCount: edges.length,
       scenarioCount: plan.scenarios.length,

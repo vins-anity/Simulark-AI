@@ -20,9 +20,7 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-process.env.QWEN_API_KEY = "test-qwen-key";
-process.env.NVIDIA_API_KEY = "test-nvidia-key";
-process.env.ZHIPU_API_KEY = "test-zhipu-key";
+process.env.DASHSCOPE_API_KEY = "test-dashscope-key";
 
 import { generateStressTestPlanWithAI } from "../lib/stress-ai-planner";
 
@@ -75,75 +73,43 @@ describe("stress-ai-planner", () => {
     getModelMock.mockImplementation((modelId: string) => ({ modelId }));
   });
 
-  it("auto chain falls back from Qwen and GLM-5 failures to Kimi success", async () => {
-    generateTextMock
-      .mockRejectedValueOnce(new Error("401 Unauthorized")) // Qwen fails
-      .mockRejectedValueOnce(new Error("401 Unauthorized")) // GLM-5 fails
-      .mockResolvedValueOnce(validAIText("B")); // Kimi succeeds
+  it("auto chain succeeds with Flash model", async () => {
+    generateTextMock.mockResolvedValueOnce(validAIText("B"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
     });
 
     expect(result.source).toBe("ai");
-    expect(result.plannerMeta.providerUsed).toBe("kimi");
-    expect(result.plannerMeta.modelUsed).toBe("nvidia:moonshotai/kimi-k2.5");
+    expect(result.plannerMeta.providerUsed).toBe("deepseek");
+    expect(result.plannerMeta.modelUsed).toBe("deepseek:deepseek-v4-flash");
     expect(result.plannerMeta.attempts).toEqual([
       {
-        modelId: "qwen:qwen-flash",
-        ok: false,
-        reasonCode: "auth_failed",
-      },
-      {
-        modelId: "nvidia:z-ai/glm5",
-        ok: false,
-        reasonCode: "auth_failed",
-      },
-      {
-        modelId: "nvidia:moonshotai/kimi-k2.5",
+        modelId: "deepseek:deepseek-v4-flash",
         ok: true,
       },
     ]);
-    expect(result.warning).toBe(
-      "Primary planner failed. Switched to backup model.",
-    );
   });
 
-  it("auto chain falls back across timeouts and succeeds on MiniMax", async () => {
+  it("auto chain uses qwen fallback when Flash fails", async () => {
     generateTextMock
-      .mockRejectedValueOnce(new Error("planner_timeout")) // Qwen
-      .mockRejectedValueOnce(new Error("planner_timeout")) // GLM-5
-      .mockRejectedValueOnce(new Error("planner_timeout")) // Kimi
-      .mockResolvedValueOnce(validAIText("C")); // MiniMax
+      .mockRejectedValueOnce(new Error("429 rate limit"))
+      .mockResolvedValueOnce(validAIText("C"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
     });
 
     expect(result.source).toBe("ai");
-    expect(result.plannerMeta.providerUsed).toBe("minimax");
-    expect(result.plannerMeta.modelUsed).toBe("nvidia:minimaxai/minimax-m2.1");
-    expect(result.plannerMeta.attempts.map((item) => item.reasonCode)).toEqual([
-      "timeout",
-      "timeout",
-      "timeout",
-      undefined,
-    ]);
-    expect(getModelMock.mock.calls.map((call) => call[0])).toEqual([
-      "qwen:qwen-flash",
-      "nvidia:z-ai/glm5",
-      "nvidia:moonshotai/kimi-k2.5",
-      "nvidia:minimaxai/minimax-m2.1",
-    ]);
+    expect(result.plannerMeta.providerUsed).toBe("qwen");
+    expect(result.plannerMeta.modelUsed).toBe("qwen:qwen3.6-flash");
+    expect(generateTextMock).toHaveBeenCalledTimes(2);
   });
 
   it("auto chain uses deterministic fallback when all models fail", async () => {
     generateTextMock
-      .mockRejectedValueOnce(new Error("401 User not found")) // Qwen
-      .mockRejectedValueOnce(new Error("provider down")) // GLM-5
-      .mockRejectedValueOnce(new Error("provider down")) // Kimi
-      .mockRejectedValueOnce(new Error("provider down")) // MiniMax
-      .mockRejectedValueOnce(new Error("provider down")); // Zhipu
+      .mockRejectedValueOnce(new Error("401 Unauthorized"))
+      .mockRejectedValueOnce(new Error("401 Unauthorized"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
@@ -151,25 +117,35 @@ describe("stress-ai-planner", () => {
 
     expect(result.source).toBe("fallback");
     expect(result.plannerMeta.providerUsed).toBe("fallback");
-    expect(result.plannerMeta.attempts).toHaveLength(5);
+    expect(result.plannerMeta.attempts).toEqual([
+      {
+        modelId: "deepseek:deepseek-v4-flash",
+        ok: false,
+        reasonCode: "auth_failed",
+      },
+      {
+        modelId: "qwen:qwen3.6-flash",
+        ok: false,
+        reasonCode: "auth_failed",
+      },
+    ]);
     expect(result.plannerMeta.warningCode).toBe("ai_unavailable");
-    expect(result.warning?.includes("User not found")).toBe(false);
   });
 
-  it("manual mode succeeds with selected model", async () => {
+  it("manual mode succeeds with selected Flash model", async () => {
     generateTextMock.mockResolvedValueOnce(validAIText("D"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "manual",
-      modelId: "zhipu:glm-4.7-flash",
+      modelId: "deepseek:deepseek-v4-flash",
     });
 
     expect(result.source).toBe("ai");
-    expect(result.plannerMeta.providerUsed).toBe("zhipu");
-    expect(result.plannerMeta.modelUsed).toBe("zhipu:glm-4.7-flash");
+    expect(result.plannerMeta.providerUsed).toBe("deepseek");
+    expect(result.plannerMeta.modelUsed).toBe("deepseek:deepseek-v4-flash");
     expect(result.plannerMeta.attempts).toEqual([
       {
-        modelId: "zhipu:glm-4.7-flash",
+        modelId: "deepseek:deepseek-v4-flash",
         ok: true,
       },
     ]);
@@ -180,7 +156,7 @@ describe("stress-ai-planner", () => {
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "manual",
-      modelId: "nvidia:z-ai/glm5",
+      modelId: "deepseek:deepseek-v4-flash",
     });
 
     expect(result.source).toBe("fallback");
@@ -188,7 +164,7 @@ describe("stress-ai-planner", () => {
     expect(result.plannerMeta.warningCode).toBe("manual_model_failed");
     expect(result.plannerMeta.attempts).toEqual([
       {
-        modelId: "nvidia:z-ai/glm5",
+        modelId: "deepseek:deepseek-v4-flash",
         ok: false,
         reasonCode: "auth_failed",
       },

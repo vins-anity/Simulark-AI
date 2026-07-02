@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StressTestPlanResponseSchema } from "../lib/schema/api";
 
 const getUserMock = vi.fn();
-const isFeatureEnabledMock = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({
@@ -11,10 +10,6 @@ vi.mock("@/lib/supabase/server", () => ({
       getUser: getUserMock,
     },
   })),
-}));
-
-vi.mock("@/lib/feature-flags", () => ({
-  isFeatureEnabled: isFeatureEnabledMock,
 }));
 
 import { POST as planPost } from "../app/api/stress-tests/plan/route";
@@ -57,8 +52,6 @@ describe("stress test routes", () => {
         },
       },
     });
-    isFeatureEnabledMock.mockReturnValue(true);
-
     const request = new Request("http://localhost/api/stress-tests/plan", {
       method: "POST",
       body: JSON.stringify({

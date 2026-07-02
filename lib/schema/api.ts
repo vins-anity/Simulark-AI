@@ -106,6 +106,7 @@ export const StressScenarioSchema = v.object({
 });
 
 export const StressPlannerProviderSchema = v.picklist([
+  "deepseek",
   "qwen",
   "nvidia",
   "kimi",
@@ -225,7 +226,7 @@ export const StressTestRunEventSchema = v.variant("type", [
 // Admin subscription schemas
 export const UpgradeSubscriptionSchema = v.object({
   userId: UuidSchema,
-  newTier: v.union([v.literal("free"), v.literal("starter"), v.literal("pro")]),
+  newTier: v.literal("free"),
   status: v.optional(
     v.union([
       v.literal("active"),

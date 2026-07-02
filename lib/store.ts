@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { QWEN_FALLBACK_MODEL_ID } from "@/lib/inference-fallback";
 import type { StressPlannerMetaInput } from "@/lib/schema/api";
 import type {
   StressRunMetric,
@@ -423,7 +424,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         mode === "auto"
           ? "auto"
           : state.plannerModelId === "auto"
-            ? "qwen:qwen-flash"
+            ? QWEN_FALLBACK_MODEL_ID
              : state.plannerModelId,
     })),
 
