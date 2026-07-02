@@ -191,9 +191,9 @@ export default function OnboardingPage() {
               data.architecturePreferences.length > 0
                 ? data.architecturePreferences
                 : [
-                    data.defaultMode === "enterprise"
+                    data.defaultMode === "pro"
                       ? "microservices"
-                      : data.defaultMode === "startup"
+                      : data.defaultMode === "flash"
                         ? "serverless"
                         : "not-sure",
                   ],
@@ -208,10 +208,11 @@ export default function OnboardingPage() {
                 data.techStack.cloud.includes("vercel") ||
                 data.techStack.cloud.includes("aws") ||
                 data.techStack.cloud.includes("cloudflare"),
-              monitoring: data.defaultMode === "enterprise",
-              cicd: data.defaultMode === "enterprise",
+              monitoring: data.defaultMode === "pro",
+              cicd: data.defaultMode === "pro",
             },
-            defaultArchitectureMode: data.defaultMode,
+            defaultArchitectureMode:
+              data.defaultMode === "pro" ? "enterprise" : "startup",
           },
         });
 

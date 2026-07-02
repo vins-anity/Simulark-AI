@@ -53,16 +53,16 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
           </span>
         </div>
         <h2 className="font-poppins text-xl font-bold text-brand-charcoal md:text-2xl">
-          Choose Your Default Mode
+          Choose Your Default Tier
         </h2>
         <p className="mt-1 text-sm text-brand-charcoal/60 max-w-lg mx-auto">
-          This determines the default complexity level for generated
-          architectures.
+          Flash for speed, Pro for deep reasoning. You can switch anytime in the
+          editor.
         </p>
       </motion.div>
 
       {/* Mode Cards */}
-      <motion.div variants={itemVariants} className="grid gap-3 md:grid-cols-3">
+      <motion.div variants={itemVariants} className="grid gap-3 md:grid-cols-2">
         {GENERATION_MODE_OPTIONS.map((mode) => {
           const isSelected = value === mode.id;
 
@@ -168,8 +168,8 @@ export function ModeStep({ value, onChange }: ModeStepProps) {
       <motion.div variants={itemVariants} className="mt-6 text-center">
         <p className="text-[10px] text-brand-charcoal/50 font-mono">
           <span className="text-brand-orange">TIP:</span> Start with{" "}
-          <strong className="text-brand-charcoal/70">Standard</strong> for most
-          projects
+          <strong className="text-brand-charcoal/70">Flash</strong> to save
+          quota
         </p>
       </motion.div>
     </motion.div>

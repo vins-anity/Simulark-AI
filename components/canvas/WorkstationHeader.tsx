@@ -313,7 +313,7 @@ export function WorkstationHeader({
               className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <FileCode className="w-4 h-4 text-brand-orange mr-3" />
-              <span>EXPORT_SKILL_ZIP</span>
+              <span>EXPORT_SKILL_NPX</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -334,18 +334,10 @@ export function WorkstationHeader({
 
             <DropdownMenuItem
               onClick={() => onExport("svg")}
-              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
+              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 flex items-center"
             >
               <ImageIcon className="w-4 h-4 mr-3" />
               <span>VECTOR_IMAGE_SVG</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => onExport("pdf")}
-              className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 flex items-center"
-            >
-              <FileText className="w-4 h-4 mr-3" />
-              <span>DOCUMENT_PDF</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

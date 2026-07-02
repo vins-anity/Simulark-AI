@@ -156,6 +156,7 @@ export interface UserPreferences {
   customInstructions: string;
   defaultArchitectureMode?: (typeof ArchitectureMode)[keyof typeof ArchitectureMode];
   defaultMode?: (typeof ArchitectureMode)[keyof typeof ArchitectureMode];
+  defaultInferenceTier?: "flash" | "pro";
   defaultModel?: string;
   onboardingMetadata?: {
     role: string;

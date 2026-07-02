@@ -21,7 +21,7 @@ export interface OnboardingData {
   };
 
   // Step 3: Generation Mode (MOD-01)
-  defaultMode?: "startup" | "default" | "enterprise";
+  defaultMode?: "flash" | "pro";
 
   // Step 3.5: Architecture Patterns (CFG-03)
   architecturePreferences?: string[];
@@ -272,31 +272,22 @@ export const TECH_STACK_OPTIONS = {
 
 export const GENERATION_MODE_OPTIONS = [
   {
-    id: "startup" as const,
-    name: "Startup",
-    badge: "MVP",
-    description: "MVP-focused, cost-optimized",
-    detail: "3-5 components • Speed first",
-    features: ["Quick deployment", "Minimal complexity", "Cost-effective"],
-    icon: "ph:rocket-launch",
+    id: "flash" as const,
+    name: "Flash",
+    badge: "DEFAULT",
+    description: "Fast iteration for MVPs and lightweight edits",
+    detail: "3-5 components • Low token cost",
+    features: ["Quick deployment", "Graph edits", "Cost-effective"],
+    icon: "ph:lightning",
   },
   {
-    id: "default" as const,
-    name: "Standard",
-    badge: "RECOMMENDED",
-    description: "Balanced approach",
-    detail: "4-8 components • Best practices",
-    features: ["Production-ready", "Scalable design", "Industry standards"],
-    icon: "ph:scales",
-  },
-  {
-    id: "enterprise" as const,
-    name: "Enterprise",
-    badge: "PROD",
-    description: "Full redundancy, compliance-ready",
-    detail: "6-15 components • Production grade",
-    features: ["High availability", "Full observability", "Security-first"],
-    icon: "ph:buildings",
+    id: "pro" as const,
+    name: "Pro",
+    badge: "DEEP",
+    description: "Deep reasoning for complex production systems",
+    detail: "6-20 components • Thinking enabled",
+    features: ["Enterprise patterns", "Long analysis", "Full observability"],
+    icon: "ph:brain",
   },
 ] as const;
 

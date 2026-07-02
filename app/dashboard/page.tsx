@@ -31,7 +31,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
-import { ArchitectureMode, MODE_CONSTRAINTS } from "@/lib/prompt-engineering";
+import {
+  DEFAULT_INFERENCE_TIER,
+  INFERENCE_TIER_OPTIONS,
+  type InferenceTier,
+  resolveInferenceTier,
+} from "@/lib/inference-tier";
 import type { Project } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -51,8 +56,7 @@ const PROMPT_EXAMPLES = [
   "AI-powered supply chain optimizer with forecasting models",
 ];
 
-// Define available models for Mission Control
-import { AVAILABLE_MODELS } from "@/lib/ai-models";
+// Inference tier options for Mission Control
 
 // Animation variants
 const containerVariants: Variants = {
@@ -87,10 +91,8 @@ function DashboardContent() {
   const [prompt, setPrompt] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const [selectedMode, setSelectedMode] =
-    useState<ArchitectureMode>("enterprise");
-  const [selectedModel, setSelectedModel] = useState<string>(
-    AVAILABLE_MODELS[0].id,
+  const [selectedTier, setSelectedTier] = useState<InferenceTier>(
+    DEFAULT_INFERENCE_TIER,
   );
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,27 +117,22 @@ function DashboardContent() {
     async function loadPrefs() {
       const result = await getUserPreferences();
       if (result.success && result.preferences) {
-        if (result.preferences.defaultMode) {
-          setSelectedMode(result.preferences.defaultMode);
-        } else if (result.preferences.defaultArchitectureMode) {
-          setSelectedMode(result.preferences.defaultArchitectureMode);
-        }
-        if (result.preferences.defaultModel) {
-          setSelectedModel(result.preferences.defaultModel);
-        }
+        setSelectedTier(
+          resolveInferenceTier({
+            tier: result.preferences.defaultInferenceTier as string,
+            model: result.preferences.defaultModel as string,
+            mode: (result.preferences.defaultMode ||
+              result.preferences.defaultArchitectureMode) as string,
+          }),
+        );
       }
     }
     loadPrefs();
   }, []);
 
-  const handleModeChange = (mode: ArchitectureMode) => {
-    setSelectedMode(mode);
-    updateUserPreferences({ defaultMode: mode });
-  };
-
-  const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
-    updateUserPreferences({ defaultModel: modelId });
+  const handleTierChange = (tier: InferenceTier) => {
+    setSelectedTier(tier);
+    updateUserPreferences({ defaultInferenceTier: tier });
   };
 
   const loadProjects = useCallback(async (page: number) => {
@@ -188,8 +185,8 @@ function DashboardContent() {
 
       // Create project with metadata (mode & model)
       const result = await createProject(projectName, "Generic", {
-        mode: selectedMode,
-        model: selectedModel,
+        tier: selectedTier,
+        mode: selectedTier === "pro" ? "enterprise" : "startup",
       });
 
       if (result.success && result.data) {
@@ -222,8 +219,8 @@ function DashboardContent() {
         `Untitled Operations ${timestamp}`,
         "Generic",
         {
-          mode: selectedMode,
-          model: selectedModel,
+          tier: selectedTier,
+          mode: selectedTier === "pro" ? "enterprise" : "startup",
         },
       );
       if (result.success && result.data) {
@@ -240,15 +237,8 @@ function DashboardContent() {
 
   const totalPages = Math.ceil(totalProjects / ITEMS_PER_PAGE);
 
-  const getModeIcon = (mode: ArchitectureMode) => {
-    switch (mode) {
-      case "enterprise":
-        return <Database size={14} />;
-      case "startup":
-        return <Zap size={14} />;
-      default:
-        return <Box size={14} />;
-    }
+  const getTierIcon = (tier: InferenceTier) => {
+    return tier === "pro" ? <Database size={14} /> : <Zap size={14} />;
   };
 
   return (
@@ -316,67 +306,17 @@ function DashboardContent() {
                       : "UPLINK_STATION:IDLE"}
                   </span>
 
-                  {/* Mode Selector */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-brand-charcoal dark:text-gray-200 uppercase tracking-wider hover:text-brand-orange transition-colors focus:outline-none">
                         <span className="text-brand-charcoal/40 dark:text-gray-500">
-                          MODE:
+                          TIER:
                         </span>
                         <span className="flex items-center gap-1">
-                          {getModeIcon(selectedMode)}
-                          {selectedMode === "default"
-                            ? "Balanced"
-                            : selectedMode}
-                        </span>
-                        <ChevronDown size={10} className="opacity-50" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      className="w-48 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0 z-50"
-                    >
-                      {(
-                        [
-                          "enterprise",
-                          "startup",
-                          "default",
-                        ] as ArchitectureMode[]
-                      ).map((mode) => (
-                        <DropdownMenuItem
-                          key={mode}
-                          onClick={() => handleModeChange(mode)}
-                          className={cn(
-                            "flex flex-col items-start gap-1 px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
-                            selectedMode === mode &&
-                              "bg-brand-charcoal/5 dark:bg-white/5",
-                          )}
-                        >
-                          <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
-                            {getModeIcon(mode)}{" "}
-                            {mode === "default" ? "Balanced" : mode}
-                          </div>
-                          <span className="text-[9px] text-brand-charcoal/60 dark:text-gray-400 leading-tight">
-                            {MODE_CONSTRAINTS[mode].focus}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <div className="h-4 w-px bg-border-primary" />
-
-                  {/* Model Selector */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-brand-charcoal dark:text-gray-200 uppercase tracking-wider hover:text-brand-orange transition-colors focus:outline-none">
-                        <span className="text-brand-charcoal/40 dark:text-gray-500">
-                          MODEL:
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Cpu size={14} />
-                          {AVAILABLE_MODELS.find((m) => m.id === selectedModel)
-                            ?.name || "UNKNOWN"}
+                          {getTierIcon(selectedTier)}
+                          {INFERENCE_TIER_OPTIONS.find(
+                            (t) => t.tier === selectedTier,
+                          )?.label ?? "Flash"}
                         </span>
                         <ChevronDown size={10} className="opacity-50" />
                       </button>
@@ -385,21 +325,21 @@ function DashboardContent() {
                       align="start"
                       className="w-56 bg-bg-elevated border-2 border-brand-charcoal dark:border-zinc-700 rounded-none p-0 z-50"
                     >
-                      {AVAILABLE_MODELS.map((model) => (
+                      {INFERENCE_TIER_OPTIONS.map((option) => (
                         <DropdownMenuItem
-                          key={model.id}
-                          onClick={() => handleModelChange(model.id)}
+                          key={option.tier}
+                          onClick={() => handleTierChange(option.tier)}
                           className={cn(
-                            "flex items-center justify-between px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
-                            selectedModel === model.id &&
+                            "flex flex-col items-start gap-1 px-3 py-2 cursor-pointer rounded-none focus:bg-brand-charcoal/5 dark:focus:bg-white/5",
+                            selectedTier === option.tier &&
                               "bg-brand-charcoal/5 dark:bg-white/5",
                           )}
                         >
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
-                            {model.name}
-                          </span>
-                          <span className="text-[8px] font-mono text-brand-charcoal/40 dark:text-gray-500 uppercase">
-                            {model.provider}
+                          <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-brand-charcoal dark:text-gray-200">
+                            {getTierIcon(option.tier)} {option.label}
+                          </div>
+                          <span className="text-[9px] text-brand-charcoal/60 dark:text-gray-400 leading-tight">
+                            {option.description}
                           </span>
                         </DropdownMenuItem>
                       ))}

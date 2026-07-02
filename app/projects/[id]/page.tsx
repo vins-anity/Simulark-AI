@@ -109,20 +109,41 @@ export default function ProjectPage({
   const handleExportSkill = async () => {
     if (!flowEditorRef.current || !project) return;
 
-    try {
-      const nodes = flowEditorRef.current.nodes;
-      const edges = flowEditorRef.current.edges;
+    const nodes = flowEditorRef.current.nodes ?? [];
+    const edges = flowEditorRef.current.edges ?? [];
 
+    if (nodes.length === 0) {
+      toast.error("Add at least one node to the canvas before exporting a skill.");
+      return;
+    }
+
+    const projectName = project.name?.trim();
+    if (!projectName) {
+      toast.error("Project name is required to export a skill.");
+      return;
+    }
+
+    try {
       const response = await fetch("/api/export-skill", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectName: project.name,
-          projectDescription: (project as any).description || undefined,
-          nodes,
-          edges,
+          projectName,
+          projectDescription: (project as { description?: string }).description,
+          nodes: nodes.map((node) => ({
+            id: node.id,
+            type: node.type,
+            position: node.position,
+            data: node.data,
+          })),
+          edges: edges.map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            data: edge.data,
+          })),
         }),
       });
 
@@ -138,7 +159,11 @@ export default function ProjectPage({
             `${errorData.error || "Export blocked"} ${blocker}`.trim(),
           );
         }
-        throw new Error(errorData.error || "Failed to generate skill");
+        throw new Error(
+          errorData.details
+            ? `${errorData.error}: ${errorData.details}`
+            : errorData.error || "Failed to generate skill",
+        );
       }
 
       // Download the ZIP file
@@ -157,7 +182,22 @@ export default function ProjectPage({
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success("Skill package exported");
+
+      const cliCommand =
+        response.headers.get("X-Simulark-Cli-Project") ||
+        "npx skills add ./<extracted-folder> --skill <name> -a cursor -y";
+      try {
+        await navigator.clipboard.writeText(cliCommand);
+        toast.success("Skill ZIP downloaded. Install command copied to clipboard.", {
+          description: cliCommand,
+          duration: 8000,
+        });
+      } catch {
+        toast.success("Skill package exported", {
+          description: `Run: ${cliCommand}`,
+          duration: 8000,
+        });
+      }
     } catch (error) {
       console.error("Error exporting skill:", error);
       toast.error(
