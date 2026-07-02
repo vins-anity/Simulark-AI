@@ -1,12 +1,18 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
-import { createZhipu } from "zhipu-ai-provider";
 import { validateArchitecture } from "@/lib/architecture-validator";
-import { env } from "@/lib/env";
+import {
+  cacheArchitectureResult,
+  createCachedArchitectureStream,
+  getCachedArchitecture,
+} from "@/lib/cached-architecture-response";
+import { isDashScopeConfigured, streamDashScopeInference } from "@/lib/deepseek-stream";
 import { detectOperation } from "@/lib/intent-detector";
+import {
+  getInferenceTierConfig,
+  resolveInferenceTier,
+  tierToArchitectureMode,
+} from "@/lib/inference-tier";
 import { logger } from "@/lib/logger";
 import { getClientIp } from "@/lib/network";
 import {
@@ -14,51 +20,19 @@ import {
   buildEnhancedSystemPrompt,
   detectArchitectureType,
   detectComplexity,
-  normalizeArchitectureMode,
   summarizePreferenceFit,
   validatePrompt,
 } from "@/lib/prompt-engineering";
-import { checkIPRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import {
-  getEffectiveTierForAccess,
-  isModelAllowedForTier,
-} from "@/lib/subscription-guards";
+  checkBurstRateLimit,
+  checkIPRateLimit,
+  checkRateLimit,
+} from "@/lib/rate-limit";
+import { snapshotFromRateLimitResult } from "@/lib/usage-status";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
-export const maxDuration = 120; // 2 minutes for complex generations
-
-import OpenAI from "openai"; // Import standard OpenAI SDK
-
-// Initialize providers
-const zhipu = createZhipu({
-  apiKey: env.ZHIPU_API_KEY,
-});
-
-const openrouter = createOpenRouter({
-  apiKey: env.OPENROUTER_API_KEY,
-});
-
-// Kimi uses OpenAI-compatible API
-const kimi = createOpenAI({
-  baseURL: env.KIMI_BASE_URL || "https://api.moonshot.ai/v1",
-  apiKey: env.KIMI_API_KEY,
-});
-
-// NVIDIA (GLM-5) - Direct OpenAI Client
-// We use the official OpenAI SDK to bypass Vercel AI SDK issues with NVIDIA's API
-const nvidiaClient = new OpenAI({
-  baseURL: "https://integrate.api.nvidia.com/v1",
-  apiKey: env.NVIDIA_API_KEY,
-});
-
-// Qwen - Alibaba Cloud
-const qwenClient = createOpenAI({
-  baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-  apiKey: env.QWEN_API_KEY,
-});
-
-type ProviderType = "zhipu" | "kimi" | "openrouter" | "nvidia" | "qwen";
+export const maxDuration = 120;
 
 const MessagePartSchema = v.object({
   type: v.string(),
@@ -88,12 +62,20 @@ const ChatRequestSchema = v.object({
       v.literal("corporate"),
     ]),
   ),
+  tier: v.optional(v.union([v.literal("flash"), v.literal("pro")])),
   model: v.optional(v.string()),
   currentNodes: v.optional(v.array(v.unknown())),
   currentEdges: v.optional(v.array(v.unknown())),
   projectId: v.optional(v.pipe(v.string(), v.uuid())),
   userPreferences: v.optional(v.record(v.string(), v.unknown())),
 });
+
+interface ChatUIMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  parts: Array<{ type: string; text?: string }>;
+  createdAt: Date;
+}
 
 interface StreamArchitecturePayload {
   nodes: unknown[];
@@ -213,57 +195,15 @@ async function buildProjectDocumentContext(
   };
 }
 
-function getProvider(modelId?: string): {
-  provider: ProviderType;
-  model: string;
-} {
-  // Map modelId to provider
-  // NVIDIA models (starts with nvidia:)
-  if (modelId?.startsWith("nvidia:")) {
-    return { provider: "nvidia", model: modelId.replace("nvidia:", "") };
-  }
-
-  // GLM models from Zhipu (bigmodel.cn) - starts with glm-
-  if (modelId?.startsWith("glm-")) {
-    return { provider: "zhipu", model: modelId };
-  }
-
-  // GLM models from OpenRouter (Z.AI) - starts with z-ai/
-  if (modelId?.startsWith("z-ai/") && !modelId.includes("glm5")) {
-    return { provider: "openrouter", model: modelId };
-  }
-
-  // Standalone Kimi
-  if (modelId?.startsWith("kimi:") || modelId?.startsWith("moonshot:")) {
-    const cleanId = modelId.split(":")[1] || "kimi-k2.5";
-    return { provider: "kimi", model: cleanId };
-  }
-
-  if (
-    modelId?.includes("deepseek") ||
-    modelId?.includes("gemini") ||
-    modelId?.includes("claude") ||
-    modelId?.includes("minimax") // Non-nvidia minimax
-  ) {
-    return { provider: "openrouter", model: modelId };
-  }
-
-  // Qwen Models
-  if (modelId?.includes("qwen")) {
-    return { provider: "qwen", model: modelId.replace("qwen:", "") };
-  }
-
-  // Legacy NVIDIA fallback
-  if (modelId?.includes("glm5") || modelId?.includes("nvidia")) {
-    return { provider: "nvidia", model: "z-ai/glm5" };
-  }
-
-  // Default to GLM-5 (NVIDIA)
-  return { provider: "nvidia", model: "z-ai/glm5" };
-}
-
 export async function POST(req: NextRequest) {
   try {
+    if (!isDashScopeConfigured()) {
+      return NextResponse.json(
+        { error: "AI inference is not configured. Set DASHSCOPE_API_KEY." },
+        { status: 503 },
+      );
+    }
+
     // Authentication
     const supabase = await createClient();
     const {
@@ -284,22 +224,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { model: requestedModelId } = parsedBody.output;
-    const effectiveTier = await getEffectiveTierForAccess(supabase, user.id);
-    if (!isModelAllowedForTier(effectiveTier, requestedModelId)) {
-      return NextResponse.json(
-        { error: "This model is not available for your current plan." },
-        { status: 403 },
-      );
-    }
+    const parsed = parsedBody.output;
+    const inferenceTier = resolveInferenceTier({
+      tier: parsed.tier,
+      model: parsed.model,
+      mode: parsed.mode,
+    });
+    const tierConfig = getInferenceTierConfig(inferenceTier);
+    const resolvedModelId = tierConfig.modelId;
 
-    // IP-based rate limiting (prevent account-switching abuse)
     const ip = getClientIp(req.headers);
     const ipRateLimitResult = await checkIPRateLimit(ip);
     if (!ipRateLimitResult.allowed) {
       return NextResponse.json(
         {
-          error: `Daily limit reached for your network. Upgrade or wait until reset.`,
+          error: `Daily limit reached for your network. Try again after reset.`,
+          limitType: "ip",
           resetAt: ipRateLimitResult.reset,
           limit: ipRateLimitResult.limit,
         },
@@ -307,36 +247,61 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Rate limiting (now model-aware)
-    const rateLimitResult = await checkRateLimit(
-      user.id,
-      requestedModelId,
-      effectiveTier,
-    );
+    const burstResult = await checkBurstRateLimit(user.id);
+    if (!burstResult.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many requests. Please wait a moment before trying again.`,
+          limitType: "burst",
+          resetAt: burstResult.reset,
+          limit: burstResult.limit,
+        },
+        { status: 429 },
+      );
+    }
+
+    const rateLimitResult = await checkRateLimit(user.id, resolvedModelId);
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         {
-          error: `Daily limit reached for this model. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
+          error: `Daily AI limit reached. Limit: ${rateLimitResult.limit}/day.`,
+          limitType: "daily",
           resetAt: rateLimitResult.reset,
           limit: rateLimitResult.limit,
         },
         { status: 429 },
       );
     }
+
+    const usageSnapshot = snapshotFromRateLimitResult({
+      tier: inferenceTier,
+      limit: rateLimitResult.limit,
+      remaining: rateLimitResult.remaining,
+      reset: rateLimitResult.reset,
+    });
+
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": String(rateLimitResult.limit),
+      "X-RateLimit-Remaining": String(rateLimitResult.remaining),
+      "X-RateLimit-Reset": rateLimitResult.reset,
+    };
+
     const {
       messages: rawMessages,
       chatId,
       mode,
+      tier: requestedTier,
       model: modelId,
       currentNodes = [],
       currentEdges = [],
       projectId,
       userPreferences,
-    } = parsedBody.output;
-    const normalizedMode = normalizeArchitectureMode(mode);
+    } = parsed;
+
+    const normalizedMode = tierToArchitectureMode(inferenceTier);
 
     // Convert to UIMessage format and limit to last 10 messages
-    const messages: UIMessage[] = rawMessages
+    const messages: ChatUIMessage[] = rawMessages
       .slice(-10) // Keep only last 10 messages
       .map((m: any) => ({
         id: m.id || crypto.randomUUID(),
@@ -390,6 +355,35 @@ export async function POST(req: NextRequest) {
 
     if (validation.warning) {
       logger.warn("Prompt validation warning", { warning: validation.warning });
+    }
+
+    const cachedArchitecture =
+      await getCachedArchitecture<StreamArchitecturePayload>({
+        prompt: lastMessageContent,
+        model: resolvedModelId,
+        mode: normalizedMode,
+        userId: user.id,
+        nodeCount: currentNodes.length,
+        edgeCount: currentEdges.length,
+      });
+
+    if (cachedArchitecture) {
+      logger.info("Returning cached architecture result", {
+        inferenceTier,
+        model: resolvedModelId,
+      });
+
+      return new NextResponse(
+        createCachedArchitectureStream(cachedArchitecture, usageSnapshot),
+        {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+            ...rateLimitHeaders,
+          },
+        },
+      );
     }
 
     // Detect architecture type and complexity
@@ -458,160 +452,27 @@ export async function POST(req: NextRequest) {
       ? `${baseSystemPrompt}\n\n${projectDocumentContext.context}`
       : baseSystemPrompt;
 
-    // Get provider and model
-    const { provider: providerType, model: effectiveModel } =
-      getProvider(modelId);
+    const streamMessages = messages.map((m) => ({
+      role: m.role as "user" | "assistant" | "system",
+      content: m.parts
+        .filter((p) => p.type === "text")
+        .map((p) => p.text ?? "")
+        .join(""),
+    }));
 
-    // Select the appropriate provider instance helpers
-    const getModelInstance = (pType: ProviderType, mName: string) => {
-      switch (pType) {
-        case "zhipu":
-          return zhipu(mName);
-        case "kimi":
-          return kimi(mName);
-        case "openrouter":
-          return openrouter.chat(mName);
-        case "qwen":
-          return qwenClient.chat(mName);
-        default:
-          return zhipu(mName);
-      }
-    };
-
-    let result: any;
-    let fallbackToZhipu = false;
-
-    // Direct OpenAI SDK path for NVIDIA
-    if (providerType === "nvidia") {
-      try {
-        logger.info("Using direct NVIDIA client", { model: effectiveModel });
-        // Tweak parameters based on the model
-        let chat_template_kwargs: any = {
-          enable_thinking: true,
-          clear_thinking: false,
-        };
-        let extra_body: any = {};
-
-        if (effectiveModel.includes("minimax")) {
-          // MiniMax M2.1 recommendations: top_k=40, temperature=1.0
-          chat_template_kwargs = undefined;
-          extra_body = { top_k: 40 };
-        } else if (effectiveModel.includes("kimi")) {
-          // Kimi K2.5 recommendations: thinking=true, temperature=1.0
-          chat_template_kwargs = { thinking: true };
-        }
-
-        const completion = (await nvidiaClient.chat.completions.create({
-          model: effectiveModel, // e.g. "minimaxai/minimax-m2.1"
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages.map((m) => ({
-              role: m.role as "user" | "assistant" | "system",
-              content: m.parts
-                .map((p) => (p.type === "text" ? p.text : ""))
-                .join(""),
-            })),
-          ],
-          temperature: 1.0, // Updated to 1.0 as recommended for these agentic models
-          stream: true,
-          ...(chat_template_kwargs ? { chat_template_kwargs } : {}),
-          ...extra_body,
-        } as any)) as any;
-
-        // Create an async iterable that mimics ai-sdk's fullStream
-        const generator = async function* () {
-          let usage = { promptTokens: 0, completionTokens: 0 };
-
-          for await (const chunk of completion) {
-            const delta = chunk.choices[0]?.delta as
-              | { content?: string; reasoning_content?: string }
-              | undefined;
-            const content = delta?.content;
-            const reasoning = delta?.reasoning_content;
-
-            if (reasoning) {
-              yield { type: "reasoning-delta", text: reasoning };
-            }
-            if (content) {
-              yield { type: "text-delta", text: content };
-            }
-
-            if (chunk.usage) {
-              usage = {
-                promptTokens: chunk.usage.prompt_tokens || 0,
-                completionTokens: chunk.usage.completion_tokens || 0,
-              };
-            }
-          }
-
-          // Simulating the finish event which is expected by the consumer loop
-          yield {
-            type: "finish",
-            finishReason: "stop",
-            usage: {
-              ...usage,
-              totalTokens: usage.promptTokens + usage.completionTokens,
-            },
-          };
-        };
-
-        result = { fullStream: generator() };
-      } catch (error: any) {
-        logger.error("NVIDIA Direct API Error", error);
-        // Fallback logic for NVIDIA/GLM-5 Rate Limits or Errors
-        if (
-          error?.status === 429 ||
-          error?.message?.includes("429") ||
-          error?.statusCode === 429 ||
-          error?.status === 404 // Also fallback on 404 just in case
-        ) {
-          logger.warn("GLM-5 (NVIDIA) failed. Falling back to GLM-4.7 (Zhipu)");
-          fallbackToZhipu = true;
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    if (providerType !== "nvidia" || fallbackToZhipu) {
-      // Standard AI SDK path
-      const fallbackModel = fallbackToZhipu ? "glm-4.7-flash" : effectiveModel;
-      const fallbackProvider = fallbackToZhipu ? "zhipu" : providerType;
-
-      // Stream text with conversation history
-      // Qwen3-series models support enable_thinking — configure per model
-      const qwenProviderOptions =
-        fallbackProvider === "qwen"
-          ? {
-              openai: {
-                // Qwen3-series models support enable_thinking
-                extra_body: {
-                  enable_thinking: true,
-                },
-              },
-            }
-          : undefined;
-
-      result = streamText({
-        model: getModelInstance(
-          fallbackProvider as ProviderType,
-          fallbackModel,
-        ),
-        system: systemPrompt,
-        messages: await convertToModelMessages(messages),
-        temperature: 0.7,
-        // Dashscope (Qwen) hard cap for standard models is 32768, but we let it be default if possible or cap at max supported
-        maxOutputTokens: fallbackProvider === "qwen" ? 32768 : 131072,
-        ...(qwenProviderOptions
-          ? { providerOptions: qwenProviderOptions }
-          : {}),
+    const { fullStream: resultStream, meta: inferenceMeta } =
+      await streamDashScopeInference({
+        tierConfig,
+        systemPrompt,
+        messages: streamMessages,
       });
-    }
 
     logger.info("Stream started", {
       systemPromptLength: systemPrompt.length,
       userMessage: lastMessageContent.substring(0, 50),
-      provider: providerType,
+      inferenceTier,
+      dashscopeModel: inferenceMeta.modelUsed,
+      fallbackUsed: inferenceMeta.fallbackUsed,
       projectDocumentCount: projectDocumentContext?.documentCount || 0,
     });
 
@@ -694,6 +555,12 @@ export async function POST(req: NextRequest) {
         };
 
         try {
+          controller.enqueue(
+            encoder.encode(
+              `${JSON.stringify({ type: "quota", data: usageSnapshot })}\n`,
+            ),
+          );
+
           emitProgress(
             8,
             "analyzing",
@@ -702,8 +569,24 @@ export async function POST(req: NextRequest) {
           emitProgress(18, "connecting", "Connecting to the selected model");
 
           // Process the stream
-          for await (const part of result.fullStream) {
+          for await (const part of resultStream) {
             switch (part.type) {
+              case "inference-meta": {
+                controller.enqueue(
+                  encoder.encode(
+                    `${JSON.stringify({
+                      type: "inference-meta",
+                      data: {
+                        modelUsed: part.modelUsed,
+                        primaryModel: part.primaryModel,
+                        fallbackUsed: part.fallbackUsed,
+                        attemptedModels: part.attemptedModels,
+                      },
+                    })}\n`,
+                  ),
+                );
+                break;
+              }
               case "text-delta": {
                 accumulatedText += part.text;
                 if (!firstContentSeen) {
@@ -802,21 +685,6 @@ export async function POST(req: NextRequest) {
                 );
                 break;
               }
-              case "unknown": {
-                // Handle potential unmapped Dashscope-specific fields (reasoning_content)
-                // if they come through as unknown parts in the stream
-                const unknownPart = part as any;
-                if (unknownPart.delta?.reasoning_content) {
-                  const text = unknownPart.delta.reasoning_content;
-                  accumulatedReasoning += text;
-                  controller.enqueue(
-                    encoder.encode(
-                      `${JSON.stringify({ type: "reasoning", data: text })}\n`,
-                    ),
-                  );
-                }
-                break;
-              }
               case "finish": {
                 if ("usage" in part && part.usage) {
                   controller.enqueue(
@@ -891,6 +759,19 @@ export async function POST(req: NextRequest) {
                   }
                 }
 
+                if (architectureData) {
+                  void cacheArchitectureResult({
+                    prompt: lastMessageContent,
+                    result: architectureData,
+                    model: resolvedModelId,
+                    provider: "deepseek",
+                    mode: normalizedMode,
+                    userId: user.id,
+                    nodeCount: currentNodes.length,
+                    edgeCount: currentEdges.length,
+                  });
+                }
+
                 // Save to database if chatId provided
                 if (chatId) {
                   try {
@@ -935,6 +816,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
+        ...rateLimitHeaders,
       },
     });
   } catch (error: any) {

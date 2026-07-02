@@ -31,6 +31,8 @@ import {
 } from "@/actions/chats";
 import { updateUserPreferences } from "@/actions/users";
 import { ResourceExhaustionModal } from "@/components/subscription/ResourceExhaustionModal";
+import { DailyUsageIndicator } from "@/components/usage/DailyUsageIndicator";
+import { useDailyUsage } from "@/components/usage/DailyUsagePanel";
 import {
   Select,
   SelectContent,
@@ -44,8 +46,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { ArchitectureMode } from "@/lib/prompt-engineering";
-import { AVAILABLE_MODELS } from "@/lib/provider-registry";
+import {
+  INFERENCE_TIER_OPTIONS,
+  type InferenceTier,
+  resolveInferenceTier,
+} from "@/lib/inference-tier";
+import type { DailyUsageSnapshot } from "@/lib/usage-status";
+import { snapshotFromRateLimitHeaders } from "@/lib/usage-status";
 import { cn } from "@/lib/utils";
 import { StreamingMessage } from "./StreamingMessage";
 
@@ -399,21 +406,23 @@ export function AIAssistantPanel({
   // Guard to prevent loadMessages from overwriting streaming state
   const skipLoadMessagesRef = useRef<boolean>(false);
 
-  // Load initial settings or default mode
-  const [chatMode, setChatModeState] = useState<ArchitectureMode>(
-    (initialMetadata?.mode as ArchitectureMode) || "default",
+  const [inferenceTier, setInferenceTierState] = useState<InferenceTier>(
+    resolveInferenceTier({
+      tier: initialMetadata?.tier as string,
+      model: initialMetadata?.model as string,
+      mode: initialMetadata?.mode as string,
+    }),
   );
 
-  // Rate limit / Quota state
   const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
   const [quotaResetAt, setQuotaResetAt] = useState<string | null>(null);
-  const [quotaLimit, setQuotaLimit] = useState<number>(15);
-
-  // Settings / Preferences
-  // Settings / Preferences
-  const [model, setModelState] = useState(
-    (initialMetadata?.model as string) || "qwen:qwen3.5-plus",
-  );
+  const [quotaLimit, setQuotaLimit] = useState<number>(50);
+  const {
+    usage: dailyUsage,
+    loading: usageLoading,
+    applySnapshot: applyUsageSnapshot,
+    refresh: refreshUsage,
+  } = useDailyUsage(inferenceTier);
 
   const [userPreferences, setUserPreferences] = useState<{
     cloudProviders: string[];
@@ -456,35 +465,23 @@ export function AIAssistantPanel({
     }
   };
 
-  // Wrappers to persist on change
-  const setChatMode = (mode: ArchitectureMode) => {
-    setChatModeState(mode);
-    // Save preference to project
-    import("@/actions/projects").then(({ saveProject }) => {
-      saveProject(
-        projectId,
-        { metadata: { ...initialMetadata, mode, model } },
-        false,
-      );
-    });
-    // Sync to global user preferences
-    updateUserPreferences({ defaultMode: mode });
-  };
-
-  const setModel = (newModel: string) => {
-    setModelState(newModel);
-    // Save preference to project
+  const setInferenceTier = (tier: InferenceTier) => {
+    setInferenceTierState(tier);
+    void refreshUsage(tier);
     import("@/actions/projects").then(({ saveProject }) => {
       saveProject(
         projectId,
         {
-          metadata: { ...initialMetadata, mode: chatMode, model: newModel },
+          metadata: {
+            ...initialMetadata,
+            tier,
+            mode: tier === "pro" ? "enterprise" : "startup",
+          },
         },
         false,
       );
     });
-    // Sync to global user preferences
-    updateUserPreferences({ defaultModel: newModel });
+    updateUserPreferences({ defaultInferenceTier: tier });
   };
 
   // Load chats on mount
@@ -791,29 +788,12 @@ export function AIAssistantPanel({
             ? prefs.customInstructions
             : "";
 
-        let finalMode = (prefs.defaultMode ||
-          prefs.defaultArchitectureMode) as ArchitectureMode;
-
-        // Migrate legacy corporate mode
-        if ((finalMode as string) === "corporate") {
-          finalMode = "enterprise";
-        }
-
-        if (
-          finalMode &&
-          ["default", "startup", "enterprise"].includes(finalMode)
-        ) {
-          setChatModeState(finalMode);
-        }
-
-        if (prefs.defaultModel) {
-          setModelState(prefs.defaultModel);
-        }
-
-        // Set default model if not already set by project metadata
-        if (prefs.defaultModel && !initialMetadata?.model) {
-          setModelState(prefs.defaultModel);
-        }
+        const resolvedTier = resolveInferenceTier({
+          tier: prefs.defaultInferenceTier as string,
+          model: prefs.defaultModel as string,
+          mode: (prefs.defaultMode || prefs.defaultArchitectureMode) as string,
+        });
+        setInferenceTierState(resolvedTier);
 
         setUserPreferences({
           cloudProviders,
@@ -1178,8 +1158,7 @@ export function AIAssistantPanel({
           messages: conversationMessages, // Full conversation history!
           chatId,
           projectId,
-          mode: chatMode,
-          model: model,
+          tier: inferenceTier,
           currentNodes: getCurrentNodes(),
           currentEdges: getCurrentEdges(),
           userPreferences,
@@ -1189,23 +1168,37 @@ export function AIAssistantPanel({
       updateStreamProgress(
         15,
         "connecting",
-        "Connecting to the selected model",
+        "Connecting to inference",
       );
       clearTimeout(timeoutId); // Connection established, clear initial timeout
       resetWatchdog(); // Start stream watchdog
 
       if (response.status === 429) {
         const errorData = await response.json();
-        setQuotaResetAt(errorData.resetAt || null);
-        setQuotaLimit(errorData.limit || 15);
-        setIsQuotaModalOpen(true);
+        const limitType = errorData.limitType as string | undefined;
 
-        // Cleanup the placeholder AI message
+        if (limitType === "daily") {
+          setQuotaResetAt(errorData.resetAt || null);
+          setQuotaLimit(errorData.limit || 50);
+          setIsQuotaModalOpen(true);
+        } else {
+          toast.error(errorData.error || "Rate limit reached");
+        }
+
         setMessages((prev) => prev.filter((m) => m.id !== aiMsgId));
         setIsGenerating(false);
         clearTimeout(timeoutId);
         if (streamWatchdog) clearTimeout(streamWatchdog);
+        void refreshUsage();
         return;
+      }
+
+      const headerUsage = snapshotFromRateLimitHeaders(
+        inferenceTier,
+        response.headers,
+      );
+      if (headerUsage) {
+        applyUsageSnapshot(headerUsage);
       }
 
       // Check for error responses (validation, rate limit, etc.)
@@ -1429,6 +1422,14 @@ export function AIAssistantPanel({
               toast.error(streamError);
             } else if (json.type === "usage" && json.data) {
               tokenUsage = json.data;
+            } else if (json.type === "quota" && json.data) {
+              applyUsageSnapshot(json.data as DailyUsageSnapshot);
+            } else if (json.type === "inference-meta" && json.data?.fallbackUsed) {
+              toast.message("Using backup inference model", {
+                description:
+                  "Primary model was unavailable. Continuing with a fallback.",
+                duration: 5000,
+              });
             } else if (json.type === "progress" && json.data) {
               const progressPayload = json.data as {
                 progress?: number;
@@ -1581,7 +1582,13 @@ export function AIAssistantPanel({
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <DailyUsageIndicator
+            usage={dailyUsage}
+            loading={usageLoading}
+            compact
+            className="hidden sm:flex"
+          />
           {onToggle && (
             <button
               type="button"
@@ -1890,6 +1897,12 @@ export function AIAssistantPanel({
             )}
 
             <div className="relative group">
+              <div className="mb-2 px-1 sm:hidden">
+                <DailyUsageIndicator
+                  usage={dailyUsage}
+                  loading={usageLoading}
+                />
+              </div>
               <form
                 onSubmit={handleManualSubmit}
                 className="relative flex items-center bg-bg-primary dark:bg-bg-secondary border border-brand-charcoal/20 dark:border-border-primary focus-within:border-brand-orange/50 transition-colors shadow-sm"
@@ -1927,67 +1940,21 @@ export function AIAssistantPanel({
                 />
 
                 <div className="flex items-center gap-1 shrink-0">
-                  <Select value={chatMode} onValueChange={setChatMode}>
-                    <SelectTrigger className="h-8 w-auto min-w-0 px-2 max-w-[100px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono uppercase tracking-widest text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none">
-                      <SelectValue placeholder="MODE" />
+                  <Select
+                    value={inferenceTier}
+                    onValueChange={(value) =>
+                      setInferenceTier(value as InferenceTier)
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-auto min-w-0 px-2 max-w-[88px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono uppercase tracking-widest text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none">
+                      <SelectValue placeholder="TIER" />
                     </SelectTrigger>
                     <SelectContent className="font-mono text-[10px] uppercase rounded-none border-brand-charcoal">
-                      <SelectItem value="default">Default</SelectItem>
-                      <SelectItem value="startup">Startup</SelectItem>
-                      <SelectItem value="enterprise">Enterprise</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={model} onValueChange={setModel}>
-                    <SelectTrigger className="h-8 w-8 min-w-0 p-0 flex items-center justify-center border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[10px] font-mono text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none rounded-none">
-                      <Bot className="w-4 h-4 shrink-0" />
-                    </SelectTrigger>
-                    <SelectContent
-                      align="end"
-                      className="font-mono text-[11px] max-w-[300px] rounded-none border-brand-charcoal"
-                    >
-                      <TooltipProvider delayDuration={100}>
-                        {Object.entries(AVAILABLE_MODELS).map(([id, m]) => (
-                          <Tooltip key={id}>
-                            <TooltipTrigger asChild>
-                              <div className="w-full">
-                                <SelectItem
-                                  value={id}
-                                  className="flex items-center justify-between group rounded-none"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span>{m.name}</span>
-                                    {m.badge === "hot_tag" && (
-                                      <span className="text-brand-orange ml-1">
-                                        🔥
-                                      </span>
-                                    )}
-                                    {m.badge === "double_hot_tag" && (
-                                      <span className="text-brand-orange ml-1">
-                                        🔥🔥
-                                      </span>
-                                    )}
-                                    {m.badge === "balance_tag" && (
-                                      <span className="text-[8px] text-blue-500 border border-blue-500/20 px-1 py-0.5 ml-1 leading-none uppercase">
-                                        BAL
-                                      </span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="right"
-                              className="max-w-[200px] font-mono text-[10px] bg-bg-elevated text-text-primary z-[100] p-2 leading-relaxed whitespace-pre-wrap rounded-none border-brand-charcoal"
-                            >
-                              <div className="font-bold text-brand-orange mb-1">
-                                {m.name}
-                              </div>
-                              {m.description}
-                            </TooltipContent>
-                          </Tooltip>
-                        ))}
-                      </TooltipProvider>
+                      {INFERENCE_TIER_OPTIONS.map((option) => (
+                        <SelectItem key={option.tier} value={option.tier}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
