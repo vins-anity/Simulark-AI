@@ -33,6 +33,7 @@ import {
 import { useOnboarding } from "@/lib/hooks/useOnboarding";
 import {
   DEFAULT_INFERENCE_TIER,
+  getInferenceTierConfig,
   INFERENCE_TIER_OPTIONS,
   type InferenceTier,
   resolveInferenceTier,
@@ -112,19 +113,32 @@ function DashboardContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProjects, setTotalProjects] = useState(0);
 
-  // Load user default preferences
+  // Load user default preferences (migrate legacy mode/model to tier)
   useEffect(() => {
     async function loadPrefs() {
       const result = await getUserPreferences();
       if (result.success && result.preferences) {
-        setSelectedTier(
-          resolveInferenceTier({
-            tier: result.preferences.defaultInferenceTier as string,
-            model: result.preferences.defaultModel as string,
-            mode: (result.preferences.defaultMode ||
-              result.preferences.defaultArchitectureMode) as string,
-          }),
-        );
+        const prefs = result.preferences;
+        const tier = resolveInferenceTier({
+          tier: prefs.defaultInferenceTier as string,
+          model: prefs.defaultModel as string,
+          mode: (prefs.defaultMode || prefs.defaultArchitectureMode) as string,
+        });
+        setSelectedTier(tier);
+
+        const tierConfig = getInferenceTierConfig(tier);
+        const needsMigration =
+          prefs.defaultInferenceTier !== tier ||
+          prefs.defaultModel !== tierConfig.modelId;
+
+        if (needsMigration) {
+          await updateUserPreferences({
+            defaultInferenceTier: tier,
+            defaultModel: tierConfig.modelId,
+            defaultMode: tier === "pro" ? "enterprise" : "startup",
+            defaultArchitectureMode: tier === "pro" ? "enterprise" : "startup",
+          });
+        }
       }
     }
     loadPrefs();
@@ -132,7 +146,13 @@ function DashboardContent() {
 
   const handleTierChange = (tier: InferenceTier) => {
     setSelectedTier(tier);
-    updateUserPreferences({ defaultInferenceTier: tier });
+    const tierConfig = getInferenceTierConfig(tier);
+    updateUserPreferences({
+      defaultInferenceTier: tier,
+      defaultModel: tierConfig.modelId,
+      defaultMode: tier === "pro" ? "enterprise" : "startup",
+      defaultArchitectureMode: tier === "pro" ? "enterprise" : "startup",
+    });
   };
 
   const loadProjects = useCallback(async (page: number) => {
