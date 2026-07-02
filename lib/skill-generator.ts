@@ -33,20 +33,96 @@ interface ArchitectureAnalysis {
   antiPatterns: string[];
 }
 
-function toKebabCase(input: string): string {
-  const normalized = input
+// ─────────────────────────────────────────────────────────────────────────────
+// Skill name/description — agentskills.io open standard
+// https://agentskills.io/specification
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SKILL_NAME_MAX = 64;
+const SKILL_DESC_MAX = 1024;
+
+/**
+ * Converts a project name to a spec-compliant skill name.
+ *
+ * agentskills.io rules:
+ * - Lowercase letters, numbers, hyphens only
+ * - Must not start or end with a hyphen
+ * - Must not contain consecutive hyphens (--)
+ * - Max 64 characters
+ * - Must match the parent directory name (enforced in packageSkill)
+ */
+function toSkillName(input: string): string {
+  const name = input
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+    .replace(/[^a-z0-9\s-]/g, "")  // strip illegal chars
+    .replace(/\s+/g, "-")           // spaces → hyphens
+    .replace(/-{2,}/g, "-")         // collapse consecutive hyphens (spec requirement)
+    .replace(/^-|-$/g, "");         // no leading/trailing hyphens
 
-  return normalized || "architecture-skill";
+  // Enforce max length, trimming cleanly at a hyphen boundary
+  const truncated =
+    name.length > SKILL_NAME_MAX
+      ? name.slice(0, SKILL_NAME_MAX).replace(/-$/, "")
+      : name;
+
+  return truncated || "architecture-skill";
 }
 
-function quoteYaml(value: string): string {
-  return JSON.stringify(value);
+/**
+ * Builds a spec-compliant description using imperative phrasing.
+ *
+ * agentskills.io best practices:
+ * - Imperative: "Use this skill when..." not "This skill does..."
+ * - Focus on user intent (what they're trying to achieve)
+ * - List implicit triggers ("even if they don't mention X")
+ * - Max 1024 characters
+ */
+function buildDescription(
+  projectName: string,
+  componentList: string,
+  analysis: ArchitectureAnalysis,
+): string {
+  const entryPointNames =
+    analysis.entryPoints.length > 0
+      ? analysis.entryPoints
+          .map((n) => getNodeLabel(n))
+          .slice(0, 2)
+          .join(", ")
+      : null;
+
+  const capabilities = [
+    `implements or modifies ${projectName} services`,
+    "reviews architecture decisions and pull requests",
+    analysis.databases.length > 0 ? "writes database migrations" : null,
+    analysis.antiPatterns.length > 0
+      ? "investigates architecture warnings or incidents"
+      : null,
+    "plans resilience or scaling changes",
+  ]
+    .filter(Boolean)
+    .slice(0, 4)
+    .join(", ");
+
+  const what =
+    `Guides work on the ${projectName} architecture` +
+    ` (${componentList}` +
+    `${entryPointNames ? `, routed through ${entryPointNames}` : ""}).`;
+
+  // Imperative phrasing per spec — tells the agent when to act
+  const when =
+    `Use this skill when the developer ${capabilities},` +
+    " even if they don't explicitly mention the architecture or service names.";
+
+  const full = `${what} ${when}`;
+
+  if (full.length <= SKILL_DESC_MAX) return full;
+  return full.slice(0, SKILL_DESC_MAX - 1).replace(/[,\s]+$/, "") + ".";
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Node helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
 function getNodeLabel(node: Node): string {
   const label = node.data?.label;
@@ -61,13 +137,16 @@ function getNodeDescription(node: Node): string {
   if (typeof description === "string" && description.trim().length > 0) {
     return description.trim();
   }
-
   const type = node.type || "component";
   return `${type} component in the architecture.`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Architecture analysis
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Analyzes diagram nodes to detect architecture patterns.
+ * Analyzes diagram nodes to detect architecture patterns and anti-patterns.
  */
 function analyzeArchitecture(
   nodes: Node[],
@@ -98,7 +177,7 @@ function analyzeArchitecture(
 
   const antiPatterns: string[] = [];
 
-  // Direct non-service -> datastore links are usually unsafe in this model.
+  // Detect direct non-service → datastore connections (security anti-pattern)
   const dbConnections = edges.filter((edge) => {
     const target = nodes.find((node) => node.id === edge.target);
     return target
@@ -109,35 +188,27 @@ function analyzeArchitecture(
   for (const edge of dbConnections) {
     const source = nodes.find((node) => node.id === edge.source);
     if (!source) continue;
-
     const allowedSource = ["service", "backend", "function", "ai"].includes(
       source.type || "",
     );
-
     if (!allowedSource) {
       antiPatterns.push(
-        `Direct connection from ${getNodeLabel(source)} to data store detected`,
+        `Direct connection from ${getNodeLabel(source)} to data store — bypass service layer`,
       );
     }
   }
 
   if (entryPoints.length === 0) {
     antiPatterns.push(
-      "No explicit ingress layer detected (gateway/load balancer)",
+      "No explicit ingress layer (gateway/load balancer) — external traffic enters unguarded",
     );
   }
 
-  return {
-    entryPoints,
-    databases,
-    services,
-    infrastructure,
-    antiPatterns,
-  };
+  return { entryPoints, databases, services, infrastructure, antiPatterns };
 }
 
 /**
- * Generates architecture rules based on diagram patterns.
+ * Generates imperative architecture rules grounded in actual node labels.
  */
 function generateArchitectureRules(
   nodes: Node[],
@@ -151,12 +222,12 @@ function generateArchitectureRules(
   }
 
   if (analysis.databases.length > 0) {
-    rules.push("NEVER allow direct client access to data stores");
-    rules.push("ALWAYS enforce schema migrations and backward compatibility");
+    rules.push("NEVER allow direct client or frontend access to data stores");
+    rules.push("ALWAYS enforce schema migrations with backward compatibility");
   }
 
   if (analysis.services.length > 0) {
-    rules.push("ALWAYS keep business logic in service or function boundaries");
+    rules.push("ALWAYS keep business logic inside service or function boundaries");
   }
 
   const hasQueue = nodes.some((node) =>
@@ -164,20 +235,27 @@ function generateArchitectureRules(
   );
   if (hasQueue) {
     rules.push(
-      "ALWAYS implement retry and dead-letter handling for async flows",
+      "ALWAYS implement retry and dead-letter queue handling for async flows",
     );
   }
 
   const hasMonitoring = nodes.some((node) => node.type === "monitoring");
   if (hasMonitoring) {
-    rules.push("ALWAYS emit metrics, traces, and logs for critical paths");
+    rules.push("ALWAYS emit metrics, traces, and structured logs on critical paths");
+  }
+
+  const hasAuth = nodes.some((node) =>
+    ["auth", "security"].includes(node.type || ""),
+  );
+  if (hasAuth) {
+    rules.push("NEVER skip authentication checks before reaching business services");
   }
 
   return rules;
 }
 
 /**
- * Generates service catalog from nodes.
+ * Generates a Markdown service catalog table from nodes.
  */
 function generateServiceCatalog(nodes: Node[]): string {
   const header =
@@ -185,15 +263,14 @@ function generateServiceCatalog(nodes: Node[]): string {
   const rows = nodes.map((node) => {
     const tech = typeof node.data?.tech === "string" ? node.data.tech : "-";
     const type = node.type || "unknown";
-
     return `| ${getNodeLabel(node)} | ${type} | ${tech} | ${getNodeDescription(node)} |`;
   });
-
   return [header, ...rows].join("\n");
 }
 
 /**
- * Traces representative data-flow paths through the architecture.
+ * BFS from entry-point nodes, tracing representative data-flow paths.
+ * Produces human-readable path strings like "API Gateway -> Auth -> PostgreSQL".
  */
 function generateDataFlowPatterns(nodes: Node[], edges: Edge[]): string {
   const entries = nodes.filter((node) =>
@@ -205,11 +282,9 @@ function generateDataFlowPatterns(nodes: Node[], edges: Edge[]): string {
   }
 
   const lines: string[] = [];
-
   for (const entry of entries.slice(0, 3)) {
     const entryLabel = getNodeLabel(entry);
     lines.push(`### From ${entryLabel}`);
-
     const visited = new Set<string>();
     const queue: Array<{ id: string; path: string[] }> = [
       { id: entry.id, path: [entryLabel] },
@@ -234,44 +309,151 @@ function generateDataFlowPatterns(nodes: Node[], edges: Edge[]): string {
         ) {
           lines.push(`- ${nextPath.join(" -> ")}`);
         }
-
         queue.push({ id: target.id, path: nextPath });
       }
     }
-
     lines.push("");
   }
-
   return lines.join("\n").trim();
 }
 
-function generateReadme(projectName: string): string {
-  return `# ${projectName} Skill Package
+// ─────────────────────────────────────────────────────────────────────────────
+// SKILL.md body — Level 2 content (loaded when triggered)
+// Follows progressive disclosure: quick-start first, then explicit references
+// to Level 3 files so Claude loads them on demand via bash.
+// ─────────────────────────────────────────────────────────────────────────────
 
-This package was generated by Simulark and is ready for import into coding agents that support \
-\`SKILL.md\` conventions.
+function buildSkillBody(
+  projectName: string,
+  systemOverview: string,
+  rules: string[],
+  antiPatterns: string[],
+  analysis: ArchitectureAnalysis,
+): string {
+  const rulesSection =
+    rules.length > 0
+      ? rules.map((r) => `- ${r}`).join("\n")
+      : "- No strict rules detected from current graph topology.";
 
-## Package Contents
+  const antiPatternSection =
+    antiPatterns.length > 0
+      ? antiPatterns.map((p) => `- ⚠️ ${p}`).join("\n")
+      : "- No obvious anti-patterns detected from current graph topology.";
 
-- \`SKILL.md\`: Core architecture guidance and usage instructions
-- \`manifest.json\`: Metadata for versioning and tooling
-- \`references/architecture.json\`: Raw architecture graph snapshot
-- \`references/diagram.mmd\`: Mermaid representation for quick visualization
-- \`references/service-catalog.md\`: Component inventory and descriptions
-- \`references/data-flows.md\`: Key request/data paths
-- \`references/quality-report.json\`: Export-time architecture quality report
-- \`references/quality-summary.md\`: Human-readable quality summary
+  const entryPointHint =
+    analysis.entryPoints.length > 0
+      ? `All external traffic enters through **${analysis.entryPoints.map(getNodeLabel).join(" / ")}**.`
+      : "No dedicated ingress node detected.";
 
-## Suggested Workflow
+  return `# ${projectName} Architecture Skill
 
-1. Load \`SKILL.md\` in your coding assistant
-2. Review \`references/diagram.mmd\` and \`references/data-flows.md\`
-3. Use the service catalog and flow references during implementation and reviews
+## Quick Start
+
+${systemOverview}
+
+${entryPointHint}
+
+Before writing or reviewing code, load the component inventory and traced request paths:
+
+\`\`\`bash
+cat references/service-catalog.md
+cat references/data-flows.md
+\`\`\`
+
+---
+
+## Architecture Rules
+
+${rulesSection}
+
+---
+
+## Anti-Patterns to Avoid
+
+${antiPatternSection}
+
+---
+
+## Reference Files
+
+Load these files on demand — only when the task requires them:
+
+- **If implementing a new service or changing service boundaries** → read \`references/service-catalog.md\`
+- **If tracing a request flow or debugging a latency issue** → read \`references/data-flows.md\`
+- **If you need a visual overview of the full graph** → read \`references/diagram.mmd\`
+- **If evaluating architecture quality or reviewing blockers** → read \`references/quality-summary.md\`
+- **If you need programmatic access to the raw node/edge graph** → read \`references/architecture.json\`
 `;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// README — install guide for Claude Code
+// ─────────────────────────────────────────────────────────────────────────────
+
+function generateReadme(projectName: string, skillName: string): string {
+  return `# ${projectName} — Simulark Agent Skill
+
+Generated by [Simulark](https://simulark.app). Compatible with **Anthropic Agent Skills** (Claude Code, Claude API, claude.ai).
+
+## Installation
+
+### Claude Code (recommended)
+
+Place this directory in your project's skills folder:
+
+\`\`\`bash
+# Project-scoped (shared with the repo)
+cp -r ./ .claude/skills/${skillName}/
+
+# Or user-scoped (personal, all projects)
+cp -r ./ ~/.claude/skills/${skillName}/
+\`\`\`
+
+Claude Code discovers and loads Skills automatically.
+
+### Claude API
+
+Upload via the Skills API:
+
+\`\`\`bash
+zip -r ${skillName}.zip SKILL.md references/
+curl -X POST https://api.anthropic.com/v1/skills \\
+  -H "x-api-key: \$ANTHROPIC_API_KEY" \\
+  -H "anthropic-beta: skills-2025-10-02" \\
+  -F "file=@${skillName}.zip"
+\`\`\`
+
+### claude.ai
+
+Go to **Settings → Features → Skills** and upload \`${skillName}.zip\`.
+
+---
+
+## Package Contents
+
+| File | Level | Purpose |
+| --- | --- | --- |
+| \`SKILL.md\` | 1 + 2 | Frontmatter (always loaded) + instructions (loaded on trigger) |
+| \`references/service-catalog.md\` | 3 | Component inventory |
+| \`references/data-flows.md\` | 3 | Request path traces |
+| \`references/diagram.mmd\` | 3 | Mermaid architecture diagram |
+| \`references/quality-summary.md\` | 3 | Quality score and blockers |
+| \`references/architecture.json\` | 3 | Raw graph snapshot |
+
+Level 3 files are loaded by the agent on demand — they consume zero tokens until referenced.
+`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main export
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Main function to generate SKILL.md content and references.
+ * Generates a spec-compliant Anthropic Agent Skill package from a Simulark
+ * architecture graph.
+ *
+ * Output conforms to:
+ * https://docs.anthropic.com/en/agents-and-tools/agent-skills
  */
 export function generateSkillContent(
   options: SkillGenerationOptions,
@@ -284,7 +466,9 @@ export function generateSkillContent(
   const dataFlows = generateDataFlowPatterns(nodes, edges);
   const mermaid = generateMermaidCode(nodes, edges);
 
-  const skillName = toKebabCase(projectName);
+  // ── Level 1: Metadata (name + description) ────────────────────────────────
+  const skillName = toSkillName(projectName);
+
   const componentTypes = Array.from(
     new Set(
       nodes
@@ -300,56 +484,46 @@ export function generateSkillContent(
           .join(", ")
       : "architecture components";
 
-  const description =
-    `Expert on the ${projectName} architecture. ` +
-    "Use when implementing features, reviewing design changes, and validating operational safety. " +
-    `Covers ${componentList}.`;
+  // Spec: description must state what the skill does AND when to use it
+  const description = buildDescription(projectName, componentList, analysis);
 
+  // ── Level 2: SKILL.md body ────────────────────────────────────────────────
   const systemOverview =
     projectDescription ||
     `${projectName} contains ${nodes.length} components and ${edges.length} connections.`;
 
-  const antiPatternSection =
-    analysis.antiPatterns.length > 0
-      ? analysis.antiPatterns.map((item) => `- ${item}`).join("\n")
-      : "- No obvious anti-patterns detected from current graph topology.";
+  const skillBody = buildSkillBody(
+    projectName,
+    systemOverview,
+    rules,
+    analysis.antiPatterns,
+    analysis,
+  );
 
-  const skillMd = `---
-name: ${quoteYaml(skillName)}
-description: ${quoteYaml(description)}
----
+  // ── SKILL.md: YAML frontmatter + body ───────────────────────────────────
+  // Frontmatter fields per agentskills.io/specification
+  const generatedAt = new Date().toISOString();
+  const skillMd = [
+    "---",
+    `name: ${JSON.stringify(skillName)}`,
+    `description: ${JSON.stringify(description)}`,
+    `license: "Generated by Simulark (https://simulark.app)"`,
+    `compatibility: "Compatible with Claude Code, Claude API (skills-2025-10-02 beta), and claude.ai. No external tools required."`,
+    "metadata:",
+    `  generated-by: simulark`,
+    `  generated-at: ${JSON.stringify(generatedAt)}`,
+    `  node-count: ${JSON.stringify(String(nodes.length))}`,
+    `  edge-count: ${JSON.stringify(String(edges.length))}`,
+    quality ? `  quality-score: ${JSON.stringify(String(quality.score))}` : null,
+    quality ? `  quality-grade: ${JSON.stringify(quality.grade)}` : null,
+    "---",
+    "",
+    skillBody,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 
-# ${projectName} Architecture Skill
-
-## System Overview
-
-${systemOverview}
-
-## Architecture Rules
-
-${rules.length > 0 ? rules.map((rule) => `- ${rule}`).join("\n") : "- No strict rules detected."}
-
-## Anti-Patterns to Avoid
-
-${antiPatternSection}
-
-## Service Catalog
-
-${catalog}
-
-## Data Flow Patterns
-
-${dataFlows}
-
-## When to Use This Skill
-
-Load this skill when:
-- Implementing new services or modifying service boundaries
-- Reviewing pull requests for architecture compliance
-- Planning incident response and resilience hardening
-- Preparing architecture reviews before release
-`;
-
+  // ── Level 3: Bundled reference files ─────────────────────────────────────
   const architectureSnapshot = {
     generatedAt: new Date().toISOString(),
     projectName,
@@ -367,17 +541,6 @@ Load this skill when:
     })),
   };
 
-  const metadata = {
-    name: skillName,
-    description,
-    version: "1.1.0",
-    createdAt: new Date().toISOString(),
-    nodeCount: nodes.length,
-    edgeCount: edges.length,
-    qualityScore: quality?.score,
-    qualityGrade: quality?.grade,
-  };
-
   const qualitySummaryMarkdown = quality
     ? [
         "# Architecture Quality Summary",
@@ -390,17 +553,31 @@ Load this skill when:
         "",
         "## Blockers",
         quality.blockers.length > 0
-          ? quality.blockers.map((blocker) => `- ${blocker}`).join("\n")
+          ? quality.blockers.map((b) => `- ${b}`).join("\n")
           : "- None",
         "",
       ].join("\n")
     : "# Architecture Quality Summary\n\nNo quality report available.\n";
 
+  // JS-side metadata (not written to a file — frontmatter YAML metadata field
+  // is the spec-compliant place for this; manifest.json is not in the spec)
+  const metadata = {
+    name: skillName,
+    description,
+    version: "2.0.0",
+    createdAt: generatedAt,
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
+    qualityScore: quality?.score,
+    qualityGrade: quality?.grade,
+  };
+
   return {
     skillMd,
     files: {
-      "README.md": generateReadme(projectName),
-      "manifest.json": JSON.stringify(metadata, null, 2),
+      // README is a human install guide — not a spec-required file
+      "README.md": generateReadme(projectName, skillName),
+      // Level 3 reference files (loaded by agent on demand)
       "references/architecture.json": JSON.stringify(
         architectureSnapshot,
         null,
@@ -409,7 +586,6 @@ Load this skill when:
       "references/diagram.mmd": mermaid,
       "references/service-catalog.md": `# Service Catalog\n\n${catalog}\n`,
       "references/data-flows.md": `# Data Flows\n\n${dataFlows}\n`,
-      "references/quality-report.json": JSON.stringify(quality || {}, null, 2),
       "references/quality-summary.md": qualitySummaryMarkdown,
     },
     metadata,
@@ -417,16 +593,28 @@ Load this skill when:
 }
 
 /**
- * Creates a downloadable ZIP file with the skill package.
+ * Creates a downloadable ZIP file containing the complete Agent Skill package.
+ *
+ * The spec requires: "name must match the parent directory name"
+ * So the ZIP extracts as:
+ *   my-project/
+ *   ├── SKILL.md
+ *   ├── README.md
+ *   └── references/
+ *       ├── service-catalog.md
+ *       └── ...
  */
 export async function packageSkill(skill: GeneratedSkill): Promise<Blob> {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
+  const dir = skill.metadata.name; // skill directory == skill name (spec requirement)
 
-  zip.file("SKILL.md", skill.skillMd);
+  // SKILL.md lives at the root of the named skill directory
+  zip.file(`${dir}/SKILL.md`, skill.skillMd);
 
+  // All bundled files (README, Level 3 references) under the same directory
   for (const [path, content] of Object.entries(skill.files)) {
-    zip.file(path, content);
+    zip.file(`${dir}/${path}`, content);
   }
 
   return zip.generateAsync({ type: "blob" });
