@@ -418,6 +418,18 @@ describe("API Schema Validation", () => {
       const result = v.safeParse(ExportSkillRequestSchema, invalidInput);
       expect(result.success).toBe(false);
     });
+
+    it("should accept null project description", () => {
+      const validInput = {
+        projectName: "My Architecture",
+        projectDescription: null,
+        nodes: [{ id: "gateway", type: "gateway", data: { label: "Gateway" } }],
+        edges: [],
+      };
+
+      const result = v.safeParse(ExportSkillRequestSchema, validInput);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("StressTestPlanRequest Schema", () => {

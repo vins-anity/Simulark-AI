@@ -10,6 +10,10 @@ import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
 import { WorkstationHeader } from "@/components/canvas/WorkstationHeader";
 import type { LayoutAlgorithm } from "@/lib/layout";
 import type { Project } from "@/lib/schema/graph";
+import {
+  type GeneratedSkill,
+  packageSkill,
+} from "@/lib/skill-generator";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 import { cn } from "@/lib/utils";
 
@@ -113,7 +117,9 @@ export default function ProjectPage({
     const edges = flowEditorRef.current.edges ?? [];
 
     if (nodes.length === 0) {
-      toast.error("Add at least one node to the canvas before exporting a skill.");
+      toast.error(
+        "Add at least one node to the canvas before exporting a skill.",
+      );
       return;
     }
 
@@ -123,6 +129,14 @@ export default function ProjectPage({
       return;
     }
 
+    const description =
+      typeof (project as { description?: string | null }).description ===
+      "string"
+        ? (project as { description?: string }).description?.trim()
+        : undefined;
+
+    const loadingId = toast.loading("Building agent skill…");
+
     try {
       const response = await fetch("/api/export-skill", {
         method: "POST",
@@ -131,7 +145,7 @@ export default function ProjectPage({
         },
         body: JSON.stringify({
           projectName,
-          projectDescription: (project as { description?: string }).description,
+          ...(description ? { projectDescription: description } : {}),
           nodes: nodes.map((node) => ({
             id: node.id,
             type: node.type,
@@ -166,39 +180,41 @@ export default function ProjectPage({
         );
       }
 
-      // Download the ZIP file
-      const blob = await response.blob();
-      const contentDisposition = response.headers.get("Content-Disposition");
-      const match = contentDisposition?.match(/filename="([^"]+)"/);
-      const filename =
-        match?.[1] ||
-        `${project.name.toLowerCase().replace(/\s+/g, "-")}-skill.zip`;
+      const payload = (await response.json()) as {
+        skill: GeneratedSkill;
+        dropInPath: string;
+        hint: string;
+        fileName: string;
+      };
 
-      const url = window.URL.createObjectURL(blob);
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(payload.skill.skillMd);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+
+      const zipBlob = await packageSkill(payload.skill);
+      const url = window.URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
+      a.download = payload.fileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      const cliCommand =
-        response.headers.get("X-Simulark-Cli-Project") ||
-        "npx skills add ./<extracted-folder> --skill <name> -a cursor -y";
-      try {
-        await navigator.clipboard.writeText(cliCommand);
-        toast.success("Skill ZIP downloaded. Install command copied to clipboard.", {
-          description: cliCommand,
+      toast.dismiss(loadingId);
+      toast.success(
+        copied ? "Skill copied to clipboard" : "Skill files downloaded",
+        {
+          description: payload.hint,
           duration: 8000,
-        });
-      } catch {
-        toast.success("Skill package exported", {
-          description: `Run: ${cliCommand}`,
-          duration: 8000,
-        });
-      }
+        },
+      );
     } catch (error) {
+      toast.dismiss(loadingId);
       console.error("Error exporting skill:", error);
       toast.error(
         error instanceof Error

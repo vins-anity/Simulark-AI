@@ -11,7 +11,7 @@ Simulark turns plain-English descriptions into interactive architecture diagrams
 - **Interactive canvas** — 20+ semantic node types on XYFlow, undo/redo, auto-layout (Dagre flow, hierarchical, radial)
 - **AI assistant** — chat-driven architecture generation with Flash (fast) and Pro (deeper reasoning) tiers
 - **Chaos & stress testing** — visual failure simulation and AI-assisted stress plans
-- **Export** — PNG, SVG, PDF, Mermaid, and agent skill ZIP with `npx skills` install commands
+- **Export** — PNG, SVG, PDF, Mermaid, and agent skill (auto-copies to clipboard + downloads files)
 - **Persistence** — autosaved projects, version snapshots, chat history per project
 - **Fair-use limits** — per-user daily caps, burst rate limiting, and IP limits via Upstash Redis
 

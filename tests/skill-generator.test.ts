@@ -514,7 +514,7 @@ describe("reference files", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("packageSkill — ZIP directory structure", () => {
-  it("places SKILL.md inside a named skill directory (not at ZIP root)", async () => {
+  it("places SKILL.md inside a single skill folder (not at ZIP root)", async () => {
     const skill = generateSkillContent({
       projectName: "Acme Platform",
       nodes: fullStackNodes,
@@ -523,12 +523,13 @@ describe("packageSkill — ZIP directory structure", () => {
     const blob = await packageSkill(skill);
     const zip = await JSZip.loadAsync(await blob.arrayBuffer());
 
-    // Spec: "name must match the parent directory name"
     expect(zip.file("acme-platform/SKILL.md")).toBeTruthy();
-    expect(zip.file("SKILL.md")).toBeFalsy(); // must NOT be at root
+    expect(zip.file("SKILL.md")).toBeFalsy();
+    expect(zip.file(".agents/skills/acme-platform/SKILL.md")).toBeFalsy();
+    expect(zip.file("INSTALL.md")).toBeFalsy();
   });
 
-  it("places all reference files under the skill directory", async () => {
+  it("places all reference files under the skill folder", async () => {
     const skill = generateSkillContent({
       projectName: "Acme Platform",
       nodes: fullStackNodes,
@@ -582,7 +583,7 @@ describe("packageSkill — ZIP directory structure", () => {
     const blob = await packageSkill(skill);
     const zip = await JSZip.loadAsync(await blob.arrayBuffer());
 
-    const expectedDir = skill.metadata.name; // "my-cool-api"
+    const expectedDir = skill.metadata.name;
     expect(zip.file(`${expectedDir}/SKILL.md`)).toBeTruthy();
   });
 });

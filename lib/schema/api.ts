@@ -60,7 +60,7 @@ export const GenerateRequestSchema = v.object({
 
 export const ExportSkillRequestSchema = v.object({
   projectName: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
-  projectDescription: v.optional(v.pipe(v.string(), v.maxLength(2000))),
+  projectDescription: v.nullish(v.pipe(v.string(), v.maxLength(2000))),
   nodes: v.pipe(v.array(v.any()), v.minLength(1), v.maxLength(1000)),
   edges: v.pipe(v.array(v.any()), v.maxLength(5000)),
 });

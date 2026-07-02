@@ -7,7 +7,11 @@ import {
   type ExportSkillRequestInput,
   ExportSkillRequestSchema,
 } from "@/lib/schema/api";
-import { generateSkillContent, packageSkill, buildSkillInstallCommands } from "@/lib/skill-generator";
+import {
+  generateSkillContent,
+  getSkillDropInPath,
+  getSkillInstallHint,
+} from "@/lib/skill-generator";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
@@ -56,42 +60,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate skill content
     const skill = generateSkillContent({
       projectName,
-      projectDescription,
+      projectDescription: projectDescription ?? undefined,
       nodes,
       edges,
       quality,
     });
 
-    // Package into ZIP
-    const zipBlob = await packageSkill(skill);
+    const skillName = skill.metadata.name;
 
-    // Convert blob to buffer for response
-    const buffer = Buffer.from(await zipBlob.arrayBuffer());
-
-    const safeFileName =
-      skill.metadata.name.replace(/[^a-z0-9-]/gi, "-").toLowerCase() ||
-      "architecture-skill";
-
-    const cliCommands = buildSkillInstallCommands(skill.metadata.name);
-
-    // Return ZIP file
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${safeFileName}-skill.zip"`,
-        "X-Simulark-Skill-Version": skill.metadata.version,
-        "X-Simulark-Quality-Score": quality.score.toString(),
-        "X-Simulark-Cli-Project": cliCommands.project,
-        "X-Simulark-Cli-Global": cliCommands.global,
-      },
+    return NextResponse.json({
+      skill,
+      dropInPath: getSkillDropInPath(skillName),
+      hint: getSkillInstallHint(skillName),
+      fileName: `${skillName}-skill.zip`,
     });
-  } catch (error: any) {
-    logger.error("[Export Skill] Error", error);
+  } catch (error: unknown) {
+    logger.error(
+      "[Export Skill] Error",
+      error instanceof Error ? error : new Error(String(error)),
+    );
     return NextResponse.json(
-      { error: error.message || "Failed to generate skill" },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to generate skill",
+      },
       { status: 500 },
     );
   }

@@ -7,7 +7,6 @@ import {
   CircleHelp,
   Download,
   FileCode,
-  FileText,
   GitBranch,
   Grid3X3,
   Image as ImageIcon,
@@ -313,7 +312,7 @@ export function WorkstationHeader({
               className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <FileCode className="w-4 h-4 text-brand-orange mr-3" />
-              <span>EXPORT_SKILL_NPX</span>
+              <span>EXPORT_AGENT_SKILL</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
