@@ -60,7 +60,7 @@ export function CTAEnhanced() {
         >
           <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-pulse" />
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-sand-light/60">
-            FREE_TIER_AVAILABLE
+            FREE_PUBLIC_BETA
           </span>
         </motion.div>
 
@@ -127,16 +127,14 @@ export function CTAEnhanced() {
           viewport={{ once: true }}
           transition={{ delay: 0.7 }}
         >
-          {["NO_CREDIT_CARD", "FREE_TIER", "OPEN_BETA"].map(
-            (item, index) => (
+          {["NO_CREDIT_CARD", "FREE_BETA", "FAIR_USE_LIMITS"].map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <span className="w-1 h-1 bg-brand-orange" />
                 <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-sand-light/30">
                   {item}
                 </span>
               </div>
-            ),
-          )}
+          ))}
         </motion.div>
       </motion.div>
 

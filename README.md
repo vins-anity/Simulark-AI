@@ -1,144 +1,97 @@
 # Simulark
 
-**Intelligent Backend Architecture Design and Visual Simulation Platform**
+**AI-assisted backend architecture design — free public beta**
+
+Simulark turns plain-English descriptions into interactive architecture diagrams you can edit, stress-test, and export. Projects persist in Supabase; inference runs on **DeepSeek V4 Flash / Pro** via Alibaba Cloud DashScope.
 
 ---
 
-## Overview
+## What it does today
 
-Simulark is an AI-powered platform that transforms natural language requirements into semantic, auto-arranged architecture diagrams. It serves as a high-fidelity CAD tool for backend development, bridging the gap between system design and implementation. With our new **Brutalist Design System**, Simulark focuses on clarity, structural integrity, and raw functionality for developers.
+- **Interactive canvas** — 20+ semantic node types on XYFlow, undo/redo, auto-layout (Dagre flow, hierarchical, radial)
+- **AI assistant** — chat-driven architecture generation with Flash (fast) and Pro (deeper reasoning) tiers
+- **Chaos & stress testing** — visual failure simulation and AI-assisted stress plans
+- **Export** — PNG, SVG, PDF, Mermaid, and agent skill ZIP with `npx skills` install commands
+- **Persistence** — autosaved projects, version snapshots, chat history per project
+- **Fair-use limits** — per-user daily caps, burst rate limiting, and IP limits via Upstash Redis
 
-The platform solves the "Context Loss" problem in modern software engineering—where architectural intent is often lost during AI-assisted coding transitions.
+---
+
+## What it does not do (yet)
+
+- No subscriptions or paid tiers — everything is free during the beta
+- No Terraform / CloudFormation generation from the UI
+- No team collaboration or shared workspaces
+- No MCP server — IDE context is exported as skills and REST context, not live MCP
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER (Next.js 16)                          │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   Browser   │  │ Dashboard   │  │ AIAssistant │  │   Canvas Editor     │ │
-│  │  (Web UI)   │  │ (Projects)  │  │ (Deep Chat) │  │   (XYFlow)          │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
-└─────────┼────────────────┼────────────────┼────────────────────┼──────────────┘
-          │                │                │                    │
-          ▼                ▼                ▼                    ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              API & MIDDLEWARE LAYER                             │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────────────┐ │
-│  │  Auth & Oauth   │  │  Rate Limiter   │  │      Export & Bridge         │ │
-│  │  (Supabase)     │  │  (Upstash)      │  │  (Mermaid & Cursorrules)     │ │
-│  └────────┬────────┘  └────────┬────────┘  └─────────────┬──────────────┘ │
-└───────────┼────────────────────┼─────────────────────────┼────────────────┘
-            │                    │                         │
-            ▼                    ▼                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CORE SERVICES (React Server Components/Actions)    │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │  /generate  │  │   /chat     │  │ /projects   │  │ /quality-check      │ │
-│  │  (AI Gen)   │  │ (Streaming) │  │   (CRUD)    │  │ (Arch Validation)   │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
-└─────────┼────────────────┼────────────────┼────────────────────┼──────────────┘
-          │                │                │                    │
-          ▼                │                ▼                    ▼
-┌─────────────────────────┐│  ┌─────────────────────────────────────────────────┐
-│      AI PROVIDERS       ││  │              DATABASE (Supabase)                │
-├─────────────────────────┤│  ├─────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ││  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
-│  │    ZhipuAI      │    ││  │  │ users  │ │projects│ │ graphs│ │  chats  │  │
-│  │  (GLM-4.7)      │    ││  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
-│  └─────────────────┘    ││  │  ┌────────┐ ┌────────┐ ┌───────┐ ┌─────────┐  │
-│  ┌─────────────────┐    ││  │  │messages│ │templates││contexts││api_keys │  │
-│  │   OpenRouter    │    ││  │  └────────┘ └────────┘ └───────┘ └─────────┘  │
-│  │ (Multi-Provider)│    ││  └─────────────────────────────────────────────────┘
-│  └─────────────────┘    ││
-└─────────────────────────┘│
-                           ▼
-                ┌─────────────────────┐
-                │    UPSTASH          │
-                │    (Redis)          │
-                │  - Rate Limits      │
-                │  - AI Cache         │
-                └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CLIENT (Next.js 16 + React 19)                  │
+│   Dashboard · Project editor (XYFlow) · AI assistant panel              │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         API ROUTES                                      │
+│   /api/chat (primary) · /api/export-skill · /api/stress-tests/*         │
+│   /api/quality-check · Server Actions (projects, chats)               │
+└───────────────┬─────────────────────────────┬───────────────────────────┘
+                │                             │
+                ▼                             ▼
+┌───────────────────────────┐   ┌─────────────────────────────────────────┐
+│  DashScope (DeepSeek V4)   │   │  Supabase (PostgreSQL + Auth)           │
+│  Flash + Pro inference     │   │  projects · chats · messages · usage    │
+└───────────────────────────┘   └─────────────────────────────────────────┘
+                │
+                ▼
+┌───────────────────────────┐
+│  Upstash Redis           │
+│  Rate limits · AI cache  │
+└───────────────────────────┘
 ```
 
 ---
 
-## Key Features
+## Tech stack
 
-### Interactive Architecture Canvas
-
-- **Comprehensive Node Ecosystem (20+ Semantic Types):** Gateway, Compute, Database, Queue, Cache, Storage, Functions, AI Nodes, Security, Payment, CI/CD, and more.
-- **Smart Auto-Layout:** Dagre-directed graph algorithms for automatic structured arrangement.
-- **Dynamic Interaction:** Direct manipulation with referential integrity.
-- **Template Blueprints:** Start fast with predefined, scalable cloud patterns.
-
-### AI-Powered Generation & deep assistance
-
-- **Deep Thinking Models:** Built around GLM-4.7 Flash with robust reasoning capabilities.
-- **Embedded AI Assistant Panel:** Integrated side-panel to chat directly regarding project architecture context.
-- **Multi-Provider Fallback:** Intelligent request routing between ZhipuAI and OpenRouter to prevent outages.
-- **Streaming Responses:** Real-time SSE for observing the AI thought process.
-
-### Intelligent Analysis & Export
-
-- **Quality Check:** Validate graph structures, highlighting potential architectural flaws or security bottlenecks.
-- **Export "Skills" Bridge:** Convert architecture directly to contextual text (`.cursorrules`), Markdown, SVG, PDF, PNG, or high-fidelity Mermaid syntax for Cursor/Windsurf.
-- **Project Documents:** AI seamlessly extracts constraints and architectural contexts and stores them against the project repository.
-
-### Developer Experience
-
-- **Brutalist Design:** A stark, functional UI powered by advanced CSS techniques and Framer Motion.
-- **Comprehensive Onboarding Flow:** Custom guided multistep tours for new users and organizations.
-- **Dark Mode:** Fully supported dark/light themes with system detection.
+| Layer        | Technology                                      |
+| ------------ | ----------------------------------------------- |
+| Frontend     | Next.js 16, React 19, TypeScript, Tailwind v4   |
+| Canvas       | XYFlow, Dagre                                   |
+| State        | Zustand                                         |
+| Runtime      | Bun                                             |
+| Database     | Supabase (PostgreSQL + Auth)                      |
+| AI           | DeepSeek V4 via DashScope (OpenAI-compatible)   |
+| Cache / RL   | Upstash Redis                                   |
+| Validation   | Valibot                                         |
+| Linting      | Biome                                           |
 
 ---
 
-## Tech Stack
-
-| Layer          | Technology                                |
-| -------------- | ----------------------------------------- |
-| **Frontend**   | Next.js 16.1.6, React 19, TypeScript      |
-| **Styling**    | Tailwind CSS v4, Shadcn/UI, Framer Motion |
-| **Canvas**     | XYFlow (React Flow), Dagre                |
-| **State**      | Zustand                                   |
-| **Backend**    | Bun Runtime, Server Actions               |
-| **Database**   | Supabase (PostgreSQL + Auth SSR)          |
-| **AI**         | Vercel AI SDK, ZhipuAI, OpenRouter        |
-| **Validation** | Valibot                                   |
-| **Cache/RL**   | Upstash Redis                             |
-
----
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Bun runtime v1+
+- [Bun](https://bun.sh) v1+
 - Supabase project
-- AI provider API keys (ZhipuAI, OpenRouter)
-- Upstash Redis instance
+- DashScope API key (Alibaba Cloud Model Studio)
+- Upstash Redis (recommended for production rate limits + AI response cache)
 
-### Installation
+### Install
 
 ```bash
-# Clone and install
-git clone https://github.com/your-repo/simulark-app.git
+git clone https://github.com/your-org/simulark-app.git
 cd simulark-app
 bun install
-
-# Configure environment variables
-cp .env.example .env.local
-
-# Run Next.js securely atop Bun
+cp .env.example .env.local   # if present, or create from below
 bun dev
 ```
 
-### Environment Variables
+### Environment variables
 
 ```env
 # Supabase
@@ -146,24 +99,35 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# AI Providers
-ZHIPU_API_KEY=
-OPENROUTER_API_KEY=
+# AI — Alibaba Cloud DashScope (DeepSeek V4)
+DASHSCOPE_API_KEY=
+DASHSCOPE_WORKSPACE_ID=
 
-# Redis (Upstash)
+# Rate limiting & AI cache (Upstash)
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
+FREE_TIER_DAILY_LIMIT=50
+FLASH_DAILY_LIMIT=80
+PRO_DAILY_LIMIT=25
+IP_DAILY_LIMIT=60
+BURST_RATE_LIMIT=8
+BURST_RATE_WINDOW_SECONDS=60
+
+# App
+NEXT_PUBLIC_SITE_URL=https://your-app.vercel.app
 ```
 
 ---
 
-## Subscription Plans
+## Scripts
 
-| Plan                     | Price | Features                                                           |
-| ------------------------ | ----- | ------------------------------------------------------------------ |
-| **Doodle** (Free)        | $0    | 3 Projects, Standard Nodes, 10 AI requests/day                     |
-| **Sketch** (Starter)     | $5/mo | Unlimited Projects, Full node suite, Auto-Layouts, Fallback Models |
-| **Blueprint** (Lifetime) | $10   | Forever Access, Commercial Rights, Priority Support                |
+```bash
+bun dev          # Development server
+bun run build    # Production build
+bun run lint     # Biome lint
+bun run format   # Auto-fix formatting
+bun test         # Vitest suite
+```
 
 ---
 
@@ -175,7 +139,7 @@ MIT License.
 
 ## Acknowledgments
 
-- [XYFlow](https://xyflow.com) — Powering our core architecture canvas.
-- [Valibot](https://valibot.dev/) — Making schema validation type-safe & lightweight.
-- [Supabase](https://supabase.com) — Best-in-class open-source Postgres auth & db.
-- [ZhipuAI](https://zhipuai.com) — Driving our intelligent graph reasoning logic.
+- [XYFlow](https://xyflow.com) — Interactive architecture canvas
+- [Supabase](https://supabase.com) — Auth and project persistence
+- [DeepSeek](https://www.deepseek.com) / Alibaba Cloud DashScope — Inference
+- [Upstash](https://upstash.com) — Rate limiting and response cache

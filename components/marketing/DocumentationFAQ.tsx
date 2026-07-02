@@ -10,14 +10,14 @@ const documentation = [
     category: "GETTING_STARTED",
     question: "What is Simulark?",
     answer:
-      "Simulark is an architecture design platform that transforms natural language descriptions into production-ready infrastructure diagrams. It bridges the gap between conceptual design and implementation.",
+      "Simulark is a free public beta for backend architecture design. Describe your system in plain English, refine it on an interactive canvas, run chaos and stress simulations, and export diagrams plus agent skills for AI IDEs.",
   },
   {
     id: "DOC-02",
     category: "PLATFORM",
     question: "How does the AI generation work?",
     answer:
-      "Our AI engine analyzes your natural language input, identifies architectural patterns, and generates appropriate infrastructure diagrams. It understands context, constraints, and best practices to create optimal designs.",
+      "Flash and Pro inference tiers analyze your prompt, current canvas, and project context, then stream an architecture graph you can edit. Results are validated and auto-saved to your project in Supabase.",
   },
   {
     id: "DOC-03",
@@ -31,7 +31,7 @@ const documentation = [
     category: "INTEGRATION",
     question: "Does it integrate with my IDE?",
     answer:
-      "Yes. Simulark exports architectural context in formats compatible with Cursor, Claude Code, Windsurf, and other AI-powered IDEs via the Model Context Protocol (MCP).",
+      "Yes. Export a skill ZIP with install commands for npx skills (Cursor, Windsurf, and other agents). You can also copy Mermaid and use the REST context API documented at /reference.",
   },
   {
     id: "DOC-05",

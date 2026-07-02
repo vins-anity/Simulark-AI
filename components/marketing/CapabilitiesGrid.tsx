@@ -22,7 +22,7 @@ const capabilities = [
       "Describe your system in plain English. AI generates the architecture diagram automatically.",
     icon: "lucide:message-square-code",
     status: "LIVE",
-    specs: ["GLM-4.7", "DeepSeek V3", "Streaming"],
+    specs: ["Flash tier", "Pro tier", "Streaming"],
   },
   {
     id: "CAP-03",
@@ -41,8 +41,8 @@ const capabilities = [
     description:
       "Export architecture as agent skills for Cursor, Claude Code, and other AI IDEs.",
     icon: "lucide:plug",
-    status: "BETA",
-    specs: ["Cursor", "Claude Code", "Windsurf"],
+    status: "LIVE",
+    specs: ["npx skills", "Cursor", "Windsurf"],
   },
   {
     id: "CAP-05",
@@ -51,8 +51,8 @@ const capabilities = [
     description:
       "Automatically organize your architecture with sophisticated layout algorithms.",
     icon: "lucide:layout",
-    status: "BETA",
-    specs: ["ELK.js", "Hierarchical", "Radial"],
+    status: "LIVE",
+    specs: ["Dagre", "Hierarchical", "Radial"],
   },
   {
     id: "CAP-06",
@@ -61,8 +61,8 @@ const capabilities = [
     description:
       "Simulate failures and stress test the resilience of your architecture design visually.",
     icon: "lucide:flame",
-    status: "BETA",
-    specs: ["Stress Test", "Failure Sim", "Resilience"],
+    status: "LIVE",
+    specs: ["Stress tests", "Failure sim", "Resilience"],
   },
 ];
 
@@ -208,7 +208,7 @@ export function CapabilitiesGrid() {
             </span>
           </h2>
           <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-xl mx-auto">
-            Current and upcoming features for architecture design
+            What you can use in the free public beta today
           </p>
         </motion.div>
 

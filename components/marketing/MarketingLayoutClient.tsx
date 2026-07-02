@@ -280,8 +280,8 @@ export function MarketingLayoutClient({
                 </div>
               </div>
               <p className="font-lora text-brand-charcoal/60 max-w-sm leading-relaxed">
-                The intelligent layer for cloud architecture. Transforming
-                natural language into executable infrastructure.
+                AI-assisted backend architecture design. Describe systems in
+                plain English, refine on a canvas, export to your IDE.
               </p>
 
               {/* System Status Indicator */}
@@ -329,14 +329,14 @@ export function MarketingLayoutClient({
                   </a>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link
+                    href="/about"
                     className="hover:text-brand-orange transition-colors flex items-center gap-2"
                   >
                     <span className="text-brand-charcoal/30">[</span>
-                    <span>Changelog</span>
+                    <span>About</span>
                     <span className="text-brand-charcoal/30">]</span>
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

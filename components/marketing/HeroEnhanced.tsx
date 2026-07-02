@@ -190,8 +190,8 @@ export function HeroEnhanced() {
           transition={{ delay: 0.5, duration: 0.6 }}
         >
           <p className="text-lg md:text-xl font-lora text-brand-charcoal/60 leading-relaxed">
-            Describe your system architecture in plain English. AI generates
-            interactive diagrams you can explore, export, and share.
+            Describe your backend architecture in plain English. AI generates
+            interactive diagrams you can edit, stress-test, and export.
           </p>
         </motion.div>
 

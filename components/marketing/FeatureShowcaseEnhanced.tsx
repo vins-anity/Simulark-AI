@@ -11,7 +11,7 @@ const modules = [
     desc: "Describe system logic in plain English. AI parses context, constraints, and architectural requirements.",
     sub: "PROMPT_ENGINE",
     icon: "lucide:message-square-code",
-    specs: ["Context-aware", "Multi-lang", "Intent recognition"],
+    specs: ["Context-aware", "Flash / Pro", "Intent detection"],
   },
   {
     id: "MOD-02",
@@ -166,7 +166,7 @@ export function FeatureShowcaseEnhanced() {
                 THE PIPELINE
               </h2>
               <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 mt-2">
-                FROM_INTENT_TO_INFRASTRUCTURE
+                FROM_INTENT_TO_DIAGRAM
               </p>
             </div>
 

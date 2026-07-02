@@ -2,7 +2,6 @@ import {
   ArchitectureShowcase,
   CapabilitiesGrid,
   CTAEnhanced,
-  DataTransmission,
   DocumentationFAQ,
   FeatureShowcaseEnhanced,
   HeroEnhanced,
@@ -21,7 +20,6 @@ export default function Home() {
       <CapabilitiesGrid />
       <ResourceContracts />
       <DocumentationFAQ />
-      <DataTransmission />
       <CTAEnhanced />
     </MarketingLayout>
   );
