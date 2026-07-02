@@ -7,7 +7,7 @@ import {
   type ExportSkillRequestInput,
   ExportSkillRequestSchema,
 } from "@/lib/schema/api";
-import { generateSkillContent, packageSkill } from "@/lib/skill-generator";
+import { generateSkillContent, packageSkill, buildSkillInstallCommands } from "@/lib/skill-generator";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
@@ -23,8 +23,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = v.safeParse(ExportSkillRequestSchema, body);
     if (!parsed.success) {
+      const issues = parsed.issues
+        .map((issue) => issue.message)
+        .slice(0, 3)
+        .join("; ");
       return NextResponse.json(
-        { error: "Invalid export payload" },
+        { error: "Invalid export payload", details: issues },
         { status: 400 },
       );
     }
@@ -71,6 +75,8 @@ export async function POST(req: NextRequest) {
       skill.metadata.name.replace(/[^a-z0-9-]/gi, "-").toLowerCase() ||
       "architecture-skill";
 
+    const cliCommands = buildSkillInstallCommands(skill.metadata.name);
+
     // Return ZIP file
     return new NextResponse(buffer, {
       headers: {
@@ -78,6 +84,8 @@ export async function POST(req: NextRequest) {
         "Content-Disposition": `attachment; filename="${safeFileName}-skill.zip"`,
         "X-Simulark-Skill-Version": skill.metadata.version,
         "X-Simulark-Quality-Score": quality.score.toString(),
+        "X-Simulark-Cli-Project": cliCommands.project,
+        "X-Simulark-Cli-Global": cliCommands.global,
       },
     });
   } catch (error: any) {
