@@ -123,11 +123,8 @@ function calculateSubscriptionState(data: {
   // Determine if subscription is active
   const isActive = !isExpired || isInGracePeriod;
 
-  // Determine effective tier (downgrade to free if expired and not in grace period)
-  const effectiveTier: SubscriptionTier =
-    isExpired && !isInGracePeriod
-      ? "free"
-      : (data.subscription_tier as SubscriptionTier);
+  // Everyone is on the free plan — monetization removed.
+  const effectiveTier: SubscriptionTier = "free";
 
   return {
     tier: effectiveTier,

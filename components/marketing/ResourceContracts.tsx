@@ -1,226 +1,30 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Crown, Minus, Shield, Zap } from "lucide-react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-const contracts = [
-  {
-    id: "P-100-X",
-    name: "Doodle",
-    subtitle: "EXPERIMENTAL",
-    price: "0",
-    period: "MO",
-    description: "For experimental prototyping.",
-    features: [
-      "Up to 3 Projects",
-      "Standard Node Library",
-      "Community Support",
-      "Public Exports (SVG, PNG, PDF, Mermaid, Agent Skills)",
-      "GLM-4.7-Flash (10x Daily Limit)",
-    ],
-    limits: ["Private Projects", "Auto-Layout", "Chaos Mode", "Code Export"],
-    cta: "[ INITIALIZE_FREE ]",
-    icon: Zap,
-    popular: false,
-  },
-  {
-    id: "P-200-X",
-    name: "Sketch",
-    subtitle: "DEVS_CHOICE",
-    price: "5",
-    period: "MO",
-    description: "For professional architects.",
-    features: [
-      "Unlimited Projects",
-      "Advanced Chaos Engineering & Stress Testing",
-      "Sophisticated Auto-Layouts (Elkjs/Radial)",
-      "Kimi-k2.5, Gemini 3.0 Flash/Pro, Minimax",
-      "Quick Mode & Enterprise Mode",
-      "Advance node library",
-      "Priority Email Support",
-    ],
-    limits: ["Terraform Export", "Team Collaboration"],
-    cta: "[ UPGRADE_CAPACITY ]",
-    icon: Crown,
-    popular: true,
-  },
-  {
-    id: "P-300-X",
-    name: "Blueprint",
-    subtitle: "LIFETIME",
-    price: "10",
-    period: "ONE-TIME",
-    description: "Forever access for mission-critical scale.",
-    features: [
-      "Everything in Sketch, Forever",
-      "Commercial Usage Rights",
-      "Priority Generation Queue",
-      "All Available AI Models",
-    ],
-    limits: [],
-    cta: "[ MINT_BLUEPRINT ]",
-    icon: Shield,
-    popular: false,
-  },
+const included = [
+  "Unlimited projects with Supabase persistence",
+  "Interactive canvas — drag, connect, undo/redo",
+  "AI architecture from plain English (Flash & Pro)",
+  "Chaos mode and stress-test simulations",
+  "Auto-layout (flow, hierarchical, radial)",
+  "Export PNG, SVG, PDF, and Mermaid",
+  "Agent skill ZIP with npx skills install commands",
+  "Quality checks before export",
 ];
 
-function ContractCard({
-  contract,
-  index,
-}: {
-  contract: (typeof contracts)[0];
-  index: number;
-}) {
-  const Icon = contract.icon;
-
-  return (
-    <motion.div
-      className="relative group"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.15 }}
-    >
-      {/* Popular Badge */}
-      {contract.popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] bg-brand-orange text-white px-4 py-1.5">
-            {contract.subtitle}
-          </span>
-        </div>
-      )}
-
-      {/* Card Container */}
-      <div
-        className={`h-full border bg-bg-secondary relative transition-all duration-300 ${
-          contract.popular
-            ? "border-brand-orange"
-            : "border-brand-charcoal/10 group-hover:border-brand-charcoal/30"
-        }`}
-      >
-        {/* Corner Accents */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-brand-charcoal/20" />
-        <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-brand-charcoal/20" />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-brand-charcoal/20" />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-brand-charcoal/20" />
-
-        {/* Header */}
-        <div className="p-6 border-b border-brand-charcoal/5">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40 block mb-1">
-                REF: {contract.id}
-              </span>
-              <h3 className="font-mono text-xl font-bold text-text-primary uppercase tracking-wide">
-                {contract.name}
-              </h3>
-            </div>
-            {!contract.popular && (
-              <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/30">
-                {contract.subtitle}
-              </span>
-            )}
-          </div>
-
-          <p className="font-lora text-brand-charcoal/60 italic text-sm mb-6">
-            {contract.description}
-          </p>
-
-          {/* Price Block */}
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono text-lg text-brand-charcoal/40">$</span>
-            <span className="font-poppins text-5xl font-bold text-text-primary tracking-tight">
-              {contract.price}
-            </span>
-            <span className="font-mono text-xs uppercase tracking-wider text-brand-charcoal/40">
-              /{contract.period}
-            </span>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="p-6">
-          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40 block mb-4">
-            // INCLUDED_RESOURCES
-          </span>
-
-          <ul className="space-y-3 mb-6">
-            {contract.features.map((feature, i) => (
-              <motion.li
-                key={feature}
-                className="flex items-start gap-3"
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 + i * 0.05 }}
-              >
-                <div className="w-4 h-4 border border-brand-charcoal/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Check className="w-2.5 h-2.5 text-text-primary" />
-                </div>
-                <span className="text-brand-charcoal/70 text-sm leading-relaxed">
-                  {feature}
-                </span>
-              </motion.li>
-            ))}
-          </ul>
-
-          {/* Limits Section */}
-          {contract.limits.length > 0 && (
-            <>
-              <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/30 block mb-4">
-                // LIMITATIONS
-              </span>
-              <ul className="space-y-2 mb-6">
-                {contract.limits.map((limit) => (
-                  <li key={limit} className="flex items-start gap-3">
-                    <div className="w-4 h-4 border border-brand-charcoal/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <Minus className="w-2.5 h-2.5 text-brand-charcoal/30" />
-                    </div>
-                    <span className="text-brand-charcoal/40 text-sm line-through">
-                      {limit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {/* CTA Button */}
-          <Link href="/auth/signin">
-            <Button
-              className={`w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none border-0 transition-all duration-300 ${
-                contract.popular
-                  ? "bg-brand-charcoal text-white hover:bg-brand-orange"
-                  : "bg-transparent border-2 border-brand-charcoal text-brand-charcoal hover:bg-brand-charcoal hover:text-white dark:text-text-primary dark:border-brand-charcoal/50 dark:hover:bg-brand-charcoal"
-              }`}
-              variant={contract.popular ? "default" : "outline"}
-            >
-              <span className="text-white/40 group-hover:text-white/40">[</span>
-              <span className="mx-2">
-                {contract.popular
-                  ? "UPGRADE_CAPACITY"
-                  : contract.cta.replace(/[[\] ]/g, "")}
-              </span>
-              <span className="text-white/40 group-hover:text-white/40">]</span>
-            </Button>
-          </Link>
-        </div>
-
-        {/* Bottom Status Line */}
-        <div
-          className={`h-0.5 ${contract.popular ? "bg-brand-orange" : "bg-brand-charcoal/10"}`}
-        />
-      </div>
-    </motion.div>
-  );
-}
+const limits = [
+  "Daily AI request caps (fair-use limits apply)",
+  "No team collaboration yet",
+  "No payment or subscription tiers",
+];
 
 export function ResourceContracts() {
   return (
     <section className="py-32 bg-bg-primary relative overflow-hidden">
-      {/* Background Grid */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
@@ -233,53 +37,108 @@ export function ResourceContracts() {
       />
 
       <div className="container mx-auto px-6 relative z-10">
-        {/* Section Header */}
         <motion.div
-          className="mb-16"
+          className="mb-12 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
-            // RESOURCE_CONTRACTS
+            // FREE_PUBLIC_BETA
           </span>
           <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
-            SERVICE{" "}
+            EVERYTHING{" "}
             <span className="font-serif italic font-light text-brand-charcoal/50">
-              LEVELS
+              INCLUDED
             </span>
           </h2>
-          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-2xl">
-            Transparent pricing. No hidden fees. Scale as you grow.
+          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-2xl mx-auto">
+            No credit card. No tiers. One free workspace while we iterate in
+            the open.
           </p>
         </motion.div>
 
-        {/* Contracts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {contracts.map((contract, index) => (
-            <ContractCard key={contract.id} contract={contract} index={index} />
-          ))}
-        </div>
-
-        {/* Bottom Info */}
         <motion.div
-          className="mt-16 pt-8 border-t border-brand-charcoal/10"
+          className="max-w-2xl mx-auto border border-brand-orange bg-bg-secondary"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="p-8 border-b border-brand-charcoal/10">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+              <div>
+                <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40 block mb-1">
+                  REF: BETA-001
+                </span>
+                <h3 className="font-mono text-2xl font-bold text-text-primary uppercase tracking-wide">
+                  Simulark
+                </h3>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-poppins text-5xl font-bold text-text-primary">
+                  $0
+                </span>
+                <span className="font-mono text-xs uppercase tracking-wider text-brand-charcoal/40">
+                  / during beta
+                </span>
+              </div>
+            </div>
+            <p className="font-lora text-brand-charcoal/60 italic text-sm">
+              Describe backend architecture, edit on a live canvas, stress-test
+              your design, and export diagrams plus IDE context for Cursor and
+              similar tools.
+            </p>
+          </div>
+
+          <div className="p-8">
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40 block mb-4">
+              // INCLUDED
+            </span>
+            <ul className="space-y-3 mb-8">
+              {included.map((feature) => (
+                <li key={feature} className="flex items-start gap-3">
+                  <div className="w-4 h-4 border border-brand-charcoal/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="w-2.5 h-2.5 text-text-primary" />
+                  </div>
+                  <span className="text-brand-charcoal/70 text-sm leading-relaxed">
+                    {feature}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/30 block mb-4">
+              // GOOD_TO_KNOW
+            </span>
+            <ul className="space-y-2 mb-8">
+              {limits.map((limit) => (
+                <li
+                  key={limit}
+                  className="text-brand-charcoal/50 text-sm leading-relaxed"
+                >
+                  — {limit}
+                </li>
+              ))}
+            </ul>
+
+            <Link href="/auth/signin">
+              <Button className="w-full h-12 font-mono text-xs uppercase tracking-[0.12em] rounded-none bg-brand-charcoal text-white hover:bg-brand-orange border-0">
+                [ START_FREE_BETA ]
+              </Button>
+            </Link>
+          </div>
+
+          <div className="h-0.5 bg-brand-orange" />
+        </motion.div>
+
+        <motion.p
+          className="mt-10 text-center font-mono text-[10px] uppercase tracking-[0.15em] text-brand-charcoal/30"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-brand-charcoal/30">
-              All plans include: SSL Encryption • Supabase Cloud Hosting
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-brand-green rounded-full animate-pulse" />
-              <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40">
-                SECURE_CHECKOUT
-              </span>
-            </div>
-          </div>
-        </motion.div>
+          Projects saved in Supabase · AI inference via DeepSeek V4 on DashScope
+        </motion.p>
       </div>
     </section>
   );

@@ -2,15 +2,12 @@
 
 import { Icon } from "@iconify/react";
 import { createBrowserClient } from "@supabase/ssr";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronLeft, Plus, Settings } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CreateProjectModal } from "@/components/dashboard/CreateProjectModal";
-import { UpgradeModal } from "@/components/subscription/UpgradeModal";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +20,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getPlanDetails } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./SidebarProvider";
 
@@ -54,10 +50,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const [plan, setPlan] = useState("free");
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -86,39 +79,12 @@ export function Sidebar() {
 
   useEffect(() => {
     setMounted(true);
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-
-    async function fetchPlan() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("users")
-          .select("subscription_tier")
-          .eq("user_id", user.id)
-          .single();
-        if (data?.subscription_tier) {
-          setPlan(data.subscription_tier);
-        }
-      }
-    }
-    fetchPlan();
   }, []);
-
-  const planDetails = getPlanDetails(plan);
 
   if (!mounted) return null;
 
   return (
     <>
-      <UpgradeModal
-        open={showUpgradeModal}
-        onOpenChange={setShowUpgradeModal}
-      />
       <CreateProjectModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
@@ -386,14 +352,9 @@ export function Sidebar() {
                       User Account
                     </span>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span
-                        className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          plan === "free" ? "bg-text-muted" : "bg-brand-orange",
-                        )}
-                      />
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-orange" />
                       <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted dark:text-gray-500">
-                        {planDetails.name} Ticket
+                        Free Beta
                       </span>
                     </div>
                   </div>
@@ -420,25 +381,16 @@ export function Sidebar() {
               >
                 <div className="p-4 bg-bg-tertiary border-b border-border-primary">
                   <div className="font-mono text-xs uppercase tracking-widest text-text-muted mb-2">
-                    Current Status
+                    Account
                   </div>
-                  <div className="flex justify-between items-center mb-3">
+                  <div className="flex justify-between items-center">
                     <span className="font-poppins font-bold text-text-primary">
-                      {planDetails.name} Plan
+                      Simulark
                     </span>
-                    <Badge className="bg-brand-orange text-text-inverse rounded-none font-mono text-[9px] uppercase">
-                      Active
-                    </Badge>
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-brand-orange">
+                      Free Beta
+                    </span>
                   </div>
-                  {plan === "free" && (
-                    <Button
-                      type="button"
-                      onClick={() => setShowUpgradeModal(true)}
-                      className="w-full h-8 text-[10px] uppercase tracking-widest bg-transparent border border-brand-charcoal text-brand-charcoal hover:bg-brand-orange hover:border-brand-orange hover:text-text-inverse transition-colors"
-                    >
-                      Upgrade Plan
-                    </Button>
-                  )}
                 </div>
 
                 <div className="p-2 space-y-1">
@@ -447,10 +399,6 @@ export function Sidebar() {
                       System Configuration
                     </DropdownMenuItem>
                   </Link>
-
-                  <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-bg-tertiary hover:text-text-primary focus:bg-bg-tertiary focus:text-text-primary px-3 py-2">
-                    Billing Records
-                  </DropdownMenuItem>
 
                   <div className="h-px bg-border-primary my-1" />
 

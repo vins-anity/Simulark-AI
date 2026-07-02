@@ -8,9 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Clock, ShieldAlert, Zap } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 interface ResourceExhaustionModalProps {
   isOpen: boolean;
@@ -107,9 +106,8 @@ export function ResourceExhaustionModal({
             </div>
 
             <p className="text-sm font-lora text-brand-charcoal/80 dark:text-zinc-400 leading-relaxed italic">
-              You've hit the daily ceiling for the Free Command Tier. To prevent
-              system degradation, further transmissions are gated until the next
-              reset cycle.
+              You've reached today's AI usage limit. Further requests are paused
+              until the daily reset to keep the service fair for everyone.
             </p>
 
             <div className="flex flex-col items-center justify-center py-6 border-y border-dashed border-brand-charcoal/20 dark:border-zinc-800">
@@ -122,19 +120,9 @@ export function ResourceExhaustionModal({
             </div>
 
             <div className="flex flex-col gap-3">
-              <Link href="/dashboard/billing">
-                <Button className="w-full h-12 bg-brand-charcoal dark:bg-white text-white dark:text-black hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white rounded-none font-mono font-bold uppercase tracking-widest transition-all group overflow-hidden relative">
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    <Zap className="w-4 h-4 fill-current" />
-                    UPGRADE_NOW
-                  </span>
-                  <div className="absolute inset-0 bg-brand-orange translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300" />
-                </Button>
-              </Link>
               <Button
-                variant="outline"
                 onClick={onClose}
-                className="w-full h-12 bg-transparent border-2 border-brand-charcoal dark:border-zinc-800 text-brand-charcoal dark:text-zinc-400 hover:bg-brand-charcoal/5 dark:hover:bg-white/5 rounded-none font-mono font-bold uppercase tracking-widest"
+                className="w-full h-12 bg-brand-charcoal dark:bg-white text-white dark:text-black hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white rounded-none font-mono font-bold uppercase tracking-widest"
               >
                 ACKNOWLEDGE
               </Button>

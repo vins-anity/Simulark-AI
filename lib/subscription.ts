@@ -1,236 +1,76 @@
-export type SubscriptionTier = "free" | "starter" | "pro";
+/** @deprecated Monetization removed — kept for import compatibility. Everyone is on the free plan. */
 
-export type SubscriptionStatus =
-  | "active"
-  | "cancelled"
-  | "past_due"
-  | "trialing"
-  | "expired";
+export type SubscriptionTier = "free";
+
+export type SubscriptionStatus = "active";
 
 export interface TierFeatures {
   maxProjects: number;
   allowedModels: string[];
-  privateMode: boolean;
-  commercialRights: boolean;
-  prioritySupport: boolean;
-  priorityQueue: boolean;
-  earlyAccess: boolean;
-  codeGeneration: boolean;
-  chaosEngineering: boolean;
-  autoLayouts: boolean;
-  enterpriseMode: boolean;
-  modelDailyLimits?: Record<string, number>;
 }
 
 export interface RateLimitConfig {
-  burstLimit: number; // requests per window
-  burstWindow: number; // window in seconds
+  burstLimit: number;
+  burstWindow: number;
   dailyLimit: number;
 }
 
-export const SUBSCRIPTION_PLANS = {
-  free: {
-    id: "free",
-    name: "Doodle",
-    label: "Doodle (Free)",
-    price: 0,
-    description: "For experimental prototyping.",
-    features: [
-      "Up to 3 Projects",
-      "Standard Node Library",
-      "Community Support",
-      "Public Exports (PDF, PNG, SVG, Mermaid, Agent Skills)",
-      "GLM-4.7-Flash (Default Option)",
-      "Qwen3 Max (30x Daily)",
-      "Qwen3.5 Plus (30x Daily)",
-      "Qwen Flash (30x Daily)",
+const FREE_PLAN = {
+  id: "free" as const,
+  name: "Simulark",
+  label: "Free",
+  price: 0,
+  description: "Full access during the free public beta.",
+  features: [
+    "Unlimited projects",
+    "Flash & Pro inference tiers",
+    "Chaos engineering & stress tests",
+    "Agent skill export (npx skills)",
+  ],
+  daily_limit: 50,
+  rateLimits: {
+    burstLimit: 8,
+    burstWindow: 60,
+    dailyLimit: 50,
+  } as RateLimitConfig,
+  tierFeatures: {
+    maxProjects: Infinity,
+    allowedModels: [
+      "deepseek:deepseek-v4-flash",
+      "deepseek:deepseek-v4-pro",
     ],
-    daily_limit: 15,
-    rateLimits: {
-      burstLimit: 5,
-      burstWindow: 10,
-      dailyLimit: 15,
-    } as RateLimitConfig,
-    tierFeatures: {
-      maxProjects: 3,
-      allowedModels: [
-        "nvidia:z-ai/glm5",
-        "zhipu:glm-4.7-flash",
-        "qwen:qwen3-max",
-        "qwen:qwen3.5-plus",
-        "qwen:qwen-flash",
-      ],
-      privateMode: false,
-      commercialRights: false,
-      prioritySupport: false,
-      priorityQueue: false,
-      earlyAccess: false,
-      codeGeneration: false,
-      chaosEngineering: false,
-      autoLayouts: false,
-      enterpriseMode: false,
-      modelDailyLimits: {
-        "qwen:qwen3-max": 30,
-        "qwen:qwen3.5-plus": 30,
-        "qwen:qwen-flash": 30,
-      },
-    } as TierFeatures,
-  },
-  starter: {
-    id: "starter",
-    name: "Sketch",
-    label: "Sketch (Starter)",
-    price: 5,
-    description: "For professional architects.",
-    features: [
-      "Unlimited Projects",
-      "Advanced Chaos Engineering & Stress Testing",
-      "Sophisticated Auto-Layouts",
-      "Smarter Algorithms (Kimi k2.5, Gemini 3.0, Minimax)",
-
-      "Enterprise Mode (Corporate Archetype)",
-      "Advance node library",
-      "Priority Email Support",
-    ],
-    daily_limit: 50,
-    rateLimits: {
-      burstLimit: 10,
-      burstWindow: 10,
-      dailyLimit: 50,
-    } as RateLimitConfig,
-    tierFeatures: {
-      maxProjects: Infinity,
-      allowedModels: [
-        "nvidia:z-ai/glm5",
-        "zhipu:glm-4.7-flash",
-        "nvidia:moonshotai/kimi-k2.5",
-        "nvidia:minimaxai/minimax-m2.1",
-        "qwen:qwen3-max",
-        "qwen:qwen3.5-plus",
-        "qwen:qwen-flash",
-      ],
-      privateMode: false,
-      commercialRights: false,
-      prioritySupport: true,
-      priorityQueue: true,
-      earlyAccess: false,
-      codeGeneration: false,
-      chaosEngineering: true,
-      autoLayouts: true,
-      enterpriseMode: true,
-    } as TierFeatures,
-  },
-  pro: {
-    id: "pro",
-    name: "Blueprint",
-    label: "Blueprint (Lifetime)",
-    price: 10,
-    description: "Forever access for mission-critical scale.",
-    features: [
-      "Everything in Sketch, Forever",
-      "Commercial Usage Rights",
-      "Priority Generation Queue",
-      "Private Mode (Zero Data Retention)",
-      "Early Access to Beta Features",
-      "Claude Opus 4.5",
-      "Code Generation/Export (coming soon)",
-    ],
-    daily_limit: 1000,
-    rateLimits: {
-      burstLimit: 20,
-      burstWindow: 10,
-      dailyLimit: 1000,
-    } as RateLimitConfig,
-    tierFeatures: {
-      maxProjects: Infinity,
-      allowedModels: [
-        "nvidia:z-ai/glm5",
-        "zhipu:glm-4.7-flash",
-        "nvidia:moonshotai/kimi-k2.5",
-        "nvidia:minimaxai/minimax-m2.1",
-        "qwen:qwen3-max",
-        "qwen:qwen3.5-plus",
-        "qwen:qwen-flash",
-        "openrouter:anthropic/claude-3-opus",
-      ],
-      privateMode: true,
-      commercialRights: true,
-      prioritySupport: true,
-      priorityQueue: true,
-      earlyAccess: true,
-      codeGeneration: true,
-      chaosEngineering: true,
-      autoLayouts: true,
-      enterpriseMode: true,
-    } as TierFeatures,
-  },
+  } as TierFeatures,
 };
 
-export function getPlanDetails(tier: string) {
-  return (
-    SUBSCRIPTION_PLANS[tier as SubscriptionTier] || SUBSCRIPTION_PLANS.free
-  );
+export const SUBSCRIPTION_PLANS = { free: FREE_PLAN };
+
+export function getPlanDetails(_tier?: string) {
+  return FREE_PLAN;
 }
 
-export function getRateLimits(tier: string): RateLimitConfig {
-  return (
-    SUBSCRIPTION_PLANS[tier as SubscriptionTier]?.rateLimits ||
-    SUBSCRIPTION_PLANS.free.rateLimits
-  );
+export function getRateLimits(_tier?: string): RateLimitConfig {
+  return FREE_PLAN.rateLimits;
 }
 
-export function getTierFeatures(tier: string): TierFeatures {
-  return (
-    SUBSCRIPTION_PLANS[tier as SubscriptionTier]?.tierFeatures ||
-    SUBSCRIPTION_PLANS.free.tierFeatures
-  );
+export function getTierFeatures(_tier?: string): TierFeatures {
+  return FREE_PLAN.tierFeatures;
 }
 
-export function canUseModel(tier: string, model: string): boolean {
-  const features = getTierFeatures(tier);
-  return features.allowedModels.includes(model);
+export function canUseModel(_tier: string, _model: string): boolean {
+  return true;
 }
 
 export function canCreateProject(
-  tier: string,
-  currentProjectCount: number,
+  _tier: string,
+  _currentProjectCount: number,
 ): boolean {
-  const features = getTierFeatures(tier);
-  if (features.maxProjects === Infinity) return true;
-  return currentProjectCount < features.maxProjects;
+  return true;
 }
 
-export function hasFeature(tier: string, feature: keyof TierFeatures): boolean {
-  const features = getTierFeatures(tier);
-  return features[feature] as boolean;
+export function hasFeature(_tier: string, _feature: string): boolean {
+  return true;
 }
 
 export function isValidTier(tier: string): tier is SubscriptionTier {
-  return ["free", "starter", "pro"].includes(tier);
-}
-
-export function getTierPriority(tier: string): number {
-  const priorities: Record<SubscriptionTier, number> = {
-    free: 0,
-    starter: 1,
-    pro: 2,
-  };
-  return priorities[tier as SubscriptionTier] ?? 0;
-}
-
-export function isHigherTier(
-  currentTier: string,
-  compareTier: string,
-): boolean {
-  return getTierPriority(currentTier) > getTierPriority(compareTier);
-}
-
-// Grace period configuration
-export const GRACE_PERIOD_DAYS = 3;
-
-export function isInGracePeriod(expiresAt: Date | null): boolean {
-  if (!expiresAt) return false;
-  const gracePeriodEnd = new Date(expiresAt);
-  gracePeriodEnd.setDate(gracePeriodEnd.getDate() + GRACE_PERIOD_DAYS);
-  return new Date() < gracePeriodEnd;
+  return tier === "free";
 }
