@@ -1,5 +1,5 @@
 import { createLogger } from "@/lib/logger";
-import { getPlanDetails } from "@/lib/subscription";
+import { getModelDailyLimit, USAGE_LIMITS } from "@/lib/usage-limits";
 import { createClient } from "@/lib/supabase/server";
 
 const logger = createLogger("rate-limit");
@@ -11,38 +11,10 @@ function getNextUtcDayIsoString(): string {
   ).toISOString();
 }
 
-export async function checkRateLimit(
-  userId: string,
-  modelId?: string,
-  tierOverride?: string,
-) {
-  const supabase = await createClient(); // Use server client
+export async function checkRateLimit(userId: string, modelId?: string) {
+  const supabase = await createClient();
+  const dailyLimit = getModelDailyLimit(modelId);
 
-  let tier = tierOverride || "free";
-  if (!tierOverride) {
-    // 1. Get User's Subscription Tier
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("subscription_tier")
-      .eq("user_id", userId)
-      .single();
-
-    if (userError) {
-      logger.error("Failed to fetch user tier", userError, { userId });
-    }
-
-    tier = userData?.subscription_tier || "free";
-  }
-
-  const plan = getPlanDetails(tier);
-
-  // Determine the limit: use model-specific limit if provided, otherwise global daily_limit
-  let dailyLimit = plan.daily_limit ?? 30;
-  if (modelId && plan.tierFeatures.modelDailyLimits?.[modelId]) {
-    dailyLimit = plan.tierFeatures.modelDailyLimits[modelId];
-  }
-
-  // 2. Atomically check and increment today's usage in SQL.
   const { data, error: usageError } = await supabase.rpc(
     "check_and_increment_daily_usage",
     {
@@ -53,7 +25,6 @@ export async function checkRateLimit(
 
   if (usageError) {
     logger.error("Failed to atomically check usage", usageError, { userId });
-    // Keep service available if usage tracking fails.
     return {
       allowed: true,
       limit: dailyLimit,
@@ -76,17 +47,9 @@ export async function checkRateLimit(
   if (!usage.allowed) {
     logger.warn("Rate limit exceeded", {
       userId,
-      tier,
+      modelId,
       currentCount: usage.current_count,
       dailyLimit,
-    });
-  } else {
-    logger.debug("Rate limit check passed", {
-      userId,
-      tier,
-      currentCount: usage.current_count,
-      dailyLimit,
-      remaining: usage.remaining,
     });
   }
 
@@ -101,7 +64,10 @@ export async function checkRateLimit(
   };
 }
 
-export async function checkIPRateLimit(ip: string, limit: number = 30) {
+export async function checkIPRateLimit(
+  ip: string,
+  limit: number = USAGE_LIMITS.ipDaily,
+) {
   if (!ip || ip === "unknown" || ip === "127.0.0.1" || ip === "::1") {
     return { allowed: true, limit, remaining: limit, reset: "" };
   }
@@ -119,14 +85,14 @@ export async function checkIPRateLimit(ip: string, limit: number = 30) {
   try {
     const count = await redis.incr(key);
     if (count === 1) {
-      await redis.expire(key, 86400); // 24 hours
+      await redis.expire(key, 86400);
     }
 
     const remaining = Math.max(0, limit - count);
     const allowed = count <= limit;
 
     if (!allowed) {
-      logger.warn("IP Rate limit exceeded", { ip, count, limit });
+      logger.warn("IP rate limit exceeded", { ip, count, limit });
     }
 
     return {
@@ -137,7 +103,79 @@ export async function checkIPRateLimit(ip: string, limit: number = 30) {
     };
   } catch (error) {
     logger.error("Redis IP rate limit error", error as Error, { ip });
-    // Fail open if redis is down
+    return { allowed: true, limit, remaining: 1, reset: "" };
+  }
+}
+
+export async function checkBurstRateLimit(
+  userId: string,
+  limit: number = USAGE_LIMITS.burstLimit,
+  windowSeconds: number = USAGE_LIMITS.burstWindowSeconds,
+) {
+  const redisModule = await import("@/lib/redis");
+  const redis = redisModule.getRedisClient();
+  if (!redis) {
+    return { allowed: true, limit, remaining: limit, reset: "" };
+  }
+
+  const key = `ratelimit:burst:${userId}`;
+
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, windowSeconds);
+    }
+
+    const remaining = Math.max(0, limit - count);
+    const allowed = count <= limit;
+
+    if (!allowed) {
+      logger.warn("Burst rate limit exceeded", { userId, count, limit });
+    }
+
+    return {
+      allowed,
+      limit,
+      remaining,
+      reset: new Date(Date.now() + windowSeconds * 1000).toISOString(),
+    };
+  } catch (error) {
+    logger.error("Redis burst rate limit error", error as Error, { userId });
+    return { allowed: true, limit, remaining: 1, reset: "" };
+  }
+}
+
+/** Rate-limit read-only usage status polling (prevents enumeration abuse). */
+export async function checkUsageStatusReadLimit(
+  userId: string,
+  limit: number = 30,
+  windowSeconds: number = 60,
+) {
+  const redisModule = await import("@/lib/redis");
+  const redis = redisModule.getRedisClient();
+  if (!redis) {
+    return { allowed: true, limit, remaining: limit, reset: "" };
+  }
+
+  const key = `ratelimit:usage-read:${userId}`;
+
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, windowSeconds);
+    }
+
+    const remaining = Math.max(0, limit - count);
+    return {
+      allowed: count <= limit,
+      limit,
+      remaining,
+      reset: new Date(Date.now() + windowSeconds * 1000).toISOString(),
+    };
+  } catch (error) {
+    logger.error("Redis usage-read rate limit error", error as Error, {
+      userId,
+    });
     return { allowed: true, limit, remaining: 1, reset: "" };
   }
 }

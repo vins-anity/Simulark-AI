@@ -3,21 +3,45 @@ import { minLength, optional, pipe, string, transform } from "valibot";
 
 export const env = createEnv({
   server: {
-    // AI Providers
-    ZHIPU_API_KEY: pipe(string(), minLength(1)),
-    KIMI_API_KEY: optional(string()), // Optional to not break dev if missing immediately
-    KIMI_BASE_URL: optional(string()), // Support for .cn endpoint
+    // AI Providers — Alibaba Cloud Model Studio (DeepSeek v4)
+    DASHSCOPE_API_KEY: optional(string()),
+    DASHSCOPE_WORKSPACE_ID: optional(string()),
+    /** @deprecated Use DASHSCOPE_API_KEY */
+    QWEN_API_KEY: optional(string()),
+    /** Legacy providers — optional, no longer used in primary inference path */
+    ZHIPU_API_KEY: optional(string()),
+    KIMI_API_KEY: optional(string()),
+    KIMI_BASE_URL: optional(string()),
     OPENROUTER_API_KEY: optional(string()),
     NVIDIA_API_KEY: optional(string()),
-    QWEN_API_KEY: optional(string()),
 
     // Supabase
     SUPABASE_SERVICE_ROLE_KEY: optional(string()),
 
-    // Rate Limiting (defaults to 10 if not set or invalid)
+    // Rate Limiting
     FREE_TIER_DAILY_LIMIT: pipe(
-      optional(string(), "10"),
-      transform((v: string) => Number(v) || 10),
+      optional(string(), "50"),
+      transform((v: string) => Number(v) || 50),
+    ),
+    IP_DAILY_LIMIT: pipe(
+      optional(string(), "60"),
+      transform((v: string) => Number(v) || 60),
+    ),
+    BURST_RATE_LIMIT: pipe(
+      optional(string(), "8"),
+      transform((v: string) => Number(v) || 8),
+    ),
+    BURST_RATE_WINDOW_SECONDS: pipe(
+      optional(string(), "60"),
+      transform((v: string) => Number(v) || 60),
+    ),
+    FLASH_DAILY_LIMIT: pipe(
+      optional(string(), "80"),
+      transform((v: string) => Number(v) || 80),
+    ),
+    PRO_DAILY_LIMIT: pipe(
+      optional(string(), "25"),
+      transform((v: string) => Number(v) || 25),
     ),
 
     // Upstash Redis (for rate limiting)
@@ -25,30 +49,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: optional(string()),
 
     // Admin & Cron
-    CRON_SECRET: optional(string()), // Secret for cron job authentication
-
-    // Feature Flags - Master switches
-    ENABLE_ALL_FEATURES: pipe(
-      optional(string(), "true"),
-      transform((v: string) => v === "true"),
-    ),
-    RESTRICT_FEATURES_BY_TIER: pipe(
-      optional(string(), "false"),
-      transform((v: string) => v === "true"),
-    ),
-
-    // Feature Flags - Individual feature tier restrictions (comma-separated list: free,starter,pro)
-    FEATURE_PRIVATE_MODE_TIERS: optional(string()),
-    FEATURE_COMMERCIAL_RIGHTS_TIERS: optional(string()),
-    FEATURE_PRIORITY_SUPPORT_TIERS: optional(string()),
-    FEATURE_PRIORITY_QUEUE_TIERS: optional(string()),
-    FEATURE_EARLY_ACCESS_TIERS: optional(string()),
-    FEATURE_CODE_GENERATION_TIERS: optional(string()),
-    FEATURE_CHAOS_ENGINEERING_TIERS: optional(string()),
-    FEATURE_AUTO_LAYOUTS_TIERS: optional(string()),
-    FEATURE_ENTERPRISE_MODE_TIERS: optional(string()),
-    FEATURE_ADVANCED_MODELS_TIERS: optional(string()),
-    FEATURE_UNLIMITED_PROJECTS_TIERS: optional(string()),
+    CRON_SECRET: optional(string()),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: pipe(string(), minLength(1)),
@@ -56,33 +57,24 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: optional(string()),
   },
   runtimeEnv: {
+    DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY,
+    DASHSCOPE_WORKSPACE_ID: process.env.DASHSCOPE_WORKSPACE_ID,
+    QWEN_API_KEY: process.env.QWEN_API_KEY,
     ZHIPU_API_KEY: process.env.ZHIPU_API_KEY,
     KIMI_API_KEY: process.env.KIMI_API_KEY,
     KIMI_BASE_URL: process.env.KIMI_BASE_URL,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     NVIDIA_API_KEY: process.env.NVIDIA_API_KEY,
-    QWEN_API_KEY: process.env.QWEN_API_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     FREE_TIER_DAILY_LIMIT: process.env.FREE_TIER_DAILY_LIMIT,
+    IP_DAILY_LIMIT: process.env.IP_DAILY_LIMIT,
+    BURST_RATE_LIMIT: process.env.BURST_RATE_LIMIT,
+    BURST_RATE_WINDOW_SECONDS: process.env.BURST_RATE_WINDOW_SECONDS,
+    FLASH_DAILY_LIMIT: process.env.FLASH_DAILY_LIMIT,
+    PRO_DAILY_LIMIT: process.env.PRO_DAILY_LIMIT,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     CRON_SECRET: process.env.CRON_SECRET,
-    ENABLE_ALL_FEATURES: process.env.ENABLE_ALL_FEATURES,
-    RESTRICT_FEATURES_BY_TIER: process.env.RESTRICT_FEATURES_BY_TIER,
-    FEATURE_PRIVATE_MODE_TIERS: process.env.FEATURE_PRIVATE_MODE_TIERS,
-    FEATURE_COMMERCIAL_RIGHTS_TIERS:
-      process.env.FEATURE_COMMERCIAL_RIGHTS_TIERS,
-    FEATURE_PRIORITY_SUPPORT_TIERS: process.env.FEATURE_PRIORITY_SUPPORT_TIERS,
-    FEATURE_PRIORITY_QUEUE_TIERS: process.env.FEATURE_PRIORITY_QUEUE_TIERS,
-    FEATURE_EARLY_ACCESS_TIERS: process.env.FEATURE_EARLY_ACCESS_TIERS,
-    FEATURE_CODE_GENERATION_TIERS: process.env.FEATURE_CODE_GENERATION_TIERS,
-    FEATURE_CHAOS_ENGINEERING_TIERS:
-      process.env.FEATURE_CHAOS_ENGINEERING_TIERS,
-    FEATURE_AUTO_LAYOUTS_TIERS: process.env.FEATURE_AUTO_LAYOUTS_TIERS,
-    FEATURE_ENTERPRISE_MODE_TIERS: process.env.FEATURE_ENTERPRISE_MODE_TIERS,
-    FEATURE_ADVANCED_MODELS_TIERS: process.env.FEATURE_ADVANCED_MODELS_TIERS,
-    FEATURE_UNLIMITED_PROJECTS_TIERS:
-      process.env.FEATURE_UNLIMITED_PROJECTS_TIERS,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
