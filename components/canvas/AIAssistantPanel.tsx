@@ -1,6 +1,6 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
+
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
@@ -29,7 +29,7 @@ import {
   getProjectChats,
   updateChatTitle as updateChatTitleAction,
 } from "@/actions/chats";
-import { updateUserPreferences } from "@/actions/users";
+import { getUserPreferences, updateUserPreferences } from "@/actions/users";
 import { ResourceExhaustionModal } from "@/components/subscription/ResourceExhaustionModal";
 import { DailyUsageIndicator } from "@/components/usage/DailyUsageIndicator";
 import { useDailyUsage } from "@/components/usage/DailyUsagePanel";
@@ -51,6 +51,7 @@ import {
   type InferenceTier,
   resolveInferenceTier,
 } from "@/lib/inference-tier";
+import type { UserPreferences } from "@/lib/schema/onboarding";
 import type { DailyUsageSnapshot } from "@/lib/usage-status";
 import { snapshotFromRateLimitHeaders } from "@/lib/usage-status";
 import { cn } from "@/lib/utils";
@@ -746,63 +747,60 @@ export function AIAssistantPanel({
   };
 
   const loadUserPreferences = async () => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from("users")
-        .select("preferences")
-        .eq("user_id", user.id)
-        .single();
-      if (data?.preferences) {
-        // Robust handling of legacy strings vs new arrays
-        const prefs = data.preferences;
-        const cloudProviders = Array.isArray(prefs.cloudProviders)
-          ? prefs.cloudProviders
-          : prefs.cloudProvider
-            ? [prefs.cloudProvider]
-            : [];
-
-        const languages = Array.isArray(prefs.languages)
-          ? prefs.languages
-          : prefs.language
-            ? [prefs.language]
-            : [];
-
-        const frameworks = Array.isArray(prefs.frameworks)
-          ? prefs.frameworks
-          : prefs.framework
-            ? [prefs.framework]
-            : [];
-
-        const architectureTypes = Array.isArray(prefs.architectureTypes)
-          ? prefs.architectureTypes
-          : [];
-        const customInstructions =
-          typeof prefs.customInstructions === "string"
-            ? prefs.customInstructions
-            : "";
-
-        const resolvedTier = resolveInferenceTier({
-          tier: prefs.defaultInferenceTier as string,
-          model: prefs.defaultModel as string,
-          mode: (prefs.defaultMode || prefs.defaultArchitectureMode) as string,
-        });
-        setInferenceTierState(resolvedTier);
-
-        setUserPreferences({
-          cloudProviders,
-          languages,
-          frameworks,
-          architectureTypes,
-          customInstructions,
-        });
+    try {
+      const result = await getUserPreferences();
+      if (!result.success || !result.preferences) {
+        return;
       }
+
+      const prefs = result.preferences;
+      const legacyPrefs = prefs as UserPreferences & {
+        cloudProvider?: string;
+        language?: string;
+        framework?: string;
+      };
+      const cloudProviders = Array.isArray(prefs.cloudProviders)
+        ? prefs.cloudProviders
+        : legacyPrefs.cloudProvider
+          ? [legacyPrefs.cloudProvider]
+          : [];
+
+      const languages = Array.isArray(prefs.languages)
+        ? prefs.languages
+        : legacyPrefs.language
+          ? [legacyPrefs.language]
+          : [];
+
+      const frameworks = Array.isArray(prefs.frameworks)
+        ? prefs.frameworks
+        : legacyPrefs.framework
+          ? [legacyPrefs.framework]
+          : [];
+
+      const architectureTypes = Array.isArray(prefs.architectureTypes)
+        ? prefs.architectureTypes
+        : [];
+      const customInstructions =
+        typeof prefs.customInstructions === "string"
+          ? prefs.customInstructions
+          : "";
+
+      const resolvedTier = resolveInferenceTier({
+        tier: prefs.defaultInferenceTier,
+        model: prefs.defaultModel,
+        mode: prefs.defaultMode || prefs.defaultArchitectureMode,
+      });
+      setInferenceTierState(resolvedTier);
+
+      setUserPreferences({
+        cloudProviders,
+        languages,
+        frameworks,
+        architectureTypes,
+        customInstructions,
+      });
+    } catch (error) {
+      console.warn("Failed to load user preferences", error);
     }
   };
 
