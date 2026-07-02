@@ -33,6 +33,11 @@ import {
   applyLayoutAsync,
   type LayoutAlgorithm,
 } from "@/lib/layout";
+import {
+  clearProjectDraft,
+  readProjectDraft,
+  writeProjectDraft,
+} from "@/lib/project-draft";
 import { useSimulationStore } from "@/lib/store";
 import { cn, generateMermaidCode } from "@/lib/utils";
 import { ChaosModePanel } from "./ChaosModePanel";
@@ -113,7 +118,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
     const { fitView, getNodes, getEdges, zoomIn, zoomOut } = useReactFlow();
     const { chaosMode, stressMode } = useSimulationStore();
     const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const draftTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedSnapshotRef = useRef<string>("");
+    const nodesRef = useRef(initialNodes);
+    const edgesRef = useRef(initialEdges);
     const isInitializedRef = useRef(false);
     const isUndoRedoRef = useRef(false);
     const { resolvedTheme } = useTheme();
@@ -130,14 +138,37 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
 
     // Push initial state to history
     useEffect(() => {
-      if (initialNodes.length > 0 || initialEdges.length > 0) {
-        pushState({ nodes: initialNodes, edges: initialEdges }, "initial");
+      const draft = readProjectDraft(projectId);
+      const hasInitialGraph =
+        initialNodes.length > 0 || initialEdges.length > 0;
+      const shouldRestoreDraft =
+        draft &&
+        !hasInitialGraph &&
+        (draft.nodes.length > 0 || draft.edges.length > 0);
+
+      const startingNodes = shouldRestoreDraft ? draft.nodes : initialNodes;
+      const startingEdges = shouldRestoreDraft ? draft.edges : initialEdges;
+
+      if (shouldRestoreDraft) {
+        setNodes(startingNodes);
+        setEdges(startingEdges);
+      }
+
+      if (startingNodes.length > 0 || startingEdges.length > 0) {
+        pushState({ nodes: startingNodes, edges: startingEdges }, "initial");
       }
       lastSavedSnapshotRef.current = serializeGraphForSave(
-        initialNodes,
-        initialEdges,
+        startingNodes,
+        startingEdges,
       );
-    }, [initialEdges, initialNodes, pushState]);
+      nodesRef.current = startingNodes;
+      edgesRef.current = startingEdges;
+    }, [initialEdges, initialNodes, projectId, pushState, setEdges, setNodes]);
+
+    useEffect(() => {
+      nodesRef.current = nodes;
+      edgesRef.current = edges;
+    }, [nodes, edges]);
 
     // Track changes and push to history (debounced)
     const historyTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -212,6 +243,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         const snapshot = serializeGraphForSave(nodes, edges);
         await saveProject(projectId, { nodes, edges });
         lastSavedSnapshotRef.current = snapshot;
+        clearProjectDraft(projectId);
         toast.success("Project saved");
       } catch (_error) {
         toast.error("Failed to save");
@@ -384,6 +416,17 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         clearTimeout(saveTimerRef.current);
       }
 
+      if (draftTimerRef.current) {
+        clearTimeout(draftTimerRef.current);
+      }
+
+      draftTimerRef.current = setTimeout(() => {
+        if (nodes.length === 0 && edges.length === 0) {
+          return;
+        }
+        writeProjectDraft(projectId, nodes, edges);
+      }, 400);
+
       saveTimerRef.current = setTimeout(async () => {
         if (nodes.length === 0 && edges.length === 0) {
           return;
@@ -397,6 +440,7 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         try {
           await saveProject(projectId, { nodes, edges });
           lastSavedSnapshotRef.current = snapshot;
+          clearProjectDraft(projectId);
         } catch (error) {
           console.error("[FlowEditor] Auto-save failed:", error);
           toast.error("Failed to save changes. Please try again.");
@@ -407,8 +451,58 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current);
         }
+        if (draftTimerRef.current) {
+          clearTimeout(draftTimerRef.current);
+        }
       };
     }, [nodes, edges, projectId]);
+
+    useEffect(() => {
+      const flushPendingSave = () => {
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
+        }
+
+        const currentNodes = nodesRef.current;
+        const currentEdges = edgesRef.current;
+        if (currentNodes.length === 0 && currentEdges.length === 0) {
+          return;
+        }
+
+        const snapshot = serializeGraphForSave(currentNodes, currentEdges);
+        if (snapshot === lastSavedSnapshotRef.current) {
+          return;
+        }
+
+        writeProjectDraft(projectId, currentNodes, currentEdges);
+        void saveProject(projectId, {
+          nodes: currentNodes,
+          edges: currentEdges,
+        })
+          .then(() => {
+            lastSavedSnapshotRef.current = snapshot;
+            clearProjectDraft(projectId);
+          })
+          .catch((error) => {
+            console.error("[FlowEditor] Flush save failed:", error);
+          });
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === "hidden") {
+          flushPendingSave();
+        }
+      };
+
+      window.addEventListener("pagehide", flushPendingSave);
+      document.addEventListener("visibilitychange", onVisibilityChange);
+
+      return () => {
+        window.removeEventListener("pagehide", flushPendingSave);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      };
+    }, [projectId]);
 
     useImperativeHandle(ref, () => ({
       updateGraph: (data: { nodes: any[]; edges: any[] }) => {

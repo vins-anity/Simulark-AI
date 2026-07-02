@@ -3,47 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { analyzeArchitectureQuality } from "@/lib/architecture-quality";
 import type { ArchitectureGraph, Project } from "@/lib/schema/graph";
-import {
-  canCreateProject as canCreateProjectForTier,
-  getPlanDetails,
-} from "@/lib/subscription";
-import { getEffectiveTierForAccess } from "@/lib/subscription-guards";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATE_GRAPHS } from "@/lib/templates";
-
-async function enforceProjectQuota(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-): Promise<{ allowed: true } | { allowed: false; error: string }> {
-  const effectiveTier = await getEffectiveTierForAccess(supabase, userId);
-  const plan = getPlanDetails(effectiveTier);
-  const maxProjects = plan.tierFeatures.maxProjects;
-
-  if (maxProjects === Infinity) {
-    return { allowed: true };
-  }
-
-  const limit = Number(maxProjects);
-  const { data, error } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("user_id", userId)
-    .limit(limit + 1);
-
-  if (error) {
-    return { allowed: false, error: "Failed to verify project quota" };
-  }
-
-  const currentProjectCount = data?.length ?? 0;
-  if (!canCreateProjectForTier(effectiveTier, currentProjectCount)) {
-    return {
-      allowed: false,
-      error: `Project limit reached for ${plan.label}.`,
-    };
-  }
-
-  return { allowed: true };
-}
 
 // --- Create Project ---
 export async function createProject(
@@ -58,11 +19,6 @@ export async function createProject(
 
   if (!user) {
     return { success: false, error: "Unauthorized" };
-  }
-
-  const quotaCheck = await enforceProjectQuota(supabase, user.id);
-  if (!quotaCheck.allowed) {
-    return { success: false, error: quotaCheck.error };
   }
 
   const { data, error } = await supabase
@@ -294,11 +250,6 @@ export async function createProjectFromTemplate(
 
   if (!user) {
     return { success: false, error: "Unauthorized" };
-  }
-
-  const quotaCheck = await enforceProjectQuota(supabase, user.id);
-  if (!quotaCheck.allowed) {
-    return { success: false, error: quotaCheck.error };
   }
 
   const template = TEMPLATE_GRAPHS[templateId];

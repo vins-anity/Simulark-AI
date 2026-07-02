@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
-import { getCachedResponse } from "@/lib/ai-cache";
+import {
+  cacheArchitectureResult,
+  getCachedArchitecture,
+} from "@/lib/cached-architecture-response";
 import { generateArchitectureStream } from "@/lib/ai-client";
 import {
   type ValidationIssue,
@@ -14,10 +17,6 @@ import {
 } from "@/lib/prompt-engineering";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { GenerateRequestSchema } from "@/lib/schema/api";
-import {
-  getEffectiveTierForAccess,
-  isModelAllowedForTier,
-} from "@/lib/subscription-guards";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 
@@ -82,20 +81,7 @@ export async function POST(req: NextRequest) {
     } = parsedBody.output;
     const normalizedMode = normalizeArchitectureMode(mode);
 
-    const effectiveTier = await getEffectiveTierForAccess(supabase, user.id);
-    if (!isModelAllowedForTier(effectiveTier, model)) {
-      userLogger.warn("Blocked generation request due to model entitlement", {
-        model,
-        effectiveTier,
-      });
-      return NextResponse.json(
-        { error: "This model is not available for your current plan." },
-        { status: 403 },
-      );
-    }
-
-    // Rate Limiting Check (model-aware)
-    const rateLimitResult = await checkRateLimit(user.id, model, effectiveTier);
+    const rateLimitResult = await checkRateLimit(user.id, model);
 
     if (!rateLimitResult.allowed) {
       userLogger.warn("Rate limit exceeded", {
@@ -104,7 +90,7 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json(
         {
-          error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day. Upgrade for more.`,
+          error: `Daily limit reached. Limit: ${rateLimitResult.limit}/day.`,
           resetAt: rateLimitResult.reset,
           limit: rateLimitResult.limit,
         },
@@ -149,16 +135,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for cached response
-    const cachedResult = await getCachedResponse<{
+    const cachedResult = await getCachedArchitecture<{
       nodes: Array<
         Record<string, unknown> & { data?: Record<string, unknown> }
       >;
       edges: unknown[];
+      validation?: {
+        valid: boolean;
+        issues: unknown[];
+        appliedFixes: unknown[];
+      };
     }>({
       prompt,
       model,
       mode: normalizedMode,
       userId: user.id,
+      nodeCount: currentNodes.length,
+      edgeCount: currentEdges.length,
     });
 
     if (cachedResult) {
@@ -310,6 +303,16 @@ export async function POST(req: NextRequest) {
                   validationIssues: validationResult.issues.length,
                   appliedFixes: validationResult.appliedFixes.length,
                 });
+                void cacheArchitectureResult({
+                  prompt,
+                  result: enrichedData,
+                  model,
+                  provider: "legacy-generate",
+                  mode: normalizedMode,
+                  userId: user.id,
+                  nodeCount: currentNodes.length,
+                  edgeCount: currentEdges.length,
+                });
                 controller.enqueue(
                   encoder.encode(
                     JSON.stringify({ type: "result", data: enrichedData }) +
@@ -371,6 +374,16 @@ export async function POST(req: NextRequest) {
                     nodes: finalNodes.length,
                     edges: finalEdges.length,
                     validationIssues: validationResult.issues.length,
+                  });
+                  void cacheArchitectureResult({
+                    prompt,
+                    result: enrichedData,
+                    model,
+                    provider: "legacy-generate",
+                    mode: normalizedMode,
+                    userId: user.id,
+                    nodeCount: currentNodes.length,
+                    edgeCount: currentEdges.length,
                   });
                   controller.enqueue(
                     encoder.encode(
