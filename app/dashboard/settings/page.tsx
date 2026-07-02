@@ -29,9 +29,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AVAILABLE_MODELS } from "@/lib/ai-models";
+import {
+  DEFAULT_INFERENCE_TIER,
+  INFERENCE_TIER_OPTIONS,
+  type InferenceTier,
+  resolveInferenceTier,
+} from "@/lib/inference-tier";
 import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/utils/avatar";
+import { DailyUsagePanel } from "@/components/usage/DailyUsagePanel";
 import { getUserPreferences, updateUserPreferences } from "@/actions/users";
 
 const CONFIG_MODULES = [
@@ -72,26 +78,12 @@ const CONFIG_MODULES = [
   },
 ] as const;
 
-const ARCHITECTURE_MODES = [
-  {
-    id: "default",
-    label: "Default (Balanced)",
-    description: "Balanced approach for most use cases",
-    icon: "ph:scales-fill",
-  },
-  {
-    id: "startup",
-    label: "Startup (MVP)",
-    description: "Cost-optimized, speed to market",
-    icon: "ph:rocket-launch-fill",
-  },
-  {
-    id: "enterprise",
-    label: "Enterprise",
-    description: "High availability, security, compliance",
-    icon: "ph:buildings-fill",
-  },
-];
+const INFERENCE_TIER_SETTINGS = INFERENCE_TIER_OPTIONS.map((tier) => ({
+  id: tier.tier,
+  label: tier.label,
+  description: tier.description,
+  icon: tier.tier === "pro" ? "ph:brain-fill" : "ph:lightning-fill",
+}));
 
 const TECH_CATEGORIES = {
   LANGUAGES: [
@@ -326,12 +318,8 @@ export default function SettingsPage() {
   const [architectureTypes, setArchitectureTypes] = useState<string[]>([]);
   const [applicationType, setApplicationType] = useState<string[]>([]);
   const [customInstructions, setCustomInstructions] = useState("");
-  const [defaultArchitectureMode, setDefaultArchitectureMode] =
-    useState<string>("default");
-
-  // Initialize with the first available model ID
-  // We'll update this from user preferences in useEffect
-  const [defaultModel, setDefaultModel] = useState<string>("nvidia:z-ai/glm5");
+  const [defaultInferenceTier, setDefaultInferenceTier] =
+    useState<InferenceTier>(DEFAULT_INFERENCE_TIER);
 
   const { TECH_ECOSYSTEM } = require("@/lib/tech-ecosystem");
 
@@ -366,20 +354,14 @@ export default function SettingsPage() {
           if (typeof prefs.customInstructions === "string")
             setCustomInstructions(prefs.customInstructions);
 
-          // Prioritize defaultMode for new sync logic
-          if (prefs.defaultMode) {
-            setDefaultArchitectureMode(prefs.defaultMode);
-          } else if (prefs.defaultArchitectureMode) {
-            setDefaultArchitectureMode(
-              (prefs.defaultArchitectureMode as string) === "corporate"
-                ? "enterprise"
-                : (prefs.defaultArchitectureMode as string),
-            );
-          }
-
-          if (prefs.defaultModel) {
-            setDefaultModel(prefs.defaultModel);
-          }
+          setDefaultInferenceTier(
+            resolveInferenceTier({
+              tier: prefs.defaultInferenceTier as string,
+              model: prefs.defaultModel as string,
+              mode: (prefs.defaultMode ||
+                prefs.defaultArchitectureMode) as string,
+            }),
+          );
         }
       }
       setLoading(false);
@@ -419,8 +401,10 @@ export default function SettingsPage() {
       architectureTypes,
       applicationType,
       customInstructions,
-      defaultMode: defaultArchitectureMode as any,
-      defaultModel,
+      defaultInferenceTier,
+      defaultMode: (defaultInferenceTier === "pro"
+        ? "enterprise"
+        : "startup") as "enterprise" | "startup",
     };
 
     const result = await updateUserPreferences(preferences);
@@ -522,6 +506,24 @@ export default function SettingsPage() {
             defaults to align with monolithic infrastructure constraints."
           </p>
         </div>
+
+        <section className="mb-8">
+          <div className="border border-border-primary bg-bg-secondary">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-border-primary bg-bg-tertiary">
+              <Info className="w-4 h-4 text-text-muted" />
+              <h2 className="font-poppins font-semibold text-sm text-text-primary">
+                Daily AI Usage
+              </h2>
+              <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted px-1.5 py-0.5 bg-bg-secondary border border-border-secondary ml-auto">
+                USG-00
+              </span>
+            </div>
+            <div className="p-5">
+              <DailyUsagePanel tier={defaultInferenceTier} />
+            </div>
+          </div>
+        </section>
+
         {/* Profile Module */}
         <section className="mb-8">
           <div className="border border-border-primary bg-bg-secondary">
@@ -731,16 +733,18 @@ export default function SettingsPage() {
             <div className="pt-4 space-y-4">
               <div>
                 <Label className="text-[10px] font-mono uppercase tracking-widest text-text-muted mb-3 block">
-                  Default Architecture Mode
+                  Default Inference Tier
                 </Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {ARCHITECTURE_MODES.map((mode) => {
-                    const isSelected = defaultArchitectureMode === mode.id;
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {INFERENCE_TIER_SETTINGS.map((tier) => {
+                    const isSelected = defaultInferenceTier === tier.id;
                     return (
                       <button
-                        key={mode.id}
+                        key={tier.id}
                         type="button"
-                        onClick={() => setDefaultArchitectureMode(mode.id)}
+                        onClick={() =>
+                          setDefaultInferenceTier(tier.id as InferenceTier)
+                        }
                         className={cn(
                           "flex flex-col items-start p-3 border text-left transition-all duration-200 relative",
                           isSelected
@@ -750,7 +754,7 @@ export default function SettingsPage() {
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <Icon
-                            icon={mode.icon}
+                            icon={tier.icon}
                             className={cn(
                               "text-lg",
                               isSelected
@@ -766,67 +770,14 @@ export default function SettingsPage() {
                                 : "text-text-primary",
                             )}
                           >
-                            {mode.label}
+                            {tier.label}
                           </span>
                         </div>
                         <p className="text-[10px] text-text-secondary">
-                          {mode.description}
+                          {tier.description}
                         </p>
                         {isSelected && (
                           <div className="absolute top-2 right-2">
-                            <Check className="w-3 h-3 text-brand-orange" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <Label className="text-[10px] font-mono uppercase tracking-widest text-text-muted mb-3 block">
-                  Default AI Intelligence Model
-                </Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {AVAILABLE_MODELS.map((m) => {
-                    const isSelected = defaultModel === m.id;
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setDefaultModel(m.id)}
-                        className={cn(
-                          "flex items-center gap-3 p-3 border text-left transition-all duration-200 relative",
-                          isSelected
-                            ? "bg-brand-orange/5 border-brand-orange"
-                            : "bg-bg-primary border-border-primary hover:border-border-secondary",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "w-1 h-3 shrink-0",
-                            m.id.includes("nvidia")
-                              ? "bg-green-500"
-                              : "bg-blue-500",
-                          )}
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <span
-                            className={cn(
-                              "text-xs font-bold uppercase tracking-wider truncate",
-                              isSelected
-                                ? "text-brand-orange"
-                                : "text-text-primary",
-                            )}
-                          >
-                            {m.name}
-                          </span>
-                          <span className="text-[9px] text-text-muted font-mono uppercase">
-                            {m.provider}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <div className="ml-auto">
                             <Check className="w-3 h-3 text-brand-orange" />
                           </div>
                         )}
