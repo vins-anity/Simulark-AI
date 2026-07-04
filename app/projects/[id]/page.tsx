@@ -4,7 +4,8 @@ import { Icon } from "@iconify/react";
 import { notFound } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getProject, saveProject } from "@/actions/projects";
+import { getProject } from "@/actions/projects";
+import { saveProjectGraph } from "@/lib/client/project-save";
 import { AIAssistantPanel } from "@/components/canvas/AIAssistantPanel";
 import { FlowEditor, type FlowEditorRef } from "@/components/canvas/FlowEditor";
 import { WorkstationHeader } from "@/components/canvas/WorkstationHeader";
@@ -82,7 +83,13 @@ export default function ProjectPage({
     }
     // Persist to database
     if (id && data.nodes && data.edges) {
-      await saveProject(id, { nodes: data.nodes, edges: data.edges }, false);
+      const result = await saveProjectGraph(id, {
+        nodes: data.nodes,
+        edges: data.edges,
+      });
+      if (!result.success) {
+        toast.error(result.error || "Failed to save architecture");
+      }
     }
   };
 

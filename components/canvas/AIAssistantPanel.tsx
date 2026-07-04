@@ -469,18 +469,14 @@ export function AIAssistantPanel({
   const setInferenceTier = (tier: InferenceTier) => {
     setInferenceTierState(tier);
     void refreshUsage(tier);
-    import("@/actions/projects").then(({ saveProject }) => {
-      saveProject(
-        projectId,
-        {
-          metadata: {
-            ...initialMetadata,
-            tier,
-            mode: tier === "pro" ? "enterprise" : "startup",
-          },
+    import("@/lib/client/project-save").then(({ saveProjectGraph }) => {
+      void saveProjectGraph(projectId, {
+        metadata: {
+          ...initialMetadata,
+          tier,
+          mode: tier === "pro" ? "enterprise" : "startup",
         },
-        false,
-      );
+      });
     });
     updateUserPreferences({ defaultInferenceTier: tier });
   };

@@ -24,7 +24,7 @@ import "@xyflow/react/dist/style.css";
 import { Redo2, Undo2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { saveProject } from "@/actions/projects";
+import { saveProjectGraph } from "@/lib/client/project-save";
 import { calculateGraphExportBounds } from "@/lib/canvas-export";
 import { useGraphHistory } from "@/lib/history-store";
 import { useCanvasShortcuts } from "@/lib/keyboard-shortcuts";
@@ -241,7 +241,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
     const handleSave = useCallback(async () => {
       try {
         const snapshot = serializeGraphForSave(nodes, edges);
-        await saveProject(projectId, { nodes, edges });
+        const result = await saveProjectGraph(projectId, { nodes, edges });
+        if (!result.success) {
+          throw new Error(result.error || "Save failed");
+        }
         lastSavedSnapshotRef.current = snapshot;
         clearProjectDraft(projectId);
         toast.success("Project saved");
@@ -438,7 +441,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         }
 
         try {
-          await saveProject(projectId, { nodes, edges });
+          const result = await saveProjectGraph(projectId, { nodes, edges });
+          if (!result.success) {
+            throw new Error(result.error || "Save failed");
+          }
           lastSavedSnapshotRef.current = snapshot;
           clearProjectDraft(projectId);
         } catch (error) {
@@ -476,11 +482,14 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
         }
 
         writeProjectDraft(projectId, currentNodes, currentEdges);
-        void saveProject(projectId, {
+        void saveProjectGraph(projectId, {
           nodes: currentNodes,
           edges: currentEdges,
         })
-          .then(() => {
+          .then((result) => {
+            if (!result.success) {
+              throw new Error(result.error || "Save failed");
+            }
             lastSavedSnapshotRef.current = snapshot;
             clearProjectDraft(projectId);
           })

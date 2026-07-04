@@ -8,10 +8,19 @@ const ParamsSchema = v.object({
   id: v.pipe(v.string(), v.uuid()),
 });
 
-const UpdateProjectPayloadSchema = v.object({
-  nodes: v.array(v.unknown()),
-  edges: v.array(v.unknown()),
-});
+const UpdateProjectPayloadSchema = v.pipe(
+  v.object({
+    nodes: v.optional(v.array(v.unknown())),
+    edges: v.optional(v.array(v.unknown())),
+    metadata: v.optional(v.record(v.string(), v.unknown())),
+  }),
+  v.check(
+    (input) =>
+      (Array.isArray(input.nodes) && Array.isArray(input.edges)) ||
+      input.metadata !== undefined,
+    "Provide nodes and edges together, or metadata",
+  ),
+);
 
 /**
  * GET /api/projects/[id]
@@ -75,11 +84,12 @@ export async function PATCH(
         { status: 400 },
       );
     }
-    const { nodes, edges } = parsed.output;
+    const { nodes, edges, metadata } = parsed.output;
 
     const result = await saveProject(id, {
-      nodes: nodes as ArchitectureGraph["nodes"],
-      edges: edges as ArchitectureGraph["edges"],
+      ...(nodes ? { nodes: nodes as ArchitectureGraph["nodes"] } : {}),
+      ...(edges ? { edges: edges as ArchitectureGraph["edges"] } : {}),
+      ...(metadata ? { metadata } : {}),
     });
     if (result.success) {
       return NextResponse.json(result.data);
