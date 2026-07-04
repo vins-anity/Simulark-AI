@@ -17,9 +17,7 @@ export function buildUsageSnapshot(params: {
 }): DailyUsageSnapshot {
   const utcToday = getUtcDateString(params.now);
   const used =
-    params.recordDate === utcToday
-      ? Math.max(0, params.generationCount)
-      : 0;
+    params.recordDate === utcToday ? Math.max(0, params.generationCount) : 0;
 
   const tierConfig = getInferenceTierConfig(params.tier);
   const limit = getModelDailyLimit(tierConfig.modelId);

@@ -47,8 +47,7 @@ export const DEFAULT_INFERENCE_TIER: InferenceTier = "flash";
 export const INFERENCE_TIER_OPTIONS = Object.values(INFERENCE_TIERS);
 
 /** Internal tasks that should always use Flash to preserve Pro quota. */
-export const INTERNAL_FLASH_MODEL_ID =
-  INFERENCE_TIERS.flash.modelId;
+export const INTERNAL_FLASH_MODEL_ID = INFERENCE_TIERS.flash.modelId;
 
 export function isInferenceTier(value: unknown): value is InferenceTier {
   return value === "flash" || value === "pro";

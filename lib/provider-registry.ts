@@ -1,6 +1,9 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
-import { getDashScopeApiKey, getDashScopeBaseUrl } from "./dashscope";
+import {
+  getDashscopeProvider,
+  dashscopeModel,
+} from "@/lib/inference/dashscope-provider";
 import {
   DEFAULT_INFERENCE_TIER,
   type InferenceTier,
@@ -43,12 +46,9 @@ export type ModelId = keyof typeof AVAILABLE_MODELS;
 
 let dashscopeProvider: ReturnType<typeof createOpenAI> | null = null;
 
-function getDashscopeProvider() {
+function getDashscopeProviderInstance() {
   if (!dashscopeProvider) {
-    dashscopeProvider = createOpenAI({
-      baseURL: getDashScopeBaseUrl(),
-      apiKey: getDashScopeApiKey(),
-    });
+    dashscopeProvider = getDashscopeProvider();
   }
   return dashscopeProvider;
 }
@@ -59,8 +59,13 @@ function getDashscopeProvider() {
 export function getModel(modelId: ModelId | string): LanguageModel {
   const [, ...modelParts] = modelId.split(":");
   const modelName =
-    modelParts.join(":") || INFERENCE_TIERS[DEFAULT_INFERENCE_TIER].dashscopeModel;
-  return getDashscopeProvider().chat(modelName);
+    modelParts.join(":") ||
+    INFERENCE_TIERS[DEFAULT_INFERENCE_TIER].dashscopeModel;
+  return getDashscopeProviderInstance().chat(modelName);
+}
+
+export function getDashscopeModel(modelName: string): LanguageModel {
+  return dashscopeModel(modelName);
 }
 
 export function getModelInfo(modelId: string): ModelInfo {
@@ -93,8 +98,6 @@ export function supportsTools(modelId: string): boolean {
 
 export function getProviderConfig() {
   return {
-    baseURL: getDashScopeBaseUrl(),
-    apiKey: getDashScopeApiKey(),
     defaultModel: INFERENCE_TIERS[DEFAULT_INFERENCE_TIER].dashscopeModel,
   };
 }

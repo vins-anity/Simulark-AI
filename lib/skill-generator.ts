@@ -56,10 +56,10 @@ function toSkillName(input: string): string {
   const name = input
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, "")  // strip illegal chars
-    .replace(/\s+/g, "-")           // spaces → hyphens
-    .replace(/-{2,}/g, "-")         // collapse consecutive hyphens (spec requirement)
-    .replace(/^-|-$/g, "");         // no leading/trailing hyphens
+    .replace(/[^a-z0-9\s-]/g, "") // strip illegal chars
+    .replace(/\s+/g, "-") // spaces → hyphens
+    .replace(/-{2,}/g, "-") // collapse consecutive hyphens (spec requirement)
+    .replace(/^-|-$/g, ""); // no leading/trailing hyphens
 
   // Enforce max length, trimming cleanly at a hyphen boundary
   const truncated =
@@ -228,7 +228,9 @@ function generateArchitectureRules(
   }
 
   if (analysis.services.length > 0) {
-    rules.push("ALWAYS keep business logic inside service or function boundaries");
+    rules.push(
+      "ALWAYS keep business logic inside service or function boundaries",
+    );
   }
 
   const hasQueue = nodes.some((node) =>
@@ -242,14 +244,18 @@ function generateArchitectureRules(
 
   const hasMonitoring = nodes.some((node) => node.type === "monitoring");
   if (hasMonitoring) {
-    rules.push("ALWAYS emit metrics, traces, and structured logs on critical paths");
+    rules.push(
+      "ALWAYS emit metrics, traces, and structured logs on critical paths",
+    );
   }
 
   const hasAuth = nodes.some((node) =>
     ["auth", "security"].includes(node.type || ""),
   );
   if (hasAuth) {
-    rules.push("NEVER skip authentication checks before reaching business services");
+    rules.push(
+      "NEVER skip authentication checks before reaching business services",
+    );
   }
 
   return rules;
@@ -482,7 +488,9 @@ export function generateSkillContent(
     `  generated-at: ${JSON.stringify(generatedAt)}`,
     `  node-count: ${JSON.stringify(String(nodes.length))}`,
     `  edge-count: ${JSON.stringify(String(edges.length))}`,
-    quality ? `  quality-score: ${JSON.stringify(String(quality.score))}` : null,
+    quality
+      ? `  quality-score: ${JSON.stringify(String(quality.score))}`
+      : null,
     quality ? `  quality-grade: ${JSON.stringify(quality.grade)}` : null,
     "---",
     "",

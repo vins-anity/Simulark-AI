@@ -35,10 +35,7 @@ const FREE_PLAN = {
   } as RateLimitConfig,
   tierFeatures: {
     maxProjects: Infinity,
-    allowedModels: [
-      "deepseek:deepseek-v4-flash",
-      "deepseek:deepseek-v4-pro",
-    ],
+    allowedModels: ["deepseek:deepseek-v4-flash", "deepseek:deepseek-v4-pro"],
   } as TierFeatures,
 };
 

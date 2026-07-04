@@ -369,7 +369,9 @@ describe("architecture rules", () => {
       nodes: fullStackNodes,
       edges: fullStackEdges,
     });
-    expect(skillMd).toContain("NEVER allow direct client or frontend access to data stores");
+    expect(skillMd).toContain(
+      "NEVER allow direct client or frontend access to data stores",
+    );
   });
 
   it("emits a retry/DLQ rule when a queue node exists", () => {
@@ -378,7 +380,9 @@ describe("architecture rules", () => {
       nodes: fullStackNodes,
       edges: fullStackEdges,
     });
-    expect(skillMd).toContain("ALWAYS implement retry and dead-letter queue handling");
+    expect(skillMd).toContain(
+      "ALWAYS implement retry and dead-letter queue handling",
+    );
   });
 
   it("emits an observability rule when a monitoring node exists", () => {
@@ -387,7 +391,9 @@ describe("architecture rules", () => {
       nodes: fullStackNodes,
       edges: fullStackEdges,
     });
-    expect(skillMd).toContain("ALWAYS emit metrics, traces, and structured logs");
+    expect(skillMd).toContain(
+      "ALWAYS emit metrics, traces, and structured logs",
+    );
   });
 
   it("emits no rules for an empty graph", () => {
@@ -538,7 +544,9 @@ describe("packageSkill — ZIP directory structure", () => {
     const blob = await packageSkill(skill);
     const zip = await JSZip.loadAsync(await blob.arrayBuffer());
 
-    expect(zip.file("acme-platform/references/service-catalog.md")).toBeTruthy();
+    expect(
+      zip.file("acme-platform/references/service-catalog.md"),
+    ).toBeTruthy();
     expect(zip.file("acme-platform/references/data-flows.md")).toBeTruthy();
     expect(zip.file("acme-platform/references/diagram.mmd")).toBeTruthy();
     expect(zip.file("acme-platform/references/architecture.json")).toBeTruthy();

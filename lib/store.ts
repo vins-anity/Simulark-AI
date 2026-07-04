@@ -425,7 +425,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
           ? "auto"
           : state.plannerModelId === "auto"
             ? QWEN_FALLBACK_MODEL_ID
-             : state.plannerModelId,
+            : state.plannerModelId,
     })),
 
   setPlannerModelId: (modelId) => set({ plannerModelId: modelId }),

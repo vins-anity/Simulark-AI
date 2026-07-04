@@ -1,7 +1,4 @@
-import {
-  INFERENCE_TIERS,
-  type InferenceTier,
-} from "@/lib/inference-tier";
+import { INFERENCE_TIERS, type InferenceTier } from "@/lib/inference-tier";
 
 export const AVAILABLE_MODELS = [
   {

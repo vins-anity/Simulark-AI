@@ -415,6 +415,9 @@ IP_DAILY_LIMIT=60
 BURST_RATE_LIMIT=8
 BURST_RATE_WINDOW_SECONDS=60
 
+# Optional: legacy (default) or ui AI SDK message stream
+NEXT_PUBLIC_AI_STREAM_FORMAT=legacy
+
 # App
 NEXT_PUBLIC_SITE_URL=https://your-app.vercel.app
 ```
