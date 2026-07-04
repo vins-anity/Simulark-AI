@@ -258,7 +258,10 @@ export function BaseNode({
               {nodeLogo ? (
                 <Icon
                   icon={nodeLogo as string}
-                  className="w-7 h-7 text-brand-charcoal transition-all"
+                  className={cn(
+                    "w-7 h-7 text-brand-charcoal transition-all",
+                    shouldInvertIcon(nodeLogo as string) && "dark:invert",
+                  )}
                 />
               ) : (
                 icon || <Component size={24} className="text-brand-charcoal" />

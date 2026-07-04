@@ -1,6 +1,5 @@
 "use client";
 
-
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
@@ -51,7 +50,11 @@ import {
   type InferenceTier,
   resolveInferenceTier,
 } from "@/lib/inference-tier";
-import type { UserPreferences } from "@/lib/schema/onboarding";
+import {
+  normalizeUserPreferences,
+  toChatPayload,
+  type UserPreferences,
+} from "@/lib/schema/user-preferences";
 import type { DailyUsageSnapshot } from "@/lib/usage-status";
 import { snapshotFromRateLimitHeaders } from "@/lib/usage-status";
 import { cn } from "@/lib/utils";
@@ -59,6 +62,7 @@ import { StreamingMessage } from "./StreamingMessage";
 
 interface AIAssistantPanelProps {
   onGenerationSuccess: (data: any) => void;
+  onArchitecturePartial?: (data: any) => void;
   projectId: string;
   isResizable?: boolean;
   getCurrentNodes?: () => any[];
@@ -355,6 +359,7 @@ function InitialPromptLoader() {
 
 export function AIAssistantPanel({
   onGenerationSuccess,
+  onArchitecturePartial,
   projectId,
   isResizable = false,
   getCurrentNodes = () => [],
@@ -425,19 +430,9 @@ export function AIAssistantPanel({
     refresh: refreshUsage,
   } = useDailyUsage(inferenceTier);
 
-  const [userPreferences, setUserPreferences] = useState<{
-    cloudProviders: string[];
-    languages: string[];
-    frameworks: string[];
-    architectureTypes: string[];
-    customInstructions: string;
-  }>({
-    cloudProviders: [],
-    languages: [],
-    frameworks: [],
-    architectureTypes: [],
-    customInstructions: "",
-  });
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>(
+    normalizeUserPreferences({}),
+  );
 
   // Copy message content
   const copyToClipboard = async (text: string) => {
@@ -749,37 +744,7 @@ export function AIAssistantPanel({
         return;
       }
 
-      const prefs = result.preferences;
-      const legacyPrefs = prefs as UserPreferences & {
-        cloudProvider?: string;
-        language?: string;
-        framework?: string;
-      };
-      const cloudProviders = Array.isArray(prefs.cloudProviders)
-        ? prefs.cloudProviders
-        : legacyPrefs.cloudProvider
-          ? [legacyPrefs.cloudProvider]
-          : [];
-
-      const languages = Array.isArray(prefs.languages)
-        ? prefs.languages
-        : legacyPrefs.language
-          ? [legacyPrefs.language]
-          : [];
-
-      const frameworks = Array.isArray(prefs.frameworks)
-        ? prefs.frameworks
-        : legacyPrefs.framework
-          ? [legacyPrefs.framework]
-          : [];
-
-      const architectureTypes = Array.isArray(prefs.architectureTypes)
-        ? prefs.architectureTypes
-        : [];
-      const customInstructions =
-        typeof prefs.customInstructions === "string"
-          ? prefs.customInstructions
-          : "";
+      const prefs = normalizeUserPreferences(result.preferences);
 
       const resolvedTier = resolveInferenceTier({
         tier: prefs.defaultInferenceTier,
@@ -788,13 +753,7 @@ export function AIAssistantPanel({
       });
       setInferenceTierState(resolvedTier);
 
-      setUserPreferences({
-        cloudProviders,
-        languages,
-        frameworks,
-        architectureTypes,
-        customInstructions,
-      });
+      setUserPreferences(prefs);
     } catch (error) {
       console.warn("Failed to load user preferences", error);
     }
@@ -1155,15 +1114,13 @@ export function AIAssistantPanel({
           tier: inferenceTier,
           currentNodes: getCurrentNodes(),
           currentEdges: getCurrentEdges(),
-          userPreferences,
+          userPreferences: toChatPayload(userPreferences),
+          streamFormat:
+            process.env.NEXT_PUBLIC_AI_STREAM_FORMAT === "ui" ? "ui" : "legacy",
         }),
       });
 
-      updateStreamProgress(
-        15,
-        "connecting",
-        "Connecting to inference",
-      );
+      updateStreamProgress(15, "connecting", "Connecting to inference");
       clearTimeout(timeoutId); // Connection established, clear initial timeout
       resetWatchdog(); // Start stream watchdog
 
@@ -1383,7 +1340,14 @@ export function AIAssistantPanel({
             } else if (json.type === "result" && json.data) {
               console.log("Received architecture result:", json.data);
               lastGeneratedData = json.data;
+              onArchitecturePartial?.(json.data);
               onGenerationSuccess(json.data);
+              const issues = json.data?.validation?.issues;
+              if (Array.isArray(issues) && issues.length > 0) {
+                toast.message("Graph validation notes", {
+                  description: issues.slice(0, 3).join("; "),
+                });
+              }
               updateStreamProgress(
                 95,
                 "validating",
@@ -1418,7 +1382,10 @@ export function AIAssistantPanel({
               tokenUsage = json.data;
             } else if (json.type === "quota" && json.data) {
               applyUsageSnapshot(json.data as DailyUsageSnapshot);
-            } else if (json.type === "inference-meta" && json.data?.fallbackUsed) {
+            } else if (
+              json.type === "inference-meta" &&
+              json.data?.fallbackUsed
+            ) {
               toast.message("Using backup inference model", {
                 description:
                   "Primary model was unavailable. Continuing with a fallback.",

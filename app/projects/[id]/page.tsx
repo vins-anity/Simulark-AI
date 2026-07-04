@@ -59,15 +59,25 @@ export default function ProjectPage({
     init();
   }, [paramsPromise]);
 
+  const handleArchitecturePartial = async (data: any) => {
+    if (!flowEditorRef.current || !data?.nodes) return;
+    const enrichedNodes = enrichNodesWithTech(data.nodes);
+    flowEditorRef.current.updateGraph({
+      nodes: enrichedNodes,
+      edges: data.edges || [],
+    });
+  };
+
   const handleGenerationSuccess = async (data: any) => {
+    let layoutNodes = data.nodes;
+    let layoutEdges = data.edges;
+
     if (flowEditorRef.current) {
-      // Enrich nodes with technology info for proper icon rendering
       const enrichedData = {
         ...data,
         nodes: enrichNodesWithTech(data.nodes),
       };
 
-      // Apply auto-layout to organize the architecture
       const layout = await import("@/lib/layout");
       const layoutResult = layout.applyLayout(
         enrichedData.nodes,
@@ -75,17 +85,19 @@ export default function ProjectPage({
         { algorithm: "arch-pattern" },
       );
 
+      layoutNodes = layoutResult.nodes;
+      layoutEdges = layoutResult.edges;
+
       flowEditorRef.current.updateGraph({
         ...enrichedData,
-        nodes: layoutResult.nodes,
-        edges: layoutResult.edges,
+        nodes: layoutNodes,
+        edges: layoutEdges,
       });
     }
-    // Persist to database
-    if (id && data.nodes && data.edges) {
+    if (id && layoutNodes && layoutEdges) {
       const result = await saveProjectGraph(id, {
-        nodes: data.nodes,
-        edges: data.edges,
+        nodes: layoutNodes,
+        edges: layoutEdges,
       });
       if (!result.success) {
         toast.error(result.error || "Failed to save architecture");
@@ -406,6 +418,7 @@ export default function ProjectPage({
               key={id}
               projectId={id}
               onGenerationSuccess={handleGenerationSuccess}
+              onArchitecturePartial={handleArchitecturePartial}
               isResizable={false}
               getCurrentNodes={() => flowEditorRef.current?.nodes || []}
               getCurrentEdges={() => flowEditorRef.current?.edges || []}

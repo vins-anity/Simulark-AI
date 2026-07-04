@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { analyzeArchitectureQuality } from "@/lib/architecture-quality";
 import type { ArchitectureGraph, Project } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/server";
+import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 import { TEMPLATE_GRAPHS } from "@/lib/templates";
 
 // --- Create Project ---
@@ -257,13 +258,15 @@ export async function createProjectFromTemplate(
     return { success: false, error: "Template not found" };
   }
 
+  const enrichedNodes = enrichNodesWithTech(template.nodes);
+
   const { data, error } = await supabase
     .from("projects")
     .insert({
       user_id: user.id,
       name,
       provider: "Generic", // or derive from template
-      nodes: template.nodes,
+      nodes: enrichedNodes,
       edges: template.edges,
     })
     .select()
