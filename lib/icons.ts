@@ -1,4 +1,5 @@
 import { TECH_ECOSYSTEM } from "./tech-ecosystem";
+import { normalizeTechName } from "./tech-normalizer";
 
 export const TYPE_ICONS: Record<string, string> = {
   gateway: "lucide:network",
@@ -34,6 +35,12 @@ export function getTechIcon(
 ): string {
   if (!tech && !type) return TYPE_ICONS.service;
   if (!tech) return TYPE_ICONS[type] || TYPE_ICONS.service;
+
+  const canonicalId = normalizeTechName(tech);
+  if (canonicalId) {
+    const fromAlias = TECH_ECOSYSTEM.find((item) => item.id === canonicalId);
+    if (fromAlias) return fromAlias.icon;
+  }
 
   const normalizedTech = tech.toLowerCase().replace(/[^a-z0-9]/g, "");
 
