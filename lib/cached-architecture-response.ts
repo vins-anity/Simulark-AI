@@ -1,11 +1,27 @@
-import { CACHE_TTL, getCachedResponse, setCachedResponse } from "@/lib/ai-cache";
+import {
+  CACHE_TTL,
+  getCachedResponse,
+  setCachedResponse,
+} from "@/lib/ai-cache";
 
 export function buildArchitectureCachePrompt(params: {
   prompt: string;
   nodeCount: number;
   edgeCount: number;
+  tier?: string;
+  operation?: string;
+  preferencesHash?: string;
 }): string {
-  return `${params.prompt.trim()}|nodes:${params.nodeCount}|edges:${params.edgeCount}`;
+  return [
+    params.prompt.trim(),
+    `nodes:${params.nodeCount}`,
+    `edges:${params.edgeCount}`,
+    params.tier ? `tier:${params.tier}` : "",
+    params.operation ? `op:${params.operation}` : "",
+    params.preferencesHash ? `prefs:${params.preferencesHash}` : "",
+  ]
+    .filter(Boolean)
+    .join("|");
 }
 
 export async function getCachedArchitecture<T>(params: {
@@ -15,12 +31,18 @@ export async function getCachedArchitecture<T>(params: {
   userId: string;
   nodeCount?: number;
   edgeCount?: number;
+  tier?: string;
+  operation?: string;
+  preferencesHash?: string;
 }): Promise<T | null> {
   return getCachedResponse<T>({
     prompt: buildArchitectureCachePrompt({
       prompt: params.prompt,
       nodeCount: params.nodeCount ?? 0,
       edgeCount: params.edgeCount ?? 0,
+      tier: params.tier,
+      operation: params.operation,
+      preferencesHash: params.preferencesHash,
     }),
     model: params.model,
     mode: params.mode,
@@ -64,9 +86,7 @@ export function createCachedArchitectureStream<T>(
     start(controller) {
       if (quota) {
         controller.enqueue(
-          encoder.encode(
-            `${JSON.stringify({ type: "quota", data: quota })}\n`,
-          ),
+          encoder.encode(`${JSON.stringify({ type: "quota", data: quota })}\n`),
         );
       }
       controller.enqueue(
@@ -82,9 +102,7 @@ export function createCachedArchitectureStream<T>(
         ),
       );
       controller.enqueue(
-        encoder.encode(
-          `${JSON.stringify({ type: "result", data: cached })}\n`,
-        ),
+        encoder.encode(`${JSON.stringify({ type: "result", data: cached })}\n`),
       );
       controller.close();
     },

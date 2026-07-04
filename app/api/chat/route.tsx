@@ -6,7 +6,12 @@ import {
   createCachedArchitectureStream,
   getCachedArchitecture,
 } from "@/lib/cached-architecture-response";
-import { isDashScopeConfigured, streamDashScopeInference } from "@/lib/deepseek-stream";
+import { isDashScopeConfigured } from "@/lib/inference/dashscope-provider";
+import { streamArchitectureInference } from "@/lib/inference/stream-architecture";
+import type { StreamArchitecturePayload } from "@/lib/inference/stream-types";
+import { runSimularkAgentStream } from "@/lib/agent/run-agent-stream";
+import { shouldUseAgentPath } from "@/lib/agent/routing";
+import type { SimularkAgentContext } from "@/lib/agent/types";
 import { detectOperation } from "@/lib/intent-detector";
 import {
   getInferenceTierConfig,
@@ -15,22 +20,31 @@ import {
 } from "@/lib/inference-tier";
 import { logger } from "@/lib/logger";
 import { getClientIp } from "@/lib/network";
+import { getUserPreferences } from "@/actions/users";
 import {
-  type ArchitectureMode,
-  buildEnhancedSystemPrompt,
-  detectArchitectureType,
-  detectComplexity,
-  summarizePreferenceFit,
-  validatePrompt,
-} from "@/lib/prompt-engineering";
+  buildInferenceContext,
+  type InferenceContextInput,
+} from "@/lib/inference/context-builder";
 import {
   checkBurstRateLimit,
   checkIPRateLimit,
   checkRateLimit,
 } from "@/lib/rate-limit";
+import {
+  type ArchitectureMode,
+  detectArchitectureType,
+  detectComplexity,
+  validatePrompt,
+} from "@/lib/prompt-engineering";
+import {
+  normalizeUserPreferences,
+  type UserPreferences,
+} from "@/lib/schema/user-preferences";
+import { createArchitectureUIResponse } from "@/lib/inference/ui-stream";
 import { snapshotFromRateLimitResult } from "@/lib/usage-status";
 import { createClient } from "@/lib/supabase/server";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
+import { validateTechOutput } from "@/lib/tech/validate-output";
 
 export const maxDuration = 120;
 
@@ -68,6 +82,7 @@ const ChatRequestSchema = v.object({
   currentEdges: v.optional(v.array(v.unknown())),
   projectId: v.optional(v.pipe(v.string(), v.uuid())),
   userPreferences: v.optional(v.record(v.string(), v.unknown())),
+  streamFormat: v.optional(v.union([v.literal("legacy"), v.literal("ui")])),
 });
 
 interface ChatUIMessage {
@@ -75,21 +90,6 @@ interface ChatUIMessage {
   role: "user" | "assistant" | "system";
   parts: Array<{ type: string; text?: string }>;
   createdAt: Date;
-}
-
-interface StreamArchitecturePayload {
-  nodes: unknown[];
-  edges: unknown[];
-  analysis?: string;
-  selectedArchitectureStrategy?: string;
-  preferenceConflicts?: string[];
-  recommendedStack?: string[];
-  preferenceAlignedAlternative?: string[];
-  validation: {
-    valid: boolean;
-    issues: unknown[];
-    appliedFixes: unknown[];
-  };
 }
 
 function toStringArray(value: unknown): string[] {
@@ -296,7 +296,18 @@ export async function POST(req: NextRequest) {
       currentEdges = [],
       projectId,
       userPreferences,
+      streamFormat = "legacy",
     } = parsed;
+
+    const serverPrefsResult = await getUserPreferences();
+    const serverPreferences = serverPrefsResult.success
+      ? normalizeUserPreferences(serverPrefsResult.preferences)
+      : normalizeUserPreferences({});
+
+    const mergedPreferences: UserPreferences = normalizeUserPreferences({
+      ...serverPreferences,
+      ...(userPreferences || {}),
+    });
 
     const normalizedMode = tierToArchitectureMode(inferenceTier);
 
@@ -357,6 +368,10 @@ export async function POST(req: NextRequest) {
       logger.warn("Prompt validation warning", { warning: validation.warning });
     }
 
+    // Detect operation type for dynamic modifications
+    const operationType = detectOperation(lastMessageContent, currentNodes);
+    logger.info("Detected operation type", { operationType });
+
     const cachedArchitecture =
       await getCachedArchitecture<StreamArchitecturePayload>({
         prompt: lastMessageContent,
@@ -365,6 +380,14 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         nodeCount: currentNodes.length,
         edgeCount: currentEdges.length,
+        tier: inferenceTier,
+        operation: operationType,
+        preferencesHash: JSON.stringify({
+          cloud: mergedPreferences.cloudProviders,
+          lang: mergedPreferences.languages,
+          fw: mergedPreferences.frameworks,
+          tier: mergedPreferences.defaultInferenceTier,
+        }),
       });
 
     if (cachedArchitecture) {
@@ -410,9 +433,7 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Detect operation type for dynamic modifications
-    const operationType = detectOperation(lastMessageContent, currentNodes);
-    logger.info("Detected operation type", { operationType });
+    // Detect operation type moved above cache lookup
 
     let projectDocumentContext: ProjectDocumentContext | null = null;
     if (projectId) {
@@ -430,27 +451,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build system prompt with full context including operation type
-    const baseSystemPrompt = buildEnhancedSystemPrompt({
-      userInput: lastMessageContent,
-      architectureType: detection.type,
-      detectedIntent: `Architecture: ${detection.type}, Complexity: ${complexity}`,
-      currentNodes,
-      currentEdges,
-      mode: normalizedMode,
-
+    const inferenceContext = buildInferenceContext({
+      userPreferences: mergedPreferences,
+      currentNodes: currentNodes as InferenceContextInput["currentNodes"],
+      currentEdges: currentEdges as InferenceContextInput["currentEdges"],
       conversationHistory,
-      operationType,
-      userPreferences,
-      preferenceFitSummary: summarizePreferenceFit(
-        userPreferences,
-        normalizedMode,
-        detection.type,
-      ),
+      projectDocuments: projectDocumentContext?.context,
+      tier: inferenceTier,
+      operation: operationType,
+      userMessage: lastMessageContent,
+      userRequest: lastMessageContent,
+      architectureType: detection.type,
+      complexity,
     });
-    const systemPrompt = projectDocumentContext
-      ? `${baseSystemPrompt}\n\n${projectDocumentContext.context}`
-      : baseSystemPrompt;
+
+    const systemPrompt = inferenceContext.systemPrompt;
 
     const streamMessages = messages.map((m) => ({
       role: m.role as "user" | "assistant" | "system",
@@ -460,12 +475,34 @@ export async function POST(req: NextRequest) {
         .join(""),
     }));
 
-    const { fullStream: resultStream, meta: inferenceMeta } =
-      await streamDashScopeInference({
-        tierConfig,
-        systemPrompt,
-        messages: streamMessages,
-      });
+    const useAgentPath = shouldUseAgentPath(operationType, currentNodes.length);
+
+    const streamResult = useAgentPath
+      ? await runSimularkAgentStream({
+          ctx: {
+            userInput: lastMessageContent,
+            mode: normalizedMode as ArchitectureMode,
+            operationType,
+            nodes: currentNodes as SimularkAgentContext["nodes"],
+            edges: currentEdges as SimularkAgentContext["edges"],
+            userId: user.id,
+            architectureType: detection.type,
+            complexity,
+            userPreferences: mergedPreferences,
+            systemPrompt,
+            candidateTechIds: inferenceContext.techBundle.candidateIds,
+          },
+          tierConfig,
+          messages: streamMessages,
+        })
+      : await streamArchitectureInference({
+          tierConfig,
+          systemPrompt,
+          messages: streamMessages,
+          structured: true,
+        });
+
+    const { fullStream: resultStream, meta: inferenceMeta } = streamResult;
 
     logger.info("Stream started", {
       systemPromptLength: systemPrompt.length,
@@ -474,6 +511,7 @@ export async function POST(req: NextRequest) {
       dashscopeModel: inferenceMeta.modelUsed,
       fallbackUsed: inferenceMeta.fallbackUsed,
       projectDocumentCount: projectDocumentContext?.documentCount || 0,
+      path: useAgentPath ? "agent" : "structured",
     });
 
     // Create custom stream that transforms to legacy format for frontend compatibility
@@ -490,8 +528,12 @@ export async function POST(req: NextRequest) {
       }
 
       const enrichedNodes = enrichNodesWithTech(parsed.nodes);
+      const techValidated = validateTechOutput(
+        enrichedNodes as Array<{ id: string; data?: { tech?: string } }>,
+        inferenceContext.techBundle.candidateIds,
+      );
       const validationResult = validateArchitecture(
-        enrichedNodes,
+        techValidated.nodes,
         parsed.edges,
         normalizedMode as ArchitectureMode,
         { autoFix: true },
@@ -513,9 +555,13 @@ export async function POST(req: NextRequest) {
         ),
         validation: {
           valid: validationResult.valid,
-          issues: validationResult.issues,
+          issues: [
+            ...validationResult.issues,
+            ...techValidated.issues.map((i) => i.message),
+          ],
           appliedFixes: validationResult.appliedFixes,
         },
+        candidateTechIds: inferenceContext.techBundle.candidateIds,
       };
     };
 
@@ -585,6 +631,34 @@ export async function POST(req: NextRequest) {
                     })}\n`,
                   ),
                 );
+                break;
+              }
+              case "object-partial": {
+                if (!firstContentSeen) {
+                  firstContentSeen = true;
+                  emitProgress(
+                    42,
+                    "generating",
+                    "Generating the recommended architecture",
+                  );
+                }
+                const payload = buildArchitecturePayload(part.object);
+                if (payload) {
+                  architectureData = payload;
+                  emitProgress(
+                    95,
+                    "validating",
+                    "Validating graph quality and policy compliance",
+                  );
+                  controller.enqueue(
+                    encoder.encode(
+                      `${JSON.stringify({
+                        type: "result",
+                        data: architectureData,
+                      })}\n`,
+                    ),
+                  );
+                }
                 break;
               }
               case "text-delta": {
@@ -694,7 +768,27 @@ export async function POST(req: NextRequest) {
                   );
                 }
 
-                // Fallback: If we haven't extracted architecture yet, try one last time with the full text
+                if (!architectureData && part.object) {
+                  const payload = buildArchitecturePayload(part.object);
+                  if (payload) {
+                    architectureData = payload;
+                    emitProgress(
+                      95,
+                      "validating",
+                      "Validating graph quality and policy compliance",
+                    );
+                    controller.enqueue(
+                      encoder.encode(
+                        `${JSON.stringify({
+                          type: "result",
+                          data: architectureData,
+                        })}\n`,
+                      ),
+                    );
+                  }
+                }
+
+                // Fallback: parse accumulated text if structured output unavailable
                 if (!architectureData) {
                   try {
                     // 1. Try to extract specific markdown code block first (most reliable)
@@ -811,14 +905,22 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return new NextResponse(customStream, {
+    return new NextResponse(
+      streamFormat === "ui"
+        ? createArchitectureUIResponse(customStream, usageSnapshot).body
+        : customStream,
+      {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
+        ...(streamFormat === "ui"
+          ? { "x-vercel-ai-ui-message-stream": "v1" }
+          : {}),
         ...rateLimitHeaders,
       },
-    });
+    },
+    );
   } catch (error: any) {
     logger.error("[API Chat] Error:", error);
     return NextResponse.json(
