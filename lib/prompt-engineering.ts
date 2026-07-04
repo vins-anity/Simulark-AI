@@ -1,4 +1,5 @@
 import { createLogger } from "@/lib/logger";
+import { PROMPT_POLICY_CONTRACT } from "@/lib/prompt-policy";
 import {
   getComponentCountAdjustment,
   getOperationInstructions,
@@ -1376,6 +1377,7 @@ PREFERENCE FIT SUMMARY:
 
   // ── ASSEMBLE FINAL PROMPT ──────────────────────────────────────────────────
   return `You are an expert Solutions Architect specializing in ${detection.type.replace(/-/g, " ")} design.
+${PROMPT_POLICY_CONTRACT}
 ${currentArchitectureContext}
 ${conversationContext}
 

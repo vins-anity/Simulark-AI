@@ -117,6 +117,71 @@ export const EdgeSchema = z.object({
   data: EdgeDataSchema.optional().describe("Edge metadata"),
 });
 
+/** Permissive node schema for LLM generation output (validated post-hoc). */
+const GenerationNodeSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  position: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+    })
+    .optional(),
+  data: z
+    .object({
+      label: z.string(),
+      tech: z.string().optional(),
+      description: z.string().optional(),
+      justification: z.string().optional(),
+      serviceType: z.string().optional(),
+    })
+    .passthrough(),
+});
+
+const GenerationEdgeSchema = z.object({
+  id: z.string().optional(),
+  source: z.string(),
+  target: z.string(),
+  animated: z.boolean().optional(),
+  data: z
+    .object({
+      protocol: z.string().optional(),
+      label: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+});
+
+/**
+ * Structured output schema for architecture generation (create path).
+ * Enforces metadata fields from the prompt policy contract.
+ */
+export const ArchitectureGenerationOutputSchema = z.object({
+  analysis: z.string().describe("Key design trade-off or decision"),
+  selectedArchitectureStrategy: z
+    .string()
+    .optional()
+    .describe("Why this architecture was selected first"),
+  preferenceConflicts: z
+    .array(z.string())
+    .optional()
+    .describe("User preferences downgraded or rejected"),
+  recommendedStack: z
+    .array(z.string())
+    .optional()
+    .describe("Primary stack choices for the mode"),
+  preferenceAlignedAlternative: z
+    .array(z.string())
+    .optional()
+    .describe("Closest viable preference-aligned stack"),
+  nodes: z.array(GenerationNodeSchema).min(1).max(50),
+  edges: z.array(GenerationEdgeSchema).default([]),
+});
+
+export type ArchitectureGenerationOutput = z.infer<
+  typeof ArchitectureGenerationOutputSchema
+>;
+
 // Complete architecture schema
 export const ArchitectureSchema = z.object({
   nodes: z

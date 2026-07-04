@@ -8,14 +8,9 @@ import {
   DASHSCOPE_FALLBACK_MODEL,
   getInferenceModelChain,
 } from "../lib/inference-fallback";
-import {
-  getInferenceTierConfig,
-  INFERENCE_TIERS,
-} from "../lib/inference-tier";
-import {
-  isDashScopeConfigured,
-  streamDashScopeInference,
-} from "../lib/deepseek-stream";
+import { getInferenceTierConfig, INFERENCE_TIERS } from "../lib/inference-tier";
+import { isDashScopeConfigured } from "../lib/inference/dashscope-provider";
+import { streamArchitectureInference } from "../lib/inference/stream-architecture";
 
 interface SmokeResult {
   name: string;
@@ -73,10 +68,11 @@ async function probeStreamTier(tier: "flash" | "pro"): Promise<SmokeResult> {
   const tierConfig = getInferenceTierConfig(tier);
 
   try {
-    const { fullStream, meta } = await streamDashScopeInference({
+    const { fullStream, meta } = await streamArchitectureInference({
       tierConfig,
       systemPrompt: "You are a test assistant. Be extremely brief.",
       messages: [{ role: "user", content: "Say OK only." }],
+      structured: false,
     });
 
     let text = "";
