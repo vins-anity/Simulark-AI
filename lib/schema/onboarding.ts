@@ -147,25 +147,19 @@ export type CompleteOnboardingInput = v.InferInput<
   typeof CompleteOnboardingSchema
 >;
 
-export interface UserPreferences {
-  cloudProviders: string[];
-  languages: string[];
-  frameworks: string[];
-  architectureTypes: string[];
-  applicationType: string[];
-  customInstructions: string;
-  defaultArchitectureMode?: (typeof ArchitectureMode)[keyof typeof ArchitectureMode];
-  defaultMode?: (typeof ArchitectureMode)[keyof typeof ArchitectureMode];
-  defaultInferenceTier?: "flash" | "pro";
-  defaultModel?: string;
-  onboardingMetadata?: {
-    role: string;
-    useCase: string;
-    teamSize: string;
-    experienceLevel: string;
-    includeServices: Record<string, boolean>;
-  };
-}
+export type {
+  OnboardingMetadata,
+  TechStackMode,
+  UserPreferences,
+} from "@/lib/schema/user-preferences";
+export {
+  getDefaultUserPreferences,
+  mapOnboardingDataToPreferences,
+  normalizeUserPreferences,
+  toChatPayload,
+  toInferenceTier,
+  UserPreferencesSchema,
+} from "@/lib/schema/user-preferences";
 
 // ============================================================================
 // Smart Defaults Generator
