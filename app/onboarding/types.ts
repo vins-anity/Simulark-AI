@@ -19,13 +19,20 @@ export interface OnboardingData {
     languages: string[];
     frameworks: string[];
   };
+  techStackMode?: TechStackMode;
+  projectDescription?: string;
 
   // Step 3: Generation Mode (MOD-01)
   defaultMode?: "flash" | "pro";
 
   // Step 3.5: Architecture Patterns (CFG-03)
   architecturePreferences?: string[];
+
+  // Populated after auto inference on complete
+  inferredStackRationale?: string;
 }
+
+export type TechStackMode = "manual" | "auto";
 
 // ============================================================================
 // Steps Configuration

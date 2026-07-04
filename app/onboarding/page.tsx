@@ -11,8 +11,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  completeOnboarding,
+  completeOnboardingFromUi,
   getOnboardingStatus,
+  resumeOnboarding,
   saveOnboardingProgress,
 } from "@/actions/onboarding";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,7 @@ export default function OnboardingPage() {
       languages: [],
       frameworks: [],
     },
+    techStackMode: "manual",
   });
 
   // Load saved progress from sessionStorage and check onboarding status
@@ -102,11 +104,32 @@ export default function OnboardingPage() {
           return;
         }
 
-        // Load from sessionStorage
+        const resumed = await resumeOnboarding();
+        if (resumed.success && resumed.data) {
+          const dbData = resumed.data as Record<string, unknown>;
+          const profile = dbData.profile as Record<string, unknown> | undefined;
+          const techstack = dbData.techstack as Record<string, unknown> | undefined;
+          if (profile) {
+            setData((prev) => ({
+              ...prev,
+              experienceLevel: profile.experienceLevel as OnboardingData["experienceLevel"],
+              projectType: profile.projectType as string,
+              teamContext: profile.teamContext as OnboardingData["teamContext"],
+            }));
+          }
+          if (techstack?.techStack) {
+            setData((prev) => ({
+              ...prev,
+              techStack: techstack.techStack as OnboardingData["techStack"],
+              techStackMode: (techstack.techStackMode as OnboardingData["techStackMode"]) || "manual",
+            }));
+          }
+        }
+
         const savedData = sessionStorage.getItem("onboarding_data");
         const savedStep = sessionStorage.getItem("onboarding_step");
 
-        if (savedData) {
+        if (savedData && !resumed.data) {
           setData(JSON.parse(savedData));
         }
 
@@ -140,83 +163,31 @@ export default function OnboardingPage() {
 
   const handleNext = async () => {
     if (isLastStep) {
-      // Complete onboarding
       setIsSaving(true);
       try {
-        // Map to valid schema values
-        const roleMap: Record<string, string> = {
-          beginner: "student",
-          intermediate: "software-engineer",
-          expert: "architect",
-        };
-
-        const useCaseMap: Record<string, string> = {
-          saas: "saas",
-          api: "api-backend",
-          mobile: "mobile-app",
-          ecommerce: "ecommerce",
-          ai: "ai-ml",
-          data: "data-pipeline",
-          "api-backend": "api-backend",
-          "mobile-app": "mobile-app",
-          "ai-ml": "ai-ml",
-          "data-pipeline": "data-pipeline",
-        };
-
-        const experienceLevelMap: Record<string, string> = {
-          beginner: "beginner",
-          intermediate: "intermediate",
-          expert: "advanced",
-        };
-
-        const result = await completeOnboarding({
-          step1: {
-            role:
-              roleMap[data.experienceLevel || "intermediate"] ||
-              "software-engineer",
-            useCase: useCaseMap[data.projectType || "saas"] || "saas",
-            teamSize: data.teamContext || "small",
-          },
-          step2: {
-            cloudProviders: data.techStack.cloud,
-            languages: [...data.techStack.languages],
-            frameworks: data.techStack.frameworks,
-            experienceLevel: experienceLevelMap[
-              data.experienceLevel || "intermediate"
-            ] as "beginner" | "intermediate" | "advanced",
-          },
-          step3: {
-            architecturePreferences:
-              data.architecturePreferences &&
-              data.architecturePreferences.length > 0
-                ? data.architecturePreferences
-                : [
-                    data.defaultMode === "pro"
-                      ? "microservices"
-                      : data.defaultMode === "flash"
-                        ? "serverless"
-                        : "not-sure",
-                  ],
-            applicationType:
-              data.projectType === "api" || data.projectType === "mobile"
-                ? data.projectType
-                : "web-app",
-            includeServices: {
-              auth: true,
-              database: true,
-              cdn:
-                data.techStack.cloud.includes("vercel") ||
-                data.techStack.cloud.includes("aws") ||
-                data.techStack.cloud.includes("cloudflare"),
-              monitoring: data.defaultMode === "pro",
-              cicd: data.defaultMode === "pro",
-            },
-            defaultArchitectureMode:
-              data.defaultMode === "pro" ? "enterprise" : "startup",
-          },
+        const result = await completeOnboardingFromUi({
+          experienceLevel: data.experienceLevel,
+          projectType: data.projectType,
+          teamContext: data.teamContext,
+          techStack: data.techStack,
+          techStackMode: data.techStackMode || "manual",
+          projectDescription: data.projectDescription,
+          defaultMode: data.defaultMode,
+          architecturePreferences: data.architecturePreferences,
         });
 
         if (result.success) {
+          if (result.preferences?.techStackRationale) {
+            setData((prev) => ({
+              ...prev,
+              inferredStackRationale: result.preferences?.techStackRationale,
+              techStack: {
+                cloud: result.preferences?.cloudProviders || [],
+                languages: result.preferences?.languages || [],
+                frameworks: result.preferences?.frameworks || [],
+              },
+            }));
+          }
           sessionStorage.removeItem("onboarding_data");
           sessionStorage.removeItem("onboarding_step");
           router.push("/dashboard");
@@ -237,7 +208,7 @@ export default function OnboardingPage() {
       setIsSaving(true);
       try {
         await saveOnboardingProgress({
-          step: currentStepIndex,
+          stepId: currentStep.id,
           data: getStepDataForServer(currentStep.id, data),
         });
       } catch (error) {
@@ -267,7 +238,7 @@ export default function OnboardingPage() {
       setIsSaving(true);
       try {
         await saveOnboardingProgress({
-          step: currentStepIndex,
+          stepId: currentStep.id,
           data: getStepDataForServer(currentStep.id, data),
         });
       } catch (error) {
@@ -308,6 +279,7 @@ export default function OnboardingPage() {
       case "profile":
         return !!(data.experienceLevel && data.projectType && data.teamContext);
       case "techstack":
+        if (data.techStackMode === "auto") return true;
         return (
           data.techStack.cloud.length > 0 &&
           data.techStack.languages.length > 0 &&
@@ -343,7 +315,13 @@ export default function OnboardingPage() {
         return (
           <TechStackStep
             data={data.techStack}
+            techStackMode={data.techStackMode || "manual"}
+            projectDescription={data.projectDescription}
             onChange={(techStack) => updateData({ techStack })}
+            onModeChange={(techStackMode) => updateData({ techStackMode })}
+            onDescriptionChange={(projectDescription) =>
+              updateData({ projectDescription })
+            }
             projectType={data.projectType}
           />
         );
@@ -578,7 +556,13 @@ function getStepDataForServer(
         teamContext: data.teamContext,
       };
     case "techstack":
-      return { techStack: data.techStack };
+      return {
+        techStack: data.techStack,
+        techStackMode: data.techStackMode,
+        projectDescription: data.projectDescription,
+      };
+    case "archpatterns":
+      return { architecturePreferences: data.architecturePreferences };
     case "mode":
       return { defaultMode: data.defaultMode };
     default:

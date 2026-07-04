@@ -33,6 +33,7 @@ interface CompleteStepProps {
 
 export function CompleteStep({ data }: CompleteStepProps) {
   const totalTechs = Object.values(data.techStack).flat().length;
+  const isAutoStack = data.techStackMode === "auto";
 
   const summaryItems = [
     {
@@ -61,7 +62,11 @@ export function CompleteStep({ data }: CompleteStepProps) {
     {
       icon: <Cloud className="h-4 w-4" />,
       label: "Technologies",
-      value: totalTechs > 0 ? `${totalTechs} selected` : "AI defaults",
+      value: isAutoStack
+        ? "Simulark will choose"
+        : totalTechs > 0
+          ? `${totalTechs} selected`
+          : "Not set",
       color: "text-sky-600",
     },
   ];

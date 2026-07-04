@@ -1,282 +1,138 @@
 "use client";
 
-import { Icon } from "@iconify/react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, ChevronUp, Sparkles, Wand2 } from "lucide-react";
-import { useState } from "react";
+import { Sparkles, Wand2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { TechPicker } from "@/components/tech/TechPicker";
 import { cn } from "@/lib/utils";
-import { type OnboardingData, TECH_STACK_OPTIONS } from "../types";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.06,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.4,
-      ease: [0.16, 1, 0.3, 1] as const,
-    },
-  },
-};
-
-const SECTIONS = [
-  { id: "cloud", title: "Cloud / Hosting", color: "text-sky-600" },
-  { id: "languages", title: "Languages", color: "text-amber-600" },
-  { id: "frameworks", title: "Frameworks", color: "text-emerald-600" },
-] as const;
+import type { OnboardingData, TechStackMode } from "../types";
 
 interface TechStackStepProps {
   data: OnboardingData["techStack"];
+  techStackMode: TechStackMode;
+  projectDescription?: string;
   onChange: (value: OnboardingData["techStack"]) => void;
+  onModeChange: (mode: TechStackMode) => void;
+  onDescriptionChange: (value: string) => void;
   projectType?: string;
 }
 
 export function TechStackStep({
   data,
+  techStackMode,
+  projectDescription,
   onChange,
-  projectType,
+  onModeChange,
+  onDescriptionChange,
 }: TechStackStepProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>([
-    "cloud",
-    "languages",
-  ]);
-
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections((prev) =>
-      prev.includes(sectionId)
-        ? prev.filter((id) => id !== sectionId)
-        : [...prev, sectionId],
-    );
-  };
-
-  const toggleTech = (
-    category: keyof OnboardingData["techStack"],
-    techId: string,
-  ) => {
-    const current = data[category];
-    const updated = current.includes(techId)
-      ? current.filter((id) => id !== techId)
-      : [...current, techId];
-
-    onChange({
-      ...data,
-      [category]: updated,
-    });
-  };
-
-  const applySmartDefaults = () => {
-    // Smart defaults based on project type
-    const defaults: Record<string, Partial<OnboardingData["techStack"]>> = {
-      saas: {
-        cloud: ["vercel", "aws"],
-        languages: ["typescript", "python"],
-        frameworks: ["nextjs", "react"],
-      },
-      api: {
-        cloud: ["aws", "railway"],
-        languages: ["go", "python", "typescript"],
-        frameworks: ["fastapi", "gin", "express"],
-      },
-      mobile: {
-        cloud: ["aws", "firebase"],
-        languages: ["typescript"],
-        frameworks: ["react", "nextjs"],
-      },
-      ai: {
-        cloud: ["aws", "gcp"],
-        languages: ["python", "typescript"],
-        frameworks: ["fastapi", "django"],
-      },
-    };
-
-    const defaultStack = projectType ? defaults[projectType] : defaults.saas;
-    onChange({
-      cloud: defaultStack?.cloud || [],
-      languages: defaultStack?.languages || [],
-      frameworks: defaultStack?.frameworks || [],
-    });
-  };
-
-  const hasSelections = Object.values(data).some((arr) => arr.length > 0);
+  const isManual = techStackMode === "manual";
   const totalSelections = Object.values(data).flat().length;
 
   return (
-    <motion.div
-      className="w-full max-w-3xl mx-auto"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-brand-orange">
-            CFG-01
-          </span>
-          <span className="font-mono text-[10px] text-brand-charcoal/30">
-            // Technology Stack
-          </span>
-        </div>
-        <h2 className="font-poppins text-xl font-bold text-brand-charcoal md:text-2xl">
-          What technologies do you prefer?
+    <motion.div className="w-full max-w-3xl mx-auto space-y-4">
+      <div>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-brand-orange">
+          CFG-01
+        </span>
+        <h2 className="font-poppins text-xl font-bold text-brand-charcoal md:text-2xl mt-1">
+          Technology stack
         </h2>
         <p className="mt-1 text-sm text-brand-charcoal/60">
-          Select your preferred stack. We&apos;ll use these for recommendations.
+          Choose your stack or let Simulark infer the best practical fit.
         </p>
-      </motion.div>
-
-      {/* Smart Defaults Button */}
-      <motion.div variants={itemVariants} className="mb-4">
-        <button
-          onClick={applySmartDefaults}
-          className="group flex items-center gap-2 border border-brand-orange/30 bg-brand-orange/5 px-3 py-1.5 hover:bg-brand-orange/10 transition-colors"
-        >
-          <Wand2 className="h-3.5 w-3.5 text-brand-orange" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-brand-orange">
-            Smart Defaults
-          </span>
-        </button>
-      </motion.div>
-
-      {/* Sections */}
-      <div className="space-y-2">
-        {SECTIONS.map((section) => {
-          const isExpanded = expandedSections.includes(section.id);
-          const techs = TECH_STACK_OPTIONS[section.id];
-          const selectedCount = data[section.id as keyof typeof data].length;
-
-          return (
-            <motion.div
-              key={section.id}
-              variants={itemVariants}
-              className="border border-brand-charcoal/10 bg-bg-secondary overflow-hidden"
-            >
-              {/* Section Header */}
-              <button
-                onClick={() => toggleSection(section.id)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-bg-tertiary/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <h3
-                    className={cn(
-                      "font-mono text-sm font-semibold uppercase tracking-wider",
-                      section.color,
-                    )}
-                  >
-                    {section.title}
-                  </h3>
-                  {selectedCount > 0 && (
-                    <span className="flex h-5 min-w-[20px] items-center justify-center border border-brand-orange/30 bg-brand-orange/10 px-1.5 font-mono text-[10px] text-brand-orange">
-                      {selectedCount}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-brand-charcoal/40" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-brand-charcoal/40" />
-                  )}
-                </div>
-              </button>
-
-              {/* Section Content */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="border-t border-brand-charcoal/10 p-4">
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                        {techs.map((tech, idx) => {
-                          const isSelected = data[
-                            section.id as keyof typeof data
-                          ].includes(tech.id);
-
-                          return (
-                            <motion.button
-                              key={tech.id}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: idx * 0.02 }}
-                              onClick={() =>
-                                toggleTech(
-                                  section.id as keyof typeof data,
-                                  tech.id,
-                                )
-                              }
-                              className={cn(
-                                "flex items-center gap-2 border p-3 text-left transition-all",
-                                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange",
-                                isSelected
-                                  ? "border-brand-orange bg-brand-orange/5"
-                                  : "border-brand-charcoal/10 bg-bg-tertiary/30 hover:border-brand-charcoal/30",
-                              )}
-                            >
-                              <Icon
-                                icon={tech.icon}
-                                className="h-5 w-5 shrink-0"
-                              />
-                              <span className="flex-1 text-xs font-medium uppercase tracking-wide truncate">
-                                {tech.name}
-                              </span>
-                              {isSelected && (
-                                <Check className="h-3.5 w-3.5 shrink-0 text-brand-orange" />
-                              )}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
       </div>
 
-      {/* Selected Summary */}
-      <AnimatePresence>
-        {hasSelections && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="mt-4 border border-brand-orange/20 bg-brand-orange/5 p-3"
-          >
-            <div className="flex items-center gap-2 text-brand-orange">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="font-mono text-[10px] uppercase tracking-wider">
-                {totalSelections} Selected
-              </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onModeChange("manual")}
+          className={cn(
+            "border p-4 text-left transition-all",
+            isManual
+              ? "border-brand-orange bg-brand-orange/5"
+              : "border-brand-charcoal/10 hover:border-brand-charcoal/25",
+          )}
+        >
+          <Wand2 className="h-4 w-4 text-brand-orange mb-2" />
+          <p className="font-mono text-xs uppercase tracking-wider font-semibold">
+            Choose my stack
+          </p>
+          <p className="text-xs text-brand-charcoal/60 mt-1">
+            Pick cloud, languages, and frameworks you prefer.
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange("auto")}
+          className={cn(
+            "border p-4 text-left transition-all",
+            !isManual
+              ? "border-brand-orange bg-brand-orange/5"
+              : "border-brand-charcoal/10 hover:border-brand-charcoal/25",
+          )}
+        >
+          <Sparkles className="h-4 w-4 text-brand-orange mb-2" />
+          <p className="font-mono text-xs uppercase tracking-wider font-semibold">
+            Let Simulark choose
+          </p>
+          <p className="text-xs text-brand-charcoal/60 mt-1">
+            Not sure yet? We&apos;ll pick a practical stack from your goals.
+          </p>
+        </button>
+      </div>
 
-      {/* Skip hint */}
-      <motion.p
-        variants={itemVariants}
-        className="mt-4 text-center text-xs text-brand-charcoal/40 font-mono"
-      >
-        Skip to use AI-recommended defaults
-      </motion.p>
+      {!isManual && (
+        <div className="border border-brand-charcoal/10 p-4 space-y-2">
+          <label className="font-mono text-[10px] uppercase tracking-wider text-brand-charcoal/70">
+            Describe your project (optional)
+          </label>
+          <textarea
+            value={projectDescription || ""}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="e.g. B2B SaaS for team task management, need auth and billing"
+            className="w-full min-h-[80px] border border-brand-charcoal/15 bg-bg-secondary p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-brand-orange"
+          />
+        </div>
+      )}
+
+      {isManual && (
+        <div className="space-y-4 border border-brand-charcoal/10 p-4">
+          <div>
+            <h3 className="font-mono text-[10px] uppercase tracking-wider text-sky-600 mb-2">
+              Cloud / Hosting
+            </h3>
+            <TechPicker
+              group="cloud"
+              selected={data.cloud}
+              onChange={(cloud) => onChange({ ...data, cloud })}
+            />
+          </div>
+          <div>
+            <h3 className="font-mono text-[10px] uppercase tracking-wider text-amber-600 mb-2">
+              Languages
+            </h3>
+            <TechPicker
+              group="languages"
+              selected={data.languages}
+              onChange={(languages) => onChange({ ...data, languages })}
+            />
+          </div>
+          <div>
+            <h3 className="font-mono text-[10px] uppercase tracking-wider text-emerald-600 mb-2">
+              Frameworks
+            </h3>
+            <TechPicker
+              group="frameworks"
+              selected={data.frameworks}
+              onChange={(frameworks) => onChange({ ...data, frameworks })}
+            />
+          </div>
+          {totalSelections > 0 && (
+            <p className="font-mono text-[10px] text-brand-orange uppercase">
+              {totalSelections} selected
+            </p>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }

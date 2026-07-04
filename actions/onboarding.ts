@@ -10,9 +10,32 @@ import {
   type OnboardingStep3,
   recommendTemplates,
   SaveOnboardingProgressSchema,
-  type UserPreferences,
 } from "@/lib/schema/onboarding";
+import {
+  getDefaultUserPreferences,
+  mapOnboardingDataToPreferences,
+  normalizeUserPreferences,
+  type OnboardingUiData,
+  type UserPreferences,
+} from "@/lib/schema/user-preferences";
+import { inferTechStackFromProfile } from "@/lib/tech/infer-tech-stack";
 import { createClient } from "@/lib/supabase/server";
+
+const ONBOARDING_STEP_IDS = [
+  "welcome",
+  "profile",
+  "techstack",
+  "archpatterns",
+  "mode",
+  "complete",
+] as const;
+
+export type OnboardingStepKey = (typeof ONBOARDING_STEP_IDS)[number];
+
+export const SaveOnboardingProgressByStepSchema = v.object({
+  stepId: v.picklist(ONBOARDING_STEP_IDS),
+  data: v.record(v.string(), v.unknown()),
+});
 
 // ============================================================================
 // Get Onboarding Status
@@ -53,19 +76,25 @@ export async function getOnboardingStatus(): Promise<{
       return { success: false, error: "Failed to fetch status" };
     }
 
-    // Check if user has existing preferences (legacy check)
     const hasExistingPreferences =
       userData?.preferences &&
       typeof userData.preferences === "object" &&
       Object.keys(userData.preferences).length > 0 &&
-      ((userData.preferences as UserPreferences).cloudProviders?.length > 0 ||
-        (userData.preferences as UserPreferences).languages?.length > 0);
+      (normalizeUserPreferences(userData.preferences).cloudProviders.length >
+        0 ||
+        normalizeUserPreferences(userData.preferences).languages.length > 0);
 
-    // Needs onboarding if not completed, not skipped, and no existing preferences
     const needsOnboarding =
       !userData?.onboarding_completed &&
       !userData?.onboarding_skipped &&
       !hasExistingPreferences;
+
+    // Keep auth metadata in sync when DB says completed
+    if (userData?.onboarding_completed && !user.user_metadata?.onboarding_completed) {
+      await supabase.auth.updateUser({
+        data: { onboarding_completed: true },
+      });
+    }
 
     return {
       success: true,
@@ -90,7 +119,46 @@ export async function saveOnboardingProgress(
   input: unknown,
 ): Promise<{ success: boolean; error?: string; smartDefaults?: unknown }> {
   try {
-    // Validate input
+    const byStep = v.safeParse(SaveOnboardingProgressByStepSchema, input);
+    if (byStep.success) {
+      const { stepId, data } = byStep.output;
+      const stepIndex = ONBOARDING_STEP_IDS.indexOf(stepId);
+
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: "Unauthorized" };
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("onboarding_data")
+        .eq("user_id", user.id)
+        .single();
+
+      const existingData = (userData?.onboarding_data || {}) as Record<
+        string,
+        unknown
+      >;
+      const updatedData = { ...existingData, [stepId]: data };
+
+      const { error } = await supabase
+        .from("users")
+        .update({
+          onboarding_step: stepIndex >= 0 ? stepIndex : 0,
+          onboarding_data: updatedData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Failed to save progress:", error);
+        return { success: false, error: "Failed to save progress" };
+      }
+      return { success: true };
+    }
+
+    // Legacy numeric step API
     const result = v.safeParse(SaveOnboardingProgressSchema, input);
     if (!result.success) {
       return { success: false, error: "Invalid input data" };
@@ -175,12 +243,15 @@ export async function skipOnboarding(): Promise<{
       return { success: false, error: "Unauthorized" };
     }
 
-    // Update public user record
+    // Update public user record with minimal defaults
+    const defaultPrefs = getDefaultUserPreferences();
+
     const { error: dbError } = await supabase
       .from("users")
       .update({
         onboarding_skipped: true,
-        onboarding_completed: true, // Treat skipped as completed for redirection purposes
+        onboarding_completed: true,
+        preferences: defaultPrefs,
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", user.id);
@@ -214,10 +285,10 @@ export async function skipOnboarding(): Promise<{
 export async function completeOnboarding(input: unknown): Promise<{
   success: boolean;
   error?: string;
+  preferences?: UserPreferences;
   templateRecommendations?: ReturnType<typeof recommendTemplates>;
 }> {
   try {
-    // Validate complete data
     const result = v.safeParse(CompleteOnboardingSchema, input);
     if (!result.success) {
       console.error("Validation failed:", result.issues);
@@ -225,37 +296,24 @@ export async function completeOnboarding(input: unknown): Promise<{
     }
 
     const data = result.output;
+    const tier =
+      data.step3.defaultArchitectureMode === "enterprise" ||
+      data.step3.defaultMode === "enterprise"
+        ? "pro"
+        : "flash";
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { success: false, error: "Unauthorized" };
-    }
-
-    // Transform onboarding data to preferences format
-    const preferences: UserPreferences = {
+    const preferences = normalizeUserPreferences({
       cloudProviders: data.step2.cloudProviders,
       languages: data.step2.languages,
       frameworks: data.step2.frameworks,
       architectureTypes: data.step3.architecturePreferences,
       applicationType: [data.step3.applicationType],
       customInstructions: "",
-      defaultMode: (data.step3.defaultMode ||
-        data.step3.defaultArchitectureMode) as
-        | "default"
-        | "startup"
-        | "enterprise"
-        | undefined,
-      defaultArchitectureMode: (data.step3.defaultArchitectureMode ||
-        data.step3.defaultMode) as
-        | "default"
-        | "startup"
-        | "enterprise"
-        | undefined,
+      defaultInferenceTier: tier,
+      defaultMode: tier === "pro" ? "enterprise" : "startup",
+      defaultArchitectureMode: tier === "pro" ? "enterprise" : "startup",
       defaultModel: data.step3.defaultModel,
+      techStackMode: "manual",
       onboardingMetadata: {
         role: data.step1.role,
         useCase: data.step1.useCase,
@@ -263,45 +321,97 @@ export async function completeOnboarding(input: unknown): Promise<{
         experienceLevel: data.step2.experienceLevel,
         includeServices: data.step3.includeServices,
       },
-    };
-
-    // Update user with completed onboarding and preferences
-    const { error: dbError } = await supabase
-      .from("users")
-      .update({
-        onboarding_completed: true,
-        onboarding_step: 3,
-        onboarding_completed_at: new Date().toISOString(),
-        preferences,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id);
-
-    if (dbError) {
-      console.error("Failed to complete onboarding (db):", dbError);
-      return { success: false, error: "Failed to save preferences" };
-    }
-
-    // Sync with Auth Metadata for Middleware
-    const { error: authError } = await supabase.auth.updateUser({
-      data: { onboarding_completed: true },
     });
 
-    if (authError) {
-      console.error("Failed to sync onboarding status (auth):", authError);
-    }
-
-    // Generate template recommendations
-    const templateRecommendations = recommendTemplates(data);
-
-    return {
-      success: true,
-      templateRecommendations,
-    };
+    return finalizeOnboarding(preferences, data);
   } catch (err) {
     console.error("Error in completeOnboarding:", err);
     return { success: false, error: "Internal error" };
   }
+}
+
+export async function completeOnboardingFromUi(
+  uiData: OnboardingUiData,
+): Promise<{
+  success: boolean;
+  error?: string;
+  preferences?: UserPreferences;
+  templateRecommendations?: ReturnType<typeof recommendTemplates>;
+}> {
+  try {
+    let preferences = mapOnboardingDataToPreferences(uiData);
+
+    if (preferences.techStackMode === "auto") {
+      const inferred = await inferTechStackFromProfile(preferences);
+      preferences = normalizeUserPreferences({
+        ...preferences,
+        cloudProviders: inferred.cloudProviders,
+        languages: inferred.languages,
+        frameworks: inferred.frameworks,
+        techStackInferred: true,
+        techStackRationale: inferred.rationale,
+      });
+    }
+
+    return finalizeOnboarding(preferences);
+  } catch (err) {
+    console.error("Error in completeOnboardingFromUi:", err);
+    return { success: false, error: "Internal error" };
+  }
+}
+
+async function finalizeOnboarding(
+  preferences: UserPreferences,
+  legacyData?: CompleteOnboardingInput,
+): Promise<{
+  success: boolean;
+  error?: string;
+  preferences?: UserPreferences;
+  templateRecommendations?: ReturnType<typeof recommendTemplates>;
+}> {
+  const normalized = normalizeUserPreferences(preferences);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const { error: dbError } = await supabase
+    .from("users")
+    .update({
+      onboarding_completed: true,
+      onboarding_step: ONBOARDING_STEP_IDS.length - 1,
+      onboarding_completed_at: new Date().toISOString(),
+      preferences: normalized,
+      onboarding_data: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id);
+
+  if (dbError) {
+    console.error("Failed to complete onboarding (db):", dbError);
+    return { success: false, error: "Failed to save preferences" };
+  }
+
+  const { error: authError } = await supabase.auth.updateUser({
+    data: { onboarding_completed: true },
+  });
+
+  if (authError) {
+    console.error("Failed to sync onboarding status (auth):", authError);
+  }
+
+  return {
+    success: true,
+    preferences: normalized,
+    templateRecommendations: legacyData
+      ? recommendTemplates(legacyData)
+      : undefined,
+  };
 }
 
 // ============================================================================
@@ -329,6 +439,8 @@ export async function resetOnboarding(): Promise<{
         onboarding_completed: false,
         onboarding_skipped: false,
         onboarding_step: 0,
+        onboarding_data: null,
+        preferences: null,
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", user.id);

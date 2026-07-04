@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { type UserPreferences } from "@/lib/schema/onboarding";
+import {
+  normalizeUserPreferences,
+  type UserPreferences,
+} from "@/lib/schema/user-preferences";
 import { createClient } from "@/lib/supabase/server";
 
 export async function getUserPreferences(): Promise<{
@@ -32,7 +35,7 @@ export async function getUserPreferences(): Promise<{
 
     return {
       success: true,
-      preferences: userData?.preferences as UserPreferences,
+      preferences: normalizeUserPreferences(userData?.preferences),
     };
   } catch (err) {
     console.error("Error in getUserPreferences:", err);
@@ -65,19 +68,12 @@ export async function updateUserPreferences(
       return { success: false, error: "Failed to fetch existing preferences" };
     }
 
-    const currentPreferences = (userData?.preferences as UserPreferences) || {
-      cloudProviders: [],
-      languages: [],
-      frameworks: [],
-      architectureTypes: [],
-      applicationType: [],
-      customInstructions: "",
-    };
+    const currentPreferences = normalizeUserPreferences(userData?.preferences);
 
-    const updatedPreferences = {
+    const updatedPreferences = normalizeUserPreferences({
       ...currentPreferences,
       ...prefs,
-    };
+    });
 
     const { error: updateError } = await supabase
       .from("users")
