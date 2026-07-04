@@ -1,8 +1,10 @@
+import { z } from "zod";
 import type { Edge, Node } from "@xyflow/react";
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
-import { getModel } from "@/lib/provider-registry";
+import { getWrappedDashscopeModel } from "@/lib/inference/resilient-model";
+import { INFERENCE_TIERS } from "@/lib/inference-tier";
 import type { StressPlannerMetaInput } from "@/lib/schema/api";
 import {
   isSupportedStressPlannerModel,
@@ -32,10 +34,33 @@ export interface AIPlannerResult {
   plannerMeta: StressPlannerMetaInput;
 }
 
-interface AIPlanPayload {
-  assumptions: string[];
-  scenarios: StressScenario[];
-}
+const StressPlanOutputSchema = z.object({
+  assumptions: z.array(z.string()),
+  scenarios: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum([
+        "traffic-spike",
+        "node-failure",
+        "dependency-latency",
+        "queue-backlog",
+        "data-store-hotspot",
+      ]),
+      name: z.string(),
+      objective: z.string(),
+      targets: z.array(z.string()),
+      loadProfile: z.object({
+        baselineRps: z.number(),
+        peakRps: z.number(),
+        rampSeconds: z.number(),
+        holdSeconds: z.number(),
+      }),
+      passCriteria: z.array(z.string()),
+    }),
+  ),
+});
+
+type AIPlanPayload = z.infer<typeof StressPlanOutputSchema>;
 
 const allowedScenarioTypes: Set<StressScenario["type"]> = new Set([
   "traffic-spike",
@@ -45,99 +70,33 @@ const allowedScenarioTypes: Set<StressScenario["type"]> = new Set([
   "data-store-hotspot",
 ]);
 
-function extractJson(text: string): string | null {
-  const codeBlockMatch = text.match(/```json\n([\s\S]*?)\n```/);
-  if (codeBlockMatch) {
-    return codeBlockMatch[1];
+function sanitizePlanPayload(payload: unknown): AIPlanPayload | null {
+  const parsed = StressPlanOutputSchema.safeParse(payload);
+  if (!parsed.success) {
+    return null;
   }
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  return jsonMatch ? jsonMatch[0] : null;
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
-}
-
-function sanitizePlanPayload(payload: unknown): AIPlanPayload | null {
-  if (!payload || typeof payload !== "object") return null;
-  const obj = payload as Record<string, unknown>;
-
-  const assumptions = isStringArray(obj.assumptions)
-    ? obj.assumptions.slice(0, 8)
-    : [];
-
-  const rawScenarios = Array.isArray(obj.scenarios) ? obj.scenarios : [];
   const scenarios: StressScenario[] = [];
-
-  for (const item of rawScenarios) {
-    if (!item || typeof item !== "object") continue;
-    const scenario = item as Record<string, unknown>;
-    const type = scenario.type;
-
-    if (
-      typeof type !== "string" ||
-      !allowedScenarioTypes.has(type as StressScenario["type"])
-    ) {
+  for (const scenario of parsed.data.scenarios) {
+    if (!allowedScenarioTypes.has(scenario.type)) {
       continue;
     }
-
-    const targets = isStringArray(scenario.targets)
-      ? scenario.targets.filter((t) => t.trim().length > 0).slice(0, 5)
-      : [];
-
-    const passCriteria = isStringArray(scenario.passCriteria)
-      ? scenario.passCriteria.filter((t) => t.trim().length > 0).slice(0, 6)
-      : [];
-
-    const loadProfileRaw =
-      scenario.loadProfile && typeof scenario.loadProfile === "object"
-        ? (scenario.loadProfile as Record<string, unknown>)
-        : null;
-
-    const baselineRps = Number(loadProfileRaw?.baselineRps || 120);
-    const peakRps = Number(loadProfileRaw?.peakRps || 480);
-    const rampSeconds = Number(loadProfileRaw?.rampSeconds || 120);
-    const holdSeconds = Number(loadProfileRaw?.holdSeconds || 480);
-
     scenarios.push({
-      id: typeof scenario.id === "string" ? scenario.id : type,
-      type: type as StressScenario["type"],
-      name:
-        typeof scenario.name === "string" && scenario.name.trim().length > 0
-          ? scenario.name
-          : type,
-      objective:
-        typeof scenario.objective === "string" &&
-        scenario.objective.trim().length > 0
-          ? scenario.objective
-          : "Validate resilience under stress",
-      targets,
-      loadProfile: {
-        baselineRps: Number.isFinite(baselineRps)
-          ? Math.max(1, baselineRps)
-          : 120,
-        peakRps: Number.isFinite(peakRps) ? Math.max(1, peakRps) : 480,
-        rampSeconds: Number.isFinite(rampSeconds)
-          ? Math.max(10, rampSeconds)
-          : 120,
-        holdSeconds: Number.isFinite(holdSeconds)
-          ? Math.max(30, holdSeconds)
-          : 480,
-      },
+      ...scenario,
+      targets: scenario.targets.filter((t) => t.trim().length > 0).slice(0, 5),
       passCriteria:
-        passCriteria.length > 0
-          ? passCriteria
+        scenario.passCriteria.length > 0
+          ? scenario.passCriteria
           : ["Architecture maintains acceptable resilience during the test"],
     });
   }
 
-  if (scenarios.length === 0) return null;
+  if (scenarios.length === 0) {
+    return null;
+  }
 
   return {
-    assumptions,
+    assumptions: parsed.data.assumptions.slice(0, 8),
     scenarios,
   };
 }
@@ -271,64 +230,46 @@ function hasCredentialsForModel(modelId: string): boolean {
   return true;
 }
 
+function resolveDashscopeModelName(modelId: string): string {
+  const [, ...parts] = modelId.split(":");
+  return parts.join(":") || INFERENCE_TIERS.flash.dashscopeModel;
+}
+
 async function attemptPlanWithModel(
   modelId: string,
   graphSummary: object,
   fallbackPlan: StressTestPlan,
 ): Promise<StressTestPlan> {
-  const model = getModel(modelId);
+  const modelName = resolveDashscopeModelName(modelId);
+  const model = getWrappedDashscopeModel(modelName);
 
   const prompt = `You are a resilience engineer. Generate architecture stress scenarios.
-Return strict JSON with this shape:
-{
-  "assumptions": string[],
-  "scenarios": [
-    {
-      "id": string,
-      "type": "traffic-spike" | "node-failure" | "dependency-latency" | "queue-backlog" | "data-store-hotspot",
-      "name": string,
-      "objective": string,
-      "targets": string[],
-      "loadProfile": {
-        "baselineRps": number,
-        "peakRps": number,
-        "rampSeconds": number,
-        "holdSeconds": number
-      },
-      "passCriteria": string[]
-    }
-  ]
-}
-
 Graph summary:
 ${JSON.stringify(graphSummary, null, 2)}
 `;
 
-  const result = await Promise.race([
-    generateText({
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), 10_000);
+
+  try {
+    const { object } = await generateObject({
       model,
+      schema: StressPlanOutputSchema,
       prompt,
       temperature: 0.2,
       maxOutputTokens: 2200,
-    }),
-    new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("planner_timeout")), 10000);
-    }),
-  ]);
+      abortSignal: abortController.signal,
+    });
 
-  const raw = extractJson(result.text);
-  if (!raw) {
-    throw new Error("invalid_payload");
+    const sanitized = sanitizePlanPayload(object);
+    if (!sanitized) {
+      throw new Error("invalid_payload");
+    }
+
+    return toPlanFromPayload(sanitized, fallbackPlan);
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const parsed = JSON.parse(raw);
-  const sanitized = sanitizePlanPayload(parsed);
-
-  if (!sanitized) {
-    throw new Error("invalid_payload");
-  }
-
-  return toPlanFromPayload(sanitized, fallbackPlan);
 }
 
 export async function generateStressTestPlanWithAI(

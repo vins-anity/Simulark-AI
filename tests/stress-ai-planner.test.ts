@@ -1,15 +1,16 @@
 import type { Edge, Node } from "@xyflow/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const generateTextMock = vi.fn();
-const getModelMock = vi.fn();
+const generateObjectMock = vi.fn();
+const getWrappedDashscopeModelMock = vi.fn();
 
 vi.mock("ai", () => ({
-  generateText: (...args: unknown[]) => generateTextMock(...args),
+  generateObject: (...args: unknown[]) => generateObjectMock(...args),
 }));
 
-vi.mock("@/lib/provider-registry", () => ({
-  getModel: (modelId: string) => getModelMock(modelId),
+vi.mock("@/lib/inference/resilient-model", () => ({
+  getWrappedDashscopeModel: (modelName: string) =>
+    getWrappedDashscopeModelMock(modelName),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -43,14 +44,14 @@ const edges: Edge[] = [
   { id: "edge-1", source: "gateway-1", target: "service-1" },
 ];
 
-function validAIText(suffix = "A"): { text: string } {
+function validAIObject(suffix = "A") {
   return {
-    text: JSON.stringify({
+    object: {
       assumptions: [`Assumption ${suffix}`],
       scenarios: [
         {
           id: `traffic-spike-${suffix}`,
-          type: "traffic-spike",
+          type: "traffic-spike" as const,
           name: `Traffic Spike ${suffix}`,
           objective: "Validate resilience under peak load",
           targets: ["Gateway"],
@@ -63,18 +64,20 @@ function validAIText(suffix = "A"): { text: string } {
           passCriteria: ["Availability >= 99%"],
         },
       ],
-    }),
+    },
   };
 }
 
 describe("stress-ai-planner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getModelMock.mockImplementation((modelId: string) => ({ modelId }));
+    getWrappedDashscopeModelMock.mockImplementation((modelName: string) => ({
+      modelName,
+    }));
   });
 
   it("auto chain succeeds with Flash model", async () => {
-    generateTextMock.mockResolvedValueOnce(validAIText("B"));
+    generateObjectMock.mockResolvedValueOnce(validAIObject("B"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
@@ -92,9 +95,9 @@ describe("stress-ai-planner", () => {
   });
 
   it("auto chain uses qwen fallback when Flash fails", async () => {
-    generateTextMock
+    generateObjectMock
       .mockRejectedValueOnce(new Error("429 rate limit"))
-      .mockResolvedValueOnce(validAIText("C"));
+      .mockResolvedValueOnce(validAIObject("C"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "auto",
@@ -103,11 +106,11 @@ describe("stress-ai-planner", () => {
     expect(result.source).toBe("ai");
     expect(result.plannerMeta.providerUsed).toBe("qwen");
     expect(result.plannerMeta.modelUsed).toBe("qwen:qwen3.6-flash");
-    expect(generateTextMock).toHaveBeenCalledTimes(2);
+    expect(generateObjectMock).toHaveBeenCalledTimes(2);
   });
 
   it("auto chain uses deterministic fallback when all models fail", async () => {
-    generateTextMock
+    generateObjectMock
       .mockRejectedValueOnce(new Error("401 Unauthorized"))
       .mockRejectedValueOnce(new Error("401 Unauthorized"));
 
@@ -133,7 +136,7 @@ describe("stress-ai-planner", () => {
   });
 
   it("manual mode succeeds with selected Flash model", async () => {
-    generateTextMock.mockResolvedValueOnce(validAIText("D"));
+    generateObjectMock.mockResolvedValueOnce(validAIObject("D"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "manual",
@@ -152,7 +155,7 @@ describe("stress-ai-planner", () => {
   });
 
   it("manual mode falls back deterministically on selected model failure", async () => {
-    generateTextMock.mockRejectedValueOnce(new Error("invalid api key"));
+    generateObjectMock.mockRejectedValueOnce(new Error("invalid api key"));
 
     const result = await generateStressTestPlanWithAI(nodes, edges, {
       mode: "manual",
