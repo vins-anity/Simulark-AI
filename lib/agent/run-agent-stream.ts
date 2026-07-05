@@ -3,6 +3,7 @@ import { createSimularkAgent } from "@/lib/agent/simulark-agent";
 import { createGraphState, type SimularkAgentContext } from "@/lib/agent/types";
 import type { InferenceTierConfig } from "@/lib/inference-tier";
 import type { ArchitectureStreamPart } from "@/lib/inference/stream-architecture";
+import { ensureArchitectureEdges } from "@/lib/infer-architecture-edges";
 
 export interface AgentStreamOptions {
   ctx: SimularkAgentContext;
@@ -54,7 +55,24 @@ export async function runSimularkAgentStream(
 
     let accumulatedText = "";
 
+    let toolStep = 0;
     for await (const part of result.fullStream) {
+      if (
+        part.type === "tool-call" ||
+        part.type === "tool-input-start" ||
+        part.type === "tool-result"
+      ) {
+        toolStep += 1;
+        const toolName =
+          "toolName" in part && typeof part.toolName === "string"
+            ? part.toolName
+            : "diagram";
+        yield {
+          type: "activity",
+          detail: `Applying ${toolName} (${toolStep})`,
+          progress: Math.min(75, 35 + toolStep * 8),
+        };
+      }
       if (part.type === "text-delta") {
         const text =
           "text" in part && part.text
@@ -81,9 +99,10 @@ export async function runSimularkAgentStream(
     }
 
     const usage = await result.usage;
+    const edgeEnsured = ensureArchitectureEdges(state.nodes, state.edges);
     const finalObject = {
       nodes: state.nodes,
-      edges: state.edges,
+      edges: edgeEnsured.edges,
       analysis:
         accumulatedText.trim() ||
         state.messages.join("; ") ||

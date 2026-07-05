@@ -156,32 +156,28 @@ export default function TemplatesPage() {
   return (
     <div className="flex flex-col min-h-screen text-brand-charcoal">
       {/* HUD Header */}
-      <div className="mb-12 border-l-4 border-brand-charcoal pl-6 py-4 relative group">
+      <div className="mb-12 border-b-2 border-brand-charcoal pb-6 relative group">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex gap-1">
             <div className="w-2 h-2 bg-brand-charcoal" />
             <div className="w-2 h-2 bg-brand-charcoal/20" />
             <div className="w-2 h-2 bg-brand-charcoal/20" />
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-widest opacity-40">
-            SECURE_ARCHIVE / BLUEPRINT_DATABASE
+          <span className="font-mono text-[11px] uppercase tracking-widest text-brand-charcoal/60">
+            Templates
           </span>
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-poppins font-black tracking-tighter uppercase mb-4">
+        <h1 className="text-4xl md:text-5xl font-poppins font-bold tracking-tight mb-4">
           The Registry
         </h1>
 
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[11px] uppercase tracking-wider opacity-60">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-2 font-mono text-[11px] text-brand-charcoal/65">
           <div className="flex items-center gap-2">
             <span className="text-brand-orange text-xs font-bold">●</span>
-            <span>SYSTEM_ONLINE</span>
+            <span>Online</span>
           </div>
-          <div>COORD_X: 40.71 / Y: -74.00</div>
-          <div>STATUS: ACCESS_GRANTED</div>
-          <div className="hidden md:block">
-            ENTRIES: {templates.length}_LOADED
-          </div>
+          <div>{templates.length} templates loaded</div>
         </div>
 
         {/* Decorative HUD lines */}
@@ -292,7 +288,7 @@ export default function TemplatesPage() {
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      [ INITIALIZE_BLUEPRINT ]
+                      Use template
                     </span>
                   )}
                 </Button>

@@ -212,7 +212,7 @@ export function WorkstationHeader({
           onClick={handleLayoutCycle}
           disabled={isLayoutAnimating}
           className={cn(
-            "h-8 px-3 border border-brand-charcoal/10 rounded-none text-[10px] font-mono font-bold uppercase tracking-widest transition-all gap-1.5 flex items-center justify-center shrink-0",
+            "min-h-11 px-3 border border-brand-charcoal/10 rounded-none text-[11px] font-mono font-medium transition-all gap-1.5 flex items-center justify-center shrink-0",
             !hasInteractedWithLayout
               ? "text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white"
               : "border-brand-orange/20 bg-brand-orange/5 text-brand-orange hover:bg-brand-orange hover:text-white",
@@ -248,7 +248,7 @@ export function WorkstationHeader({
               : "CHAOS_SIM — inject random failures"
           }
           className={cn(
-            "h-8 gap-1.5 px-2 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold",
+            "min-h-11 gap-1.5 px-3 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[11px] font-medium",
             chaosMode
               ? "bg-red-600 border-red-600 text-white hover:bg-red-700"
               : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white",
@@ -261,7 +261,7 @@ export function WorkstationHeader({
             )}
           />
           <span className="hidden xl:inline">
-            {chaosMode ? "CHAOS" : "CHAOS"}
+            {chaosMode ? "Chaos on" : "Chaos"}
           </span>
         </Button>
 
@@ -270,7 +270,7 @@ export function WorkstationHeader({
           onClick={() => setStressMode(!stressMode)}
           title={stressLabel}
           className={cn(
-            "h-8 gap-1.5 px-2 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold",
+            "min-h-11 gap-1.5 px-3 border border-brand-charcoal/10 rounded-none transition-all shrink-0 font-mono text-[11px] font-medium",
             stressMode
               ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-400"
               : "bg-bg-elevated text-brand-charcoal/60 dark:text-text-secondary/60 hover:bg-brand-charcoal hover:text-white",
@@ -293,8 +293,9 @@ export function WorkstationHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 w-8 p-0 border border-brand-charcoal/10 rounded-none text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all"
-              title="[ ARCHIVE ]"
+              className="min-h-11 min-w-11 p-0 border border-brand-charcoal/10 rounded-none text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all"
+              title="Export"
+              aria-label="Export diagram"
             >
               <Download className="w-3.5 h-3.5" />
             </Button>
@@ -303,8 +304,8 @@ export function WorkstationHeader({
             align="end"
             className="w-60 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated"
           >
-            <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
-              EXPORT_OPERATIONS
+            <div className="px-3 py-2 bg-brand-charcoal text-white/60 uppercase tracking-widest border-b-2 border-brand-charcoal text-[10px]">
+              Export
             </div>
 
             <DropdownMenuItem
@@ -312,7 +313,7 @@ export function WorkstationHeader({
               className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <FileCode className="w-4 h-4 text-brand-orange mr-3" />
-              <span>EXPORT_AGENT_SKILL</span>
+              <span>Agent skill</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -320,7 +321,7 @@ export function WorkstationHeader({
               className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <Download className="w-4 h-4 mr-3" />
-              <span>MERMAID_SCHEMATIC</span>
+              <span>Mermaid</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -328,7 +329,7 @@ export function WorkstationHeader({
               className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 border-b border-neutral-100 flex items-center"
             >
               <ImageIcon className="w-4 h-4 mr-3" />
-              <span>RASTER_IMAGE_PNG</span>
+              <span>PNG image</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -336,7 +337,7 @@ export function WorkstationHeader({
               className="cursor-pointer rounded-none outline-none hover:bg-neutral-100 py-3 px-4 flex items-center"
             >
               <ImageIcon className="w-4 h-4 mr-3" />
-              <span>VECTOR_IMAGE_SVG</span>
+              <span>SVG image</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -346,8 +347,9 @@ export function WorkstationHeader({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-8 w-8 p-0 border border-brand-charcoal/10 rounded-none text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all"
-              title="[ GUIDE ]"
+              className="min-h-11 min-w-11 p-0 border border-brand-charcoal/10 rounded-none text-brand-charcoal/60 hover:bg-brand-charcoal hover:text-white transition-all"
+              title="Guide"
+              aria-label="Workspace guide"
             >
               <CircleHelp className="w-3.5 h-3.5" />
             </Button>
@@ -356,21 +358,21 @@ export function WorkstationHeader({
             align="end"
             className="w-72 font-mono text-[11px] rounded-none border-2 border-brand-charcoal shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-0 bg-bg-elevated whitespace-normal z-50"
           >
-            <div className="px-3 py-2 bg-brand-charcoal text-white/40 uppercase tracking-widest border-b-2 border-brand-charcoal">
-              WORKSPACE_CONTROLS
+            <div className="px-3 py-2 bg-brand-charcoal text-white/70 border-b-2 border-brand-charcoal text-[11px] font-medium">
+              Guide
             </div>
-            <div className="p-4 text-brand-charcoal dark:text-text-primary flex flex-col gap-3 leading-relaxed rounded-none">
+            <div className="p-4 text-brand-charcoal dark:text-text-primary flex flex-col gap-3 leading-relaxed rounded-none text-[13px]">
               <p>
-                <strong>INTERACT:</strong> Click nodes to open properties, drag
+                <strong>Interact:</strong> Click nodes to open properties, drag
                 to move, and double-click titles to rename.
               </p>
               <p>
-                <strong>TECH_STACKS:</strong> Modify node tech stacks and
-                services manually inside the properties panel.
+                <strong>Tech stacks:</strong> Edit technologies in the node
+                properties panel.
               </p>
               <p>
-                <strong>LAYOUT:</strong> Use the Auto-layout controls in the
-                header to organize the architecture automatically.
+                <strong>Layout:</strong> Use the layout control in the header to
+                organize the diagram automatically.
               </p>
             </div>
           </DropdownMenuContent>

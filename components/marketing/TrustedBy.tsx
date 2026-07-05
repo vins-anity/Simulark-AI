@@ -20,11 +20,8 @@ export function TrustedBy() {
 
       <div className="container mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center justify-center gap-12">
         <div className="flex flex-col gap-1 shrink-0">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-charcoal/50">
-            // INTEGRATION_LAYER
-          </span>
           <h2 className="font-mono text-xs uppercase tracking-widest text-brand-charcoal font-bold">
-            Architectural Context
+            Works with your editor
           </h2>
         </div>
 
@@ -37,15 +34,16 @@ export function TrustedBy() {
               className="flex items-center gap-3 group cursor-default"
             >
               <div className="relative">
-                <span className="absolute -top-3 -right-2 font-mono text-[8px] text-brand-charcoal/30 group-hover:text-brand-orange transition-colors">
-                  [{company.id}]
+                <span className="absolute -top-3 -right-2 font-mono text-readable-meta text-brand-charcoal/50 group-hover:text-brand-orange transition-colors">
+                  {company.id}
                 </span>
-                <div className="w-8 h-8 flex items-center justify-center transition-all duration-300 transform group-hover:scale-110">
+                <div className="w-8 h-8 flex items-center justify-center transition-transform duration-300 transform group-hover:scale-110">
                   <Image
                     src={company.icon}
                     alt={company.name}
                     width={24}
                     height={24}
+                    loading="lazy"
                     className="object-contain"
                   />
                 </div>

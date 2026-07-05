@@ -32,9 +32,6 @@ export function HeroEnhanced() {
     mouseY.set(clientY - top);
   }
 
-  const xDisplay = useTransform(mouseX, (v) => `X:${Math.round(v)}`);
-  const yDisplay = useTransform(mouseY, (v) => `Y:${Math.round(v)}`);
-
   return (
     <section
       ref={containerRef}
@@ -105,30 +102,6 @@ export function HeroEnhanced() {
         }}
       />
 
-      {/* Coordinate Display - Top Left */}
-      <motion.div
-        className="absolute top-6 left-6 font-mono text-[10px] text-brand-charcoal/40 hidden lg:flex flex-col gap-0.5 z-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <span>// SYSTEM_ORIGIN</span>
-        <span>GRID: 60x60</span>
-        <motion.span className="text-brand-orange">{xDisplay}</motion.span>
-        <motion.span className="text-brand-orange">{yDisplay}</motion.span>
-      </motion.div>
-
-      {/* Revision Info - Top Right */}
-      <motion.div
-        className="absolute top-6 right-6 font-mono text-[10px] text-brand-charcoal/40 text-right hidden lg:flex flex-col gap-0.5 z-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <span>// BUILD_INFO</span>
-        <span>REV: 2026.02.12</span>
-        <span>STATUS: OPERATIONAL</span>
-      </motion.div>
 
       <motion.div
         className="container mx-auto px-6 z-10 text-center max-w-6xl pt-24"
@@ -141,9 +114,9 @@ export function HeroEnhanced() {
           transition={{ duration: 0.5 }}
           className="inline-flex items-center gap-3 mb-12"
         >
-          <span className="w-2 h-2 bg-brand-orange animate-pulse" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-brand-charcoal/60">
-            [ BETA_SYSTEM_v0.9.2 ]
+          <span className="w-2 h-2 bg-brand-orange motion-safe:animate-pulse motion-reduce:animate-none" />
+          <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/65">
+            [ BETA_SYSTEM_v0.1.0 ]
           </span>
         </motion.div>
 
@@ -224,7 +197,7 @@ export function HeroEnhanced() {
           <Link href="/auth/signin">
             <Button
               size="lg"
-              className="group h-14 px-0 text-sm font-mono uppercase tracking-[0.15em] rounded-none bg-brand-charcoal hover:bg-brand-orange text-brand-sand-light transition-all duration-300 border-0"
+              className="group h-14 px-0 text-sm font-mono uppercase tracking-[0.15em] rounded-none bg-brand-charcoal hover:bg-brand-orange text-brand-sand-light transition-colors border-0"
             >
               <span className="px-4 text-brand-charcoal/40 group-hover:text-white/40 transition-colors">
                 [
@@ -252,10 +225,9 @@ export function HeroEnhanced() {
               <div className="w-2.5 h-2.5 border border-brand-charcoal/30" />
               <div className="w-2.5 h-2.5 border border-brand-charcoal/30" />
             </div>
-            <div className="mx-auto font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/40">
-              simulark_architect — live_preview
+            <div className="mx-auto font-mono text-[11px] text-brand-charcoal/60">
+              simulark_architect — preview
             </div>
-            <div className="font-mono text-[9px] text-brand-orange">● LIVE</div>
           </div>
 
           {/* Canvas Area */}
@@ -263,15 +235,9 @@ export function HeroEnhanced() {
             <HeroCanvas />
           </div>
 
-          {/* Technical Overlays */}
-          <div className="absolute top-10 left-3 font-mono text-[8px] text-brand-charcoal/30 uppercase z-20">
-            <div>SCALE: 1:1</div>
-            <div>GRID: ON</div>
-          </div>
-
-          <div className="absolute bottom-3 right-3 font-mono text-[8px] text-brand-charcoal/30 uppercase text-right z-20">
-            <div>COORD: WGS84</div>
-            <div>LAYER: INFRA_v2</div>
+          {/* Decorative overlays — preview chrome only */}
+          <div className="absolute top-10 left-3 font-mono text-[11px] text-brand-charcoal/40 z-20 pointer-events-none">
+            <div>Preview</div>
           </div>
 
           {/* Corner Brackets */}
@@ -289,7 +255,7 @@ export function HeroEnhanced() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
       >
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/30">
+        <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/50">
           [ SCROLL ]
         </span>
         <motion.div

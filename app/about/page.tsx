@@ -5,7 +5,7 @@ import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 export default function AboutPage() {
   return (
     <MarketingLayout>
-      <div className="bg-[#faf9f5] min-h-screen">
+      <div className="bg-bg-primary min-h-screen">
         <div className="pt-32 pb-24 px-6 border-b border-brand-charcoal/5">
           <div className="container mx-auto max-w-4xl text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-brand-charcoal/10 rounded-full mb-8 bg-white">
@@ -18,7 +18,7 @@ export default function AboutPage() {
               Design systems,{" "}
               <span className="text-brand-orange">not slide decks</span>.
             </h1>
-            <p className="text-xl md:text-2xl font-lora text-brand-gray-mid leading-relaxed max-w-2xl mx-auto">
+            <p className="text-xl md:text-2xl font-lora text-brand-charcoal/75 leading-relaxed max-w-2xl mx-auto">
               Simulark helps you think through backend architecture visually —
               before you write code or provision cloud resources.
             </p>

@@ -1,6 +1,7 @@
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { validateArchitecture } from "@/lib/architecture-validator";
+import { ensureArchitectureEdges } from "@/lib/infer-architecture-edges";
 import type { ArchitectureMode } from "@/lib/prompt-engineering";
 import { enrichNodesWithTech } from "@/lib/tech-normalizer";
 import type { GraphMutationState, GraphNode } from "@/lib/agent/types";
@@ -153,6 +154,15 @@ export function createDiagramTools(
           state.nodes = result.fixed.nodes as typeof state.nodes;
           state.edges = result.fixed.edges as typeof state.edges;
         }
+
+        if (autoFix) {
+          const edgeEnsured = ensureArchitectureEdges(state.nodes, state.edges);
+          if (edgeEnsured.inferred) {
+            state.edges = edgeEnsured.edges as typeof state.edges;
+            result.appliedFixes.push(...edgeEnsured.appliedFixes);
+          }
+        }
+
         const message = `Found ${result.issues.length} issues`;
         state.messages.push(message);
         return {

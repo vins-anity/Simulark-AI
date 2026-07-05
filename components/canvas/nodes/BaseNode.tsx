@@ -305,13 +305,13 @@ export function BaseNode({
           {/* Technical Data Fields */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-brand-charcoal/10 pt-4 px-1 font-mono">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[8px] opacity-40 uppercase">Class</span>
+              <span className="text-[11px] text-brand-charcoal/60 uppercase">Class</span>
               <span className="text-[10px] font-bold uppercase truncate">
                 {(nodeData?.serviceType as string) || type || "SERVICE"}
               </span>
             </div>
             <div className="flex flex-col gap-0.5 text-right">
-              <span className="text-[8px] opacity-40 uppercase">Status</span>
+              <span className="text-[11px] text-brand-charcoal/60 uppercase">Status</span>
               <span
                 className={cn(
                   "text-[10px] font-bold uppercase",

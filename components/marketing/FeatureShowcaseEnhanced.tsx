@@ -45,12 +45,13 @@ function ModuleCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.15, duration: 0.5 }}
+      whileHover={{ y: -4 }}
     >
       {/* Module Container */}
       <div className="relative h-full bg-bg-secondary border border-border-primary group-hover:border-brand-orange/40 transition-all duration-300">
         {/* Module ID Badge - Top Right */}
         <div className="absolute -top-3 right-4 bg-bg-primary px-2">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-brand-charcoal/40 group-hover:text-brand-orange transition-colors">
+          <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/50 group-hover:text-brand-orange transition-colors">
             {module.id}
           </span>
         </div>
@@ -74,8 +75,8 @@ function ModuleCard({
 
             {/* Status Indicator */}
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-brand-green rounded-full animate-pulse" />
-              <span className="font-mono text-[8px] uppercase text-brand-charcoal/40">
+              <span className="w-1.5 h-1.5 bg-brand-green rounded-full motion-safe:animate-pulse motion-reduce:animate-none" />
+              <span className="font-mono text-readable-meta uppercase text-brand-charcoal/55">
                 ONLINE
               </span>
             </div>
@@ -96,16 +97,16 @@ function ModuleCard({
             {module.specs.map((spec, i) => (
               <div key={spec} className="flex items-center gap-2">
                 <span className="w-1 h-1 bg-brand-charcoal/20" />
-                <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+                <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/60">
                   {spec}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Subsystem Label */}
+          {/* Module label */}
           <div className="pt-4 border-t border-brand-charcoal/5">
-            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/30">
+            <span className="font-mono text-readable-meta uppercase tracking-[0.15em] text-brand-charcoal/50">
               // {module.sub}
             </span>
           </div>
@@ -159,13 +160,16 @@ export function FeatureShowcaseEnhanced() {
         >
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-brand-charcoal/10 pb-6 gap-4">
             <div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
+              <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-orange block mb-2">
                 // SYSTEM_ARCHITECTURE
               </span>
               <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary tracking-tight">
-                THE PIPELINE
+                THE{" "}
+                <span className="font-serif italic font-light text-brand-charcoal/50">
+                  PIPELINE
+                </span>
               </h2>
-              <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 mt-2">
+              <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/55 mt-2">
                 FROM_INTENT_TO_DIAGRAM
               </p>
             </div>

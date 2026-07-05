@@ -142,15 +142,14 @@ export function TestimonialsEnhanced() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
+            <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-orange block mb-2">
               // FIELD_REPORTS
             </span>
 
             <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
-              FIELD
-              <br />
+              FIELD{" "}
               <span className="font-serif italic font-light text-brand-charcoal/50">
-                Notes
+                NOTES
               </span>
             </h2>
 
@@ -167,7 +166,7 @@ export function TestimonialsEnhanced() {
                   </span>
                 </div>
                 <div>
-                  <div className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40">
+                  <div className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/50">
                     AVG_RATING
                   </div>
                   <div className="flex gap-0.5 mt-1">

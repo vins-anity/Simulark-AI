@@ -7,6 +7,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
+import { useRoundTripLatency } from "@/lib/hooks/use-round-trip-latency";
 import { getBaseURL } from "@/lib/url";
 
 // Technical background grid component
@@ -145,17 +146,23 @@ function ArchitectureDiagram() {
 
 // System status component
 function SystemStatus() {
-  const [status, setStatus] = useState("ONLINE");
+  const latencyMs = useRoundTripLatency();
 
   return (
     <div className="flex items-center gap-2 text-xs font-mono text-brand-charcoal/60 dark:text-white/60">
-      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-      <span>SYSTEM STATUS:</span>
-      <span className="text-brand-charcoal dark:text-white font-semibold">
-        {status}
+      <span className="w-2 h-2 rounded-full bg-green-500" aria-hidden />
+      <span>Status:</span>
+      <span className="text-brand-charcoal dark:text-white font-medium">
+        Online
       </span>
-      <span className="text-brand-charcoal/30 dark:text-white/30">|</span>
-      <span>LATENCY: 12ms</span>
+      {latencyMs !== null && (
+        <>
+          <span className="text-brand-charcoal/30 dark:text-white/30">|</span>
+          <span className="text-brand-charcoal/70 dark:text-white/70 tabular-nums">
+            {latencyMs}ms round trip
+          </span>
+        </>
+      )}
     </div>
   );
 }
@@ -301,7 +308,7 @@ export default function SignInPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-50 border-l-4 border-brand-orange font-mono text-sm text-brand-charcoal"
+              className="mb-6 p-4 bg-red-50 border-2 border-brand-orange font-mono text-sm text-brand-charcoal"
             >
               <div className="flex items-start gap-2">
                 <Icon
@@ -309,9 +316,9 @@ export default function SignInPage() {
                   className="w-5 h-5 text-brand-orange flex-shrink-0 mt-0.5"
                 />
                 <div>
-                  <div className="font-bold mb-1">ERROR: {error}</div>
-                  <div className="text-xs opacity-70">
-                    Check connection and retry authentication sequence.
+                  <div className="font-bold mb-1">{error}</div>
+                  <div className="text-xs text-brand-charcoal/70">
+                    Check your connection and try signing in again.
                   </div>
                 </div>
               </div>

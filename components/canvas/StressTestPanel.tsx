@@ -544,10 +544,10 @@ export function StressTestPanel() {
   };
 
   return (
-    <div className="fixed left-4 right-4 md:right-auto top-20 z-50 md:w-[460px] max-h-[calc(100vh-6rem)] border-2 border-brand-charcoal bg-[#faf9f5] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] overflow-hidden">
+    <div className="fixed left-4 right-4 md:right-auto top-20 z-50 md:w-[460px] max-h-[calc(100vh-6rem)] border-2 border-brand-charcoal bg-bg-primary shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] overflow-hidden">
       <div className="h-2 bg-brand-charcoal" />
 
-      <div className="border-b-2 border-brand-charcoal bg-brand-charcoal text-[#faf9f5] px-3 py-2">
+      <div className="border-b-2 border-brand-charcoal bg-brand-charcoal text-bg-primary px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-brand-orange" />
@@ -895,7 +895,7 @@ export function StressTestPanel() {
                                       ),
                                     })
                                   }
-                                  className="h-8 px-2 border border-brand-charcoal/20 bg-[#faf9f5]"
+                                  className="h-8 px-2 border border-brand-charcoal/20 bg-bg-primary"
                                 />
                               </label>
                             );

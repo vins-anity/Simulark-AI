@@ -67,7 +67,8 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 rounded-none hover:bg-transparent p-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100 transition-none"
+          className="relative h-10 w-10 rounded-none hover:bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 active:scale-100 transition-none"
+          aria-label="Open account menu"
         >
           <Avatar className="h-10 w-10 rounded-none border border-brand-charcoal will-change-transform">
             <AvatarImage

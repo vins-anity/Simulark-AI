@@ -82,3 +82,19 @@ A technical index of the site.
 - **Grid Backgrounds**: Interactive, mouse-reactive grids for Hero sections.
 - **Brackets**: `[ LOGIN ]` to denote executable actions.
 - **Pulse Indicators**: Green/Orange pulsing dots for live status.
+
+---
+
+## 5. Mature refinements (2026)
+
+Evolutions that preserve taste while improving craft:
+
+| Refinement | Rule |
+| :--- | :--- |
+| **Legibility floor** | Required-reading labels use `.text-readable-meta` (11px). Decorative `//` eyebrows stay mono but never below 11px. |
+| **Honest telemetry** | Measure real round-trip latency in the command bar. No static fake coordinates or hardcoded ms. |
+| **Motion** | Respect `prefers-reduced-motion`; gate pulses and infinite loops with `motion-safe:` / `motion-reduce:animate-none`. |
+| **Product vs marketing** | Marketing keeps brackets, module cards, and HUD chrome. Dashboard/editor uses plain verbs on controls. |
+| **Version sync** | One build string (e.g. `v0.1.0`) across HUD, footer, and CTA badges. |
+
+Implementation tokens and component rules live in [`DESIGN.md`](../DESIGN.md) at the repo root.

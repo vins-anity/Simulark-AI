@@ -847,11 +847,12 @@ export default function SettingsPage() {
             {saving ? (
               <span className="flex items-center gap-3">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                [ UPLINKING DATA... ]
+                Saving…
               </span>
             ) : (
               <span className="flex items-center gap-3">
-                <Save className="w-4 h-4" />[ TRANSMIT CONFIG ]
+                <Save className="w-4 h-4" />
+                Save settings
               </span>
             )}
           </Button>

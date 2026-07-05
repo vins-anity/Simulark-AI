@@ -396,7 +396,7 @@ const TEMPLATES = {
     label: "Composable Commerce",
     description: "Astro + Medusa.js + Meilisearch",
     icon: ShoppingCart,
-    color: "#8b5cf6",
+    color: "#6a9bcc",
     nodes: [
       {
         id: "cdn",
@@ -515,7 +515,7 @@ const TEMPLATES = {
     label: "Real-time Sync",
     description: "PartyKit + Hono + Automerge",
     icon: Users,
-    color: "#ec4899",
+    color: "#d97757",
     nodes: [
       {
         id: "client-a",

@@ -59,7 +59,7 @@ export function ContextBridge({ projectId }: ContextBridgeProps): JSX.Element {
         className="w-56 rounded-none border border-brand-charcoal bg-white shadow-xl"
         align="end"
       >
-        <DropdownMenuLabel className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 bg-[#faf9f5]">
+        <DropdownMenuLabel className="font-mono text-[11px] uppercase tracking-widest text-brand-charcoal/60 bg-bg-primary">
           Export Protocol
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-brand-charcoal/10" />

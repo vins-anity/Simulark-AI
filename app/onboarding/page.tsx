@@ -85,7 +85,7 @@ export default function OnboardingPage() {
       languages: [],
       frameworks: [],
     },
-    techStackMode: "manual",
+    techStackMode: "auto",
   });
 
   // Load saved progress from sessionStorage and check onboarding status
@@ -277,18 +277,18 @@ export default function OnboardingPage() {
       case "welcome":
         return true;
       case "profile":
-        return !!(data.experienceLevel && data.projectType && data.teamContext);
+        return true;
       case "techstack":
         if (data.techStackMode === "auto") return true;
         return (
-          data.techStack.cloud.length > 0 &&
-          data.techStack.languages.length > 0 &&
+          data.techStack.cloud.length > 0 ||
+          data.techStack.languages.length > 0 ||
           data.techStack.frameworks.length > 0
         );
       case "archpatterns":
-        return (data.architecturePreferences?.length || 0) > 0;
+        return true;
       case "mode":
-        return !!data.defaultMode;
+        return true;
       case "complete":
         return true;
       default:
@@ -453,7 +453,8 @@ export default function OnboardingPage() {
                   onClick={() => setShowSkipModal(true)}
                   className="group font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-charcoal"
                 >
-                  <X className="mr-1 h-3.5 w-3.5" />[ EXIT_FLOW ]
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  Exit
                 </Button>
               ) : (
                 !isLastStep && (
@@ -463,7 +464,7 @@ export default function OnboardingPage() {
                     className="group font-mono text-xs uppercase tracking-wider text-brand-charcoal/60 hover:text-brand-charcoal"
                   >
                     <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                    [ BACK ]
+                    Back
                   </Button>
                 )
               )}
@@ -471,17 +472,15 @@ export default function OnboardingPage() {
 
             {/* Right: Skip Step + Exit + Next */}
             <div className="flex items-center gap-3">
-              {!isLastStep &&
-                currentStepIndex > 1 &&
-                currentStep.id !== "techstack" &&
-                currentStep.id !== "archpatterns" && (
+              {!isLastStep && currentStepIndex > 0 && (
                   <Button
                     variant="ghost"
                     onClick={handleSkipStep}
                     disabled={isSaving}
-                    className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/40 hover:text-brand-orange hover:bg-brand-orange/5 transition-all flex items-center gap-2 h-9 border border-transparent hover:border-brand-orange/20"
+                    className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/50 hover:text-brand-orange hover:bg-brand-orange/5 transition-all flex items-center gap-2 h-9 border border-transparent hover:border-brand-orange/20"
                   >
-                    <SkipForward className="h-3 w-3" />[ SKIP_STEP ]
+                    <SkipForward className="h-3 w-3" />
+                    Skip step
                   </Button>
                 )}
 
@@ -493,7 +492,7 @@ export default function OnboardingPage() {
                   disabled={isSaving}
                   className="font-mono text-[10px] uppercase tracking-widest text-brand-charcoal/30 hover:text-red-500 hover:bg-red-50/50 transition-all hidden md:flex items-center gap-2 h-9 border border-transparent hover:border-red-500/20"
                 >
-                  [ EXIT_ONBOARDING ]
+                  Exit setup
                 </Button>
               )}
 
@@ -508,17 +507,11 @@ export default function OnboardingPage() {
                     Saving...
                   </span>
                 ) : isLastStep ? (
-                  <span className="flex items-center gap-1">
-                    <span>[</span>
-                    INITIALIZE
-                    <span>]</span>
-                  </span>
+                  "Finish setup"
                 ) : (
                   <span className="flex items-center gap-1">
-                    <span>[</span>
-                    CONTINUE
+                    Continue
                     <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                    <span>]</span>
                   </span>
                 )}
               </Button>
@@ -532,10 +525,10 @@ export default function OnboardingPage() {
         onOpenChange={setShowSkipModal}
         onConfirm={handleExitFlow}
         isResetting={isSaving}
-        title="Exit Onboarding?"
-        description="Proceeding will terminate the configuration sequence. System defaults will be applied until manual parameters are defined in settings."
-        confirmLabel="[ TERMINATE & EXIT ]"
-        badge="SYS-EXIT_01 // BYPASS_PROTOCOL"
+        title="Exit setup?"
+        description="Your progress is saved. You can finish setup later in Settings."
+        confirmLabel="Exit setup"
+        badge="Optional — defaults apply"
       />
     </motion.div>
   );

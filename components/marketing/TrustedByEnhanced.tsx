@@ -30,13 +30,13 @@ export function TrustedByEnhanced() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-charcoal/40">
+            <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/50 block mb-1">
               // EXPORT_TARGETS
             </span>
             <h2 className="font-mono text-xs uppercase tracking-[0.15em] text-text-primary font-bold">
               AI IDE CONTEXT
             </h2>
-            <p className="font-mono text-[9px] uppercase text-brand-charcoal/50 mt-2 leading-relaxed">
+            <p className="font-mono text-readable-meta uppercase text-brand-charcoal/55 mt-2 leading-relaxed">
               Skill ZIP + npx skills install commands
             </p>
           </motion.div>
@@ -54,7 +54,7 @@ export function TrustedByEnhanced() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <span className="font-mono text-[8px] text-brand-charcoal/30 uppercase">
+                  <span className="font-mono text-readable-meta text-brand-charcoal/50 uppercase">
                     {integration.id}
                   </span>
                   <div className="w-7 h-7 border border-brand-charcoal/10 flex items-center justify-center bg-bg-secondary group-hover:border-brand-orange/30 transition-colors duration-300">
@@ -63,6 +63,7 @@ export function TrustedByEnhanced() {
                       alt={integration.name}
                       width={16}
                       height={16}
+                      loading="lazy"
                       className="object-contain opacity-60 group-hover:opacity-100 transition-opacity"
                     />
                   </div>
@@ -85,13 +86,14 @@ export function TrustedByEnhanced() {
               alt="DeepSeek"
               width={18}
               height={18}
+              loading="lazy"
               className="opacity-70"
             />
             <div className="flex flex-col">
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/40">
+              <span className="font-mono text-readable-meta uppercase text-brand-charcoal/50">
                 Inference
               </span>
-              <span className="font-mono text-[10px] uppercase text-brand-charcoal/70">
+              <span className="font-mono text-xs uppercase text-brand-charcoal/70">
                 DeepSeek V4 Flash / Pro
               </span>
             </div>

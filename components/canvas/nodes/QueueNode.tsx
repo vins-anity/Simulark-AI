@@ -9,7 +9,7 @@ export function QueueNode(props: BaseNodeProps) {
       {...props}
       label={(props.data?.label as string) || "Queue"}
       icon={<Container size={16} />}
-      className="border-l-4 border-l-[#e09f3e] rounded-xl" // Orange/Amber accent for Queue
+      className="border border-brand-orange/50 bg-brand-orange/5 rounded-xl"
     >
       <div className="text-xs text-[#b0aea5] mt-1">Message Broker</div>
     </BaseNode>

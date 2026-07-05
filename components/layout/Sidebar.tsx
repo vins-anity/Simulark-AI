@@ -32,19 +32,11 @@ const navItems = [
     disabled: false,
   },
   {
-    name: "Blueprints",
+    name: "Templates",
     href: "/dashboard/templates",
     icon: "lucide:book-open",
     shortcut: "⌘2",
     disabled: false,
-  },
-  {
-    name: "Community",
-    href: "#",
-    icon: "lucide:globe",
-    shortcut: null,
-    disabled: true,
-    badge: "SOON",
   },
 ];
 
@@ -92,8 +84,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "h-full bg-bg-primary dark:bg-zinc-950 border-r border-border-primary dark:border-white/10 flex flex-col shrink-0 font-sans fixed md:relative z-40 md:z-0 will-change-[width]",
-          "transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "h-full bg-bg-primary dark:bg-zinc-950 border-r border-border-primary dark:border-white/10 flex flex-col shrink-0 font-sans fixed md:relative z-40 md:z-0",
           isCollapsed ? "w-[60px]" : "w-56",
         )}
       >
@@ -116,6 +107,7 @@ export function Sidebar() {
                   <button
                     type="button"
                     onClick={toggleSidebar}
+                    aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     className="p-1 text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
                   >
                     <ChevronLeft
@@ -132,18 +124,12 @@ export function Sidebar() {
 
           {/* Navigation */}
           <nav className="space-y-1 flex-1">
-            <div
-              className={cn(
-                "px-1 mb-2 flex items-center gap-2 text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest overflow-hidden",
-                isCollapsed ? "h-0 opacity-0" : "h-auto opacity-100",
-              )}
-              style={{
-                transition: "height 250ms ease, opacity 200ms ease",
-              }}
-            >
-              <span>{"// NAV"}</span>
-              <div className="h-px bg-border-secondary flex-1" />
-            </div>
+            {!isCollapsed && (
+              <div className="px-1 mb-2 flex items-center gap-2 text-[11px] font-mono font-bold text-text-muted uppercase tracking-widest">
+                <span>{"// NAV"}</span>
+                <div className="h-px bg-border-secondary flex-1" />
+              </div>
+            )}
 
             <TooltipProvider delayDuration={0}>
               {navItems.map((item) => {
@@ -159,19 +145,18 @@ export function Sidebar() {
                         className={cn(
                           "flex items-center transition-colors duration-200 group relative overflow-hidden",
                           isCollapsed
-                            ? "justify-center p-2 mx-auto w-9 h-9"
+                            ? "justify-center p-2 mx-auto w-11 h-11"
                             : "gap-2 px-3 py-2",
                           isActive
                             ? isCollapsed
                               ? "bg-brand-charcoal text-text-inverse"
-                              : "bg-bg-tertiary text-text-primary border-l-2 border-brand-orange"
+                              : "bg-bg-tertiary text-text-primary ring-1 ring-inset ring-brand-orange/40"
                             : isDisabled
                               ? "text-text-muted cursor-not-allowed opacity-50"
                               : "text-text-secondary hover:text-text-primary hover:bg-bg-tertiary",
                           isCollapsed && "rounded-sm",
                         )}
                       >
-                        {/* Active indicator line */}
                         {isActive && isCollapsed && (
                           <motion.div
                             layoutId="activeIndicator"
@@ -183,7 +168,7 @@ export function Sidebar() {
                         <Icon
                           icon={item.icon}
                           className={cn(
-                            "shrink-0 transition-all duration-200",
+                            "shrink-0 transition-colors duration-200",
                             isCollapsed ? "w-5 h-5" : "w-4 h-4",
                             isActive
                               ? "text-brand-orange"
@@ -193,41 +178,23 @@ export function Sidebar() {
                           )}
                         />
 
-                        <div
-                          className={cn(
-                            "flex items-center justify-between overflow-hidden",
-                            isCollapsed
-                              ? "w-0 opacity-0"
-                              : "w-full opacity-100",
-                          )}
-                          style={{
-                            transition:
-                              "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
-                          }}
-                        >
-                          <span
-                            className={cn(
-                              "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap",
-                              isDisabled && "line-through",
-                            )}
-                          >
-                            {item.name}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {item.badge && (
-                              <span className="text-[8px] bg-bg-tertiary text-text-muted px-1.5 py-0.5 uppercase tracking-wider font-mono border border-border-secondary">
-                                {item.badge}
-                              </span>
-                            )}
+                        {!isCollapsed && (
+                          <div className="flex items-center justify-between flex-1 min-w-0">
+                            <span className="font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap">
+                              {item.name}
+                            </span>
                             {item.shortcut && !isDisabled && (
-                              <span className="text-[9px] text-text-muted font-mono opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-[11px] text-text-muted font-mono opacity-0 group-hover:opacity-100 transition-opacity">
                                 {item.shortcut}
                               </span>
                             )}
                           </div>
-                        </div>
+                        )}
                       </Link>
                     </TooltipTrigger>
+                    {isCollapsed && (
+                      <TooltipContent side="right">{item.name}</TooltipContent>
+                    )}
                   </Tooltip>
                 );
               })}
@@ -235,19 +202,12 @@ export function Sidebar() {
 
             {/* New Project */}
             <div className="mt-8">
-              <div
-                className={cn(
-                  "px-1 mb-4 flex items-center gap-2 text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest overflow-hidden",
-                  isCollapsed ? "h-0 opacity-0 mb-0" : "h-auto opacity-100",
-                )}
-                style={{
-                  transition:
-                    "height 250ms ease, opacity 200ms ease, margin 250ms ease",
-                }}
-              >
-                <span>{"// OPS"}</span>
-                <div className="h-px bg-border-secondary flex-1" />
-              </div>
+              {!isCollapsed && (
+                <div className="px-1 mb-4 flex items-center gap-2 text-[11px] font-mono font-bold text-text-muted uppercase tracking-widest">
+                  <span>{"// OPS"}</span>
+                  <div className="h-px bg-border-secondary flex-1" />
+                </div>
+              )}
 
               <TooltipProvider delayDuration={0}>
                 <Tooltip>
@@ -255,6 +215,7 @@ export function Sidebar() {
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(true)}
+                      aria-label="New architecture"
                       className={cn(
                         "w-full flex items-center transition-colors duration-200 group border border-dashed border-border-primary hover:border-brand-orange hover:bg-brand-orange/5",
                         isCollapsed
@@ -263,20 +224,16 @@ export function Sidebar() {
                       )}
                     >
                       <Plus className="w-4 h-4 text-text-muted group-hover:text-brand-orange transition-colors" />
-                      <span
-                        className={cn(
-                          "font-mono text-xs uppercase tracking-wider font-medium text-text-muted group-hover:text-brand-orange whitespace-nowrap overflow-hidden",
-                          isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                        )}
-                        style={{
-                          transition:
-                            "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
-                        }}
-                      >
-                        New Architecture
-                      </span>
+                      {!isCollapsed && (
+                        <span className="font-mono text-xs uppercase tracking-wider font-medium text-text-muted group-hover:text-brand-orange whitespace-nowrap">
+                          New Architecture
+                        </span>
+                      )}
                     </button>
                   </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side="right">New Architecture</TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
             </div>
@@ -292,7 +249,7 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center transition-colors duration-200 group relative overflow-hidden text-text-muted hover:text-text-primary hover:bg-bg-tertiary",
                       isCollapsed
-                        ? "justify-center p-2 mx-auto w-9 h-9 rounded-sm"
+                        ? "justify-center p-2 mx-auto w-11 h-11 rounded-sm"
                         : "gap-2 px-3 py-2",
                     )}
                   >
@@ -300,20 +257,16 @@ export function Sidebar() {
                       icon="lucide:arrow-left-to-line"
                       className="shrink-0 w-4 h-4"
                     />
-                    <span
-                      className={cn(
-                        "font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap overflow-hidden",
-                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                      )}
-                      style={{
-                        transition:
-                          "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
-                      }}
-                    >
-                      Exit Area
-                    </span>
+                    {!isCollapsed && (
+                      <span className="font-mono text-xs uppercase tracking-wider font-medium whitespace-nowrap">
+                        Exit Area
+                      </span>
+                    )}
                   </Link>
                 </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right">Exit Area</TooltipContent>
+                )}
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -338,38 +291,22 @@ export function Sidebar() {
                     />
                   </div>
 
-                  <div
-                    className={cn(
-                      "flex flex-col items-start overflow-hidden flex-1",
-                      isCollapsed ? "w-0 opacity-0" : "w-full opacity-100",
-                    )}
-                    style={{
-                      transition:
-                        "width 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
-                    }}
-                  >
-                    <span className="font-mono text-xs font-medium text-text-primary dark:text-gray-200 truncate w-full text-left">
-                      User Account
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-orange" />
-                      <span className="font-mono text-[9px] uppercase tracking-widest text-text-muted dark:text-gray-500">
-                        Free Beta
-                      </span>
-                    </div>
-                  </div>
-
-                  <div
-                    className={cn(
-                      "shrink-0",
-                      isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100",
-                    )}
-                    style={{
-                      transition: "width 250ms ease, opacity 200ms ease",
-                    }}
-                  >
-                    <Settings className="w-4 h-4 text-text-muted ml-auto group-hover:text-text-primary dark:text-gray-500 dark:group-hover:text-white transition-colors" />
-                  </div>
+                  {!isCollapsed && (
+                    <>
+                      <div className="flex flex-col items-start overflow-hidden flex-1 min-w-0">
+                        <span className="font-mono text-xs font-medium text-text-primary dark:text-gray-200 truncate w-full text-left">
+                          User Account
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-orange" />
+                          <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted dark:text-gray-500">
+                            Free Beta
+                          </span>
+                        </div>
+                      </div>
+                      <Settings className="w-4 h-4 text-text-muted shrink-0 group-hover:text-text-primary dark:text-gray-500 dark:group-hover:text-white transition-colors" />
+                    </>
+                  )}
                 </button>
               </DropdownMenuTrigger>
 
@@ -387,7 +324,7 @@ export function Sidebar() {
                     <span className="font-poppins font-bold text-text-primary">
                       Simulark
                     </span>
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-brand-orange">
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-brand-orange">
                       Free Beta
                     </span>
                   </div>
@@ -396,7 +333,7 @@ export function Sidebar() {
                 <div className="p-2 space-y-1">
                   <Link href="/dashboard/settings">
                     <DropdownMenuItem className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-bg-tertiary hover:text-text-primary focus:bg-bg-tertiary focus:text-text-primary px-3 py-2">
-                      System Configuration
+                      Settings
                     </DropdownMenuItem>
                   </Link>
 
@@ -406,7 +343,7 @@ export function Sidebar() {
                     onClick={handleSignOut}
                     className="rounded-none cursor-pointer font-mono text-xs uppercase tracking-wide hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white px-3 py-2 text-red-500"
                   >
-                    Terminate Session
+                    Sign out
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>

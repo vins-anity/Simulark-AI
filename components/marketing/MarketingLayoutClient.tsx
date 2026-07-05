@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { useRoundTripLatency } from "@/lib/hooks/use-round-trip-latency";
 import { MarketingThemeToggle } from "./MarketingThemeToggle";
 
 interface MarketingLayoutClientProps {
@@ -16,6 +17,7 @@ interface MarketingLayoutClientProps {
 export function MarketingLayoutClient({
   children,
 }: MarketingLayoutClientProps) {
+  const latencyMs = useRoundTripLatency();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -90,12 +92,12 @@ export function MarketingLayoutClient({
           {/* Status Bar */}
           <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
             <div className="container mx-auto px-6 flex justify-between items-center">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40 dark:text-white/40">
+              <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/55 dark:text-white/55">
                 // SYSTEM_READY
               </span>
               <div className="flex items-center gap-4">
-                <span className="font-mono text-[9px] text-brand-charcoal/30 dark:text-white/30">
-                  v0.9.2
+                <span className="font-mono text-readable-meta text-brand-charcoal/50 dark:text-white/50">
+                  v0.1.0
                 </span>
                 <span className="w-1 h-1 bg-brand-orange rounded-full animate-pulse" />
               </div>
@@ -141,21 +143,18 @@ export function MarketingLayoutClient({
         <div className="h-6 border-b border-brand-charcoal/5 bg-bg-overlay flex items-center">
           <div className="container mx-auto px-6 flex justify-between items-center">
             <div className="flex items-center gap-6">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-charcoal/40 dark:text-white/40">
+              <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/55 dark:text-white/55">
                 // SYSTEM_READY
               </span>
               <div className="hidden md:flex items-center gap-4">
-                <span className="font-mono text-[8px] uppercase text-brand-charcoal/30 dark:text-white/30">
-                  GRID: 60x60
-                </span>
-                <span className="font-mono text-[8px] uppercase text-brand-charcoal/30 dark:text-white/30">
-                  ORIGIN: 0,0
+                <span className="font-mono text-readable-meta uppercase text-brand-charcoal/50 dark:text-white/50">
+                  GRID: 80×80
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-mono text-[9px] text-brand-charcoal/30 dark:text-white/30">
-                BUILD: v0.9.2
+              <span className="font-mono text-readable-meta text-brand-charcoal/50 dark:text-white/50">
+                v0.1.0
               </span>
               <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-pulse" />
             </div>
@@ -173,7 +172,7 @@ export function MarketingLayoutClient({
               <span className="font-poppins font-bold text-lg tracking-tight leading-none group-hover:text-brand-orange transition-colors text-brand-charcoal dark:text-white">
                 SIMULARK
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/50 dark:text-white/50 leading-none mt-0.5">
+              <span className="font-mono text-readable-meta uppercase tracking-widest text-brand-charcoal/55 dark:text-white/55 leading-none mt-0.5">
                 Architecture Engine
               </span>
             </div>
@@ -182,26 +181,21 @@ export function MarketingLayoutClient({
           {/* Center - System Info (previously navigation) */}
           <div className="hidden lg:flex items-center gap-8">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30 dark:text-white/30">
-                SYS_STATUS:
+              <span className="font-mono text-[11px] text-brand-charcoal/50 dark:text-white/50">
+                Status:
               </span>
-              <span className="font-mono text-[9px] uppercase text-brand-green">
-                OPERATIONAL
+              <span className="font-mono text-[11px] text-brand-green">
+                Online
               </span>
             </div>
-            <div className="h-4 w-px bg-brand-charcoal/10 dark:bg-white/10" />
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] uppercase text-brand-charcoal/30 dark:text-white/30">
-                LATENCY:
-              </span>
-              <motion.span
-                className="font-mono text-[9px] uppercase text-brand-charcoal/50 dark:text-white/50"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                12ms
-              </motion.span>
-            </div>
+            {latencyMs !== null && (
+              <>
+                <div className="h-4 w-px bg-brand-charcoal/10 dark:bg-white/10" />
+                <span className="font-mono text-[11px] text-brand-charcoal/60 dark:text-white/60 tabular-nums">
+                  {latencyMs}ms round trip
+                </span>
+              </>
+            )}
           </div>
 
           {/* Right - Auth Actions */}
@@ -215,11 +209,9 @@ export function MarketingLayoutClient({
               <div className="flex items-center gap-4">
                 <Link
                   href="/dashboard"
-                  className="hidden md:flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-brand-charcoal/60 hover:text-brand-orange transition-colors"
+                  className="hidden md:flex items-center font-mono text-xs uppercase tracking-widest text-brand-charcoal/70 hover:text-brand-orange transition-colors"
                 >
-                  <span className="text-brand-charcoal/30">[</span>
-                  <span>DASHBOARD</span>
-                  <span className="text-brand-charcoal/30">]</span>
+                  Dashboard
                 </Link>
                 <div className="w-10 h-10 flex items-center justify-center">
                   <UserMenu />
@@ -229,22 +221,22 @@ export function MarketingLayoutClient({
               <div className="flex items-center gap-3">
                 <Link
                   href="/auth/signin"
-                  className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/70 hover:text-brand-orange transition-colors py-2 px-3"
+                  className="font-mono text-xs uppercase tracking-widest text-brand-charcoal/60 hover:text-brand-orange transition-colors py-2 px-3"
                 >
                   <span className="text-brand-charcoal/30">[</span>
-                  <span className="mx-1">LOGIN</span>
+                  <span className="mx-1">SIGN IN</span>
                   <span className="text-brand-charcoal/30">]</span>
                 </Link>
                 <Link href="/auth/signin">
                   <Button
                     size="sm"
-                    className="group bg-brand-charcoal text-white dark:bg-transparent dark:text-white dark:border dark:border-white hover:bg-brand-orange hover:text-white rounded-none px-0 h-9 border-0 font-mono uppercase tracking-wider text-[10px] transition-all duration-300"
+                    className="group bg-brand-charcoal text-white dark:bg-brand-orange dark:text-white hover:bg-brand-orange hover:text-white rounded-none px-0 h-10 border-0 font-mono text-xs uppercase tracking-wider transition-colors"
                   >
-                    <span className="px-3 text-white/40 dark:text-white/40 group-hover:text-white/40">
+                    <span className="px-2 text-white/40 group-hover:text-white/50">
                       [
                     </span>
                     <span className="px-1">INITIALIZE</span>
-                    <span className="px-3 text-white/40 dark:text-white/40 group-hover:text-white/40">
+                    <span className="px-2 text-white/40 group-hover:text-white/50">
                       ]
                     </span>
                   </Button>
@@ -274,8 +266,8 @@ export function MarketingLayoutClient({
                   <span className="font-poppins font-bold text-xl tracking-tight block">
                     SIMULARK
                   </span>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-brand-charcoal/40">
-                    v0.9.2-beta
+                  <span className="font-mono text-readable-meta uppercase tracking-widest text-brand-charcoal/50">
+                    v0.1.0-beta
                   </span>
                 </div>
               </div>
@@ -286,10 +278,10 @@ export function MarketingLayoutClient({
 
               {/* System Status Indicator */}
               <div className="flex items-center gap-4 p-4 border border-brand-charcoal/10 bg-bg-tertiary">
-                <span className="w-2 h-2 bg-brand-green rounded-full animate-pulse" />
+                <span className="w-2 h-2 bg-brand-green rounded-full motion-safe:animate-pulse motion-reduce:animate-none" />
                 <div>
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40 block">
-                    SYSTEM STATUS
+                  <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/50 block">
+                    // SYSTEM_STATUS
                   </span>
                   <span className="font-mono text-xs uppercase text-brand-charcoal">
                     ALL SYSTEMS OPERATIONAL
@@ -300,7 +292,7 @@ export function MarketingLayoutClient({
 
             {/* Index 01 - Resources */}
             <div className="space-y-6">
-              <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-charcoal/40 border-b border-brand-charcoal/10 pb-2">
+              <h4 className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/50 border-b border-brand-charcoal/10 pb-2">
                 // INDEX_01
               </h4>
               <ul className="space-y-3 font-mono text-xs text-brand-charcoal/70">
@@ -343,7 +335,7 @@ export function MarketingLayoutClient({
 
             {/* Index 02 - Connect */}
             <div className="space-y-6">
-              <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-charcoal/40 border-b border-brand-charcoal/10 pb-2">
+              <h4 className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-charcoal/50 border-b border-brand-charcoal/10 pb-2">
                 // INDEX_02
               </h4>
               <ul className="space-y-3 font-mono text-xs text-brand-charcoal/70">

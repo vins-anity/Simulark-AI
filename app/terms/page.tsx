@@ -3,7 +3,7 @@ import { MarketingLayout } from "@/components/marketing/MarketingLayout";
 export default function TermsOfService() {
   return (
     <MarketingLayout>
-      <div className="pt-32 pb-24 px-6 bg-[#faf9f5]">
+      <div className="pt-32 pb-24 px-6 bg-bg-primary">
         <div className="container mx-auto max-w-3xl">
           <div className="prose prose-lg prose-stone max-w-none font-lora">
             <h1 className="font-poppins text-4xl font-bold tracking-tight mb-8 text-brand-charcoal">

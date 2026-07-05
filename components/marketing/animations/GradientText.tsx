@@ -12,26 +12,7 @@ interface GradientTextProps {
 export function GradientText({
   children,
   className = "",
-  animate = true,
 }: GradientTextProps) {
-  if (animate) {
-    return (
-      <motion.span
-        className={`bg-gradient-to-r from-brand-orange via-brand-orange/80 to-brand-orange bg-clip-text text-transparent ${className}`}
-        animate={{
-          opacity: [1, 0.8, 1],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        {children}
-      </motion.span>
-    );
-  }
-
   return <span className={`text-brand-orange ${className}`}>{children}</span>;
 }
 

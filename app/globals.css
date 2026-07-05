@@ -190,7 +190,7 @@
   /* Animations */
   --animate-flow-fast: flow-fast 1s linear infinite;
   --animate-flow-slow: flow-slow 3s linear infinite;
-  --animate-bounce-slight: bounce-slight 2s infinite;
+  --animate-float-nudge: float-nudge 2s ease-in-out infinite;
   --animate-pulse-soft: pulse-soft 3s ease-in-out infinite;
   --animate-breathe: breathe 4s ease-in-out infinite;
   --animate-shake: shake 0.5s ease-in-out;
@@ -217,7 +217,7 @@
     }
   }
 
-  @keyframes bounce-slight {
+  @keyframes float-nudge {
     0%,
     100% {
       transform: translateY(0);
@@ -504,10 +504,8 @@ body {
   outline-offset: 2px;
 }
 
-/* Remove outline from dashboard command input */
-input.no-focus-outline:focus-visible,
-input[type="text"]:focus,
-input[type="text"]:focus-visible {
+/* Opt-out only — never blanket all text inputs */
+input.no-focus-outline:focus-visible {
   outline: none;
   box-shadow: none;
 }
@@ -1016,6 +1014,28 @@ a.inline,
 
 .input-focus-animate:focus {
   animation: input-focus 0.4s ease-out;
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Readable microcopy floor: 11px, ≥60% opacity on body ink */
+.text-readable-meta {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: color-mix(in oklch, var(--text-primary) 65%, transparent);
 }
 
 /* Transmit button hover effect */

@@ -45,7 +45,7 @@ export function DashboardLayout({
   fullWidth = false,
 }: DashboardLayoutProps) {
   return (
-    <div className="flex bg-[#faf9f5] dark:bg-zinc-950 h-screen overflow-hidden w-screen transition-colors duration-300">
+    <div className="flex bg-bg-primary dark:bg-zinc-950 h-screen overflow-hidden w-screen transition-colors duration-300">
       <Sidebar />
       <MainContent fullWidth={fullWidth}>{children}</MainContent>
     </div>

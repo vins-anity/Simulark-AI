@@ -221,7 +221,7 @@ function SignalStrengthIndicator({
           />
         ))}
       </div>
-      <span className="font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40">
+      <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/50">
         {isGenerating ? `${streamProgress.toFixed(0)}%` : "READY"}
       </span>
     </div>
@@ -262,7 +262,7 @@ function ProcessingSteps({
             <div key={step.stage} className="flex items-center gap-1 shrink-0">
               <span
                 className={cn(
-                  "font-mono text-[8px] uppercase tracking-wider transition-colors",
+                  "font-mono text-readable-meta uppercase tracking-wider transition-colors",
                   isActive
                     ? "text-brand-orange font-bold"
                     : isCompleted
@@ -341,7 +341,7 @@ function InitialPromptLoader() {
           <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-brand-charcoal dark:text-text-primary">
             Initializing Architecture
           </p>
-          <p className="font-mono text-[9px] text-brand-charcoal/60 dark:text-text-secondary/60 mt-0.5">
+          <p className="font-mono text-readable-meta text-brand-charcoal/65 dark:text-text-secondary/70 mt-0.5">
             Setting up environment...
           </p>
         </div>
@@ -1338,8 +1338,16 @@ export function AIAssistantPanel({
               onGenerationSuccess(json.data);
               const issues = json.data?.validation?.issues;
               if (Array.isArray(issues) && issues.length > 0) {
+                const issueSummary = issues
+                  .slice(0, 3)
+                  .map((issue: string | { message?: string }) =>
+                    typeof issue === "string"
+                      ? issue
+                      : (issue?.message ?? "Validation note"),
+                  )
+                  .join("; ");
                 toast.message("Graph validation notes", {
-                  description: issues.slice(0, 3).join("; "),
+                  description: issueSummary,
                 });
               }
               updateStreamProgress(
@@ -1532,7 +1540,7 @@ export function AIAssistantPanel({
             <span className="font-mono text-[10px] font-black uppercase tracking-[0.12em] text-brand-charcoal dark:text-text-primary truncate">
               OPERATOR
             </span>
-            <span className="font-mono text-[8px] text-brand-charcoal/40 dark:text-text-secondary/50 uppercase tracking-wider">
+            <span className="font-mono text-readable-meta text-brand-charcoal/50 dark:text-text-secondary/60 uppercase tracking-wider">
               v2.4.1
             </span>
           </div>
@@ -1549,8 +1557,8 @@ export function AIAssistantPanel({
             <button
               type="button"
               onClick={onToggle}
-              className="w-7 h-7 flex items-center justify-center border border-brand-charcoal/15 dark:border-border-primary/50 hover:bg-brand-charcoal hover:text-white dark:hover:bg-bg-elevated dark:hover:text-text-primary text-brand-charcoal/50 dark:text-text-secondary transition-all duration-200"
-              title="Close Panel"
+              className="min-h-11 min-w-11 flex items-center justify-center border border-brand-charcoal/15 dark:border-border-primary/50 hover:bg-brand-charcoal hover:text-white dark:hover:bg-bg-elevated dark:hover:text-text-primary text-brand-charcoal/50 dark:text-text-secondary transition-colors duration-200"
+              aria-label="Close panel"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -1563,14 +1571,16 @@ export function AIAssistantPanel({
         <button
           type="button"
           onClick={() => setShowChatList(!showChatList)}
-          className="w-full flex items-center justify-between group"
+          className="w-full flex items-center justify-between group min-h-11"
+          aria-expanded={showChatList}
+          aria-label="Select chat channel"
         >
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] text-brand-charcoal/50 dark:text-text-secondary/50 uppercase tracking-wider">
+            <span className="font-mono text-readable-meta text-brand-charcoal/60 dark:text-text-secondary/60 uppercase tracking-wider">
               Channel:
             </span>
-            <span className="font-mono text-[11px] font-black uppercase tracking-wider text-brand-charcoal dark:text-text-primary group-hover:text-brand-orange transition-colors truncate max-w-[180px]">
-              {currentChat?.title || "UNSET"}
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-brand-charcoal dark:text-text-primary group-hover:text-brand-orange transition-colors truncate max-w-[180px]">
+              {currentChat?.title || "New chat"}
             </span>
           </div>
           <ChevronDown
@@ -1642,7 +1652,7 @@ export function AIAssistantPanel({
               <p className="font-mono text-[10px] uppercase tracking-[0.15em] leading-relaxed dark:text-text-secondary">
                 Waiting for operator input
               </p>
-              <p className="font-mono text-[9px] text-brand-charcoal/60 dark:text-text-secondary/60 mt-1">
+              <p className="font-mono text-readable-meta text-brand-charcoal/65 dark:text-text-secondary/70 mt-1">
                 [ STANDBY_MODE ]
               </p>
             </div>
@@ -1667,7 +1677,7 @@ export function AIAssistantPanel({
               )}
               <span
                 className={cn(
-                  "font-mono text-[9px] font-black uppercase tracking-[0.12em]",
+                  "font-mono text-readable-meta font-black uppercase tracking-[0.12em]",
                   message.role === "user"
                     ? "text-brand-charcoal/50 dark:text-text-secondary/50"
                     : "text-brand-charcoal/40 dark:text-text-secondary/40",
@@ -1675,7 +1685,7 @@ export function AIAssistantPanel({
               >
                 {message.role === "user" ? "OPERATOR" : "ASSISTANT"}
               </span>
-              <span className="font-mono text-[8px] text-brand-charcoal/30 dark:text-text-secondary/30">
+              <span className="font-mono text-readable-meta text-brand-charcoal/45 dark:text-text-secondary/45">
                 {new Date().toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -1689,7 +1699,7 @@ export function AIAssistantPanel({
                 "relative max-w-[95%] px-3 py-2.5 text-[13px] leading-relaxed",
                 message.role === "user"
                   ? "bg-brand-charcoal dark:bg-bg-elevated text-white dark:text-text-primary rounded-sm"
-                  : "bg-neutral-100 dark:bg-bg-tertiary text-brand-charcoal dark:text-text-primary rounded-sm border-l-2 border-brand-orange",
+                  : "bg-neutral-100 dark:bg-bg-tertiary text-brand-charcoal dark:text-text-primary rounded-sm border border-brand-orange/30",
               )}
             >
               {message.role === "assistant" &&
@@ -1720,7 +1730,7 @@ export function AIAssistantPanel({
               {message.role === "assistant" && message.reasoning && (
                 <div className="mt-3 pt-2 border-t border-brand-charcoal/10 dark:border-border-primary/30">
                   <details className="group">
-                    <summary className="flex items-center gap-1.5 cursor-pointer font-mono text-[8px] uppercase tracking-wider text-brand-charcoal/40 dark:text-text-secondary/50 hover:text-brand-orange transition-colors select-none">
+                    <summary className="flex items-center gap-1.5 cursor-pointer font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/50 dark:text-text-secondary/60 hover:text-brand-orange transition-colors select-none">
                       <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
                       Generation Notes
                     </summary>
@@ -1735,8 +1745,8 @@ export function AIAssistantPanel({
               <button
                 type="button"
                 onClick={() => copyToClipboard(message.content)}
-                className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-brand-charcoal/5 dark:hover:bg-bg-elevated rounded"
-                title="Copy"
+                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity min-h-11 min-w-11 flex items-center justify-center hover:bg-brand-charcoal/5 dark:hover:bg-bg-elevated rounded"
+                aria-label="Copy message"
               >
                 <Copy className="w-3 h-3 text-brand-charcoal/40 dark:text-text-secondary/50" />
               </button>
@@ -1804,7 +1814,7 @@ export function AIAssistantPanel({
                   />
                 </div>
                 {streamDetail ? (
-                  <div className="font-mono text-[9px] leading-relaxed text-brand-charcoal/45 dark:text-text-secondary/55">
+                  <div className="font-mono text-readable-meta leading-relaxed text-brand-charcoal/55 dark:text-text-secondary/60">
                     {streamDetail}
                   </div>
                 ) : null}
@@ -1837,13 +1847,14 @@ export function AIAssistantPanel({
                     key={document.id}
                     className="flex items-center gap-1.5 px-2 py-1 bg-brand-charcoal/5 dark:bg-bg-secondary border border-brand-charcoal/10 dark:border-border-primary/30 rounded-full"
                   >
-                    <span className="font-mono text-[9px] truncate max-w-[120px] text-brand-charcoal/70 dark:text-text-secondary">
+                    <span className="font-mono text-readable-meta truncate max-w-[120px] text-brand-charcoal/70 dark:text-text-secondary">
                       {document.file_name}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleDeleteDocument(document.id)}
-                      className="text-brand-charcoal/40 hover:text-red-500 transition-colors"
+                      className="min-h-11 min-w-11 flex items-center justify-center text-brand-charcoal/50 hover:text-red-500 transition-colors"
+                      aria-label={`Remove ${document.file_name}`}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -1867,8 +1878,8 @@ export function AIAssistantPanel({
                   type="button"
                   onClick={() => planInputRef.current?.click()}
                   disabled={isUploadingDocument || isGenerating}
-                  className="pl-3 pr-2 h-11 flex items-center justify-center shrink-0 text-brand-charcoal/40 dark:text-text-secondary/50 hover:text-brand-orange transition-colors disabled:opacity-50"
-                  title="Attach plan (PDF or TXT)"
+                  className="pl-3 pr-2 min-h-11 min-w-11 flex items-center justify-center shrink-0 text-brand-charcoal/50 dark:text-text-secondary/50 hover:text-brand-orange transition-colors disabled:opacity-50"
+                  aria-label="Attach plan document (PDF or TXT)"
                 >
                   {isUploadingDocument ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1886,10 +1897,10 @@ export function AIAssistantPanel({
                   }}
                   placeholder={
                     isGenerating
-                      ? "PROCESSING..."
+                      ? "Processing…"
                       : generationState === "preparing"
-                        ? "INITIALIZING..."
-                        : "COMMAND //"
+                        ? "Initializing…"
+                        : "Describe your architecture…"
                   }
                   disabled={isGenerating || generationState === "preparing"}
                   className="flex-1 h-11 bg-transparent border-none text-brand-charcoal dark:text-text-primary placeholder:text-brand-charcoal/30 dark:placeholder:text-text-secondary/30 text-[13px] font-mono focus:outline-none focus:ring-0 disabled:opacity-50"
@@ -1902,7 +1913,10 @@ export function AIAssistantPanel({
                       setInferenceTier(value as InferenceTier)
                     }
                   >
-                    <SelectTrigger className="h-8 w-auto min-w-0 px-2 max-w-[88px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[9px] font-mono uppercase tracking-widest text-brand-charcoal/50 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none">
+                    <SelectTrigger
+                      className="h-11 w-auto min-w-0 px-2 max-w-[96px] border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-readable-meta font-mono uppercase tracking-widest text-brand-charcoal/60 dark:text-text-secondary focus:ring-0 shadow-none appearance-none rounded-none"
+                      aria-label="Inference tier"
+                    >
                       <SelectValue placeholder="TIER" />
                     </SelectTrigger>
                     <SelectContent className="font-mono text-[10px] uppercase rounded-none border-brand-charcoal">
@@ -1920,7 +1934,7 @@ export function AIAssistantPanel({
                     type="button"
                     onClick={handleStopGeneration}
                     className="h-11 w-11 flex items-center justify-center p-0 bg-red-600 text-white hover:bg-red-700 transition-colors shrink-0"
-                    title="Stop generation"
+                    aria-label="Stop generation"
                   >
                     <Square className="w-4 h-4 fill-current" />
                   </button>
@@ -1929,6 +1943,7 @@ export function AIAssistantPanel({
                     type="submit"
                     disabled={!inputValue.trim()}
                     className="h-11 w-11 flex items-center justify-center p-0 bg-brand-charcoal dark:bg-white text-white dark:text-zinc-950 hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                    aria-label="Send message"
                   >
                     <ArrowRight className="w-4.5 h-4.5" />
                   </button>

@@ -6,6 +6,11 @@ import {
   createCachedArchitectureStream,
   getCachedArchitecture,
 } from "@/lib/cached-architecture-response";
+import {
+  ensureArchitectureEdges,
+  type ArchitectureEdgeLike,
+  type ArchitectureNodeLike,
+} from "@/lib/infer-architecture-edges";
 import { isDashScopeConfigured } from "@/lib/inference/dashscope-provider";
 import { streamArchitectureInference } from "@/lib/inference/stream-architecture";
 import type { StreamArchitecturePayload } from "@/lib/inference/stream-types";
@@ -391,13 +396,39 @@ export async function POST(req: NextRequest) {
       });
 
     if (cachedArchitecture) {
+      const enrichedNodes = enrichNodesWithTech(
+        (cachedArchitecture.nodes ?? []) as Record<string, unknown>[],
+      );
+      const edgeEnsured = ensureArchitectureEdges(
+        enrichedNodes as unknown as ArchitectureNodeLike[],
+        (cachedArchitecture.edges ?? []) as ArchitectureEdgeLike[],
+      );
+      const payload: StreamArchitecturePayload = {
+        ...cachedArchitecture,
+        nodes: enrichedNodes,
+        edges: edgeEnsured.edges,
+        validation: {
+          ...cachedArchitecture.validation,
+          appliedFixes: [
+            ...(cachedArchitecture.validation?.appliedFixes ?? []),
+            ...edgeEnsured.appliedFixes,
+          ],
+        },
+      };
+
+      if (edgeEnsured.inferred) {
+        logger.info("Inferred edges for cached architecture", {
+          edgeCount: edgeEnsured.edges.length,
+        });
+      }
+
       logger.info("Returning cached architecture result", {
         inferenceTier,
         model: resolvedModelId,
       });
 
       return new NextResponse(
-        createCachedArchitectureStream(cachedArchitecture, usageSnapshot),
+        createCachedArchitectureStream(payload, usageSnapshot),
         {
           headers: {
             "Content-Type": "text/event-stream",
@@ -409,19 +440,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Detect architecture type and complexity
-    const detection = detectArchitectureType(lastMessageContent);
-    const complexity = detectComplexity(lastMessageContent);
+    const encoder = new TextEncoder();
+    let accumulatedText = "";
+    let accumulatedReasoning = "";
+    let architectureData: StreamArchitecturePayload | null = null;
 
-    logger.info("Starting generation", {
-      model: modelId || "auto",
-      mode: normalizedMode,
-      complexity,
-      architectureType: detection.type,
-      messageCount: messages.length,
-    });
-
-    // Build conversation history for context (exclude the last message)
     const conversationHistory = messages.slice(0, -1).map((m) => {
       const content = m.parts
         .filter((p: any) => p.type === "text")
@@ -433,40 +456,6 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Detect operation type moved above cache lookup
-
-    let projectDocumentContext: ProjectDocumentContext | null = null;
-    if (projectId) {
-      try {
-        projectDocumentContext = await buildProjectDocumentContext(
-          supabase,
-          user.id,
-          projectId,
-        );
-      } catch (error) {
-        logger.warn("Failed to load project PDF context", {
-          projectId,
-          error: String(error),
-        });
-      }
-    }
-
-    const inferenceContext = await buildInferenceContextAsync({
-      userPreferences: mergedPreferences,
-      currentNodes: currentNodes as InferenceContextInput["currentNodes"],
-      currentEdges: currentEdges as InferenceContextInput["currentEdges"],
-      conversationHistory,
-      projectDocuments: projectDocumentContext?.context,
-      tier: inferenceTier,
-      operation: operationType,
-      userMessage: lastMessageContent,
-      userRequest: lastMessageContent,
-      architectureType: detection.type,
-      complexity,
-    });
-
-    const systemPrompt = inferenceContext.systemPrompt;
-
     const streamMessages = messages.map((m) => ({
       role: m.role as "user" | "assistant" | "system",
       content: m.parts
@@ -474,96 +463,6 @@ export async function POST(req: NextRequest) {
         .map((p) => p.text ?? "")
         .join(""),
     }));
-
-    const useAgentPath = shouldUseAgentPath(operationType, currentNodes.length);
-
-    const streamResult = useAgentPath
-      ? await runSimularkAgentStream({
-          ctx: {
-            userInput: lastMessageContent,
-            mode: normalizedMode as ArchitectureMode,
-            operationType,
-            nodes: currentNodes as SimularkAgentContext["nodes"],
-            edges: currentEdges as SimularkAgentContext["edges"],
-            userId: user.id,
-            architectureType: detection.type,
-            complexity,
-            userPreferences: mergedPreferences,
-            systemPrompt,
-            candidateTechIds: inferenceContext.techBundle.candidateIds,
-          },
-          tierConfig,
-          messages: streamMessages,
-        })
-      : await streamArchitectureInference({
-          tierConfig,
-          systemPrompt,
-          messages: streamMessages,
-          structured: true,
-        });
-
-    const { fullStream: resultStream, meta: inferenceMeta } = streamResult;
-
-    logger.info("Stream started", {
-      systemPromptLength: systemPrompt.length,
-      userMessage: lastMessageContent.substring(0, 50),
-      inferenceTier,
-      dashscopeModel: inferenceMeta.modelUsed,
-      fallbackUsed: inferenceMeta.fallbackUsed,
-      projectDocumentCount: projectDocumentContext?.documentCount || 0,
-      path: useAgentPath ? "agent" : "structured",
-    });
-
-    // Create custom stream that transforms to legacy format for frontend compatibility
-    const encoder = new TextEncoder();
-    let accumulatedText = "";
-    let accumulatedReasoning = "";
-    let architectureData: StreamArchitecturePayload | null = null;
-
-    const buildArchitecturePayload = (
-      parsed: Record<string, unknown>,
-    ): StreamArchitecturePayload | null => {
-      if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
-        return null;
-      }
-
-      const enrichedNodes = enrichNodesWithTech(parsed.nodes);
-      const techValidated = validateTechOutput(
-        enrichedNodes as Array<{ id: string; data?: { tech?: string } }>,
-        inferenceContext.techBundle.candidateIds,
-      );
-      const validationResult = validateArchitecture(
-        techValidated.nodes,
-        parsed.edges,
-        normalizedMode as ArchitectureMode,
-        { autoFix: true },
-      );
-
-      return {
-        nodes: validationResult.fixed?.nodes || enrichedNodes,
-        edges: validationResult.fixed?.edges || parsed.edges,
-        analysis:
-          typeof parsed.analysis === "string" ? parsed.analysis : undefined,
-        selectedArchitectureStrategy:
-          typeof parsed.selectedArchitectureStrategy === "string"
-            ? parsed.selectedArchitectureStrategy
-            : undefined,
-        preferenceConflicts: toStringArray(parsed.preferenceConflicts),
-        recommendedStack: toStringArray(parsed.recommendedStack),
-        preferenceAlignedAlternative: toStringArray(
-          parsed.preferenceAlignedAlternative,
-        ),
-        validation: {
-          valid: validationResult.valid,
-          issues: [
-            ...validationResult.issues,
-            ...techValidated.issues.map((i) => i.message),
-          ],
-          appliedFixes: validationResult.appliedFixes,
-        },
-        candidateTechIds: inferenceContext.techBundle.candidateIds,
-      };
-    };
 
     const customStream = new ReadableStream({
       async start(controller) {
@@ -600,6 +499,59 @@ export async function POST(req: NextRequest) {
           );
         };
 
+        const buildArchitecturePayload = (
+          parsed: Record<string, unknown>,
+          candidateTechIds: string[],
+        ): StreamArchitecturePayload | null => {
+          if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+            return null;
+          }
+
+          const enrichedNodes = enrichNodesWithTech(parsed.nodes);
+          const edgeEnsured = ensureArchitectureEdges(
+            enrichedNodes as unknown as ArchitectureNodeLike[],
+            (parsed.edges ?? []) as ArchitectureEdgeLike[],
+          );
+          const techValidated = validateTechOutput(
+            enrichedNodes as Array<{ id: string; data?: { tech?: string } }>,
+            candidateTechIds,
+          );
+          const validationResult = validateArchitecture(
+            techValidated.nodes,
+            edgeEnsured.edges,
+            normalizedMode as ArchitectureMode,
+            { autoFix: true },
+          );
+
+          return {
+            nodes: validationResult.fixed?.nodes || enrichedNodes,
+            edges: validationResult.fixed?.edges || edgeEnsured.edges,
+            analysis:
+              typeof parsed.analysis === "string" ? parsed.analysis : undefined,
+            selectedArchitectureStrategy:
+              typeof parsed.selectedArchitectureStrategy === "string"
+                ? parsed.selectedArchitectureStrategy
+                : undefined,
+            preferenceConflicts: toStringArray(parsed.preferenceConflicts),
+            recommendedStack: toStringArray(parsed.recommendedStack),
+            preferenceAlignedAlternative: toStringArray(
+              parsed.preferenceAlignedAlternative,
+            ),
+            validation: {
+              valid: validationResult.valid,
+              issues: [
+                ...validationResult.issues,
+                ...techValidated.issues.map((i) => i.message),
+              ],
+              appliedFixes: [
+                ...edgeEnsured.appliedFixes,
+                ...validationResult.appliedFixes,
+              ],
+            },
+            candidateTechIds,
+          };
+        };
+
         try {
           controller.enqueue(
             encoder.encode(
@@ -612,7 +564,102 @@ export async function POST(req: NextRequest) {
             "analyzing",
             "Understanding requirements, mode, and current architecture",
           );
-          emitProgress(18, "connecting", "Connecting to the selected model");
+
+          const detection = detectArchitectureType(lastMessageContent);
+          const complexity = detectComplexity(lastMessageContent);
+
+          logger.info("Starting generation", {
+            model: modelId || "auto",
+            mode: normalizedMode,
+            complexity,
+            architectureType: detection.type,
+            messageCount: messages.length,
+          });
+
+          let projectDocumentContext: ProjectDocumentContext | null = null;
+          if (projectId) {
+            try {
+              projectDocumentContext = await buildProjectDocumentContext(
+                supabase,
+                user.id,
+                projectId,
+              );
+            } catch (error) {
+              logger.warn("Failed to load project PDF context", {
+                projectId,
+                error: String(error),
+              });
+            }
+          }
+
+          emitProgress(
+            12,
+            "analyzing",
+            "Loading stack preferences and project context",
+          );
+
+          const inferenceContext = await buildInferenceContextAsync({
+            userPreferences: mergedPreferences,
+            currentNodes: currentNodes as InferenceContextInput["currentNodes"],
+            currentEdges: currentEdges as InferenceContextInput["currentEdges"],
+            conversationHistory,
+            projectDocuments: projectDocumentContext?.context,
+            tier: inferenceTier,
+            operation: operationType,
+            userMessage: lastMessageContent,
+            userRequest: lastMessageContent,
+            architectureType: detection.type,
+            complexity,
+          });
+
+          const systemPrompt = inferenceContext.systemPrompt;
+          const useAgentPath = shouldUseAgentPath(
+            operationType,
+            currentNodes.length,
+            currentEdges.length,
+          );
+
+          emitProgress(16, "connecting", "Connecting to the selected model");
+
+          const streamResult = useAgentPath
+            ? await runSimularkAgentStream({
+                ctx: {
+                  userInput: lastMessageContent,
+                  mode: normalizedMode as ArchitectureMode,
+                  operationType,
+                  nodes: currentNodes as SimularkAgentContext["nodes"],
+                  edges: currentEdges as SimularkAgentContext["edges"],
+                  userId: user.id,
+                  architectureType: detection.type,
+                  complexity,
+                  userPreferences: mergedPreferences,
+                  systemPrompt,
+                  candidateTechIds: inferenceContext.techBundle.candidateIds,
+                },
+                tierConfig,
+                messages: streamMessages,
+              })
+            : await streamArchitectureInference({
+                tierConfig,
+                systemPrompt,
+                messages: streamMessages,
+                structured: true,
+              });
+
+          const { fullStream: resultStream, meta: inferenceMeta } = streamResult;
+
+          logger.info("Stream started", {
+            systemPromptLength: systemPrompt.length,
+            userMessage: lastMessageContent.substring(0, 50),
+            inferenceTier,
+            dashscopeModel: inferenceMeta.modelUsed,
+            fallbackUsed: inferenceMeta.fallbackUsed,
+            projectDocumentCount: projectDocumentContext?.documentCount || 0,
+            path: useAgentPath ? "agent" : "structured",
+          });
+
+          emitProgress(18, "connecting", "Waiting for the model to respond");
+          const candidateTechIds = inferenceContext.techBundle.candidateIds;
 
           // Process the stream
           for await (const part of resultStream) {
@@ -631,6 +678,19 @@ export async function POST(req: NextRequest) {
                     })}\n`,
                   ),
                 );
+                emitProgress(
+                  28,
+                  "thinking",
+                  "Model connected — reasoning about your architecture",
+                );
+                break;
+              }
+              case "activity": {
+                emitProgress(
+                  part.progress ?? 45,
+                  "generating",
+                  part.detail,
+                );
                 break;
               }
               case "object-partial": {
@@ -642,7 +702,7 @@ export async function POST(req: NextRequest) {
                     "Generating the recommended architecture",
                   );
                 }
-                const payload = buildArchitecturePayload(part.object);
+                const payload = buildArchitecturePayload(part.object, candidateTechIds);
                 if (payload) {
                   architectureData = payload;
                   emitProgress(
@@ -706,6 +766,7 @@ export async function POST(req: NextRequest) {
                       const parsed = JSON.parse(cleanJson);
                       const payload = buildArchitecturePayload(
                         parsed as Record<string, unknown>,
+                        candidateTechIds,
                       );
                       if (payload) {
                         architectureData = payload;
@@ -769,7 +830,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 if (!architectureData && part.object) {
-                  const payload = buildArchitecturePayload(part.object);
+                  const payload = buildArchitecturePayload(part.object, candidateTechIds);
                   if (payload) {
                     architectureData = payload;
                     emitProgress(
@@ -800,6 +861,7 @@ export async function POST(req: NextRequest) {
                         const parsed = JSON.parse(codeBlockMatch[1]);
                         const payload = buildArchitecturePayload(
                           parsed as Record<string, unknown>,
+                          candidateTechIds,
                         );
                         if (payload) {
                           architectureData = payload;
@@ -823,6 +885,7 @@ export async function POST(req: NextRequest) {
                         const parsed = JSON.parse(cleanJson);
                         const payload = buildArchitecturePayload(
                           parsed as Record<string, unknown>,
+                          candidateTechIds,
                         );
                         if (payload) {
                           architectureData = payload;

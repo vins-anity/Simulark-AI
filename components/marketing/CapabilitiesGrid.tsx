@@ -22,7 +22,7 @@ const capabilities = [
       "Describe your system in plain English. AI generates the architecture diagram automatically.",
     icon: "lucide:message-square-code",
     status: "LIVE",
-    specs: ["Flash tier", "Pro tier", "Streaming"],
+    specs: ["Flash tier", "Pro tier", "Plan upload"],
   },
   {
     id: "CAP-03",
@@ -84,6 +84,7 @@ function CapabilityCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.05 }}
+      whileHover={{ y: -4 }}
     >
       <div
         className={`h-full p-6 border bg-bg-secondary group-hover:border-brand-orange/40 transition-all duration-300 relative ${
@@ -100,7 +101,7 @@ function CapabilityCard({
 
         {/* ID Badge */}
         <div className="absolute -top-3 right-4 bg-bg-primary px-2">
-          <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/40">
+          <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/50">
             {capability.id}
           </span>
         </div>
@@ -108,12 +109,12 @@ function CapabilityCard({
         {/* Status Badge */}
         <div className="absolute top-4 right-4">
           <span
-            className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${
+            className={`font-mono text-readable-meta uppercase tracking-wider px-1.5 py-0.5 ${
               isLive
                 ? "bg-brand-green/10 text-brand-green"
                 : isBeta
                   ? "bg-brand-orange/10 text-brand-orange"
-                  : "bg-brand-charcoal/5 text-brand-charcoal/40"
+                  : "bg-brand-charcoal/5 text-brand-charcoal/50"
             }`}
           >
             {isComingSoon ? "SOON" : capability.status}
@@ -121,7 +122,7 @@ function CapabilityCard({
         </div>
 
         {/* Category */}
-        <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-brand-orange block mb-4">
+        <span className="font-mono text-readable-meta uppercase tracking-[0.15em] text-brand-orange block mb-4">
           // {capability.category}
         </span>
 
@@ -137,9 +138,10 @@ function CapabilityCard({
             icon={capability.icon}
             className={`w-5 h-5 ${
               isComingSoon
-                ? "text-brand-charcoal/20"
+                ? "text-brand-charcoal/30"
                 : "text-brand-charcoal/60 group-hover:text-brand-orange"
             } transition-colors`}
+            aria-hidden
           />
         </div>
 
@@ -149,7 +151,7 @@ function CapabilityCard({
         </h3>
         <p
           className={`font-lora text-sm leading-relaxed mb-4 ${
-            isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
+            isComingSoon ? "text-brand-charcoal/50" : "text-brand-charcoal/70"
           }`}
         >
           {capability.description}
@@ -160,10 +162,10 @@ function CapabilityCard({
           {capability.specs.map((spec) => (
             <span
               key={spec}
-              className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider ${
+              className={`px-2 py-0.5 font-mono text-readable-meta uppercase tracking-wider ${
                 isComingSoon
-                  ? "bg-brand-charcoal/5 text-brand-charcoal/30"
-                  : "bg-brand-charcoal/5 text-brand-charcoal/50"
+                  ? "bg-brand-charcoal/5 text-brand-charcoal/40"
+                  : "bg-brand-charcoal/5 text-brand-charcoal/65"
               }`}
             >
               {spec}
@@ -198,7 +200,7 @@ export function CapabilitiesGrid() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
+          <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-orange block mb-2">
             // SYSTEM_CAPABILITIES
           </span>
           <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
@@ -207,7 +209,7 @@ export function CapabilitiesGrid() {
               MODULES
             </span>
           </h2>
-          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-xl mx-auto">
+          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/55 max-w-xl mx-auto">
             What you can use in the free public beta today
           </p>
         </motion.div>
@@ -232,19 +234,19 @@ export function CapabilitiesGrid() {
         >
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-brand-green rounded-full" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+            <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/60">
               Live
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-brand-orange rounded-full" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+            <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/60">
               Beta
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-brand-charcoal/20 rounded-full" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-brand-charcoal/50">
+            <span className="font-mono text-readable-meta uppercase tracking-wider text-brand-charcoal/60">
               Coming Soon
             </span>
           </div>

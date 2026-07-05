@@ -41,10 +41,10 @@ export function CTAEnhanced() {
 
       {/* System Status - Top */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-sand-light/30">
+        <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-sand-light/55">
           // SYSTEM_READY
         </span>
-        <span className="w-1.5 h-1.5 bg-brand-orange animate-pulse" />
+        <span className="w-1.5 h-1.5 bg-brand-orange motion-safe:animate-pulse motion-reduce:animate-none" />
       </div>
 
       <motion.div
@@ -58,8 +58,8 @@ export function CTAEnhanced() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-pulse" />
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-brand-sand-light/60">
+          <span className="w-1.5 h-1.5 bg-brand-orange rounded-full motion-safe:animate-pulse motion-reduce:animate-none" />
+          <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-sand-light/70">
             FREE_PUBLIC_BETA
           </span>
         </motion.div>
@@ -99,19 +99,13 @@ export function CTAEnhanced() {
           <Link href="/auth/signin">
             <Button
               size="lg"
-              className="group h-14 px-0 text-sm font-mono uppercase tracking-[0.15em] rounded-none bg-brand-orange hover:bg-brand-sand-light hover:text-brand-charcoal text-brand-sand-light transition-all duration-300 border-0"
+              className="group h-14 px-0 text-sm font-mono uppercase tracking-[0.15em] rounded-none bg-brand-orange hover:bg-brand-sand-light hover:text-brand-charcoal text-brand-sand-light transition-colors border-0"
             >
               <span className="px-4 text-brand-sand-light/40 group-hover:text-brand-charcoal/40 transition-colors">
                 [
               </span>
               <span className="px-2">START_PROJECT</span>
-              <motion.span
-                className="px-2"
-                animate={{ x: [0, 3, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <ArrowRight className="w-4 h-4" />
-              </motion.span>
+              <ArrowRight className="w-4 h-4 mx-2 group-hover:translate-x-1 transition-transform" />
               <span className="px-4 text-brand-sand-light/40 group-hover:text-brand-charcoal/40 transition-colors">
                 ]
               </span>
@@ -130,7 +124,7 @@ export function CTAEnhanced() {
           {["NO_CREDIT_CARD", "FREE_BETA", "FAIR_USE_LIMITS"].map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <span className="w-1 h-1 bg-brand-orange" />
-                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-sand-light/30">
+                <span className="font-mono text-readable-meta uppercase tracking-[0.15em] text-brand-sand-light/50">
                   {item}
                 </span>
               </div>
@@ -140,7 +134,7 @@ export function CTAEnhanced() {
 
       {/* Bottom System Info */}
       <div className="absolute bottom-8 left-8 font-mono text-[9px] text-brand-sand-light/20 uppercase">
-        <div>SYS_VERSION: 0.9.2</div>
+        <div>SYS_VERSION: 0.1.0</div>
         <div>UPTIME: SUPABASE_HOSTED</div>
       </div>
 

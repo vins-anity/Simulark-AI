@@ -175,7 +175,12 @@ export const ArchitectureGenerationOutputSchema = z.object({
     .optional()
     .describe("Closest viable preference-aligned stack"),
   nodes: z.array(GenerationNodeSchema).min(1).max(50),
-  edges: z.array(GenerationEdgeSchema).default([]),
+  edges: z
+    .array(GenerationEdgeSchema)
+    .describe(
+      "Required connections between nodes. Must include at least nodes.length - 1 edges for a connected graph.",
+    )
+    .default([]),
 });
 
 export type ArchitectureGenerationOutput = z.infer<

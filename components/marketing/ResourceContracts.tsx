@@ -132,7 +132,7 @@ export function ResourceContracts() {
         </motion.div>
 
         <motion.p
-          className="mt-10 text-center font-mono text-[10px] uppercase tracking-[0.15em] text-brand-charcoal/30"
+          className="mt-10 text-center font-mono text-readable-meta uppercase tracking-[0.12em] text-brand-charcoal/50"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}

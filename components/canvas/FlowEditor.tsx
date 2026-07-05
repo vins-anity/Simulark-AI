@@ -313,7 +313,10 @@ const FlowEditorInner = forwardRef<FlowEditorRef, FlowEditorProps>(
           return;
         }
 
-        const bgColor = resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5";
+        const bgColor =
+          getComputedStyle(document.documentElement)
+            .getPropertyValue("--bg-primary")
+            .trim() || (resolvedTheme === "dark" ? "#0f0f0f" : "#faf9f5");
         const bounds = calculateGraphExportBounds(currentNodes, 50);
         const width = Math.ceil(bounds.width);
         const height = Math.ceil(bounds.height);

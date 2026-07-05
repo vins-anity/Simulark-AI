@@ -34,7 +34,8 @@ export type ArchitectureStreamPart =
       primaryModel: string;
       fallbackUsed: boolean;
       attemptedModels: string[];
-    };
+    }
+  | { type: "activity"; detail: string; progress?: number };
 
 export type { TierStreamMeta as InferenceStreamMeta };
 

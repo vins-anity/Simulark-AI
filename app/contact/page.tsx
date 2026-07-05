@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 export default function ContactPage() {
   return (
     <MarketingLayout>
-      <div className="bg-[#faf9f5] min-h-screen">
+      <div className="bg-bg-primary min-h-screen">
         <div className="pt-32 pb-24 px-6 container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-16">
             {/* Info Column */}
@@ -86,7 +86,7 @@ export default function ContactPage() {
                     Identifier (Name)
                   </label>
                   <Input
-                    className="bg-[#faf9f5] border-brand-charcoal/20 focus:border-brand-orange rounded-none h-12 font-mono text-sm"
+                    className="bg-bg-primary border-brand-charcoal/20 focus:border-brand-orange rounded-none h-12 font-mono text-sm"
                     placeholder="J. DOE"
                   />
                 </div>
@@ -95,7 +95,7 @@ export default function ContactPage() {
                     Contact Frequency (Email)
                   </label>
                   <Input
-                    className="bg-[#faf9f5] border-brand-charcoal/20 focus:border-brand-orange rounded-none h-12 font-mono text-sm"
+                    className="bg-bg-primary border-brand-charcoal/20 focus:border-brand-orange rounded-none h-12 font-mono text-sm"
                     placeholder="user@domain.com"
                   />
                 </div>
@@ -104,7 +104,7 @@ export default function ContactPage() {
                     Packet Data (Message)
                   </label>
                   <Textarea
-                    className="bg-[#faf9f5] border-brand-charcoal/20 focus:border-brand-orange rounded-none min-h-[150px] font-mono text-sm resize-none"
+                    className="bg-bg-primary border-brand-charcoal/20 focus:border-brand-orange rounded-none min-h-[150px] font-mono text-sm resize-none"
                     placeholder="Enter transmission..."
                   />
                 </div>

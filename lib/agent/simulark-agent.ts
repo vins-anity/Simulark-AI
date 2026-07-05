@@ -8,7 +8,10 @@ import type {
   GraphMutationState,
   SimularkAgentContext,
 } from "@/lib/agent/types";
-import { getWrappedDashscopeModel } from "@/lib/inference/resilient-model";
+import {
+  buildDashScopeProviderOptions,
+  getWrappedDashscopeModel,
+} from "@/lib/inference/resilient-model";
 import type { InferenceTierConfig } from "@/lib/inference-tier";
 
 export function createSimularkAgent(
@@ -36,8 +39,14 @@ export function createSimularkAgent(
       >[0]["userPreferences"],
     });
 
+  const agentProviderOptions = buildDashScopeProviderOptions({
+    maxOutputTokens: tierConfig.maxOutputTokens,
+    enableThinking: false,
+  });
+
   return new ToolLoopAgent({
     model,
+    providerOptions: agentProviderOptions,
     instructions: `${instructions}
 
 You are modifying an existing architecture. Use tools to make precise changes.

@@ -143,13 +143,12 @@ export function DocumentationFAQ() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
+            <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-orange block mb-2">
               // KNOWLEDGE_BASE
             </span>
 
             <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
-              DOCS &
-              <br />
+              DOCS &{" "}
               <span className="font-serif italic font-light text-brand-charcoal/50">
                 FAQ
               </span>
@@ -162,7 +161,7 @@ export function DocumentationFAQ() {
 
             {/* Quick Links */}
             <div className="space-y-3 pt-6 border-t border-brand-charcoal/10">
-              <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-brand-charcoal/40 block mb-4">
+              <span className="font-mono text-readable-meta uppercase tracking-[0.15em] text-brand-charcoal/50 block mb-4">
                 // QUICK_LINKS
               </span>
               {[
@@ -172,15 +171,9 @@ export function DocumentationFAQ() {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="flex items-center gap-2 font-mono text-xs text-brand-charcoal/60 hover:text-brand-orange transition-colors group"
+                  className="flex items-center gap-2 font-mono text-xs text-brand-charcoal/70 hover:text-brand-orange transition-colors group"
                 >
-                  <span className="text-brand-charcoal/30 group-hover:text-brand-orange">
-                    [""
-                  </span>
                   <span className="uppercase">{link.label}</span>
-                  <span className="text-brand-charcoal/30 group-hover:text-brand-orange">
-                    ""]
-                  </span>
                   <Icon
                     icon="lucide:arrow-up-right"
                     className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity"

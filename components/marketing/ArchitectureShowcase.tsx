@@ -51,7 +51,7 @@ const architectures = [
     nodes: 7,
     connections: 6,
     icon: "logos:stripe",
-    color: "#8b5cf6",
+    color: "#6a9bcc",
     description:
       "Headless commerce setup with payment processing, full-text search, and inventory management.",
     prompt: "E-commerce platform with Stripe payments, PostgreSQL, and Algolia search",
@@ -64,7 +64,7 @@ const architectures = [
     nodes: 7,
     connections: 8,
     icon: "simple-icons:openai",
-    color: "#10b981",
+    color: "#788c5d",
     description:
       "Multi-step AI agent with tool use, memory persistence, and state management via LangGraph.",
     prompt: "LangGraph AI agent with tool calling, Redis memory, and PostgreSQL state",
@@ -77,7 +77,7 @@ const architectures = [
     nodes: 6,
     connections: 5,
     icon: "simple-icons:clickhouse",
-    color: "#f59e0b",
+    color: "#d97757",
     description:
       "High-throughput analytics pipeline ingesting events, storing in columnar DB, and visualizing live.",
     prompt: "Real-time analytics with Kafka ingestion, ClickHouse, and Grafana dashboards",
@@ -124,20 +124,20 @@ function ArchitectureCard({
             <div
               className="w-10 h-10 border flex items-center justify-center"
               style={{
-                borderColor: isComingSoon ? "#e5e5e5" : `${arch.color}40`,
+                borderColor: isComingSoon ? "#e8e6dc" : `${arch.color}40`,
               }}
             >
               <Icon
                 icon={arch.icon}
                 className="w-5 h-5"
-                style={{ color: isComingSoon ? "#ccc" : arch.color }}
+                style={{ color: isComingSoon ? "#b0aea5" : arch.color }}
               />
             </div>
             <div>
               <h3 className="font-mono text-sm font-bold text-text-primary uppercase tracking-wide">
                 {arch.name}
               </h3>
-              <span className="font-mono text-[9px] text-brand-charcoal/40">
+              <span className="font-mono text-readable-meta text-brand-charcoal/50">
                 {arch.id}
               </span>
             </div>
@@ -151,15 +151,15 @@ function ArchitectureCard({
               />
             )}
             <span
-              className={`font-mono text-[7px] uppercase tracking-wider px-1.5 py-0.5 ${
+              className={`font-mono text-readable-meta uppercase tracking-wider px-1.5 py-0.5 ${
                 isLive
                   ? "bg-brand-green/10 text-brand-green"
                   : isBeta
                     ? "bg-brand-orange/10 text-brand-orange"
-                    : "bg-brand-charcoal/5 text-brand-charcoal/40"
+                    : "bg-brand-charcoal/5 text-brand-charcoal/50"
               }`}
             >
-              {isComingSoon ? "SOON" : arch.status}
+              {isComingSoon ? "Soon" : arch.status}
             </span>
           </div>
         </div>
@@ -168,7 +168,7 @@ function ArchitectureCard({
         <div className="p-4">
           <p
             className={`font-lora text-sm mb-4 leading-relaxed ${
-              isComingSoon ? "text-brand-charcoal/40" : "text-brand-charcoal/60"
+              isComingSoon ? "text-brand-charcoal/50" : "text-brand-charcoal/70"
             }`}
           >
             {arch.description}
@@ -179,10 +179,10 @@ function ArchitectureCard({
             {arch.stack.map((tech) => (
               <span
                 key={tech}
-                className={`px-2 py-1 font-mono text-[8px] uppercase tracking-wider ${
+                className={`px-2 py-1 font-mono text-readable-meta uppercase tracking-wider ${
                   isComingSoon
-                    ? "bg-brand-charcoal/5 text-brand-charcoal/30"
-                    : "bg-brand-charcoal/5 text-brand-charcoal/60"
+                    ? "bg-brand-charcoal/5 text-brand-charcoal/40"
+                    : "bg-brand-charcoal/5 text-brand-charcoal/65"
                 }`}
               >
                 {tech}
@@ -196,7 +196,7 @@ function ArchitectureCard({
               <span className="font-mono text-lg font-bold text-text-primary">
                 {arch.nodes}
               </span>
-              <span className="font-mono text-[8px] uppercase text-brand-charcoal/40 block">
+              <span className="font-mono text-readable-meta uppercase text-brand-charcoal/50 block">
                 Nodes
               </span>
             </div>
@@ -204,7 +204,7 @@ function ArchitectureCard({
               <span className="font-mono text-lg font-bold text-text-primary">
                 {arch.connections}
               </span>
-              <span className="font-mono text-[8px] uppercase text-brand-charcoal/40 block">
+              <span className="font-mono text-readable-meta uppercase text-brand-charcoal/50 block">
                 Edges
               </span>
             </div>
@@ -250,7 +250,7 @@ export function ArchitectureShowcase() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-orange block mb-2">
+          <span className="font-mono text-readable-meta uppercase tracking-[0.2em] text-brand-orange block mb-2">
             // ARCHITECTURE_LIBRARY
           </span>
           <h2 className="text-4xl md:text-5xl font-poppins font-bold text-text-primary mb-4">
@@ -259,8 +259,8 @@ export function ArchitectureShowcase() {
               COLLECTION
             </span>
           </h2>
-          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/40 max-w-2xl">
-            Type a prompt like these and the AI generates the full diagram.
+          <p className="font-mono text-xs uppercase tracking-[0.15em] text-brand-charcoal/55 max-w-2xl">
+            TYPE_A_PROMPT — AI_GENERATES_FULL_DIAGRAM
           </p>
         </motion.div>
 
@@ -377,7 +377,7 @@ export function ArchitectureShowcase() {
                 {/* Example Prompt */}
                 {(selectedArch as typeof architectures[0] & { prompt?: string }).prompt && (
                   <div className="mb-4 p-3 border border-brand-charcoal/10 bg-bg-primary">
-                    <span className="font-mono text-[8px] uppercase tracking-[0.15em] text-brand-orange block mb-1.5">
+                    <span className="font-mono text-readable-meta uppercase tracking-[0.15em] text-brand-orange block mb-1.5">
                       // EXAMPLE_PROMPT
                     </span>
                     <p className="font-mono text-[11px] text-brand-charcoal/60 leading-relaxed">

@@ -84,20 +84,53 @@ export function detectOperation(
     return "extend";
   }
 
-  // Check for optimization keywords
-  const optimizeKeywords = [
-    "optimize",
-    "improve",
-    "better",
-    "faster",
-    "cheaper",
-    "efficient",
-    "performance",
-    "scale",
-    "upgrade",
-    "enhance",
+  // Greenfield-style prompts on a non-empty canvas → full structured regen (faster than agent edits)
+  const greenfieldPatterns = [
+    /^\s*(a |an |the )?[\w\s-]{3,}(app|platform|system|erp|saas|api|stack)\b/,
+    /\b(build|design|architect|create)\s+(a |an |me |my )?/,
   ];
-  if (optimizeKeywords.some((kw) => normalizedInput.includes(kw))) {
+  const surgicalKeywords = [
+    "simplify",
+    "remove",
+    "delete",
+    "add ",
+    "include",
+    "change",
+    "update",
+    "modify",
+    "replace",
+    "instead",
+    "without",
+    "drop ",
+    "get rid",
+  ];
+  const looksGreenfield = greenfieldPatterns.some((pattern) =>
+    pattern.test(normalizedInput),
+  );
+  const hasSurgicalIntent = surgicalKeywords.some((kw) =>
+    normalizedInput.includes(kw),
+  );
+  if (looksGreenfield && !hasSurgicalIntent) {
+    logger.info("Detected operation: create (greenfield on existing canvas)", {
+      input: normalizedInput,
+    });
+    return "create";
+  }
+
+  // Check for optimization keywords (word boundaries — avoid matching "scalable")
+  const optimizePatterns = [
+    /\boptimize\b/,
+    /\bimprove\b/,
+    /\bbetter\b/,
+    /\bfaster\b/,
+    /\bcheaper\b/,
+    /\befficient\b/,
+    /\bperformance\b/,
+    /\bscale\b/,
+    /\bupgrade\b/,
+    /\benhance\b/,
+  ];
+  if (optimizePatterns.some((pattern) => pattern.test(normalizedInput))) {
     logger.info("Detected operation: optimize", { input: normalizedInput });
     return "optimize";
   }
