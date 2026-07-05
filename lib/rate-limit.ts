@@ -73,38 +73,27 @@ export async function checkIPRateLimit(
   }
 
   const redisModule = await import("@/lib/redis");
-  const redis = redisModule.getRedisClient();
-  if (!redis) {
-    logger.warn("Redis is not configured. Skipping IP rate limit.", { ip });
-    return { allowed: true, limit, remaining: limit, reset: "" };
-  }
-
   const today = new Date().toISOString().split("T")[0];
   const key = `ratelimit:ip:${ip}:${today}`;
 
-  try {
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, 86400);
-    }
-
-    const remaining = Math.max(0, limit - count);
-    const allowed = count <= limit;
-
-    if (!allowed) {
-      logger.warn("IP rate limit exceeded", { ip, count, limit });
-    }
-
-    return {
-      allowed,
-      limit,
-      remaining,
-      reset: getNextUtcDayIsoString(),
-    };
-  } catch (error) {
-    logger.error("Redis IP rate limit error", error as Error, { ip });
-    return { allowed: true, limit, remaining: 1, reset: "" };
+  const count = await redisModule.redisIncrWithExpiry(key, 86400);
+  if (count === null) {
+    return { allowed: true, limit, remaining: limit, reset: "" };
   }
+
+  const remaining = Math.max(0, limit - count);
+  const allowed = count <= limit;
+
+  if (!allowed) {
+    logger.warn("IP rate limit exceeded", { ip, count, limit });
+  }
+
+  return {
+    allowed,
+    limit,
+    remaining,
+    reset: getNextUtcDayIsoString(),
+  };
 }
 
 export async function checkBurstRateLimit(
@@ -113,36 +102,26 @@ export async function checkBurstRateLimit(
   windowSeconds: number = USAGE_LIMITS.burstWindowSeconds,
 ) {
   const redisModule = await import("@/lib/redis");
-  const redis = redisModule.getRedisClient();
-  if (!redis) {
+  const key = `ratelimit:burst:${userId}`;
+
+  const count = await redisModule.redisIncrWithExpiry(key, windowSeconds);
+  if (count === null) {
     return { allowed: true, limit, remaining: limit, reset: "" };
   }
 
-  const key = `ratelimit:burst:${userId}`;
+  const remaining = Math.max(0, limit - count);
+  const allowed = count <= limit;
 
-  try {
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, windowSeconds);
-    }
-
-    const remaining = Math.max(0, limit - count);
-    const allowed = count <= limit;
-
-    if (!allowed) {
-      logger.warn("Burst rate limit exceeded", { userId, count, limit });
-    }
-
-    return {
-      allowed,
-      limit,
-      remaining,
-      reset: new Date(Date.now() + windowSeconds * 1000).toISOString(),
-    };
-  } catch (error) {
-    logger.error("Redis burst rate limit error", error as Error, { userId });
-    return { allowed: true, limit, remaining: 1, reset: "" };
+  if (!allowed) {
+    logger.warn("Burst rate limit exceeded", { userId, count, limit });
   }
+
+  return {
+    allowed,
+    limit,
+    remaining,
+    reset: new Date(Date.now() + windowSeconds * 1000).toISOString(),
+  };
 }
 
 /** Rate-limit read-only usage status polling (prevents enumeration abuse). */
@@ -152,30 +131,18 @@ export async function checkUsageStatusReadLimit(
   windowSeconds: number = 60,
 ) {
   const redisModule = await import("@/lib/redis");
-  const redis = redisModule.getRedisClient();
-  if (!redis) {
+  const key = `ratelimit:usage-read:${userId}`;
+
+  const count = await redisModule.redisIncrWithExpiry(key, windowSeconds);
+  if (count === null) {
     return { allowed: true, limit, remaining: limit, reset: "" };
   }
 
-  const key = `ratelimit:usage-read:${userId}`;
-
-  try {
-    const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, windowSeconds);
-    }
-
-    const remaining = Math.max(0, limit - count);
-    return {
-      allowed: count <= limit,
-      limit,
-      remaining,
-      reset: new Date(Date.now() + windowSeconds * 1000).toISOString(),
-    };
-  } catch (error) {
-    logger.error("Redis usage-read rate limit error", error as Error, {
-      userId,
-    });
-    return { allowed: true, limit, remaining: 1, reset: "" };
-  }
+  const remaining = Math.max(0, limit - count);
+  return {
+    allowed: count <= limit,
+    limit,
+    remaining,
+    reset: new Date(Date.now() + windowSeconds * 1000).toISOString(),
+  };
 }

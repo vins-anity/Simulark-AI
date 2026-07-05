@@ -9,11 +9,14 @@ import {
   ChevronRight,
   Cpu,
   Database,
+  FileText,
   Layout,
   Loader2,
+  Paperclip,
   Plus,
   Sparkles,
   Terminal,
+  X,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +27,12 @@ import { createProject, getUserProjects } from "@/actions/projects";
 import { getUserPreferences, updateUserPreferences } from "@/actions/users";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
+import {
+  buildInitialPromptFromPlan,
+  isPlanDocumentFile,
+  readTxtFilePreview,
+  uploadProjectPlanDocument,
+} from "@/lib/client/plan-document";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +47,7 @@ import {
   type InferenceTier,
   resolveInferenceTier,
 } from "@/lib/inference-tier";
+import { PLAN_DOCUMENT_ACCEPT, projectNameFromPlan } from "@/lib/plan-document";
 import type { Project } from "@/lib/schema/graph";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -91,12 +101,17 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [prompt, setPrompt] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [attachedPlan, setAttachedPlan] = useState<{
+    file: File;
+    preview?: string;
+  } | null>(null);
 
   const [selectedTier, setSelectedTier] = useState<InferenceTier>(
     DEFAULT_INFERENCE_TIER,
   );
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const planInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   // Onboarding integration
@@ -189,42 +204,112 @@ function DashboardContent() {
     inputRef.current?.focus();
   };
 
-  const handleExecute = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim() || isExecuting) return;
+  const clearAttachedPlan = () => {
+    setAttachedPlan(null);
+    if (planInputRef.current) {
+      planInputRef.current.value = "";
+    }
+  };
+
+  const handlePlanFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!isPlanDocumentFile(file)) {
+      toast.error("Only PDF and TXT plan files are supported");
+      event.target.value = "";
+      return;
+    }
+
+    let preview: string | undefined;
+    if (file.name.toLowerCase().endsWith(".txt") || file.type === "text/plain") {
+      try {
+        preview = await readTxtFilePreview(file);
+      } catch {
+        preview = undefined;
+      }
+    }
+
+    setAttachedPlan({ file, preview });
+    if (!prompt.trim()) {
+      inputRef.current?.focus();
+    }
+    event.target.value = "";
+  };
+
+  const canInitialize = Boolean(prompt.trim() || attachedPlan);
+
+  const handleExecute = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!canInitialize || isExecuting) return;
 
     setIsExecuting(true);
     const trimmedPrompt = prompt.trim();
+    const planFile = attachedPlan?.file;
 
     try {
-      // Use prompt as project name directly (clean, no prefix)
-      const projectName =
-        trimmedPrompt.length > 50
+      const projectName = planFile
+        ? projectNameFromPlan(planFile.name, trimmedPrompt)
+        : trimmedPrompt.length > 50
           ? `${trimmedPrompt.substring(0, 50)}...`
           : trimmedPrompt;
 
-      // Create project with metadata (mode & model)
       const result = await createProject(projectName, "Generic", {
         tier: selectedTier,
         mode: selectedTier === "pro" ? "enterprise" : "startup",
       });
 
-      if (result.success && result.data) {
-        // Store prompt and metadata for picking up in project view
-        const storageKey = `initial-prompt-${result.data.id}`;
-        const timestampKey = `${storageKey}-timestamp`;
-
-        sessionStorage.setItem(storageKey, trimmedPrompt);
-        sessionStorage.setItem(timestampKey, Date.now().toString());
-        sessionStorage.setItem(`${storageKey}-status`, "pending");
-
-        setPrompt("");
-        router.push(`/projects/${result.data.id}`);
-      } else {
+      if (!result.success || !result.data) {
         toast.error(result.error || "Failed to create project");
         setIsExecuting(false);
+        return;
       }
-    } catch (err) {
+
+      let excerpt = attachedPlan?.preview;
+      if (planFile) {
+        try {
+          const upload = await uploadProjectPlanDocument(
+            result.data.id,
+            planFile,
+          );
+          excerpt = upload.extraction?.preview || excerpt;
+          if (upload.extraction?.status === "failed") {
+            toast.warning(
+              "Plan uploaded but text extraction failed — try a text-based PDF or TXT",
+            );
+          }
+        } catch (uploadError) {
+          toast.error(
+            uploadError instanceof Error
+              ? uploadError.message
+              : "Failed to upload plan",
+          );
+          setIsExecuting(false);
+          return;
+        }
+      }
+
+      const initialPrompt = planFile
+        ? buildInitialPromptFromPlan({
+            userPrompt: trimmedPrompt,
+            fileName: planFile.name,
+            excerpt,
+          })
+        : trimmedPrompt;
+
+      const storageKey = `initial-prompt-${result.data.id}`;
+      const timestampKey = `${storageKey}-timestamp`;
+
+      sessionStorage.setItem(storageKey, initialPrompt);
+      sessionStorage.setItem(timestampKey, Date.now().toString());
+      sessionStorage.setItem(`${storageKey}-status`, "pending");
+
+      setPrompt("");
+      clearAttachedPlan();
+      router.push(`/projects/${result.data.id}`);
+    } catch {
       toast.error("Failed to execute command");
       setIsExecuting(false);
     }
@@ -323,7 +408,9 @@ function DashboardContent() {
                   <span className="text-[10px] font-mono font-bold text-brand-charcoal/40 dark:text-gray-400 uppercase tracking-widest leading-none">
                     {isExecuting
                       ? "UPLINK_STATION:TRANSMITTING"
-                      : "UPLINK_STATION:IDLE"}
+                      : attachedPlan
+                        ? "UPLINK_STATION:PLAN_LOADED"
+                        : "UPLINK_STATION:IDLE"}
                   </span>
 
                   <DropdownMenu>
@@ -371,23 +458,72 @@ function DashboardContent() {
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch">
-                <div className="flex-1 flex items-center min-w-0">
-                  <div className="pl-5 text-brand-charcoal/20 dark:text-gray-600">
-                    <Terminal size={18} />
+                <input
+                  ref={planInputRef}
+                  type="file"
+                  accept={PLAN_DOCUMENT_ACCEPT}
+                  className="hidden"
+                  onChange={handlePlanFileChange}
+                />
+                <div className="flex-1 flex flex-col min-w-0">
+                  <div className="flex items-center min-w-0">
+                    <div className="pl-5 text-brand-charcoal/20 dark:text-gray-600 shrink-0">
+                      <Terminal size={18} />
+                    </div>
+                    <form onSubmit={handleExecute} className="flex-1 min-w-0">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder={
+                          attachedPlan
+                            ? "OPTIONAL: ADD FOCUS OR CONSTRAINTS..."
+                            : "DESCRIBE_ARCHITECTURE..."
+                        }
+                        className="w-full h-16 px-5 bg-transparent text-brand-charcoal dark:text-gray-200 focus:outline-none font-mono text-base uppercase tracking-tight placeholder:text-brand-charcoal/20 dark:placeholder:text-gray-600"
+                        disabled={isExecuting}
+                      />
+                    </form>
                   </div>
-                  <form onSubmit={handleExecute} className="flex-1">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="DESCRIBE_ARCHITECTURE..."
-                      className="w-full h-16 px-5 bg-transparent text-brand-charcoal dark:text-gray-200 focus:outline-none font-mono text-base uppercase tracking-tight placeholder:text-brand-charcoal/20 dark:placeholder:text-gray-600"
-                      disabled={isExecuting}
-                    />
-                  </form>
+                  {attachedPlan && (
+                    <div className="px-5 pb-3 flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1 border border-brand-charcoal/15 dark:border-zinc-600 bg-brand-charcoal/[0.03] dark:bg-white/[0.03] px-2 py-1.5">
+                        <FileText
+                          size={12}
+                          className="shrink-0 text-brand-orange"
+                        />
+                        <span className="font-mono text-[9px] uppercase tracking-wide text-brand-charcoal/70 dark:text-gray-300 truncate">
+                          {attachedPlan.file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearAttachedPlan}
+                          disabled={isExecuting}
+                          className="ml-auto shrink-0 text-brand-charcoal/40 hover:text-red-500 transition-colors"
+                          aria-label="Remove attached plan"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-3 sm:flex border-t sm:border-t-0 sm:border-l border-brand-charcoal dark:border-zinc-700 sm:divide-x divide-brand-charcoal dark:divide-zinc-700">
+                <div className="grid grid-cols-4 sm:flex border-t sm:border-t-0 sm:border-l border-brand-charcoal dark:border-zinc-700 sm:divide-x divide-brand-charcoal dark:divide-zinc-700">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={isExecuting}
+                    onClick={() => planInputRef.current?.click()}
+                    className={cn(
+                      "h-16 w-full sm:w-16 rounded-none hover:bg-brand-orange/10 hover:text-brand-orange dark:text-gray-400 transition-colors",
+                      attachedPlan && "text-brand-orange",
+                    )}
+                    title="Upload plan (PDF or TXT)"
+                  >
+                    <Paperclip size={18} />
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -409,8 +545,9 @@ function DashboardContent() {
                     BLANK
                   </Button>
                   <button
-                    onClick={handleExecute}
-                    disabled={!prompt.trim() || isExecuting}
+                    type="button"
+                    onClick={() => void handleExecute()}
+                    disabled={!canInitialize || isExecuting}
                     className="h-16 w-full px-3 sm:px-8 bg-brand-charcoal dark:bg-white text-brand-sand-light dark:text-zinc-950 font-mono text-[10px] font-bold uppercase tracking-[0.16em] sm:tracking-[0.2em] transition-all hover:bg-brand-orange dark:hover:bg-brand-orange dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isExecuting ? (
@@ -436,7 +573,9 @@ function DashboardContent() {
               >
                 {isExecuting
                   ? "[ ESTABLISHING CONNECTION... ]"
-                  : "[ PRESS_ENTER_TO_TRANSMIT ]"}
+                  : attachedPlan
+                    ? "[ PRESS_INITIALIZE_OR_ENTER ]"
+                    : "[ PRESS_ENTER_TO_TRANSMIT ]"}
               </span>
             </div>
           </div>

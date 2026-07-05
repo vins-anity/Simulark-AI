@@ -47,6 +47,8 @@ export const env = createEnv({
     // Upstash Redis (for rate limiting)
     UPSTASH_REDIS_REST_URL: optional(string()),
     UPSTASH_REDIS_REST_TOKEN: optional(string()),
+    /** Set true locally when Upstash is unreachable — skips rate limit + AI cache */
+    UPSTASH_REDIS_DISABLED: optional(string()),
 
     // Admin & Cron
     CRON_SECRET: optional(string()),
@@ -75,6 +77,7 @@ export const env = createEnv({
     PRO_DAILY_LIMIT: process.env.PRO_DAILY_LIMIT,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    UPSTASH_REDIS_DISABLED: process.env.UPSTASH_REDIS_DISABLED,
     CRON_SECRET: process.env.CRON_SECRET,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

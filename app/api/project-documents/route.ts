@@ -1,12 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import * as v from "valibot";
-import { extractTextFromPdfBuffer } from "@/lib/pdf-extractor";
+import {
+  extractPlanDocumentBuffer,
+  isPlanDocumentFile,
+  planDocumentKind,
+  PLAN_DOCUMENT_MAX_BYTES,
+} from "@/lib/plan-document";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const DOCUMENT_BUCKET = "project-documents";
 
 const ProjectDocumentQuerySchema = v.object({
@@ -110,19 +114,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
   }
 
-  const isPdf =
-    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  if (!isPdf) {
+  if (!isPlanDocumentFile(file)) {
     return NextResponse.json(
-      { error: "Only PDF files are supported" },
+      { error: "Only PDF and TXT plan files are supported" },
       { status: 400 },
     );
   }
 
-  if (file.size <= 0 || file.size > MAX_FILE_BYTES) {
+  if (file.size <= 0 || file.size > PLAN_DOCUMENT_MAX_BYTES) {
     return NextResponse.json(
       {
-        error: `PDF must be between 1 byte and ${Math.round(MAX_FILE_BYTES / (1024 * 1024))}MB`,
+        error: `File must be between 1 byte and ${Math.round(PLAN_DOCUMENT_MAX_BYTES / (1024 * 1024))}MB`,
       },
       { status: 400 },
     );
@@ -140,13 +142,38 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const cleanName = sanitizeFileName(file.name || "document.pdf");
+  const kind = planDocumentKind(file);
+  const defaultName = kind === "txt" ? "plan.txt" : "plan.pdf";
+  const cleanName = sanitizeFileName(file.name || defaultName);
   const path = `${user.id}/${parsed.output.projectId}/${Date.now()}-${randomUUID()}-${cleanName}`;
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  let extractedText = "";
+  let extractionStatus: "completed" | "failed" = "completed";
+  let extractionError: string | null = null;
+  let pageCount = 0;
+  let truncated = false;
+  let mimeType = "application/pdf";
+
+  try {
+    const extraction = await extractPlanDocumentBuffer(buffer, file);
+    extractedText = extraction.text;
+    pageCount = extraction.pageCount;
+    truncated = extraction.truncated;
+    mimeType = extraction.mimeType;
+  } catch (error: unknown) {
+    extractionStatus = "failed";
+    extractionError =
+      error instanceof Error
+        ? error.message
+        : "Failed to extract readable text from document";
+  }
 
   const uploadResult = await supabase.storage
     .from(DOCUMENT_BUCKET)
-    .upload(path, file, {
-      contentType: "application/pdf",
+    .upload(path, buffer, {
+      contentType: mimeType,
       upsert: false,
     });
 
@@ -155,28 +182,10 @@ export async function POST(req: NextRequest) {
       {
         error:
           uploadResult.error.message ||
-          "Failed to upload PDF to storage bucket",
+          "Failed to upload document to storage bucket",
       },
       { status: 500 },
     );
-  }
-
-  let extractedText = "";
-  let extractionStatus: "completed" | "failed" = "completed";
-  let extractionError: string | null = null;
-  let pageCount = 0;
-  let truncated = false;
-
-  try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const extraction = await extractTextFromPdfBuffer(buffer);
-    extractedText = extraction.text;
-    pageCount = extraction.pageCount;
-    truncated = extraction.truncated;
-  } catch (error: any) {
-    extractionStatus = "failed";
-    extractionError =
-      error?.message || "Failed to extract readable text from PDF";
   }
 
   const { data, error } = await supabase
@@ -185,7 +194,7 @@ export async function POST(req: NextRequest) {
       project_id: parsed.output.projectId,
       user_id: user.id,
       file_name: cleanName,
-      mime_type: "application/pdf",
+      mime_type: mimeType,
       size_bytes: file.size,
       storage_path: path,
       extracted_text: extractedText,

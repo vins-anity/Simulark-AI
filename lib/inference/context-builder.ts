@@ -19,6 +19,7 @@ import {
   resolveTechContext,
   type TechContextBundle,
 } from "@/lib/tech/resolve-context";
+import { resolveTechContextCached } from "@/lib/tech/tech-context-cache";
 
 export interface InferenceContextInput {
   userPreferences?: UserPreferences | Record<string, unknown>;
@@ -56,19 +57,30 @@ function extractCanvasTechIds(
 export function buildInferenceContext(
   input: InferenceContextInput,
 ): InferenceContextResult {
+  return buildInferenceContextSync(input);
+}
+
+function buildInferenceContextSync(
+  input: InferenceContextInput,
+  techBundle?: TechContextBundle,
+): InferenceContextResult {
   const normalizedPreferences = normalizeUserPreferences(
     input.userPreferences ?? {},
   );
 
   const canvasTechIds = extractCanvasTechIds(input.currentNodes);
 
-  const techBundle = resolveTechContext({
-    userMessage: input.userMessage,
-    userPreferences: normalizedPreferences,
-    canvasTechIds,
-    tier: input.tier,
-    operation: input.operation,
-  });
+  const resolvedBundle =
+    techBundle ??
+    resolveTechContext({
+      userMessage: input.userMessage,
+      userPreferences: normalizedPreferences,
+      canvasTechIds,
+      tier: input.tier,
+      operation: input.operation,
+    });
+
+  const techBundleFinal = resolvedBundle;
 
   const tierConfig = getInferenceTierConfig(input.tier);
   const mode = tierToArchitectureMode(input.tier);
@@ -112,21 +124,41 @@ Thinking: ${tierConfig.enableThinking ? "enabled" : "disabled"}`;
     systemPrompt += `\n\nPROJECT DOCUMENTS:\n${input.projectDocuments}`;
   }
 
-  systemPrompt += `\n\nTECH CONTEXT (ALLOWED IDS ONLY):\n${techBundle.practicalConstraints}\n\n${techBundle.compactMatrix}`;
+  systemPrompt += `\n\nTECH CONTEXT (ALLOWED IDS ONLY):\n${techBundleFinal.practicalConstraints}\n\n${techBundleFinal.compactMatrix}`;
 
-  if (techBundle.knowledgeCards && input.tier === "pro") {
-    systemPrompt += `\n\nRELEVANT TECH NOTES:\n${techBundle.knowledgeCards}`;
+  if (techBundleFinal.knowledgeCards && input.tier === "pro") {
+    systemPrompt += `\n\nRELEVANT TECH NOTES:\n${techBundleFinal.knowledgeCards}`;
   }
 
   return {
     systemPrompt,
-    techBundle,
+    techBundle: techBundleFinal,
     cacheBlocks: {
       policy: CACHE_BLOCK_POLICY,
       tier: tierPreamble,
     },
     normalizedPreferences,
   };
+}
+
+/** Server path — uses Redis cache for tech context when configured. */
+export async function buildInferenceContextAsync(
+  input: InferenceContextInput,
+): Promise<InferenceContextResult> {
+  const normalizedPreferences = normalizeUserPreferences(
+    input.userPreferences ?? {},
+  );
+  const canvasTechIds = extractCanvasTechIds(input.currentNodes);
+
+  const techBundle = await resolveTechContextCached({
+    userMessage: input.userMessage,
+    userPreferences: normalizedPreferences,
+    canvasTechIds,
+    tier: input.tier,
+    operation: input.operation,
+  });
+
+  return buildInferenceContextSync(input, techBundle);
 }
 
 export function getStaticPromptPrefix(tier: InferenceTier): string {

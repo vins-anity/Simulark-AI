@@ -224,7 +224,7 @@ export async function getOrCreateDefaultChat(
   // Otherwise, create a new default chat
   const { data: newChat, error: createError } = await supabase
     .from("chats")
-    .insert({ project_id: projectId, title: "Chat 1" })
+    .insert({ project_id: projectId, title: "Main Terminal" })
     .select()
     .single();
 

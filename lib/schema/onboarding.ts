@@ -126,6 +126,20 @@ export const SaveOnboardingProgressSchema = v.object({
   data: v.record(v.string(), v.unknown()),
 });
 
+export const ONBOARDING_STEP_IDS = [
+  "welcome",
+  "profile",
+  "techstack",
+  "archpatterns",
+  "mode",
+  "complete",
+] as const;
+
+export const SaveOnboardingProgressByStepSchema = v.object({
+  stepId: v.picklist(ONBOARDING_STEP_IDS),
+  data: v.record(v.string(), v.unknown()),
+});
+
 export const CompleteOnboardingSchema = v.object({
   step1: OnboardingStep1Schema,
   step2: OnboardingStep2Schema,
@@ -146,6 +160,15 @@ export type SaveOnboardingProgressInput = v.InferInput<
 export type CompleteOnboardingInput = v.InferInput<
   typeof CompleteOnboardingSchema
 >;
+
+export type OnboardingStepKey = (typeof ONBOARDING_STEP_IDS)[number];
+
+export interface OnboardingStatus {
+  needsOnboarding: boolean;
+  currentStep: number;
+  isSkipped: boolean;
+  partialData?: OnboardingData;
+}
 
 export type {
   OnboardingMetadata,

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import type { OnboardingStatus } from "@/actions/onboarding";
+import type { OnboardingStatus } from "@/lib/schema/onboarding";
 import { getOnboardingStatus } from "@/actions/onboarding";
 
 // ============================================================================

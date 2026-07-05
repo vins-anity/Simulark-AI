@@ -69,6 +69,106 @@ function getDeltaText(part: {
   return "";
 }
 
+type StreamQueueItem = ArchitectureStreamPart | { type: "__source_done" };
+
+/**
+ * Merge fullStream + partialOutputStream concurrently.
+ * Sequential consumption blocks the tee and stalls the client for minutes.
+ */
+async function* mergeModelStreams(
+  result: Awaited<ReturnType<typeof streamWithTierFallback>>["result"],
+  structured: boolean,
+): AsyncGenerator<ArchitectureStreamPart> {
+  const queue: StreamQueueItem[] = [];
+  let pendingSources = structured ? 2 : 1;
+  let streamError: unknown;
+  let wake: (() => void) | null = null;
+
+  const notify = () => {
+    wake?.();
+    wake = null;
+  };
+
+  const push = (part: ArchitectureStreamPart) => {
+    queue.push(part);
+    notify();
+  };
+
+  const sourceDone = () => {
+    pendingSources -= 1;
+    if (pendingSources <= 0) {
+      queue.push({ type: "__source_done" });
+      notify();
+    }
+  };
+
+  const waitForQueue = async () => {
+    while (queue.length === 0 && pendingSources > 0) {
+      await new Promise<void>((resolve) => {
+        wake = resolve;
+      });
+    }
+  };
+
+  void (async () => {
+    try {
+      for await (const part of result.fullStream) {
+        if (part.type === "text-delta") {
+          const text = getDeltaText(part);
+          if (text) {
+            push({ type: "text-delta", text });
+          }
+        }
+        if (part.type === "reasoning-delta") {
+          const text = getDeltaText(part);
+          if (text) {
+            push({ type: "reasoning-delta", text });
+          }
+        }
+      }
+    } catch (error) {
+      streamError = error;
+    } finally {
+      sourceDone();
+    }
+  })();
+
+  if (structured) {
+    void (async () => {
+      try {
+        for await (const partial of result.partialOutputStream) {
+          if (partial && typeof partial === "object") {
+            push({
+              type: "object-partial",
+              object: partial as Record<string, unknown>,
+            });
+          }
+        }
+      } catch (error) {
+        streamError = error;
+      } finally {
+        sourceDone();
+      }
+    })();
+  }
+
+  while (true) {
+    await waitForQueue();
+    const item = queue.shift();
+    if (!item) {
+      break;
+    }
+    if (item.type === "__source_done") {
+      break;
+    }
+    yield item;
+  }
+
+  if (streamError) {
+    throw streamError;
+  }
+}
+
 /**
  * Stream architecture generation via AI SDK 7 with tier failover.
  */
@@ -114,29 +214,7 @@ export async function streamArchitectureInference(
       attemptedModels: meta.attemptedModels,
     };
 
-    for await (const part of result.fullStream) {
-      if (part.type === "text-delta") {
-        const text = getDeltaText(part);
-        if (text) {
-          yield { type: "text-delta", text };
-        }
-      }
-      if (part.type === "reasoning-delta") {
-        const text = getDeltaText(part);
-        if (text) {
-          yield { type: "reasoning-delta", text };
-        }
-      }
-    }
-
-    if (structured) {
-      for await (const partial of result.partialOutputStream) {
-        if (partial && typeof partial === "object") {
-          const object = partial as Record<string, unknown>;
-          yield { type: "object-partial", object };
-        }
-      }
-    }
+    yield* mergeModelStreams(result, structured);
 
     const usage = await result.usage;
     const output = structured ? await result.output : undefined;

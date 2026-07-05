@@ -22,7 +22,7 @@ import { logger } from "@/lib/logger";
 import { getClientIp } from "@/lib/network";
 import { getUserPreferences } from "@/actions/users";
 import {
-  buildInferenceContext,
+  buildInferenceContextAsync,
   type InferenceContextInput,
 } from "@/lib/inference/context-builder";
 import {
@@ -186,7 +186,7 @@ async function buildProjectDocumentContext(
   return {
     documentCount: usedDocuments,
     context: [
-      "PROJECT DOCUMENT CONTEXT (uploaded PDFs):",
+      "PROJECT DOCUMENT CONTEXT (uploaded plans — PDF/TXT):",
       "Use this as supporting context when answering or generating architecture output.",
       "If the document context conflicts with direct user instructions in this request, prioritize the user request and mention the conflict briefly.",
       "",
@@ -451,7 +451,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const inferenceContext = buildInferenceContext({
+    const inferenceContext = await buildInferenceContextAsync({
       userPreferences: mergedPreferences,
       currentNodes: currentNodes as InferenceContextInput["currentNodes"],
       currentEdges: currentEdges as InferenceContextInput["currentEdges"],

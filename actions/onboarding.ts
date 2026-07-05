@@ -6,9 +6,12 @@ import {
   CompleteOnboardingSchema,
   generateSmartDefaults,
   type OnboardingData,
+  ONBOARDING_STEP_IDS,
+  type OnboardingStatus,
   type OnboardingStep2,
   type OnboardingStep3,
   recommendTemplates,
+  SaveOnboardingProgressByStepSchema,
   SaveOnboardingProgressSchema,
 } from "@/lib/schema/onboarding";
 import {
@@ -21,32 +24,9 @@ import {
 import { inferTechStackFromProfile } from "@/lib/tech/infer-tech-stack";
 import { createClient } from "@/lib/supabase/server";
 
-const ONBOARDING_STEP_IDS = [
-  "welcome",
-  "profile",
-  "techstack",
-  "archpatterns",
-  "mode",
-  "complete",
-] as const;
-
-export type OnboardingStepKey = (typeof ONBOARDING_STEP_IDS)[number];
-
-export const SaveOnboardingProgressByStepSchema = v.object({
-  stepId: v.picklist(ONBOARDING_STEP_IDS),
-  data: v.record(v.string(), v.unknown()),
-});
-
 // ============================================================================
 // Get Onboarding Status
 // ============================================================================
-
-export interface OnboardingStatus {
-  needsOnboarding: boolean;
-  currentStep: number;
-  isSkipped: boolean;
-  partialData?: OnboardingData;
-}
 
 export async function getOnboardingStatus(): Promise<{
   success: boolean;

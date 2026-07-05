@@ -1,7 +1,7 @@
-import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
+import { getRedisClient, withRedisTimeout } from "@/lib/redis";
 
 const logger = createLogger("api:health");
 
@@ -40,15 +40,20 @@ export async function GET() {
 
   // Check Redis
   try {
-    const redisClient = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    });
-    const start = Date.now();
-    await redisClient.ping();
-    const latency = Date.now() - start;
-    health.services.redis = { status: "healthy", latency };
-    logger.debug("Redis health check passed", { latency });
+    if (!getRedisClient()) {
+      health.services.redis = { status: "not_configured" };
+    } else {
+      const start = Date.now();
+      const pong = await withRedisTimeout("ping", async (redis) => redis.ping());
+      const latency = Date.now() - start;
+      if (pong) {
+        health.services.redis = { status: "healthy", latency };
+        logger.debug("Redis health check passed", { latency });
+      } else {
+        health.services.redis = { status: "unreachable" };
+        health.status = "degraded";
+      }
+    }
   } catch (error) {
     logger.error("Redis health check failed", error);
     health.services.redis = { status: "error", error: String(error) };

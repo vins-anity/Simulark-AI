@@ -29,6 +29,11 @@ import {
   updateChatTitle as updateChatTitleAction,
 } from "@/actions/chats";
 import { getUserPreferences, updateUserPreferences } from "@/actions/users";
+import {
+  isPlanDocumentFile,
+  uploadProjectPlanDocument,
+} from "@/lib/client/plan-document";
+import { PLAN_DOCUMENT_ACCEPT } from "@/lib/plan-document";
 import { ResourceExhaustionModal } from "@/components/subscription/ResourceExhaustionModal";
 import { DailyUsageIndicator } from "@/components/usage/DailyUsageIndicator";
 import { useDailyUsage } from "@/components/usage/DailyUsagePanel";
@@ -383,7 +388,7 @@ export function AIAssistantPanel({
   const [suggestionChips, setSuggestionChips] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollSentinelRef = useRef<HTMLDivElement>(null);
-  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const planInputRef = useRef<HTMLInputElement>(null);
 
   // Chat state
   const [chats, setChats] = useState<Chat[]>([]);
@@ -659,52 +664,34 @@ export function AIAssistantPanel({
     loadProjectDocuments();
   }, [loadProjectDocuments]);
 
-  const handlePdfUpload = async (
+  const handlePlanUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (
-      file.type !== "application/pdf" &&
-      !file.name.toLowerCase().endsWith(".pdf")
-    ) {
-      toast.error("Only PDF files are supported");
+    if (!isPlanDocumentFile(file)) {
+      toast.error("Only PDF and TXT plan files are supported");
       event.target.value = "";
       return;
     }
 
-    const formData = new FormData();
-    formData.append("projectId", projectId);
-    formData.append("file", file);
-
     setIsUploadingDocument(true);
 
     try {
-      const response = await fetch("/api/project-documents", {
-        method: "POST",
-        body: formData,
-      });
-
-      const payload = await response
-        .json()
-        .catch(() => ({ error: "Upload failed" }));
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Failed to upload PDF");
-      }
+      const payload = await uploadProjectPlanDocument(projectId, file);
 
       await loadProjectDocuments();
       if (payload?.extraction?.status === "failed") {
         toast.warning(
-          "PDF uploaded, but text extraction failed. The file is saved and can be retried later.",
+          "Plan uploaded but text extraction failed — try a text-based PDF or TXT",
         );
       } else {
-        toast.success("PDF uploaded and added to AI context");
+        toast.success("Plan document attached");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to upload PDF",
+        error instanceof Error ? error.message : "Failed to upload plan",
       );
     } finally {
       setIsUploadingDocument(false);
@@ -772,7 +759,11 @@ export function AIAssistantPanel({
       if (chats && chats.length > 0) {
         setCurrentChatId(chats[0].id);
       } else {
-        await createNewChat("Main Terminal", false);
+        const defaultResult = await getOrCreateDefaultChat(projectId);
+        if (defaultResult.success) {
+          setChats([defaultResult.chat]);
+          setCurrentChatId(defaultResult.chat.id);
+        }
       }
     } catch (error) {
       console.error("Error loading chats:", error);
@@ -1076,12 +1067,15 @@ export function AIAssistantPanel({
     ]);
 
     let streamWatchdog: NodeJS.Timeout | null = null;
+    const streamStallMs = inferenceTier === "pro" ? 180_000 : 90_000;
     const resetWatchdog = () => {
       if (streamWatchdog) clearTimeout(streamWatchdog);
       streamWatchdog = setTimeout(() => {
-        console.warn("[Watchdog] Stream stalled for 60s. Aborting.");
+        console.warn(
+          `[Watchdog] Stream stalled for ${streamStallMs / 1000}s. Aborting.`,
+        );
         controller.abort();
-      }, 60000); // Increased to 60s to accommodate reasoning models
+      }, streamStallMs);
     };
 
     let accumulatedContent = "";
@@ -1392,6 +1386,7 @@ export function AIAssistantPanel({
                 duration: 5000,
               });
             } else if (json.type === "progress" && json.data) {
+              resetWatchdog();
               const progressPayload = json.data as {
                 progress?: number;
                 stage?: StreamStage;
@@ -1528,13 +1523,13 @@ export function AIAssistantPanel({
   return (
     <div className="flex flex-col h-full bg-white dark:bg-bg-secondary font-sans text-sm overflow-hidden border-l border-brand-charcoal/10 dark:border-border-primary/50">
       {/* Terminal Header - Technical HUD */}
-      <div className="h-11 flex-shrink-0 flex items-center justify-between px-3 border-b border-brand-charcoal/10 dark:border-border-primary/50 bg-gradient-to-r from-white to-neutral-50/50 dark:from-bg-secondary dark:to-bg-tertiary/50">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-brand-charcoal dark:bg-bg-elevated flex items-center justify-center shadow-sm">
+      <div className="flex-shrink-0 flex items-center justify-between gap-3 px-3 py-2 min-h-11 border-b border-brand-charcoal/10 dark:border-border-primary/50 bg-gradient-to-r from-white to-neutral-50/50 dark:from-bg-secondary dark:to-bg-tertiary/50">
+        <div className="flex items-center gap-2.5 min-w-0 shrink">
+          <div className="w-7 h-7 shrink-0 bg-brand-charcoal dark:bg-bg-elevated flex items-center justify-center shadow-sm">
             <Terminal className="w-3.5 h-3.5 text-white dark:text-text-primary" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-mono text-[10px] font-black uppercase tracking-[0.12em] text-brand-charcoal dark:text-text-primary">
+          <div className="flex flex-col min-w-0">
+            <span className="font-mono text-[10px] font-black uppercase tracking-[0.12em] text-brand-charcoal dark:text-text-primary truncate">
               OPERATOR
             </span>
             <span className="font-mono text-[8px] text-brand-charcoal/40 dark:text-text-secondary/50 uppercase tracking-wider">
@@ -1543,12 +1538,12 @@ export function AIAssistantPanel({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <DailyUsageIndicator
             usage={dailyUsage}
             loading={usageLoading}
-            compact
-            className="hidden sm:flex"
+            variant="header"
+            className="hidden sm:block"
           />
           {onToggle && (
             <button
@@ -1827,11 +1822,11 @@ export function AIAssistantPanel({
         {/* Input Controls */}
         <div className="p-3 space-y-3">
           <input
-            ref={pdfInputRef}
+            ref={planInputRef}
             type="file"
-            accept="application/pdf,.pdf"
+            accept={PLAN_DOCUMENT_ACCEPT}
             className="hidden"
-            onChange={handlePdfUpload}
+            onChange={handlePlanUpload}
           />
 
           <div className="flex flex-col gap-1.5 px-3 pb-3">
@@ -1870,10 +1865,10 @@ export function AIAssistantPanel({
               >
                 <button
                   type="button"
-                  onClick={() => pdfInputRef.current?.click()}
+                  onClick={() => planInputRef.current?.click()}
                   disabled={isUploadingDocument || isGenerating}
                   className="pl-3 pr-2 h-11 flex items-center justify-center shrink-0 text-brand-charcoal/40 dark:text-text-secondary/50 hover:text-brand-orange transition-colors disabled:opacity-50"
-                  title="Attach PDF"
+                  title="Attach plan (PDF or TXT)"
                 >
                   {isUploadingDocument ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

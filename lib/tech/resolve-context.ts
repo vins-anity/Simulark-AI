@@ -242,3 +242,25 @@ export function resolveTechContext(input: TechContextInput): TechContextBundle {
     cacheKey,
   };
 }
+
+/** Stable Redis cache key for tech context (without full resolution). */
+export function getTechContextCacheKey(input: TechContextInput): string {
+  const prefIds = getPreferenceIds(input.userPreferences);
+  const canvasIds = (input.canvasTechIds || [])
+    .map((id) => normalizeTechName(id) || id)
+    .filter(Boolean)
+    .sort();
+
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        message: input.userMessage.slice(0, 500),
+        prefs: prefIds.sort(),
+        canvas: canvasIds,
+        tier: input.tier || "flash",
+        operation: input.operation,
+      }),
+    )
+    .digest("hex")
+    .slice(0, 32);
+}

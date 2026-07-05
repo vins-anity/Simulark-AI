@@ -1,48 +1,26 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { type NextRequest, NextResponse } from "next/server";
-import { env } from "@/env";
 import { logger } from "@/lib/logger";
 import { getClientIp } from "@/lib/network";
+import { isRedisOperational, markRedisUnavailable } from "@/lib/redis";
 import { updateSession } from "@/lib/supabase/middleware";
+import {
+  checkProxyRateLimit,
+  getProxyRateLimiters,
+} from "@/lib/upstash/rate-limiters";
 
-// Initialize Redis for rate limiting
-let redis: Redis | null = null;
 let aiRatelimit: Ratelimit | null = null;
 let apiRatelimit: Ratelimit | null = null;
 let authRatelimit: Ratelimit | null = null;
 
-// Initialize rate limiters only if Redis credentials are available
-if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-  redis = new Redis({
-    url: env.UPSTASH_REDIS_REST_URL,
-    token: env.UPSTASH_REDIS_REST_TOKEN,
-  });
-
-  // AI Generation: Conservative limits to avoid upstream rate limits (Zhipu ~20/min)
-  aiRatelimit = new Ratelimit({
-    redis: redis,
-    limiter: Ratelimit.slidingWindow(15, "1 m"),
-    analytics: true,
-    prefix: "@upstash/ratelimit-ai",
-  });
-
-  // General API: More lenient
-  apiRatelimit = new Ratelimit({
-    redis: redis,
-    limiter: Ratelimit.slidingWindow(100, "1 m"),
-    analytics: true,
-    prefix: "@upstash/ratelimit-api",
-  });
-
-  // Auth-sensitive operations: 20 per minute (allows page load + multiple login attempts)
-  authRatelimit = new Ratelimit({
-    redis: redis,
-    limiter: Ratelimit.slidingWindow(20, "1 m"),
-    analytics: true,
-    prefix: "@upstash/ratelimit-auth",
-  });
+function resolveRateLimiters(): void {
+  const limiters = getProxyRateLimiters();
+  aiRatelimit = limiters?.ai ?? null;
+  apiRatelimit = limiters?.api ?? null;
+  authRatelimit = limiters?.auth ?? null;
 }
+
+resolveRateLimiters();
 
 /**
  * Add security headers to response
@@ -110,14 +88,22 @@ async function checkRateLimit(
   key: string,
   pathname: string,
 ): Promise<{ allowed: boolean; response?: NextResponse }> {
-  if (!ratelimit || !key || key === "unknown") {
+  if (!ratelimit || !key || key === "unknown" || !isRedisOperational()) {
     return { allowed: true };
   }
 
   try {
-    const { success, limit, reset, remaining } = await ratelimit.limit(key);
+    const { allowed, limit, reset, remaining } = await checkProxyRateLimit(
+      ratelimit,
+      key,
+    );
 
-    if (!success) {
+    if (
+      !allowed &&
+      limit !== undefined &&
+      reset !== undefined &&
+      remaining !== undefined
+    ) {
       const response = NextResponse.json(
         {
           error: "Too Many Requests",
@@ -138,9 +124,12 @@ async function checkRateLimit(
 
     return { allowed: true };
   } catch (error) {
+    markRedisUnavailable(error);
     const errorObj = error instanceof Error ? error : new Error(String(error));
-    logger.error("[Proxy] Rate limit check failed", errorObj, { pathname });
-    // Allow request if rate limiting fails
+    logger.warn("[Proxy] Rate limit skipped — Redis unreachable", {
+      pathname,
+      message: errorObj.message,
+    });
     return { allowed: true };
   }
 }

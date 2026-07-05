@@ -65,3 +65,9 @@ kilcode
 *.opencode
 *.opencode/
 *.opencode/*
+
+
+.agents/
+.agents/*
+.claude/
+.cursor

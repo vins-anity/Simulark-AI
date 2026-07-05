@@ -1,21 +1,12 @@
-import { Redis } from "@upstash/redis";
-import { env } from "@/env";
+import { type Redis } from "@upstash/redis";
 import { createLogger } from "@/lib/logger";
+import {
+  getRedisClient,
+  REDIS_KEY_PREFIX,
+  withRedisTimeout,
+} from "@/lib/redis";
 
 const logger = createLogger("ai-cache");
-
-/**
- * Redis client for AI response caching
- * Falls back to null if Redis is not configured
- */
-let redis: Redis | null = null;
-
-if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-  redis = new Redis({
-    url: env.UPSTASH_REDIS_REST_URL,
-    token: env.UPSTASH_REDIS_REST_TOKEN,
-  });
-}
 
 /**
  * Cache configuration
@@ -28,7 +19,7 @@ const CACHE_CONFIG = {
   // TTL for quick completions (15 minutes)
   quickTTL: 900,
   // Prefix for all cache keys
-  keyPrefix: "ai-cache:",
+  keyPrefix: `${REDIS_KEY_PREFIX}ai-cache:`,
 };
 
 /**
@@ -85,34 +76,32 @@ export async function getCachedResponse<T>(params: {
   mode?: string;
   userId?: string;
 }): Promise<T | null> {
-  if (!redis) {
+  if (!getRedisClient()) {
     logger.debug("Redis not configured, skipping cache lookup");
     return null;
   }
 
-  try {
-    const key = generateCacheKey(params);
-    const cached = await redis.get<CacheEntry<T>>(key);
+  const key = generateCacheKey(params);
+  const cached = await withRedisTimeout("get", async (redis: Redis) =>
+    redis.get<CacheEntry<T>>(key),
+  );
 
-    if (cached) {
-      logger.info("AI cache hit", {
-        key: key.substring(0, 50),
-        model: cached.model,
-        age: Date.now() - cached.cachedAt,
-      });
-
-      // Increment hit count
-      await redis.set(key, { ...cached, hitCount: cached.hitCount + 1 });
-
-      return cached.result;
-    }
-
+  if (!cached) {
     logger.debug("AI cache miss", { key: key.substring(0, 50) });
     return null;
-  } catch (error) {
-    logger.error("Failed to get cached response", error);
-    return null;
   }
+
+  logger.info("AI cache hit", {
+    key: key.substring(0, 50),
+    model: cached.model,
+    age: Date.now() - cached.cachedAt,
+  });
+
+  await withRedisTimeout("set", async (redis: Redis) =>
+    redis.set(key, { ...cached, hitCount: cached.hitCount + 1 }),
+  );
+
+  return cached.result;
 }
 
 /**
@@ -127,60 +116,65 @@ export async function setCachedResponse<T>(params: {
   userId?: string;
   ttl?: number;
 }): Promise<boolean> {
-  if (!redis) {
+  if (!getRedisClient()) {
     logger.debug("Redis not configured, skipping cache set");
     return false;
   }
 
-  try {
-    const key = generateCacheKey(params);
-    const ttl = params.ttl ?? CACHE_CONFIG.defaultTTL;
+  const key = generateCacheKey(params);
+  const ttl = params.ttl ?? CACHE_CONFIG.defaultTTL;
 
-    const entry: CacheEntry<T> = {
-      result: params.result,
-      model: params.model ?? "unknown",
-      provider: params.provider ?? "unknown",
-      cachedAt: Date.now(),
-      hitCount: 0,
-    };
+  const entry: CacheEntry<T> = {
+    result: params.result,
+    model: params.model ?? "unknown",
+    provider: params.provider ?? "unknown",
+    cachedAt: Date.now(),
+    hitCount: 0,
+  };
 
+  const ok = await withRedisTimeout("set", async (redis: Redis) => {
     await redis.set(key, entry, { ex: ttl });
+    return true;
+  });
 
+  if (ok) {
     logger.info("AI response cached", {
       key: key.substring(0, 50),
       model: entry.model,
       ttl,
     });
-
-    return true;
-  } catch (error) {
-    logger.error("Failed to cache response", error);
-    return false;
   }
+
+  return Boolean(ok);
 }
 
 /**
  * Invalidate cache for a user
  */
 export async function invalidateUserCache(userId: string): Promise<number> {
-  if (!redis) {
+  if (!getRedisClient()) {
     return 0;
   }
 
-  try {
-    const pattern = `${CACHE_CONFIG.keyPrefix}${userId}:*`;
-    const keys = await redis.keys(pattern);
+  const pattern = `${CACHE_CONFIG.keyPrefix}${userId}:*`;
+  const keys = await withRedisTimeout("keys", async (redis: Redis) =>
+    redis.keys(pattern),
+  );
 
-    if (keys.length > 0) {
-      await redis.del(...keys);
-      logger.info("User cache invalidated", { userId, count: keys.length });
-    }
+  if (!keys || keys.length === 0) {
+    return 0;
+  }
 
+  const deleted = await withRedisTimeout("del", async (redis: Redis) => {
+    await redis.del(...keys);
     return keys.length;
-  } catch (error) {
-    logger.error("Failed to invalidate user cache", error);
-    return 0;
+  });
+
+  if (deleted) {
+    logger.info("User cache invalidated", { userId, count: deleted });
   }
+
+  return deleted ?? 0;
 }
 
 /**
@@ -196,59 +190,66 @@ export async function getCacheStats(): Promise<{
     hits: number;
   }>;
 }> {
-  if (!redis) {
+  if (!getRedisClient()) {
     return { enabled: false };
   }
 
-  try {
-    const keys = await redis.keys(`${CACHE_CONFIG.keyPrefix}*`);
+  const keys = await withRedisTimeout("keys", async (redis: Redis) =>
+    redis.keys(`${CACHE_CONFIG.keyPrefix}*`),
+  );
 
-    // Get sample of entries for stats
-    const sampleKeys = keys.slice(0, 10);
-    const sampleEntries = await Promise.all(
-      sampleKeys.map(async (key) => {
-        const entry = await redis?.get<CacheEntry<unknown>>(key);
-        return {
-          key: key.substring(0, 50),
-          model: entry?.model ?? "unknown",
-          age: entry ? Date.now() - entry.cachedAt : 0,
-          hits: entry?.hitCount ?? 0,
-        };
-      }),
-    );
-
-    return {
-      enabled: true,
-      totalKeys: keys.length,
-      sampleEntries,
-    };
-  } catch (error) {
-    logger.error("Failed to get cache stats", error);
+  if (!keys) {
     return { enabled: true };
   }
+
+  const sampleKeys = keys.slice(0, 10);
+  const sampleEntries = await Promise.all(
+    sampleKeys.map(async (key) => {
+      const entry = await withRedisTimeout("get", async (redis: Redis) =>
+        redis.get<CacheEntry<unknown>>(key),
+      );
+      return {
+        key: key.substring(0, 50),
+        model: entry?.model ?? "unknown",
+        age: entry ? Date.now() - entry.cachedAt : 0,
+        hits: entry?.hitCount ?? 0,
+      };
+    }),
+  );
+
+  return {
+    enabled: true,
+    totalKeys: keys.length,
+    sampleEntries,
+  };
 }
 
 /**
  * Clear all AI cache entries
  */
 export async function clearAICache(): Promise<number> {
-  if (!redis) {
+  if (!getRedisClient()) {
     return 0;
   }
 
-  try {
-    const keys = await redis.keys(`${CACHE_CONFIG.keyPrefix}*`);
+  const keys = await withRedisTimeout("keys", async (redis: Redis) =>
+    redis.keys(`${CACHE_CONFIG.keyPrefix}*`),
+  );
 
-    if (keys.length > 0) {
-      await redis.del(...keys);
-      logger.info("AI cache cleared", { count: keys.length });
-    }
+  if (!keys || keys.length === 0) {
+    return 0;
+  }
 
+  const count = await withRedisTimeout("del", async (redis: Redis) => {
+    await redis.del(...keys);
     return keys.length;
-  } catch (error) {
-    logger.error("Failed to clear AI cache", error);
-    return 0;
+  });
+
+  if (count) {
+    logger.info("AI cache cleared", { count });
   }
+
+  return count ?? 0;
 }
 
 /**
